@@ -11,7 +11,7 @@ Vulkan
 As far as I know, it is sufficient that the Vulkan SDK is installed.
 
 ### MacOS
-MacOS does not actually natively support Vulkan. However KhronosGroup has provided MoltenVK, an implementation of Vulkan that translates Vulkan calls to Metal, Apple's graphics API. As such, we require a bit of extra work to get it Vulkan working on Mac.
+MacOS does not actually natively support Vulkan. However KhronosGroup has provided MoltenVK, an implementation of Vulkan that translates Vulkan calls to Metal, Apple's graphics API. As such, we require a bit of extra work to get Vulkan working on Mac.
 
 * Make sure you've downloaded the MacOS version of the VulkanSDK
 * Add Vulkan to your environment variables.
