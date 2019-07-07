@@ -1,10 +1,12 @@
 cmake_minimum_required (VERSION 3.14.4)
 project (prototype2)
+
 # Version number
 set (prototype2_VERSION_MAJOR 1)
 set (prototype2_VERSION_MINOR 0)
 
 # set paths
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
@@ -19,5 +21,14 @@ configure_file (
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 
+# add libraries
+
+# vulkan Vulkan
+project(vulkaninfo)
+find_package(Vulkan REQUIRED)
+
 # add the executable
-add_executable(prototype2 src/main.cpp)
+add_executable(prototype2 src/main/main.cpp)
+
+# link libraries
+target_link_libraries(prototype2 Vulkan::Vulkan)
