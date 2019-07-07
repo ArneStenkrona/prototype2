@@ -7,10 +7,10 @@ Vulkan
 ## Setting up Vulkan
 * Download [VulkanSDK](https://vulkan.lunarg.com/sdk/home)
 
-# Linux/Windows
+### Linux/Windows
 As far as I know, it is sufficient that the Vulkan SDK is installed.
 
-# MacOS
+### MacOS
 MacOS does not actually natively support Vulkan. However KhronosGroup has provided MoltenVK, an implementation of Vulkan that translates Vulkan calls to Metal, Apple's graphics API. As such, we require a bit of extra work to get it Vulkan working on Mac.
 
 * Make sure you've downloaded the MacOS version of the VulkanSDK
@@ -22,7 +22,7 @@ MacOS does not actually natively support Vulkan. However KhronosGroup has provid
  $ echo "export VULKAN_SDK=[YOUR PATH TO VULKAN HERE]/macOS" >> ~/.profile
 ```
 
-# Building
+## Building
 
 * Make sure you are in the root directory
 ```
