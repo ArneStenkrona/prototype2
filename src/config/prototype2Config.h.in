@@ -1,0 +1,3 @@
+// This is the config file for prototype2
+#define prototype2_VERSION_MAJOR @prototype2_VERSION_MAJOR@
+#define prototype2_VERSION_MINOR @prototype2_VERSION_MINOR@
