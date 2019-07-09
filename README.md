@@ -2,7 +2,9 @@
 Prototype 2 is a simple game engine. It is a successor to [Prototype](https://github.com/ArneStenkrona/Prototype).
 
 ## Dependencies
-Vulkan
+[CMake]()
+[Vulkan](https://vulkan.lunarg.com/sdk/home)
+[Catch2](https://github.com/catchorg/Catch2/)
 
 ## Setting up Vulkan
 * Download [VulkanSDK](https://vulkan.lunarg.com/sdk/home)
@@ -17,10 +19,18 @@ MacOS does not actually natively support Vulkan. However KhronosGroup has provid
 * Add Vulkan to your environment variables.
 ```
  $ echo "export VK_ICD_FILENAMES=[YOUR PATH TO VULKAN HERE]/macOS/etc/vulkan/icd.d/MoltenVK_icd.json" >> ~/.profile
-```
-```
+
  $ echo "export VULKAN_SDK=[YOUR PATH TO VULKAN HERE]/macOS" >> ~/.profile
 ```
+## Setting up Catch2
+* Install Catch2 from its git repository using CMake
+'''
+$ git clone https://github.com/catchorg/Catch2.git
+$ cd Catch2
+$ cmake -Bbuild -H. -DBUILD_TESTING=OFF
+$ sudo cmake --build build/ --target install
+'''
+[Further info](https://github.com/catchorg/Catch2/blob/master/docs/cmake-integration.md#installing-catch2-from-git-repository)
 
 ## Building
 
@@ -34,10 +44,17 @@ $ cd [YOUR PATH TO prototype2]
 * Then run the following
 ```
 $ cmake -H. -Bbuild
-```
-```
+
 $ cmake --build build -- -j3
 ```
+
+This will build both prototype as an executable, "prototype2" and
+as a library "prototype2.lib". It will also build the test executable,
+"prototype2_test".
+
+## Testing
+Testing is done with Catch2. Simply run "prototype2_tests".
+
 ## Authors
 
 * **Arne Stenkrona**

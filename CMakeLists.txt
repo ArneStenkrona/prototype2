@@ -16,8 +16,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-# set subdirectories
-
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
@@ -30,6 +28,7 @@ configure_file (
 include_directories(
   "${PROJECT_BINARY_DIR}"
   "${PROJECT_SOURCE_DIR}"
+  "${PROJECT_SOURCE_DIR}/include"
 )
 
 file(GLOB SOURCES
@@ -38,18 +37,30 @@ file(GLOB SOURCES
     "src/memory/*.cpp"
 )
 
+file(GLOB TESTSOURCES
+    "test/*.cpp"
+)
 
 # add libraries
-
-# vulkan Vulkan
+# vulkan
 project(vulkaninfo)
 find_package(Vulkan REQUIRED)
+# catch
+find_package(Catch2 REQUIRED)
 
+# build prototype2
 # add the executable
 add_executable(prototype2 ${SOURCES})
-
 # Set compiler flags
 target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror)
-
 # link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
+
+# build prototype2 as library
+add_library(prototype2.lib ${SOURCES})
+target_link_libraries(prototype2.lib Vulkan::Vulkan)
+
+# test project
+add_executable(prototype2_tests ${TESTSOURCES})
+target_link_libraries(prototype2_tests Catch2::Catch2)
+target_link_libraries(prototype2_tests prototype2.lib)
