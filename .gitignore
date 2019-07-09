@@ -5,7 +5,7 @@ lib/*
 # Ignore any executables
 bin/*
 
-# Ignore .vscode
+# Ignore .vscode/*
 
 # Ignore Mac specific files
 .DS_Store
