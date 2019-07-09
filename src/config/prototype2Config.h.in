@@ -1,3 +1,4 @@
 // This is the config file for prototype2
 #define prototype2_VERSION_MAJOR @prototype2_VERSION_MAJOR@
 #define prototype2_VERSION_MINOR @prototype2_VERSION_MINOR@
+#define GLOBAL_MEMORY_ALLOCATION_MEGABYTES @GLOBAL_MEMORY_ALLOCATION_MEGABYTES@

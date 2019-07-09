@@ -24,6 +24,8 @@ MacOS does not actually natively support Vulkan. However KhronosGroup has provid
 
 ## Building
 
+* Building requires CMake versoin 3.14.4 or later
+
 * Make sure you are in the root directory
 ```
 $ cd [YOUR PATH TO prototype2]
