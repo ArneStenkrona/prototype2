@@ -1,6 +1,8 @@
+#include "allocator.h"
+
 #include <cstddef>
 
-class StackAllocator {
+class StackAllocator : public Allocator {
 public:
 
     typedef size_t Marker;
@@ -19,14 +21,14 @@ public:
      * 
      * @return pointer to allocated block
      */
-    void* allocAligned(size_t size_bytes, size_t alignment);
+    void* allocate(size_t size_bytes, size_t alignment) override;
 
     /**
      * Roll back the stack pointer to before the location
      * pointed at by pointer. Alignment is considered
      * @param pointer
      */
-    void freeAligned(void* pointer);
+    void free(void* pointer) override;
 
     /**
      * Returns a marker to the current stack top. 

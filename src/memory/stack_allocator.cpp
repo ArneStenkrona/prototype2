@@ -8,7 +8,7 @@ StackAllocator::StackAllocator(size_t stackSize_bytes)
     _stackPointer = malloc(stackSize_bytes);
 }
 
-void* StackAllocator::allocAligned(size_t size_bytes, size_t alignment) {
+void* StackAllocator::allocate(size_t size_bytes, size_t alignment) {
     assert(alignment >= 1);
     assert(alignment <= 128);
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
@@ -61,10 +61,10 @@ void* StackAllocator::allocUnaligned(size_t size_bytes) {
     return address;
 }
 
-void StackAllocator::freeAligned(void* pMem) {
-        const uint8_t* pAlignedMem = reinterpret_cast<const uint8_t*>(pMem);
+void StackAllocator::free(void* pointer) {
+        const uint8_t* pAlignedMem = reinterpret_cast<const uint8_t*>(pointer);
 
-        uintptr_t alignedAddress = reinterpret_cast<uintptr_t>(pMem);
+        uintptr_t alignedAddress = reinterpret_cast<uintptr_t>(pointer);
         ptrdiff_t adjustment = static_cast<ptrdiff_t>(pAlignedMem[-1]);
 
         uintptr_t rawAdress = alignedAddress - adjustment;

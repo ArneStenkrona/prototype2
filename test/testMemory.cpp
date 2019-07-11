@@ -10,7 +10,7 @@ TEST_CASE( "Test allocation", "[stack_allocator]" ) {
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
-                    .allocAligned(n * sizeof(uint32_t), sizeof(uint32_t)));
+                    .allocate(n * sizeof(uint32_t), sizeof(uint32_t)));
 
     for (uint32_t i = 0; i < n; i++){
         integers[i] = i * i;
