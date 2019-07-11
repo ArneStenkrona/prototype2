@@ -8,7 +8,7 @@ public:
     /**
      *  Constructs a stack allocator with the given total size.
      *  @param stackSize_bytes size of stack in bytes
-     * */
+     */
     explicit StackAllocator(size_t stackSize_bytes);
 
     /** 
@@ -18,30 +18,30 @@ public:
      * @param alignment aligmnet in bytes
      * 
      * @return pointer to allocated block
-     * */
+     */
     void* allocAligned(size_t size_bytes, size_t alignment);
 
     /**
      * Roll back the stack pointer to before the location
      * pointed at by pointer. Alignment is considered
      * @param pointer
-     * */
+     */
     void freeAligned(void* pointer);
 
     /**
      * Returns a marker to the current stack top. 
-     * */
+     */
     inline Marker getMarker() const { return _stackMarker; }
 
     /**
      * Rolls the stack back to the previous marker.
      * @param marker
-     * */
+     */
     void freeToMarker(Marker marker);
 
     /**
      * Clears the entire stack (rolls the stack back to zero) .
-     * */
+     */
     void clear();
 
 private:
@@ -61,13 +61,13 @@ private:
      * @param size_bytes size of block in bytes
      * 
      * @return  pointer to allocated block
-     * */
+     */
     void* allocUnaligned(size_t size_bytes);
 
     /**
      * Roll back the stack pointer to before the location
      * pointed at by pointer. Alignment is NOT considered
      * @param pointer
-     * */
+     */
     void freeUnaligned(void* pointer);
 };
