@@ -17,7 +17,7 @@ public:
      *          of the allocator
      * @param memorySizeBytes size of memory in bytes
      */
-    explicit StackAllocator(void* memoryPointer, size_t  memorySizeBytes);
+    explicit StackAllocator(uintptr_t memoryPointer, size_t  memorySizeBytes);
 
     /** 
      * Allocates a new block of the given size from stack top
