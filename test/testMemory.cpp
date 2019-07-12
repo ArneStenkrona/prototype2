@@ -6,7 +6,7 @@ TEST_CASE( "Test allocation", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
-    StackAllocator allocator = StackAllocator(bytes);
+    StackAllocator allocator = StackAllocator(malloc(bytes), bytes);
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
