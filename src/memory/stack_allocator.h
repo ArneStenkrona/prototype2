@@ -1,3 +1,6 @@
+#ifndef STACK_ALLOCATOR_H
+#define STACK_ALLOCATOR_H
+
 #include "allocator.h"
 
 #include <cstddef>
@@ -68,3 +71,5 @@ private:
      */
     void freeUnaligned(void* pointer);
 };
+
+#endif

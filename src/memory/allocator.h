@@ -1,3 +1,6 @@
+#ifndef ALLOCATOR_H
+#define ALLOCATOR_H
+
 #include <cstddef>
 #include <cstdint>
 
@@ -15,3 +18,5 @@ protected:
     // Amount of memory available to the allocator in bytes.
     const size_t _memorySizeBytes;
 };
+
+#endif

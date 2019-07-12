@@ -1,3 +1,6 @@
+#ifndef POOL_ALLOCATOR_H
+#define POOL_ALLOCATOR_H
+
 #include "allocator.h"
 #include <cstdint>
 
@@ -58,3 +61,5 @@ private:
         { return reinterpret_cast<void*>(0);};
 
 };
+
+#endif
