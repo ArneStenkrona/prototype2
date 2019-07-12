@@ -2,7 +2,10 @@
 
 #include "src/memory/stack_allocator.h"
 
-TEST_CASE( "Test allocation", "[stack_allocator]" ) {
+#include <catch2/catch.hpp>
+
+
+TEST_CASE( "Test stack allocation", "[stack_allocator]" ) {
     uint32_t n = 100;
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
@@ -22,7 +25,7 @@ TEST_CASE( "Test allocation", "[stack_allocator]" ) {
     }
 }
 
-TEST_CASE( "Test alignment", "[stack_allocator]" ) {
+TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
     
     uint32_t n = 1000;
     // We need to allocated memory for n elements + n bytes for
@@ -42,7 +45,7 @@ TEST_CASE( "Test alignment", "[stack_allocator]" ) {
     }
 }
 
-TEST_CASE( "Test free memory", "[stack_allocator]" ) {
+TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
     uint32_t n = 100;
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
@@ -69,7 +72,7 @@ TEST_CASE( "Test free memory", "[stack_allocator]" ) {
     REQUIRE(allocator.getMarker() == 0);
 }
 
-TEST_CASE( "Test clear memory", "[stack_allocator]" ) {
+TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
     uint32_t n = 100;
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
@@ -85,7 +88,7 @@ TEST_CASE( "Test clear memory", "[stack_allocator]" ) {
     REQUIRE(allocator.getMarker() == 0);
 }
 
-TEST_CASE( "Test reuse memory", "[stack_allocator]" ) {
+TEST_CASE( "Test reuse stack memory", "[stack_allocator]" ) {
     uint32_t n = 100;
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata

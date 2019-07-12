@@ -33,13 +33,14 @@ include_directories(
 )
 
 file(GLOB SOURCES
-    "src/main/*.cpp"
-    "src/config/*.cpp"
-    "src/memory/*.cpp"
+  "src/main/*.cpp"
+  "src/config/*.cpp"
+  "src/memory/*.cpp"
 )
 
 file(GLOB TESTSOURCES
-    "test/src//memory/*.cpp"
+  "test/src/prt_test.cpp"
+  "test/src//memory/*.cpp"
 )
 
 # add libraries
