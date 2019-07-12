@@ -23,7 +23,7 @@ public:
      * Allocates a new block of the given size from stack top
      * with respect to alignment.
      * @param size_bytes size of block in bytes
-     * @param alignment aligmnet in bytes
+     * @param alignment aligmnet in bytes, must be power of two
      * 
      * @return pointer to allocated block
      */
@@ -40,12 +40,6 @@ public:
      * Returns a marker to the current stack top. 
      */
     inline Marker getMarker() const { return _stackMarker; }
-
-    /**
-     * Rolls the stack back to the previous marker.
-     * @param marker
-     */
-    void freeToMarker(Marker marker);
 
     /**
      * Clears the entire stack (rolls the stack back to zero) .

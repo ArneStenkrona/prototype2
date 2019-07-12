@@ -18,7 +18,7 @@ void* StackAllocator::allocate(size_t sizeBytes, size_t alignment) {
     // Assert that the stack can allocate the block
     assert(_stackMarker + expandSize_bytes <= _memorySizeBytes);
 
-    // cast so we can perform arithmetic on stack pointer
+    // Cast so we can perform arithmetic on stack pointer
     uintptr_t sPtr = reinterpret_cast<uintptr_t>(_memoryPointer);
 
     // Allocate unaligned block & convert address to uintptr_t.
@@ -78,17 +78,13 @@ void StackAllocator::freeUnaligned(void* pointer) {
 
     ptrdiff_t diff = ptr - sPtr;
     // Make sure that the pointer is within the stack
-    assert(ptr > sPtr);
-    assert(diff > 0);
+    assert(ptr >= sPtr);
+    assert(diff >= 0);
     assert(static_cast<size_t>(diff) < _memorySizeBytes);
 
     // The updated stack marker should point to the 
     // Marker that the pointer mapps to
     _stackMarker = static_cast<size_t>(diff);
-}
-
-void StackAllocator::freeToMarker(Marker marker) {
-    _stackMarker = marker;
 }
 
 void StackAllocator::clear() {
