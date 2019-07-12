@@ -35,6 +35,7 @@ file(GLOB SOURCES
     "src/main/*.cpp"
     "src/config/*.cpp"
     "src/memory/*.cpp"
+    "src/entity_component_system/component/*.cpp"
 )
 
 file(GLOB TESTSOURCES
