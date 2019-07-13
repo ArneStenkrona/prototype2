@@ -54,8 +54,18 @@ public:
     void* allocate();
     void free(void* pointer) override;
 
+    /**
+     * @return block size, without padding
+     */
     inline size_t getBlockSize() const { return _blockSize; }
+    /**
+     * @return total number of blocks in allocator, both free and used
+     */
     inline size_t getNumberOfBlocks() const { return _numBlocks; }
+    /**
+     * @return number of free blocks
+     */
+    inline size_t getNumberOfFreeBlocks() const  { return _numFreeBlocks; }
 
 private:
     // Size of block.
@@ -68,6 +78,8 @@ private:
     const size_t _initialPadding;
     // Padding required for block alignment
     const size_t _blockPadding;
+    // Number of free blocks
+    size_t _numFreeBlocks;
 
     // Pointer to head of queue containing
     // free blocks

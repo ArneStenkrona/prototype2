@@ -59,6 +59,7 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
                               _initialPadding(calcPadding(_memoryPointer, alignment)),
                               _blockPadding(calcPadding(reinterpret_cast<uintptr_t>(blockSize),
                                                         alignment)),
+                              _numFreeBlocks(_numBlocks),
                               _freeQueueHead(_memoryPointer + _initialPadding) {
     // Insert all blocks into free Queue
     uintptr_t currentElement = _freeQueueHead;
@@ -82,6 +83,9 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
         void* allocatedPointer = reinterpret_cast<void*>( _freeQueueHead);
         // Set head of queue to next link.
         _freeQueueHead = *reinterpret_cast<uintptr_t*>(_freeQueueHead);
+        // Decrement number of free blocks.
+        _numFreeBlocks--;
+
         return allocatedPointer;
     }
 
@@ -99,4 +103,7 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
         uintptr_t* freePointer = reinterpret_cast<uintptr_t*>(pointer);
         *freePointer = _freeQueueHead;
         _freeQueueHead = reinterpret_cast<uintptr_t>(pointer);
+
+        // Increment number of free blocks.
+        _numFreeBlocks++;
     }
