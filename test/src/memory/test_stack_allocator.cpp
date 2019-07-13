@@ -26,7 +26,6 @@ TEST_CASE( "Test stack allocation", "[stack_allocator]" ) {
 }
 
 TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
-    
     uint32_t n = 1000;
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
