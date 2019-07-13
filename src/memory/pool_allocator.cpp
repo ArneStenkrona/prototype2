@@ -22,8 +22,10 @@ size_t calcPadding(uintptr_t memoryPointer, size_t alignment){
     // of the address, to determine how "misaligned" it is.
     size_t mask = (alignment - 1);
     size_t misalignment = (rawAdress & mask);
-    size_t adjustment = alignment - misalignment;
-    return adjustment;
+    // We don't need to store any meta-information
+    //size_t adjustment = alignment - misalignment;
+
+    return misalignment;
 }
 
 /**
@@ -57,7 +59,7 @@ PoolAllocator::PoolAllocator(uintptr_t memoryPointer, size_t memorySizeBytes,
                               _initialPadding(calcPadding(memoryPointer, alignment)),
                               _blockPadding(calcPadding(reinterpret_cast<uintptr_t>(blockSize),
                                                         alignment)),
-                              _freeQueueHead(reinterpret_cast<uintptr_t>(memoryPointer + _initialPadding)) {
+                              _freeQueueHead(memoryPointer + _initialPadding) {
     // Insert all blocks into free Queue
     uintptr_t currentElement = _freeQueueHead;
     for (size_t i = 0; i < _numBlocks - 1; i++) {
@@ -65,7 +67,7 @@ PoolAllocator::PoolAllocator(uintptr_t memoryPointer, size_t memorySizeBytes,
         // away from current
         uintptr_t nextElement = currentElement + _blockSize + _blockPadding;
         uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
-        *curr = reinterpret_cast<uintptr_t>(nextElement);
+        *curr = nextElement;
         currentElement = nextElement;
     }
     // Last elemet is nullptr.
@@ -74,9 +76,13 @@ PoolAllocator::PoolAllocator(uintptr_t memoryPointer, size_t memorySizeBytes,
 }
 
     void* PoolAllocator::allocate() {
-        // Make sure _freeQueue is not empty
+        // Make sure _freeQueue is not empty.
         assert(_freeQueueHead != reinterpret_cast<uintptr_t>(nullptr));
-        return reinterpret_cast<void*>( _freeQueueHead);
+        // Cast to void*
+        void* allocatedPointer = reinterpret_cast<void*>( _freeQueueHead);
+        // Set head of queue to next link.
+        _freeQueueHead = *reinterpret_cast<uintptr_t*>(_freeQueueHead);
+        return allocatedPointer;
     }
 
     void PoolAllocator::free(void* pointer) {
