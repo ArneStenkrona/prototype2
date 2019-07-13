@@ -61,19 +61,7 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
                                                         alignment)),
                               _numFreeBlocks(_numBlocks),
                               _freeQueueHead(_memoryPointer + _initialPadding) {
-    // Insert all blocks into free Queue
-    uintptr_t currentElement = _freeQueueHead;
-    for (size_t i = 0; i < _numBlocks - 1; i++) {
-        // Next element is an offset of block size and block padding
-        // away from current
-        uintptr_t nextElement = currentElement + _blockSize + _blockPadding;
-        uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
-        *curr = nextElement;
-        currentElement = nextElement;
-    }
-    // Last elemet is nullptr.
-    uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
-    *curr = reinterpret_cast<uintptr_t>(nullptr);
+    initFreeBlockQueue();
 }
 
     void* PoolAllocator::allocate() {
@@ -95,9 +83,9 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
         assert((reinterpret_cast<size_t>(pointer) -
                 (reinterpret_cast<size_t>(_memoryPointer) + _initialPadding)) 
                 % (_blockSize + _blockPadding) == 0);
-        assert(reinterpret_cast<size_t>(pointer) >
+        assert(reinterpret_cast<size_t>(pointer) >=
                 reinterpret_cast<size_t>(_memoryPointer));
-        assert(reinterpret_cast<size_t>(pointer) <
+        assert(reinterpret_cast<size_t>(pointer) <=
                 reinterpret_cast<size_t>(_memoryPointer) + _memorySizeBytes);
 
         uintptr_t* freePointer = reinterpret_cast<uintptr_t*>(pointer);
@@ -106,4 +94,20 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
 
         // Increment number of free blocks.
         _numFreeBlocks++;
+    }
+
+    void PoolAllocator::initFreeBlockQueue() {
+        // Insert all blocks into free Queue
+        uintptr_t currentElement = _freeQueueHead;
+        for (size_t i = 0; i < _numBlocks - 1; i++) {
+            // Next element is an offset of block size and block padding
+            // away from current
+            uintptr_t nextElement = currentElement + _blockSize + _blockPadding;
+            uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
+            *curr = nextElement;
+            currentElement = nextElement;
+        }
+        // Last elemet is nullptr.
+        uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
+        *curr = reinterpret_cast<uintptr_t>(nullptr);
     }

@@ -47,7 +47,7 @@ public:
     /**
      * Clears the entire stack (rolls the stack back to zero) .
      */
-    void clear();
+    void clear() override;
 
 private:
     // Stack marker: represents the current top of the

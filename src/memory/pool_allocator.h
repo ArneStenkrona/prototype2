@@ -53,6 +53,7 @@ public:
      */
     void* allocate();
     void free(void* pointer) override;
+    inline void clear() override { initFreeBlockQueue(); }
 
     /**
      * @return block size, without padding
@@ -84,6 +85,12 @@ private:
     // Pointer to head of queue containing
     // free blocks
     uintptr_t _freeQueueHead;
+
+    /**
+     * Helper method for initializing the allocator.
+     * Resets the free block queue
+     */ 
+    void initFreeBlockQueue();
 
     // This method does not apply to pool allocator
     // and is hidden.
