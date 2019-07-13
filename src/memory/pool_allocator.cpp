@@ -97,6 +97,7 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
     }
 
     void PoolAllocator::initFreeBlockQueue() {
+        _freeQueueHead = _memoryPointer + _initialPadding;
         // Insert all blocks into free Queue
         uintptr_t currentElement = _freeQueueHead;
         for (size_t i = 0; i < _numBlocks - 1; i++) {
