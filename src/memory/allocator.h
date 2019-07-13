@@ -10,8 +10,8 @@ public:
     virtual void free(void* pointer) = 0;
 
 protected:
-    Allocator(uintptr_t memoryPointer, size_t  memorySizeBytes)
-        : _memoryPointer(memoryPointer), _memorySizeBytes(memorySizeBytes) {}
+    Allocator(void* memoryPointer, size_t  memorySizeBytes)
+        : _memoryPointer(reinterpret_cast<uintptr_t>(memoryPointer)), _memorySizeBytes(memorySizeBytes) {}
 
     // Pointer to the start of the memory of the allocator.
     uintptr_t _memoryPointer;

@@ -50,16 +50,16 @@ size_t calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,
     return numBlocks;
 }
 
-PoolAllocator::PoolAllocator(uintptr_t memoryPointer, size_t memorySizeBytes,
+PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
                             size_t blockSize, size_t alignment)
                             : Allocator(memoryPointer, memorySizeBytes),
                               _blockSize(blockSize), _alignment(alignment),
                               _numBlocks(calcNumBlocks(_memoryPointer, _memorySizeBytes,
                                                        _blockSize, _alignment)),
-                              _initialPadding(calcPadding(memoryPointer, alignment)),
+                              _initialPadding(calcPadding(_memoryPointer, alignment)),
                               _blockPadding(calcPadding(reinterpret_cast<uintptr_t>(blockSize),
                                                         alignment)),
-                              _freeQueueHead(memoryPointer + _initialPadding) {
+                              _freeQueueHead(_memoryPointer + _initialPadding) {
     // Insert all blocks into free Queue
     uintptr_t currentElement = _freeQueueHead;
     for (size_t i = 0; i < _numBlocks - 1; i++) {

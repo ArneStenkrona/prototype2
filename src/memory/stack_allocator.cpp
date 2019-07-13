@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <cassert>
 
-StackAllocator::StackAllocator(uintptr_t memoryPointer, size_t  memorySizeBytes)
+StackAllocator::StackAllocator(void* memoryPointer, size_t  memorySizeBytes)
 :  Allocator(memoryPointer, memorySizeBytes), _stackMarker(0) {
 }
 

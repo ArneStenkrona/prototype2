@@ -11,7 +11,7 @@ TEST_CASE( "Test stack allocation", "[stack_allocator]" ) {
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
     StackAllocator allocator = 
-        StackAllocator(reinterpret_cast<uintptr_t>(malloc(bytes)), bytes);
+        StackAllocator(malloc(bytes), bytes);
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
@@ -32,7 +32,7 @@ TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
     StackAllocator allocator = 
-        StackAllocator(reinterpret_cast<uintptr_t>(malloc(bytes)), bytes);
+        StackAllocator(malloc(bytes), bytes);
 
     size_t powersOfTwo[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
     
@@ -51,7 +51,7 @@ TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
     StackAllocator allocator = 
-        StackAllocator(reinterpret_cast<uintptr_t>(malloc(bytes)), bytes);
+        StackAllocator(malloc(bytes), bytes);
 
     size_t alignment = 1;
     uint32_t* integers = static_cast<uint32_t*>
@@ -78,7 +78,7 @@ TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
     StackAllocator allocator = 
-        StackAllocator(reinterpret_cast<uintptr_t>(malloc(bytes)), bytes);
+        StackAllocator(malloc(bytes), bytes);
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
@@ -94,7 +94,7 @@ TEST_CASE( "Test reuse stack memory", "[stack_allocator]" ) {
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
     StackAllocator allocator = 
-        StackAllocator(reinterpret_cast<uintptr_t>(malloc(bytes)), bytes);
+        StackAllocator(malloc(bytes), bytes);
 
    uint32_t* integers = static_cast<uint32_t*>
                     (allocator

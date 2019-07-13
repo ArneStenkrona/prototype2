@@ -40,7 +40,7 @@ public:
      * @param memorySizeBytes size of memory in bytes
      * @param alignment aligment in bytes
      */
-    explicit PoolAllocator(uintptr_t memoryPointer, size_t memorySizeBytes,
+    explicit PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
                             size_t blockSize, size_t alignment);
 
     /**
