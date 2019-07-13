@@ -115,5 +115,48 @@ TEST_CASE( "Test clear pool memory", "[pool_allocator]" ) {
 }
 
 TEST_CASE( "Test reuse pool memory", "[pool_allocator]" ) {
-    REQUIRE(0 == 1);
+    constexpr size_t bytes = 1000;
+
+    constexpr size_t blocksize = 4 * sizeof(uint32_t);
+    constexpr size_t alignment = sizeof(uint32_t);
+
+    // number of blocks without considering allocator padding
+    constexpr size_t estimatedNumBlocks = bytes / blocksize;
+
+    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+
+    size_t numBlocks = allocator.getNumberOfBlocks();
+
+    // array of array of 4 integers
+    uint32_t* integers[estimatedNumBlocks];
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        integers[i] = static_cast<uint32_t*>(allocator.allocate());
+
+        for (uint32_t j = 0; j < 4; j++){ 
+            integers[i][j] = i * i + j * j;
+        }
+    }
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        for (uint32_t j = 0; j < 4; j++){ 
+            REQUIRE(integers[i][j] == i * i + j * j);
+        }
+    }
+
+    allocator.clear();
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        integers[i] = static_cast<uint32_t*>(allocator.allocate());
+
+        for (uint32_t j = 0; j < 4; j++){ 
+            integers[i][j] = i * i * i + j * j * j;
+        }
+    }
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        for (uint32_t j = 0; j < 4; j++){ 
+            REQUIRE(integers[i][j] == i * i * i + j * j * j);
+        }
+    }
 }
