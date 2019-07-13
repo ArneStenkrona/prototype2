@@ -29,6 +29,7 @@ include_directories(
   "${PROJECT_BINARY_DIR}"
   "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/include"
+  "${PROJECT_SOURCE_DIR}/test"
 )
 
 file(GLOB SOURCES
@@ -39,7 +40,8 @@ file(GLOB SOURCES
 )
 
 file(GLOB TESTSOURCES
-    "test/*.cpp"
+  "test/src/prt_test.cpp"
+  "test/src//memory/*.cpp"
 )
 
 # add libraries
