@@ -13,6 +13,9 @@ public:
      */
     virtual void clear() = 0;
 
+    inline size_t getMemorySizeBytes() const { return _memorySizeBytes; }
+    inline size_t getMemoryPointer() const { return _memoryPointer; }
+
 protected:
     Allocator(void* memoryPointer, size_t  memorySizeBytes)
         : _memoryPointer(reinterpret_cast<uintptr_t>(memoryPointer)), _memorySizeBytes(memorySizeBytes) {}
