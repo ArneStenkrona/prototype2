@@ -35,8 +35,8 @@ size_t calcPadding(uintptr_t memoryPointer, size_t alignment){
  */
 size_t calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,
                             size_t blockSize, size_t alignment) {
-    assert(alignment < blockSize);
-    assert(blockSize < memorySizeBytes);
+    assert(alignment <= blockSize);
+    assert(blockSize <= memorySizeBytes);
 
     size_t padding = calcPadding(memoryPointer, alignment);
 
