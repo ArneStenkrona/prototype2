@@ -110,4 +110,6 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
         // Last elemet is nullptr.
         uintptr_t* curr = reinterpret_cast<uintptr_t*>(currentElement);
         *curr = reinterpret_cast<uintptr_t>(nullptr);
+
+        _numFreeBlocks = _numBlocks;
     }
