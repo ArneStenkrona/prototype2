@@ -26,6 +26,8 @@ TEST_CASE( "Test pool allocation", "[pool_allocator]" ) {
         }
     }
 
+    REQUIRE(allocator.getNumberOfFreeBlocks() == 0);
+
       for (uint32_t i = 0; i < numBlocks; i++) {
         for (uint32_t j = 0; j < 4; j++){ 
             REQUIRE(integers[i][j] == i * i + j * j);
@@ -57,4 +59,39 @@ TEST_CASE( "Test pool alignment", "[pool_allocator]" ) {
             REQUIRE(pointers[j] % alignment == 0);
         }
     }
+}
+
+TEST_CASE( "Test free pool memory", "[pool_allocator]" ) {
+    constexpr size_t bytes = 1000;
+
+    constexpr size_t blocksize = 4 * sizeof(uint32_t);
+    constexpr size_t alignment = sizeof(uint32_t);
+
+    // number of blocks without considering allocator padding
+    constexpr size_t estimatedNumBlocks = bytes / blocksize;
+
+    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+
+    size_t numBlocks = allocator.getNumberOfBlocks();
+
+    void* blocks[estimatedNumBlocks];
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        blocks[i] = allocator.allocate();
+    }
+
+    REQUIRE(allocator.getNumberOfFreeBlocks() == 0);
+
+    for (uint32_t i = 0; i < numBlocks; i++) {
+        allocator.free(blocks[i]);
+        REQUIRE(allocator.getNumberOfFreeBlocks() == i + 1);       
+    }
+}
+
+TEST_CASE( "Test clear pool memory", "[pool_allocator]" ) {
+    REQUIRE(0 == 1);
+}
+
+TEST_CASE( "Test reuse pool memory", "[pool_allocator]" ) {
+    REQUIRE(0 == 1);
 }
