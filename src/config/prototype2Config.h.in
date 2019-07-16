@@ -1,4 +1,12 @@
 // This is the config file for prototype2
+
+
 #define prototype2_VERSION_MAJOR @prototype2_VERSION_MAJOR@
 #define prototype2_VERSION_MINOR @prototype2_VERSION_MINOR@
-#define GLOBAL_MEMORY_ALLOCATION_MEGABYTES @GLOBAL_MEMORY_ALLOCATION_MEGABYTES@
+
+/* MEMORY */
+/* Size of the entity manager stack in bytes
+ * The stack is used for the entity container
+ * and the component managers
+ */
+#define ENTITY_MANAGER_STACK_SIZE_BYTES @ENTITY_MANAGER_STACK_SIZE_BYTES@
