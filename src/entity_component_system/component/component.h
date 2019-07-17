@@ -2,10 +2,5 @@
 
 
 class Component {
-public:
-
-protected:
-
-private:
 
 };

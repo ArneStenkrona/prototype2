@@ -4,56 +4,100 @@
 #include "src/memory/stack_allocator.h"
 
 #include <cstddef> 
+#include <typeindex>
+#include <typeinfo>
+#include <iostream>
 
-typedef size_t EntityID;
+typedef uint16_t EntityID;
+typedef uint16_t ComponentTypeID;
+
+class AbstractComponentManager {
+public:
+    //virtual ~AbstractComponentManager() = 0;
+protected:
+    static ComponentTypeID getID() { return _nextTypeID++; }
+    static ComponentTypeID _nextTypeID;
+};
 
 template<class Component>
-class ComponentManager {
-public:
+class ComponentManager : public AbstractComponentManager {
+public:    
+    // ID indicating type of component manager
+    static const ComponentTypeID STATIC_COMPONENT_TYPE_ID;
+
     ComponentManager(void* memoryPointer, size_t  memorySizeBytes)
         : _stack(StackAllocator(memoryPointer, memorySizeBytes)) {
-        _entityIDmap = 
-            reinterpret_cast<size_t*>(_stack.
-            allocate(NUMBER_OF_SUPPORTED_ENTITIES * sizeof(size_t),
-                     sizeof(size_t)));
+        // Did we get enough memory?
+        assert(memorySizeBytes >= UINT16_MAX * sizeof(Component) + 
+                                  2 * UINT16_MAX * sizeof(Component) );
+
+        _entityIDToComponent = 
+            reinterpret_cast<uint16_t*>(_stack.
+            allocate(UINT16_MAX * sizeof(uint16_t),
+                     sizeof(uint16_t)));
+                     
+        _componentToEntityID = 
+            reinterpret_cast<EntityID*>(_stack.
+            allocate(UINT16_MAX * sizeof(EntityID),
+                     sizeof(EntityID)));
+
+        for (uint16_t i = 0; i < UINT16_MAX; i++) {
+            _entityIDToComponent[i] = 
+            _componentToEntityID[i] =
+                                      UNDEFINED_MAP;
+        }
+
         _components = 
-            reinterpret_cast<size_t*>(_stack.
-            allocate(NUMBER_OF_SUPPORTED_ENTITIES * sizeof(Component),
+            reinterpret_cast<Component*>(_stack.
+            allocate(UINT16_MAX * sizeof(Component),
                      sizeof(Component)));
     }
 
-private:
-    constexpr size_t NUMBER_OF_SUPPORTED_ENTITIES;
+    //virtual ~ComponentManager(){}
 
-    constexpr size_t UNDEFINED_MAP = static_cast<size_t>(-1);
-    // Initialize to INVALID ID
-    size_t* _entityIDmap;
-    //EntityID* _entityIDs;
-    size_t _numComponents;
+private:
+    // Denotes an undefined mapping
+    // This effectively limits the amount of components/entities
+    // to (2^16) - 1.
+    static constexpr uint16_t UNDEFINED_MAP = static_cast<uint16_t>(-1);
+
+    // Array mappings
+    // Systems should internally cache these to avoid
+    // d-cache misses due to their sparsity
+    uint16_t* _entityIDToComponent; // Initialize to UNDEFINED_MAP
+    EntityID* _componentToEntityID; // Initialize to UNDEFINED_MAP
+    uint16_t _numComponents;
     Component* _components;
 
     StackAllocator _stack;
 
     void addComponent(EntityID entityID) {
-        assert(_entityIDmap[entityID] == UNDEFINED MAP)
-        _entityIDmap[entityID] = _numComponents;
+        assert(_entityIDToComponent[entityID] == UNDEFINED_MAP);
+        _entityIDToComponent[entityID] = _numComponents;
+        _componentToEntityID[_numComponents] = entityID;
         _components[_numComponents] = Component();
         _numComponents++;
     }
 
     inline Component getComponent(EntityID entityID) {
-        size_t index = _mapping[entityID];
+        uint16_t index = _entityIDToComponent[entityID];
         assert(index != UNDEFINED_MAP);
         return _components[index];
     }
 
     void removeComponent(EntityID entityID) {
-        size_t index = _entityIDmap[entityID];
-        assert(index != UNDEFINED MAP)
-        _entityIDmap[index] = UNDEFINED_MAP;
+        uint16_t index = _entityIDToComponent[entityID];
+        assert(index != UNDEFINED_MAP);
+        _componentToEntityID[index] = UNDEFINED_MAP;
+        _entityIDToComponent[entityID] = UNDEFINED_MAP;
     }
 
     friend class EntityManager;
 };
+
+template<class T>
+const ComponentTypeID ComponentManager<T>::STATIC_COMPONENT_TYPE_ID = 
+                                    AbstractComponentManager::getID();
+
 
 #endif

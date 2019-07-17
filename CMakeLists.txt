@@ -4,12 +4,15 @@ project (prototype2)
 # Set C++ language version to C++11
 set (CMAKE_CXX_STANDARD 11)
 
+# Set debug mode
+set(CMAKE_BUILD_TYPE Debug)
+
 # Version number
 set (prototype2_VERSION_MAJOR 1)
 set (prototype2_VERSION_MINOR 0)
 
 # Memory allocation
-set (GLOBAL_MEMORY_ALLOCATION_MEGABYTES 64)
+set (ENTITY_MANAGER_STACK_SIZE_BYTES 1*1024*1024)
 
 # set paths
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -20,7 +23,7 @@ SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 # to the source code
 configure_file (
   "${PROJECT_SOURCE_DIR}/src/config/prototype2Config.h.in"
-  "${PROJECT_BINARY_DIR}/prototype2Config.h"
+  "${PROJECT_BINARY_DIR}/src/config/prototype2Config.h"
   )
  
 # add the binary tree to the search path for include files
@@ -37,6 +40,7 @@ file(GLOB SOURCES
     "src/config/*.cpp"
     "src/memory/*.cpp"
     "src/entity_component_system/component/*.cpp"
+    "src/entity_component_system/entity/*.cpp"
 )
 
 file(GLOB TESTSOURCES
@@ -55,7 +59,7 @@ find_package(Catch2 REQUIRED)
 # add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g)
 # link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 
