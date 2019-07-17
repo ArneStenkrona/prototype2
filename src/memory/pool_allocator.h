@@ -70,15 +70,15 @@ public:
 
 private:
     // Size of block.
-    const size_t _blockSize;
+    size_t _blockSize;
     // Data alignment.
-    const size_t _alignment;
+    size_t _alignment;
     // Number of blocks.
-    const size_t _numBlocks;
+    size_t _numBlocks;
     // Padding at the start of the memory
-    const size_t _initialPadding;
+    size_t _initialPadding;
     // Padding required for block alignment
-    const size_t _blockPadding;
+    size_t _blockPadding;
     // Number of free blocks
     size_t _numFreeBlocks;
 
