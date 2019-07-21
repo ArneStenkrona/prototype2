@@ -49,33 +49,12 @@ struct Vertex {
         
         return attributeDescriptions;
     }
-    
-    //bool operator==(const Vertex& other) const {
-    //    return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
-    //}
 };
-
-//namespace std {
-//    template<> struct hash<Vertex> {
-//        size_t operator()(Vertex const& vertex) const {
-//            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-//        }
-//    };
-//}
-
 
 class Mesh {
 public:
     void loadModel(char* path, Allocator& allocator);
-private:
-    /*
-    uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-    */
-    
+private:   
     size_t verticesSize;
     Vertex* vertices;
     size_t indicesSize;
