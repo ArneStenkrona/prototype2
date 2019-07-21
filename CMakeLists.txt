@@ -50,6 +50,7 @@ file(GLOB SOURCES
     "src/entity_component_system/component/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/graphics/vulkan/*.cpp"
+    "src/graphics/geometry/*.cpp"
 )
 
 file(GLOB TESTSOURCES
