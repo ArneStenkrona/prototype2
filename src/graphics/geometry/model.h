@@ -1,5 +1,5 @@
-#ifndef MESH_H
-#define MESH_H
+#ifndef MODEL_H
+#define MODEL_H
 
 #include "src/memory/allocator.h"
 #include "src/container/array.h"
@@ -64,9 +64,10 @@ struct Material {
 
 class Model {
 public:
-    Model(char* path, Allocator& allocator);
+    Model() {}
+    Model(const char* path, Allocator& allocator);
 private:   
-    ~Model() = delete;
+    //~Model() = delete;
 
     prt::array<Vertex> vertexBuffer;
     prt::array<uint32_t> indexBuffer;
@@ -79,7 +80,7 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     */
-
+   friend class VulkanApplication;
 };
 
 #endif

@@ -19,6 +19,11 @@ void countElements(FILE* file, size_t& numMesh, size_t& numVertex, size_t& numIn
         // Get next header
         res = fscanf(file, "%s%*[^\n]", lineHeader);
     }
+
+    if (numMesh == 0){
+        numMesh = 1;
+    }
+
     rewind(file);
 }
 
@@ -26,26 +31,33 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
                  prt::array<Vertex>& vertexBuffer, 
                  prt::array<uint32_t>& indexBuffer) {
 
+    // currently support 2^16 vertices
+    constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
+
+    // Temporary vertex buffer
+    Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
+    // Variables for counting
+    size_t meshCount = 0;
+    size_t vertexPosCount = 0;
+    size_t vertexNormalCount = 0;
+    size_t vertexTexCoordCount = 0;
+    size_t indicesCount = 0;
+
     // Parse the contents.
     char lineHeader[512];
     int res = fscanf(file, "%s", lineHeader);
-    while (res == EOF) {
+    while (res != EOF) {
         // read the first word of the line
         if (res == EOF) {
             break; // break when we've reached end of file
         }
 
-        // currently support 2^16 vertices
-        constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
-
-        // Temporary vertex buffer
-        Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
-
-        size_t meshCount = 0;
-        size_t vertexPosCount = 0;
-        size_t vertexNormalCount = 0;
-        size_t vertexTexCoordCount = 0;
-        size_t indicesCount = 0;
+        // An obj-file with a single object may not have
+        // a "o" header.
+        if (meshes.size() == 1) {
+            meshes[0].numIndices = indexBuffer.size();
+            meshes[0].startIndex = 0;
+        }
 
         if (strcmp(lineHeader, "o") == 0) {
             // Object.
@@ -94,28 +106,27 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
                 assert(false);
                 return;
             }
+            vertexBuffer[vertexIndex[0] - 1].pos = vertexBufferTemp[vertexIndex[0] - 1].pos;
+            vertexBuffer[vertexIndex[0] - 1].normal = vertexBufferTemp[normalIndex[0] - 1].normal;
+            vertexBuffer[vertexIndex[0] - 1].texCoord = vertexBufferTemp[uvIndex[0] - 1].texCoord;
 
-            vertexBuffer[vertexIndex[0]].pos = vertexBufferTemp[vertexIndex[0] - 1].pos;
-            vertexBuffer[vertexIndex[0]].normal = vertexBufferTemp[normalIndex[0] - 1].normal;
-            vertexBuffer[vertexIndex[0]].texCoord = vertexBufferTemp[uvIndex[0] - 1].texCoord;
+            vertexBuffer[vertexIndex[1] - 1].pos = vertexBufferTemp[vertexIndex[1] - 1].pos;
+            vertexBuffer[vertexIndex[1] - 1].normal = vertexBufferTemp[normalIndex[1] - 1].normal;
+            vertexBuffer[vertexIndex[2] - 1].texCoord = vertexBufferTemp[uvIndex[1] - 1].texCoord;
 
-            vertexBuffer[vertexIndex[1]].pos = vertexBufferTemp[vertexIndex[1] - 1].pos;
-            vertexBuffer[vertexIndex[1]].normal = vertexBufferTemp[normalIndex[1] - 1].normal;
-            vertexBuffer[vertexIndex[2]].texCoord = vertexBufferTemp[uvIndex[1] - 1].texCoord;
-
-            vertexBuffer[vertexIndex[2]].pos = vertexBufferTemp[vertexIndex[2] - 1].pos;
-            vertexBuffer[vertexIndex[2]].normal = vertexBufferTemp[normalIndex[2] - 1].normal;
-            vertexBuffer[vertexIndex[2]].texCoord = vertexBufferTemp[uvIndex[2] - 1].texCoord;
-
-            indexBuffer[indicesCount++] = vertexIndex[0];
-            indexBuffer[indicesCount++] = vertexIndex[1];
-            indexBuffer[indicesCount++] = vertexIndex[2];
+            vertexBuffer[vertexIndex[2] - 1].pos = vertexBufferTemp[vertexIndex[2] - 1].pos;
+            vertexBuffer[vertexIndex[2] - 1].normal = vertexBufferTemp[normalIndex[2] - 1].normal;
+            vertexBuffer[vertexIndex[2] - 1].texCoord = vertexBufferTemp[uvIndex[2] - 1].texCoord;
+            
+            indexBuffer[indicesCount++] = vertexIndex[0] - 1;
+            indexBuffer[indicesCount++] = vertexIndex[1] - 1;
+            indexBuffer[indicesCount++] = vertexIndex[2] - 1;
         }
         res = fscanf(file, "%s", lineHeader);
     }
 }
 
-Model::Model(char* path, Allocator& allocator) {
+Model::Model(const char* path, Allocator& allocator) {
     FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
