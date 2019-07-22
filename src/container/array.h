@@ -8,6 +8,7 @@ namespace prt {
     class array {
     public:
     array(): _arrayPointer(nullptr), _size(0) {}
+    //~array() = delete;
 
     array(Allocator& allocator, size_t size, size_t alignment = sizeof(T)) {
         _arrayPointer = static_cast<T*> 
@@ -32,6 +33,7 @@ namespace prt {
         }
 
         inline size_t size() const { return _size; }
+        inline void* data() const { return reinterpret_cast<void*>(_arrayPointer); }
     private:
         T* _arrayPointer;
         size_t _size; 
