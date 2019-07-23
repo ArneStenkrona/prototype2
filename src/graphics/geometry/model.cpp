@@ -1,47 +1,74 @@
 #include "model.h"
 
 #include <string>
+#include <iostream>
+#include <unordered_map>
 
-void countElements(FILE* file, size_t& numMesh, size_t& numVertex, size_t& numIndex) {
+// Helper function for counting meshes and indices in obj file.
+void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     char lineHeader[512];
     int res = fscanf(file, "%s%*[^\n]", lineHeader);
     // Count objects, vertices and indices.
     while (res != EOF) {
         // read a line and save only the first word
-
         if (strcmp(lineHeader, "o") == 0) {
             numMesh++;
         } else if (strcmp(lineHeader, "v") == 0) {
-            numVertex++;
+            //numVertex++;
         } else if (strcmp(lineHeader, "f") == 0) {
+            // We assume that each face is a triangle
             numIndex += 3;
         }
         // Get next header
         res = fscanf(file, "%s%*[^\n]", lineHeader);
     }
 
-    if (numMesh == 0){
-        numMesh = 1;
-    }
+    numMesh = numMesh == 0 ? 1 : numMesh;
 
     rewind(file);
 }
 
-void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
-                 prt::array<Vertex>& vertexBuffer, 
-                 prt::array<uint32_t>& indexBuffer) {
+Model::Model(const char* path, Allocator& allocator) {
+    FILE* file = fopen(path, "r");
+    if (file == nullptr) {
+        printf("Could not open file '");
+        printf("%s", path);
+        printf("'!\n");
+        assert(false);
+        return;
+    }
 
-    // currently support 2^16 vertices
+    size_t numMesh = 0;
+    size_t numIndex = 0;
+
+   countAttributes(file, numMesh, numIndex);
+    
+    meshes = prt::array<Mesh>(allocator, numMesh, sizeof(size_t));
+    indexBuffer = prt::array<uint32_t>(allocator, numIndex, sizeof(uint32_t));
+
+    // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
 
     // Temporary vertex buffer
     Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {}; 
+
     // Variables for counting
     size_t meshCount = 0;
+    // These are for the temps
     size_t vertexPosCount = 0;
     size_t vertexNormalCount = 0;
     size_t vertexTexCoordCount = 0;
-    size_t indicesCount = 0;
+    // these are for when inserting into the models buffers
+    size_t vertexCount = 0;
+    size_t indexCount = 0;
+
+    // An obj-file with a single object may not have
+    // an "o" header.
+    if (meshes.size() == 1) {
+        meshes[0].numIndices = indexBuffer.size();
+        meshes[0].startIndex = 0;
+    }
 
     // Parse the contents.
     char lineHeader[512];
@@ -52,13 +79,6 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
             break; // break when we've reached end of file
         }
 
-        // An obj-file with a single object may not have
-        // a "o" header.
-        if (meshes.size() == 1) {
-            meshes[0].numIndices = indexBuffer.size();
-            meshes[0].startIndex = 0;
-        }
-
         if (strcmp(lineHeader, "o") == 0) {
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);
@@ -67,14 +87,14 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
                 meshes[meshCount].startIndex = 
                     meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
                 meshes[meshCount - 1].numIndices = 
-                    indicesCount - meshes[meshCount - 1].startIndex;
+                    indexCount - meshes[meshCount - 1].startIndex;
             } else {
                 meshes[meshCount].startIndex = 0;
             }
             // This will be overwritten unless we've reached
             // the final mesh.
             meshes[meshCount].numIndices = 
-                indicesCount - indexBuffer.size();
+                indexCount - indexBuffer.size();
 
             meshCount++;
 
@@ -92,10 +112,11 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
             // Parse vertex texture coordinate.
             glm::vec2& texCoord = vertexBufferTemp[vertexTexCoordCount].texCoord;
             fscanf(file, "%f %f\n", &texCoord.x, &texCoord.y );
+            // OBJ and Vulkan have relative flipped y axis for textures
+            texCoord.y = 1.0f - texCoord.y;
             vertexTexCoordCount++;
         } else if (strcmp(lineHeader, "f") == 0) {
             // Parse face.
-            std::string vertex1, vertex2, vertex3;
             unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
             int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", 
                                  &vertexIndex[0], &uvIndex[0], &normalIndex[0], 
@@ -106,44 +127,35 @@ void fillBuffers(FILE* file, prt::array<Mesh>& meshes,
                 assert(false);
                 return;
             }
-            vertexBuffer[vertexIndex[0] - 1].pos = vertexBufferTemp[vertexIndex[0] - 1].pos;
-            vertexBuffer[vertexIndex[0] - 1].normal = vertexBufferTemp[normalIndex[0] - 1].normal;
-            vertexBuffer[vertexIndex[0] - 1].texCoord = vertexBufferTemp[uvIndex[0] - 1].texCoord;
 
-            vertexBuffer[vertexIndex[1] - 1].pos = vertexBufferTemp[vertexIndex[1] - 1].pos;
-            vertexBuffer[vertexIndex[1] - 1].normal = vertexBufferTemp[normalIndex[1] - 1].normal;
-            vertexBuffer[vertexIndex[2] - 1].texCoord = vertexBufferTemp[uvIndex[1] - 1].texCoord;
+            Vertex vertices[3] = {
+                { vertexBufferTemp[vertexIndex[0] - 1].pos,
+                  vertexBufferTemp[normalIndex[0] - 1].normal,
+                  vertexBufferTemp[uvIndex[0] - 1].texCoord },
 
-            vertexBuffer[vertexIndex[2] - 1].pos = vertexBufferTemp[vertexIndex[2] - 1].pos;
-            vertexBuffer[vertexIndex[2] - 1].normal = vertexBufferTemp[normalIndex[2] - 1].normal;
-            vertexBuffer[vertexIndex[2] - 1].texCoord = vertexBufferTemp[uvIndex[2] - 1].texCoord;
-            
-            indexBuffer[indicesCount++] = vertexIndex[0] - 1;
-            indexBuffer[indicesCount++] = vertexIndex[1] - 1;
-            indexBuffer[indicesCount++] = vertexIndex[2] - 1;
-        }
+                { vertexBufferTemp[vertexIndex[1] - 1].pos,
+                  vertexBufferTemp[normalIndex[1] - 1].normal,
+                  vertexBufferTemp[uvIndex[1] - 1].texCoord },
+
+                { vertexBufferTemp[vertexIndex[2] - 1].pos,
+                  vertexBufferTemp[normalIndex[2] - 1].normal,
+                  vertexBufferTemp[uvIndex[2] - 1].texCoord }
+            };
+
+            for (unsigned int i = 0; i < 3; i++) {
+                if (uniqueVertices.count(vertices[i]) == 0) {
+                    uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
+                }
+                indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
+            }        
+        }     
         res = fscanf(file, "%s", lineHeader);
     }
-}
-
-Model::Model(const char* path, Allocator& allocator) {
-    FILE* file = fopen(path, "r");
-    if (file == nullptr) {
-        printf("Could not open file '");
-        printf("%s", path);
-        printf("'!\n");
-        assert(false);
-        return;
-    }
-
-    size_t numMesh = 0;
-    size_t numVertex = 0;
-    size_t numIndex = 0;
-    countElements(file, numMesh, numVertex, numIndex);
-
-    meshes = prt::array<Mesh>(allocator, numMesh, sizeof(size_t));
+    size_t numVertex = uniqueVertices.size();
     vertexBuffer = prt::array<Vertex>(allocator, numVertex, 4 * sizeof(float));
-    indexBuffer = prt::array<uint32_t>(allocator, numIndex, sizeof(uint32_t));
-
-    fillBuffers(file, meshes, vertexBuffer, indexBuffer);
+    
+    indexCount = 0;
+    for (auto const& [vert, ind] : uniqueVertices) {
+        vertexBuffer[ind] = vert;
+    }
 }
