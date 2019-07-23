@@ -21,6 +21,9 @@ struct Vertex {
     glm::vec3 normal;
     glm::vec2 texCoord;
     
+    /**
+     * @return vulkan binding description
+     */
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
@@ -30,6 +33,9 @@ struct Vertex {
         return bindingDescription;
     }
     
+    /**
+     * @return vulkan attribute description
+     */
     static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
         std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
         
@@ -76,10 +82,19 @@ struct Material {
 
 class Model {
 public:
+    /**
+     * Initializes an empty model.
+     */
     Model() {}
+
+    /**
+     * Loads a model from a path.
+     * @param path path to .obj file.
+     * @param allocator allocator for buffers
+     */
     Model(const char* path, Allocator& allocator);
+    
 private:   
-    //~Model() = delete;
 
     prt::array<Vertex> vertexBuffer;
     prt::array<uint32_t> indexBuffer;
