@@ -79,7 +79,6 @@ struct Material {
     /* TODO: Add members */
 };
 
-
 class Model {
 public:
     /**
@@ -93,7 +92,7 @@ public:
      * @param allocator allocator for buffers
      */
     Model(const char* path, Allocator& allocator);
-    
+
 private:   
 
     prt::array<Vertex> vertexBuffer;
