@@ -1,7 +1,5 @@
 #include "model.h"
 
-#include <string>
-#include <iostream>
 #include <unordered_map>
 
 // Helper function for counting meshes and indices in obj file.
