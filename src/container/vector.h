@@ -9,9 +9,11 @@ namespace prt
     class vector {
     public:
         vector()
-        : _allocator(ContainerAllocator::getDefaultContainerAllocator) {}
+        : vector(ContainerAllocator::getDefaultContainerAllocator) {}
+
         vector(ContainerAllocator& allocator)
-        : _allocator(allocator) {}
+        : _allocator(allocator), _vectorPointer(nullptr),
+          _numberOfElements(0), _capacity(0) {}
 
         T operator [](size_t index) const { 
             assert(index < _size);
@@ -23,8 +25,36 @@ namespace prt
             return _vectorPointer[index];
         }
 
-        void push_back(T t);
-        void push_front();
+        void push_back(const T& t) {
+            if (_numberOfElements = _capacity) {
+                _capacity *= CAPACITY_INCREASE_CONSTANT;
+                reserve(_capacity);
+            }
+
+            _vectorPointer[_numberOfElements] = t;
+            _numberOfElements++;
+        }
+
+        void pop_back() {
+            _numberOfElements--;
+        }
+
+        void reserve(size_t capacity) {
+            if (capacity <= _capacity) {
+                return;
+            }
+            
+            T* newPointer = _allocator.allocate(capacity * sizeof(T),
+                                                sizeof(T));
+
+            if (_vectorPointer != nullptr) {
+                std::copy(_vectorPointer, _vectorPointer + _numberOfElements,
+                          newPointer);
+            }
+            
+            _capacity = capacity;
+            _vectorPointer = newPointer;
+        }
 
         inline T& front() const { return vectorStart[0]; }
         inline T& back() const { return vectorStart[numberOfElements - 1]; }
@@ -33,6 +63,7 @@ namespace prt
         inline void* data() const { return reinterpret_cast<void*>(_vectorPointer); }
 
     private:
+        constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
         // start of vector.
         T* _vectorPointer;
         // Number of elements currently in vector
