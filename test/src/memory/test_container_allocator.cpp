@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+/* TODO: ADD TESTING FOR ALLOCATIONS LARGER THAN 1 BLOCK */
 TEST_CASE( "Test allocation", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
