@@ -1,32 +1,6 @@
 #include "pool_allocator.h"
 
-#include <cassert>
-
-/**
- * Helper function for constructor.
- * Calculates padding given a memory pointer
- * and desired alignment.
- */ 
-size_t calcPadding(uintptr_t memoryPointer, size_t alignment){
-    assert(alignment >= 1);
-    assert(alignment <= 128);
-    assert((alignment & (alignment - 1)) == 0); // verify power of 2
-
-    // cast so we can perform arithmetic on stack pointer
-    //uintptr_t sPtr = reinterpret_cast<uintptr_t>(_memoryPointer);
-
-    // Allocate unaligned block & convert address to uintptr_t.
-    uintptr_t rawAdress = reinterpret_cast<uintptr_t>(memoryPointer);//reinterpret_cast<uintptr_t>(sPtr + _stackMarker);
-
-    // Calculate the adjustment by masking off the lower bits
-    // of the address, to determine how "misaligned" it is.
-    size_t mask = (alignment - 1);
-    size_t misalignment = (rawAdress & mask);
-    // We don't need to store any meta-information
-    //size_t adjustment = alignment - misalignment;
-
-    return misalignment;
-}
+#include "memory_util.h"
 
 /**
  * Helper function for constructor.
@@ -38,9 +12,9 @@ size_t calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,
     assert(alignment <= blockSize);
     assert(blockSize <= memorySizeBytes);
 
-    size_t padding = calcPadding(memoryPointer, alignment);
+    size_t padding = prt::memory_util::calcPadding(memoryPointer, alignment);
 
-    size_t effectiveBlockSize = blockSize + calcPadding(reinterpret_cast<uintptr_t>(blockSize),
+    size_t effectiveBlockSize = blockSize + prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockSize),
                                             alignment);
 
     size_t effectiveMemorySize = reinterpret_cast<uintptr_t>(memorySizeBytes) -
@@ -56,8 +30,8 @@ PoolAllocator::PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
                               _blockSize(blockSize), _alignment(alignment),
                               _numBlocks(calcNumBlocks(_memoryPointer, _memorySizeBytes,
                                                        _blockSize, _alignment)),
-                              _initialPadding(calcPadding(_memoryPointer, alignment)),
-                              _blockPadding(calcPadding(reinterpret_cast<uintptr_t>(blockSize),
+                              _initialPadding(prt::memory_util::calcPadding(_memoryPointer, alignment)),
+                              _blockPadding(prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockSize),
                                                         alignment)),
                               _numFreeBlocks(_numBlocks),
                               _freeQueueHead(_memoryPointer + _initialPadding) {
