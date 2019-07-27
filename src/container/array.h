@@ -1,3 +1,6 @@
+#ifndef PRT_ARRAY_H
+#define PRT_ARRAY_H
+
 #include "src/memory/allocator.h"
 
 #include <cstdint>
@@ -39,3 +42,5 @@ namespace prt {
         size_t _size; 
     };
 }
+
+#endif
