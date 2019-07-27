@@ -28,7 +28,7 @@ TEST_CASE( "Test pool allocation", "[pool_allocator]" ) {
 
     REQUIRE(allocator.getNumberOfFreeBlocks() == 0);
 
-      for (uint32_t i = 0; i < numBlocks; i++) {
+    for (uint32_t i = 0; i < numBlocks; i++) {
         for (uint32_t j = 0; j < 4; j++){ 
             REQUIRE(integers[i][j] == i * i + j * j);
         }
