@@ -5,6 +5,8 @@
 
 #include <string.h>
 
+#include <iostream>
+
 size_t prt::ContainerAllocator::calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,
                             size_t blockSize, size_t alignment) {
     assert(alignment <= blockSize);
@@ -36,8 +38,10 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
                                                       alignment)),
                           _numFreeBlocks(_numBlocks) {
     assert(alignment > 0);
-    assert(alignment < blockSize);
+    assert(alignment <= blockSize);
+    assert(alignment <= 128);
     assert(blockSize % alignment == 0);
+    assert((alignment & (alignment - 1)) == 0); // verify power of 2
 
     uintptr_t memPtr = reinterpret_cast<uintptr_t>(memoryPointer);
     _blocks = reinterpret_cast<size_t*>(memPtr + memorySizeBytes - (_numBlocks * sizeof(size_t)));
@@ -48,35 +52,47 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
 }
 
 void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
-    assert(alignment < _blockSize);
+    assert(alignment <= _blockSize);
+    assert(alignment >= 1);
+    assert(alignment <= 128);
+    assert((alignment & (alignment - 1)) == 0); // verify power of 2
+
     // Make sure to round up.
-    size_t blocks = ((sizeBytes + alignment) + (_blockSize - 1)) / _blockSize;
+    size_t blocks =  alignment <= _alignment ? 
+        (sizeBytes + (_blockSize - 1)) / _blockSize :
+        ((sizeBytes + alignment) + (_blockSize - 1)) / _blockSize;
 
     uintptr_t blockPointer = reinterpret_cast<uintptr_t>(allocate(blocks));
     size_t padding = prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockPointer),
                                  alignment);
     void* mem = reinterpret_cast<void*>(blockPointer + padding);
+
     return mem;
 }
 
 void prt::ContainerAllocator::free(void* pointer) {
     size_t blockIndex = pointerToBlockGroupIndex(pointer);
 
+    _numFreeBlocks += _blocks[blockIndex];
+
     _blocks[blockIndex] = 0;
 }
 
+void prt::ContainerAllocator::clear() {
+    for (unsigned int i = 0; i < _numBlocks; i++) {
+        _blocks[i] = 0;
+    }
+    _numFreeBlocks = _numBlocks;
+}
+
 void* prt::ContainerAllocator::allocate(size_t blocks) {
-    assert(blocks > 0 && blocks <= _numBlocks);
+    assert(blocks > 0);
+    assert(blocks <= _numBlocks);
     assert(_numFreeBlocks >= blocks);
     // Find suitable range of blocks. O(n)
     size_t blockIndex = 0;
     size_t blocksInARow = 0;
-    while (blockIndex < _numBlocks) {
-        if (blocksInARow == blocks) {
-            _blocks[blockIndex + 1 - blocks] = blocks;
-            return blockIndexToPointer(blockIndex);
-        }
-
+    do {
         if (_blocks[blockIndex] == 0) {
             blocksInARow++;
             blockIndex++;
@@ -84,7 +100,15 @@ void* prt::ContainerAllocator::allocate(size_t blocks) {
             blocksInARow = 0;
             blockIndex += _blocks[blockIndex];
         }
-    }
+
+        if (blocksInARow == blocks) {
+            _blocks[blockIndex - blocks] = blocks;
+
+            _numFreeBlocks -= blocks; 
+            
+            return blockIndexToPointer(blockIndex - blocks);
+        }
+    } while (blockIndex < _numBlocks);
 
     assert(false);
     return nullptr;

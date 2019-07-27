@@ -15,11 +15,17 @@ namespace prt {
 
         void free(void* pointer);
 
+        void clear();
+
         static inline ContainerAllocator& getDefaultContainerAllocator() {
             return defaultContainerAllocator;
         }
 
         inline size_t getAlignment() const { return _alignment; }
+
+        inline size_t getNumberOfBlocks() const { return _numBlocks; }
+
+        inline size_t getNumberOfFreeBlocks() const { return _numFreeBlocks; }
 
     private:
         static ContainerAllocator defaultContainerAllocator;
@@ -41,7 +47,7 @@ namespace prt {
             uintptr_t memStart = reinterpret_cast<uintptr_t>(_memoryPointer) + 
                                 _initialPadding;
 
-            assert(ptr > memStart);
+            assert(ptr >= memStart);
 
             uintptr_t diff = ptr - memStart;
             
