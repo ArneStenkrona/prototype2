@@ -38,6 +38,7 @@ public:
      * @param memoryPointer pointer to the first memory address
      *        of the allocator
      * @param memorySizeBytes size of memory in bytes
+     * @param blockSize size of block in bytes
      * @param alignment aligment in bytes
      */
     explicit PoolAllocator(void* memoryPointer, size_t memorySizeBytes,
