@@ -12,17 +12,17 @@ namespace prt
         : vector(ContainerAllocator::getDefaultContainerAllocator()) {}
 
         vector(ContainerAllocator& allocator)
-        : _allocator(allocator), _vectorPointer(nullptr),
+        : _allocator(allocator), _data(nullptr),
           _size(0), _capacity(0) {}
 
         T operator [](size_t index) const { 
             assert(index < _size);
-            return _vectorPointer[index];
+            return _data[index];
         }
 
         T & operator [](size_t index) {
             assert(index < _size);
-            return _vectorPointer[index];
+            return _data[index];
         }
 
         void push_back(const T& t) {
@@ -32,7 +32,7 @@ namespace prt
                 reserve(newCapacity);
             }
 
-            _vectorPointer[_size] = t;
+            _data[_size] = t;
             _size++;
         }
 
@@ -44,7 +44,7 @@ namespace prt
             if (size > _size) {
                 reserve(size);
                 for (size_t i = _size; i < size; i++) {
-                    _vectorPointer[i] = T();
+                    _data[i] = T();
                 }
                 _size = size;
             }
@@ -58,26 +58,30 @@ namespace prt
             T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
                                                 sizeof(T)));
 
-            if (_vectorPointer != nullptr) {
-                std::copy(_vectorPointer, _vectorPointer + _size,
+            if (_data != nullptr) {
+                std::copy(_data, _data + _size,
                           newPointer);
             }
             
             _capacity = capacity;
-            _vectorPointer = newPointer;
+            _data = newPointer;
         }
 
-        inline T& front() const { return _vectorPointer[0]; }
-        inline T& back() const { return _vectorPointer[_size - 1]; }
+        inline T& front() const { return _data[0]; }
+        inline T& back() const { return _data[_size - 1]; }
 
         inline size_t size() const { return _size; }
         inline size_t capacity() const { return _capacity; }
-        inline void* data() const { return reinterpret_cast<void*>(_vectorPointer); }
+        inline T* data() const { return reinterpret_cast<void*>(_data); }
+
+        inline const T* begin() const { return _data; }
+
+        inline const T* end() const { return _data + _size; }
 
     private:
         static constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
         // start of vector.
-        T* _vectorPointer;
+        T* _data;
         // Number of elements currently in vector
         size_t _size;
         // Buffer size in bytes.
