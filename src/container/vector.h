@@ -9,11 +9,11 @@ namespace prt
     class vector {
     public:
         vector()
-        : vector(ContainerAllocator::getDefaultContainerAllocator) {}
+        : vector(ContainerAllocator::getDefaultContainerAllocator()) {}
 
         vector(ContainerAllocator& allocator)
         : _allocator(allocator), _vectorPointer(nullptr),
-          _numberOfElements(0), _capacity(0) {}
+          _size(0), _capacity(0) {}
 
         T operator [](size_t index) const { 
             assert(index < _size);
@@ -26,17 +26,28 @@ namespace prt
         }
 
         void push_back(const T& t) {
-            if (_numberOfElements = _capacity) {
-                _capacity *= CAPACITY_INCREASE_CONSTANT;
-                reserve(_capacity);
+            if (_size >= _capacity) {
+                size_t newCapacity = _capacity * CAPACITY_INCREASE_CONSTANT;
+                newCapacity = newCapacity == 0 ? 1 : newCapacity;
+                reserve(newCapacity);
             }
 
-            _vectorPointer[_numberOfElements] = t;
-            _numberOfElements++;
+            _vectorPointer[_size] = t;
+            _size++;
         }
 
         void pop_back() {
-            _numberOfElements--;
+            _size--;
+        }
+
+        void resize(size_t size) {
+            if (size > _size) {
+                reserve(size);
+                for (size_t i = _size; i < size; i++) {
+                    _vectorPointer[i] = T();
+                }
+                _size = size;
+            }
         }
 
         void reserve(size_t capacity) {
@@ -44,11 +55,11 @@ namespace prt
                 return;
             }
             
-            T* newPointer = _allocator.allocate(capacity * sizeof(T),
-                                                sizeof(T));
+            T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
+                                                sizeof(T)));
 
             if (_vectorPointer != nullptr) {
-                std::copy(_vectorPointer, _vectorPointer + _numberOfElements,
+                std::copy(_vectorPointer, _vectorPointer + _size,
                           newPointer);
             }
             
@@ -56,18 +67,18 @@ namespace prt
             _vectorPointer = newPointer;
         }
 
-        inline T& front() const { return vectorStart[0]; }
-        inline T& back() const { return vectorStart[numberOfElements - 1]; }
+        inline T& front() const { return _vectorPointer[0]; }
+        inline T& back() const { return _vectorPointer[_size - 1]; }
 
-        inline size_t size() const { return _numberOfElement; }
+        inline size_t size() const { return _size; }
         inline void* data() const { return reinterpret_cast<void*>(_vectorPointer); }
 
     private:
-        constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
+        static constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
         // start of vector.
         T* _vectorPointer;
         // Number of elements currently in vector
-        size_t _numberOfElements;
+        size_t _size;
         // Buffer size in bytes.
         size_t _capacity;
 
