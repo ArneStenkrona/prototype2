@@ -22,8 +22,13 @@ namespace prt {
     public:
         struct iterator;
 
+        HashTable()
+        : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
+
         HashTable(ContainerAllocator& allocator) 
-            : _vector(allocator) {}
+            : _vector(allocator) {
+                _vector.resize(1);
+            }
         
         void insert(const K& key, const V& value) {
             if (2 * _size > _vector.capacity()) {
@@ -33,7 +38,7 @@ namespace prt {
             size_t ind = hashIndex(key);
 
             while(_vector[ind].present && _vector[ind].key != key) {
-                ind = ind == _vector.size - 1 ? 0 : ind + 1;
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
             if (!_vector[ind].present) {
@@ -62,18 +67,17 @@ namespace prt {
             while(_vector[ind].present && counter < _vector.size()) {
                 
                 if (_vector[ind].key == key) {
-                    return iterator(&_vector[ind].value, _vector.end());
+                    return iterator(&_vector[ind], _vector.end());
                 }
 
-                ind = ind == _vector.size - 1 ? 0 : ind + 1;
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 counter++;
             }
             return end();
         }
 
-        struct iterator {
-            HashNode<K, V>* _current;
-            HashNode<K, V>* _end;            
+        class iterator {
+        public:        
             iterator(HashNode<K, V>* current, HashNode<K, V>* end)
             : _current(current), _end(end) {}
 
@@ -92,16 +96,20 @@ namespace prt {
                 return result;
             }
             HashNode<K, V>& operator*() { return &_current; }
+            HashNode<K, V>* operator->() { return _current; }
+        private:
+            HashNode<K, V>* _current;
+            HashNode<K, V>* _end;    
         };
         
-        const iterator begin() {
+        iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
                 if (_vector[i].present) {
                     return iterator(&_vector[i], _vector.end());
                 }
             }
         }
-        const iterator end() {
+        iterator end() {
             return iterator(_vector.end(), _vector.end());
         }
 
@@ -111,7 +119,7 @@ namespace prt {
         // number of key value pairs in table
         size_t _size;
 
-        inline size_t hashIndex(K key) const { return hash(key) % _vector.size(); }
+        inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
 
         
     };
