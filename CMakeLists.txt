@@ -42,13 +42,15 @@ file(GLOB SOURCES
     "src/main/*.cpp"
     "src/config/*.cpp"
     "src/memory/*.cpp"
+    "src/container/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/entity_component_system/entity/*.cpp"
 )
 
 file(GLOB TESTSOURCES
   "test/src/prt_test.cpp"
-  "test/src//memory/*.cpp"
+  "test/src/memory/*.cpp"
+  "test/src/container/*.cpp"
 )
 
 # add libraries
