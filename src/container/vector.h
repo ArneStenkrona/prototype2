@@ -71,6 +71,7 @@ namespace prt
         inline T& back() const { return _vectorPointer[_size - 1]; }
 
         inline size_t size() const { return _size; }
+        inline size_t capacity() const { return _capacity; }
         inline void* data() const { return reinterpret_cast<void*>(_vectorPointer); }
 
     private:
