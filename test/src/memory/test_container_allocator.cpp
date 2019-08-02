@@ -3,6 +3,8 @@
 #include <catch2/catch.hpp>
 
 #include <iostream>
+#include <algorithm>
+#include <unordered_set>
 
 /* TODO: ADD TESTING FOR ALLOCATIONS LARGER THAN 1 BLOCK */
 TEST_CASE( "Test allocation", "[container_allocator]" ) {
@@ -34,6 +36,81 @@ TEST_CASE( "Test allocation", "[container_allocator]" ) {
     for (uint32_t i = 0; i < numBlocks; i++) {
         for (uint32_t j = 0; j < 4; j++){ 
             REQUIRE(integers[i][j] == i * i + j * j);
+        }
+    }
+}
+
+TEST_CASE( "Test variable length allocation", "[container_allocator]") {
+    constexpr size_t bytes = 1000;
+
+    constexpr size_t blocksize = 4 * sizeof(uint32_t);
+    constexpr size_t alignment = sizeof(uint32_t);
+
+    // number of blocks without considering allocator padding
+    constexpr size_t estimatedNumBlocks = bytes / blocksize;
+
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(malloc(bytes), bytes, blocksize, alignment);
+
+    size_t numBlocks = allocator.getNumberOfBlocks();
+
+    uint32_t* ints1;
+    uint32_t* ints2[2]; // array of 2
+    uint32_t* ints3[3]; // array of 3
+    uint32_t* ints4[4]; // array of 4
+
+    std::unordered_set<uint32_t*> uniquePointers;
+
+    for (size_t i = 0; i < 4; i++) {
+        if (i < 1) {
+        ints1 = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        REQUIRE(uniquePointers.find(ints1) == uniquePointers.end());
+        uniquePointers.insert(ints1);
+            for (size_t j = 0; j < 4; j++) {
+                ints1[j] = i * j + i + j;
+            }
+        }
+        if (i < 2) {
+        ints2[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        REQUIRE(uniquePointers.find(ints2[i]) == uniquePointers.end());
+        uniquePointers.insert(ints2[i]);
+            for (size_t j = 0; j < 4; j++) {
+                ints2[i][j] = i * j + i + j;
+            } 
+        }
+        if (i < 3) {
+        ints3[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        REQUIRE(uniquePointers.find(ints3[i]) == uniquePointers.end());
+        uniquePointers.insert(ints3[i]);
+            for (size_t j = 0; j < 4; j++) {
+                ints3[i][j] = i * j + i + j;
+            }
+        }
+        ints4[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        REQUIRE(uniquePointers.find(ints4[i]) == uniquePointers.end());
+        uniquePointers.insert(ints4[i]);
+        for (size_t j = 0; j < 4; j++) {
+            ints4[i][j] = i * j + i + j;
+        }
+    }
+
+    for (size_t i = 0; i < 4; i++) {
+        if (i < 1) {
+            for (size_t j = 0; j < 4; j++) {
+                REQUIRE(ints1[j] == i * j + i + j);
+            }
+        }
+        if (i < 2) {
+            for (size_t j = 0; j < 4; j++) {
+                REQUIRE(ints2[i][j] == i * j + i + j);
+            } 
+        }
+        if (i < 3) {
+            for (size_t j = 0; j < 4; j++) {
+                REQUIRE(ints3[i][j] == i * j + i + j);
+            }
+        }
+        for (size_t j = 0; j < 4; j++) {
+            REQUIRE(ints4[i][j] == i * j + i + j);
         }
     }
 }
