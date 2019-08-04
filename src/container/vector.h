@@ -14,8 +14,8 @@ namespace prt
         : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {}
 
         vector(ContainerAllocator& allocator, size_t alignment = 1)
-        : _allocator(allocator), _data(nullptr), _size(0), _capacity(0),
-          _alignment(alignment) {}
+        : _data(nullptr), _size(0), _capacity(0),
+          _alignment(alignment), _allocator(allocator) {}
 
         ~vector() {
             _allocator.free(_data);
@@ -82,7 +82,7 @@ namespace prt
 
         inline size_t size() const { return _size; }
         inline size_t capacity() const { return _capacity; }
-        inline T* data() const { return reinterpret_cast<void*>(_data); }
+        inline T* data() const { return _data; }
 
         inline T* begin() const { return _data; }
         inline T* end() const { return _data + _size; }
