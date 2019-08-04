@@ -41,7 +41,7 @@ namespace prt {
         inline T* data() const { return _data; }
 
         inline T* begin() const { return _data; }
-        inline T* end() const { return _data + _size; }
+        inline T* end() const { return &_data[_size]; }
     private:
         T* _data;
         size_t _size; 

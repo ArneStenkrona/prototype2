@@ -58,6 +58,13 @@ namespace prt
             }
         }
 
+        void clear() {
+            _allocator.free(_data);
+            _data = nullptr;
+            _size = 0;
+            _capacity = 0;
+        }
+
         void reserve(size_t capacity) {
             if (capacity <= _capacity) {
                 return;
@@ -87,7 +94,7 @@ namespace prt
         inline T* data() const { return _data; }
 
         inline T* begin() const { return _data; }
-        inline T* end() const { return _data + _size; }
+        inline T* end() const { return &_data[_size]; }
 
     private:
         // Capacity increase when size exceeds capacity
