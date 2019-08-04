@@ -20,7 +20,7 @@ namespace prt {
     template<typename K, typename V>
     class HashTable {
     public:
-        struct iterator;
+        class iterator;
 
         HashTable()
         : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
@@ -71,9 +71,9 @@ namespace prt {
             }
 
             if (!_vector[ind].present) {
+                _vector[ind] = HashNode<K, V>(key, V());
                 _size++;
             }
-            _vector[ind] = HashNode<K, V>(key, V());
             return _vector[ind].value;
         }
 
