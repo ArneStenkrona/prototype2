@@ -1017,10 +1017,7 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32
 }
     
 void VulkanApplication::loadModel() {
-    size_t bytes = 1 * 1024 * 1024;
-    StackAllocator allocator(malloc(bytes), bytes);
-    model = Model("/Users/arnestenkrona/Documents/Repositories/prototype2/res/models/example.obj",
-                 allocator);
+    model.load("/Users/arnestenkrona/Documents/Repositories/prototype2/res/models/example.obj");
 }
     
 void VulkanApplication::createVertexBuffer() {
