@@ -59,6 +59,10 @@ struct Vertex {
     bool operator==(const Vertex& other) const {
         return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
     }
+
+    bool operator!=(const Vertex& other) const {
+        return !(*this == other);
+    }
 };
 
 namespace std {
