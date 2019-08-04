@@ -5,7 +5,10 @@
 TEST_CASE( "Test hash table", "[hash_table]") {
     prt::HashTable<uint32_t, uint32_t> table;
 
-    table.insert(5, 4);
-
-    REQUIRE(table.find(5)->value == 4);
+    for (uint32_t i = 0; i < 1000; i++) {
+        table.insert(i, i * i - i);
+    }
+    for (uint32_t i = 0; i < 1000; i++) {
+        REQUIRE(table.find(i)->value == i * i - i);
+    }
 }
