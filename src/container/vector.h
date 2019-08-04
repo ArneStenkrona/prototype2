@@ -3,7 +3,6 @@
 
 #include "src/memory/container_allocator.h"
 
-// TODO: Give control over alignment
 namespace prt
 {
     template<class T>
@@ -16,9 +15,9 @@ namespace prt
             _allocator.free(_data);
         }
 
-        vector(ContainerAllocator& allocator)
-        : _allocator(allocator), _data(nullptr),
-          _size(0), _capacity(0) {}
+        vector(ContainerAllocator& allocator, size_t alignment = 1)
+        : _allocator(allocator), _data(nullptr), _size(0), _capacity(0),
+          _alignment(alignment) {}
 
         T operator [](size_t index) const { 
             assert(index < _size);
@@ -61,7 +60,7 @@ namespace prt
             }
 
             T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
-                                                1));
+                                                _alignment));
 
             if (_data != nullptr) {
                 std::copy(_data, _data + _size,
@@ -84,18 +83,19 @@ namespace prt
         inline T* data() const { return reinterpret_cast<void*>(_data); }
 
         inline T* begin() const { return _data; }
-
         inline T* end() const { return _data + _size; }
 
     private:
+        // Capacity increase when size exceeds capacity
         static constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
-        // start of vector.
+        // Start of vector.
         T* _data;
         // Number of elements currently in vector
         size_t _size;
         // Buffer size in bytes.
         size_t _capacity;
-
+        // Alignment
+        size_t _alignment;
         // Allocator
         ContainerAllocator& _allocator;
     };
