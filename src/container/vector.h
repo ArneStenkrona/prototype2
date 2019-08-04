@@ -8,7 +8,9 @@ namespace prt
     template<class T>
     class vector {
     public:
-        vector(size_t alignment = 1)
+        vector(): vector(ContainerAllocator::getDefaultContainerAllocator(), 1) {}
+        
+        vector(size_t alignment)
         : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {}
 
         vector(ContainerAllocator& allocator, size_t alignment = 1)
