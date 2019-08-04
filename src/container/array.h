@@ -9,9 +9,7 @@
 namespace prt {
     template <typename T>
     class array {
-    public:
-        array(): array(ContainerAllocator::getDefaultContainerAllocator(), 0) {}
-        
+    public:        
         array(size_t size, size_t alignment = 1)
         : array(ContainerAllocator::getDefaultContainerAllocator(), size, alignment) {}
 
