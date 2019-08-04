@@ -11,4 +11,12 @@ TEST_CASE( "Test hash table", "[hash_table]") {
     for (uint32_t i = 0; i < 1000; i++) {
         REQUIRE(table.find(i)->value == i * i - i);
     }
+    prt::HashTable<uint32_t, uint32_t> table2;
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        table2[i] = i * i - i;
+    }
+    for (uint32_t i = 0; i < 1000; i++) {
+        REQUIRE(table2.find(i)->value == i * i - i);
+    }
 }

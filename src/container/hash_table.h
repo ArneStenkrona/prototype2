@@ -59,6 +59,24 @@ namespace prt {
             }
         }
 
+        V & operator [](const K& key) {
+            if (2 * _size > _vector.capacity()) {
+                _vector.resize(2 * _vector.capacity());
+            }
+            
+            size_t ind = hashIndex(key);
+
+            while(_vector[ind].present && _vector[ind].key != key) {
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            }
+
+            if (!_vector[ind].present) {
+                _size++;
+            }
+            _vector[ind] = HashNode<K, V>(key, V());
+            return _vector[ind].value;
+        }
+
         iterator find(const K& key) {
             size_t ind = hashIndex(key);
             size_t counter = 0;
