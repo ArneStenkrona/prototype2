@@ -3,6 +3,8 @@
 
 #include "src/memory/container_allocator.h"
 
+#include <algorithm>
+
 namespace prt
 {
     template<class T>
