@@ -14,7 +14,7 @@ namespace prt {
         : array(ContainerAllocator::getDefaultContainerAllocator(), size, alignment) {}
 
         array(ContainerAllocator& allocator, size_t size, size_t alignment = 1)
-            : _allocator(allocator), _size(size) {
+            : _data(nullptr), _size(size), _allocator(allocator) {
             _data = static_cast<T*>(_allocator.allocate(_size * sizeof(T),
                                                     alignment));
 
@@ -38,7 +38,7 @@ namespace prt {
         }
 
         inline size_t size() const { return _size; }
-        inline T* data() const { return reinterpret_cast<void*>(_data); }
+        inline T* data() const { return _data; }
 
         inline T* begin() const { return _data; }
         inline T* end() const { return _data + _size; }
