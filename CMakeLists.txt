@@ -14,6 +14,9 @@ set (prototype2_VERSION_MINOR 0)
 
 # Memory allocation
 set (ENTITY_MANAGER_STACK_SIZE_BYTES 1*1024*1024)
+set (DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES 1*1024*1024)
+set (DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES 256)
+set (DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES 4)
 
 #END CONFIG VARIABLES
 
@@ -47,6 +50,7 @@ file(GLOB SOURCES
     "src/main/*.cpp"
     "src/config/*.cpp"
     "src/memory/*.cpp"
+    "src/container/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/graphics/vulkan/*.cpp"
@@ -55,7 +59,8 @@ file(GLOB SOURCES
 
 file(GLOB TESTSOURCES
   "test/src/prt_test.cpp"
-  "test/src//memory/*.cpp"
+  "test/src/memory/*.cpp"
+  "test/src/container/*.cpp"
 )
 
 # add libraries
