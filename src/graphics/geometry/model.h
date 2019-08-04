@@ -1,8 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "src/memory/allocator.h"
-#include "src/container/array.h"
+#include "src/container/vector.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -84,21 +83,26 @@ public:
     /**
      * Initializes an empty model.
      */
-    Model() {}
+    //Model()
+    //: vertexBuffer(4 * sizeof(float)),
+    //  indexBuffer(sizeof(uint32_t)),
+    //  meshes(sizeof(size_t)) {}
 
     /**
      * Loads a model from a path.
      * @param path path to .obj file.
      * @param allocator allocator for buffers
      */
-    Model(const char* path, Allocator& allocator);
+    Model();
+
+    void load(const char* path);
 
 private:   
 
-    prt::array<Vertex> vertexBuffer;
-    prt::array<uint32_t> indexBuffer;
+    prt::vector<Vertex> vertexBuffer;
+    prt::vector<uint32_t> indexBuffer;
 
-    prt::array<Mesh> meshes;
+    prt::vector<Mesh> meshes;
     //prt::array<Material> materials;
     /*
     VkBuffer vertexBuffer;

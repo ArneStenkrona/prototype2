@@ -26,7 +26,13 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-Model::Model(const char* path, Allocator& allocator) {
+Model::Model()
+: vertexBuffer(4 * sizeof(float)),
+  indexBuffer(sizeof(uint32_t)),
+  meshes(sizeof(size_t)) {}
+
+void Model::load(const char* path) {
+
     FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
@@ -39,10 +45,10 @@ Model::Model(const char* path, Allocator& allocator) {
     size_t numMesh = 0;
     size_t numIndex = 0;
 
-   countAttributes(file, numMesh, numIndex);
+    countAttributes(file, numMesh, numIndex);
     
-    meshes = prt::array<Mesh>(allocator, numMesh, sizeof(size_t));
-    indexBuffer = prt::array<uint32_t>(allocator, numIndex, sizeof(uint32_t));
+    meshes.resize(numMesh);
+    indexBuffer.resize(numIndex);
 
     // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
@@ -85,7 +91,7 @@ Model::Model(const char* path, Allocator& allocator) {
                 meshes[meshCount].startIndex = 
                     meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
                 meshes[meshCount - 1].numIndices = 
-                    indexCount - meshes[meshCount - 1].startIndex;
+                    indexCount - meshes[meshCount - 1].startIndex;                
             } else {
                 meshes[meshCount].startIndex = 0;
             }
@@ -146,11 +152,12 @@ Model::Model(const char* path, Allocator& allocator) {
                 }
                 indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
             }        
-        }     
+        }
+     
         res = fscanf(file, "%s", lineHeader);
     }
     size_t numVertex = uniqueVertices.size();
-    vertexBuffer = prt::array<Vertex>(allocator, numVertex, 4 * sizeof(float));
+    vertexBuffer.resize(numVertex);
     
     indexCount = 0;
     for (auto const& [vert, ind] : uniqueVertices) {
