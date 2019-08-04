@@ -1,6 +1,6 @@
 #include "model.h"
 
-#include <unordered_map>
+#include "src/container/hash_table.h"
 
 // Helper function for counting meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
@@ -55,7 +55,8 @@ void Model::load(const char* path) {
 
     // Temporary vertex buffer
     Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
-    std::unordered_map<Vertex, uint32_t> uniqueVertices = {}; 
+    //std::unordered_map<Vertex, uint32_t> uniqueVertices = {}; 
+    prt::HashTable<Vertex, uint32_t> uniqueVertices; 
 
     // Variables for counting
     size_t meshCount = 0;
@@ -147,7 +148,7 @@ void Model::load(const char* path) {
             };
 
             for (unsigned int i = 0; i < 3; i++) {
-                if (uniqueVertices.count(vertices[i]) == 0) {
+                if (uniqueVertices.find(vertices[i]) != uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
                 indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
@@ -160,7 +161,7 @@ void Model::load(const char* path) {
     vertexBuffer.resize(numVertex);
     
     indexCount = 0;
-    for (auto const& [vert, ind] : uniqueVertices) {
-        vertexBuffer[ind] = vert;
+    for (auto it = uniqueVertices.begin(); it < uniqueVertices.end(); it++) {
+        vertexBuffer[ind] = it->value;
     }
 }
