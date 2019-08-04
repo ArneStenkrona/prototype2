@@ -3,18 +3,22 @@
 
 #include "src/memory/container_allocator.h"
 #include "src/container/vector.h"
+#include "src/container/array.h"
 
 namespace prt {
+    template<typename K, typename V> class HashTable;
+
     template<typename K, typename V>
     class HashNode {
     public:
         K key;
         V value;
-
+        HashNode(): present(false) {}
+    private:
         bool present;
 
-        HashNode(): present(false) {}
         HashNode(K key, V value): key(key), value(value), present(true) {}
+        friend class HashTable<K, V>;
     };
 
     template<typename K, typename V>
@@ -26,13 +30,13 @@ namespace prt {
         : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
 
         HashTable(ContainerAllocator& allocator) 
-            : _vector(allocator), _size(0) {
-                _vector.resize(1);
-            }
+        : _vector(allocator), _size(0) {
+            _vector.resize(1);
+        }
         
         void insert(const K& key, const V& value) {
             if (2 * _size > _vector.capacity()) {
-                _vector.resize(2 * _vector.capacity());
+                increaseCapacity(2 * _vector.capacity());
             }
             
             size_t ind = hashIndex(key);
@@ -61,7 +65,7 @@ namespace prt {
 
         V & operator [](const K& key) {
             if (2 * _size > _vector.capacity()) {
-                _vector.resize(2 * _vector.capacity());
+                increaseCapacity(2 * _vector.capacity());
             }
             
             size_t ind = hashIndex(key);
@@ -109,6 +113,7 @@ namespace prt {
                 }
                 return *this; 
             }
+
             iterator operator++(int) {
                 iterator result = *this; 
                 ++(*this); 
@@ -123,7 +128,7 @@ namespace prt {
                 return !(*this == other);
             }
 
-            HashNode<K, V>& operator*() { return &_current; }
+            HashNode<K, V>& operator*() { return *_current; }
             HashNode<K, V>* operator->() { return _current; }
         private:
             HashNode<K, V>* _current;
@@ -149,6 +154,27 @@ namespace prt {
         size_t _size;
 
         inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
+    
+        void increaseCapacity(size_t capacity) {
+            prt::array<HashNode<K, V> > temp(_size);
+
+            size_t count = 0;
+            for (auto it = begin(); it != end(); it++) {
+                temp[count++] = *it;
+            }
+            
+            _vector.clear();
+            _vector.resize(2 * capacity);
+
+            for (size_t i = 0; i < temp.size(); i++) {
+                size_t ind = hashIndex(temp[i].key);
+
+                while(_vector[ind].present && _vector[ind].key != temp[i].key) {
+                    ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                }
+                _vector[ind] = temp[ind];
+            }
+        }
     };
 };
 
