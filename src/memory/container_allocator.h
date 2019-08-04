@@ -54,6 +54,9 @@ namespace prt {
          */
         void free(void* pointer);
 
+        /**
+         * Clears all memory within the allocator
+         */
         void clear();
 
         inline size_t getAlignment() const { return _alignment; }
