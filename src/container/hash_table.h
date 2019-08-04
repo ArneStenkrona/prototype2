@@ -26,7 +26,7 @@ namespace prt {
         : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
 
         HashTable(ContainerAllocator& allocator) 
-            : _vector(allocator) {
+            : _vector(allocator), _size(0) {
                 _vector.resize(1);
             }
         
@@ -120,8 +120,6 @@ namespace prt {
         size_t _size;
 
         inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
-
-        
     };
 };
 
