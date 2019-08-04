@@ -112,6 +112,15 @@ namespace prt {
                 ++(*this); 
                 return result;
             }
+
+            bool operator==(const iterator& other) {
+                return _current == other._current;
+            }
+
+            bool operator!=(const iterator& other) {
+                return !(*this == other);
+            }
+
             HashNode<K, V>& operator*() { return &_current; }
             HashNode<K, V>* operator->() { return _current; }
         private:
@@ -125,6 +134,7 @@ namespace prt {
                     return iterator(&_vector[i], _vector.end());
                 }
             }
+            return end();
         }
         iterator end() {
             return iterator(_vector.end(), _vector.end());

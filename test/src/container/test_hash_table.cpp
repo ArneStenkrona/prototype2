@@ -19,4 +19,7 @@ TEST_CASE( "Test hash table", "[hash_table]") {
     for (uint32_t i = 0; i < 1000; i++) {
         REQUIRE(table2.find(i)->value == i * i - i);
     }
+    for (auto it = table2.begin(); it != table2.end(); it++) {
+        REQUIRE(it->present);
+    }
 }
