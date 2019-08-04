@@ -11,6 +11,9 @@ namespace prt {
     class array {
     public:
         array(): array(ContainerAllocator::getDefaultContainerAllocator(), 0) {}
+        
+        array(size_t size, size_t alignment = 1)
+        : array(ContainerAllocator::getDefaultContainerAllocator(), size, alignment) {}
 
         array(ContainerAllocator& allocator, size_t size, size_t alignment = 1)
             : _allocator(allocator), _size(size) {
