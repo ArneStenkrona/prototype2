@@ -8,16 +8,16 @@ namespace prt
     template<class T>
     class vector {
     public:
-        vector()
-        : vector(ContainerAllocator::getDefaultContainerAllocator()) {}
-
-        ~vector() {
-            _allocator.free(_data);
-        }
+        vector(size_t alignment = 1)
+        : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {}
 
         vector(ContainerAllocator& allocator, size_t alignment = 1)
         : _allocator(allocator), _data(nullptr), _size(0), _capacity(0),
           _alignment(alignment) {}
+
+        ~vector() {
+            _allocator.free(_data);
+        }
 
         T operator [](size_t index) const { 
             assert(index < _size);
