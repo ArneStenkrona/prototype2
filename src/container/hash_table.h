@@ -77,6 +77,8 @@ namespace prt {
             return _vector[ind].value;
         }
 
+        inline size_t size() const { return _size; }
+
         iterator find(const K& key) {
             size_t ind = hashIndex(key);
             size_t counter = 0;
