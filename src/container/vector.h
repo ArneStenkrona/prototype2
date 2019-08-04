@@ -12,6 +12,10 @@ namespace prt
         vector()
         : vector(ContainerAllocator::getDefaultContainerAllocator()) {}
 
+        ~vector() {
+            _allocator.free(_data);
+        }
+
         vector(ContainerAllocator& allocator)
         : _allocator(allocator), _data(nullptr),
           _size(0), _capacity(0) {}
@@ -62,8 +66,12 @@ namespace prt
             if (_data != nullptr) {
                 std::copy(_data, _data + _size,
                           newPointer);
+
+                if (_data != newPointer) {
+                    _allocator.free(_data);
+                }
             }
-            
+
             _capacity = capacity;
             _data = newPointer;
         }
