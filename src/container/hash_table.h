@@ -46,8 +46,7 @@ namespace prt {
             }
             _vector[ind] = HashNode<K, V>(key, value);
         }
-        // void update(const K& key, const V& value) {
-        // }
+
         void remove(const K& key) {
             size_t ind = hashIndex(key);
 
