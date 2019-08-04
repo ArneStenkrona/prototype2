@@ -172,7 +172,7 @@ namespace prt {
                 while(_vector[ind].present && _vector[ind].key != temp[i].key) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
-                _vector[ind] = temp[ind];
+                _vector[ind] = temp[i];
             }
         }
     };
