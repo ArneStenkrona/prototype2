@@ -8,6 +8,7 @@
 namespace prt {
     class ContainerAllocator {
     public:
+        explicit ContainerAllocator() = delete;
 
         /** 
          * Constructs a container allocator with the given total size.
@@ -68,13 +69,9 @@ namespace prt {
         /**
          * @return default container allocator
          */
-        static inline ContainerAllocator& getDefaultContainerAllocator() {
-            return defaultContainerAllocator;
-        }
+        static ContainerAllocator& getDefaultContainerAllocator();
 
     private:
-        static ContainerAllocator defaultContainerAllocator;
-
         void* allocate(size_t blocks);
 
         size_t calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,

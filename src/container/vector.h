@@ -12,8 +12,42 @@ namespace prt
     public:
         vector(): vector(ContainerAllocator::getDefaultContainerAllocator(), 1) {}
         
-        vector(size_t alignment)
-        : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {}
+        vector(size_t count, size_t alignment = 1)
+        : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {
+            resize(count);
+        }
+
+        vector(size_t count, 
+               const T& value,
+               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
+               size_t alignment = 1)
+        : vector(allocator, alignment) {
+            reserve(count);
+            for (size_t i = 0; i < count; i++) {
+                    new (&_data[i]) T(value);
+            }
+            _size = count;
+        }
+
+        vector(T* first, T* last,
+               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
+               size_t alignment = 1)
+        : vector(allocator, alignment) {
+            assert(first <= last);
+            size_t numOfT = last - first;
+            reserve(numOfT);
+            std::copy(first, last, _data);
+            _size = numOfT;
+        }
+
+        vector(std::initializer_list<T> ilist, 
+                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
+                size_t alignment = 1) 
+        : vector(allocator, alignment) {
+            reserve(ilist.size());
+            std::copy(ilist.begin(), ilist.end(), _data);
+            _size = ilist.size();
+        }
 
         vector(ContainerAllocator& allocator, size_t alignment = 1)
         : _data(nullptr), _size(0), _capacity(0),
@@ -85,6 +119,8 @@ namespace prt
             _capacity = capacity;
             _data = newPointer;
         }
+
+        inline bool empty() const { return _size == 0; }
 
         inline T& front() const { return _data[0]; }
         inline T& back() const { return _data[_size - 1]; }

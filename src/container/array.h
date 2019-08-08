@@ -27,9 +27,10 @@ namespace prt {
         }
 
         inline size_t size() const { return _size; }
-        inline T* data() const { return _data; }
+        inline T* data() const { return &_data[0]; }
+        inline T* data() { return &_data[0]; }
 
-        inline T* begin() const { return _data; }
+        inline T* begin() const { return &_data[0]; }
         inline T* end() const { return &_data[_size]; }
     };
 }

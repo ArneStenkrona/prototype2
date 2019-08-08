@@ -5,7 +5,16 @@
 
 #include <string.h>
 
-#include <iostream>
+static uint8_t defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
+
+prt::ContainerAllocator& prt::ContainerAllocator::getDefaultContainerAllocator() {
+    static prt::ContainerAllocator* defaultContainerAllocator = 
+        new prt::ContainerAllocator(static_cast<void*>(defaultContainerAllocatorMemory),
+                                    DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES,
+                                    DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES,
+                                    DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES);
+    return *defaultContainerAllocator;
+}
 
 size_t prt::ContainerAllocator::calcNumBlocks(uintptr_t memoryPointer, size_t memorySizeBytes,
                             size_t blockSize, size_t alignment) {
@@ -20,12 +29,6 @@ size_t prt::ContainerAllocator::calcNumBlocks(uintptr_t memoryPointer, size_t me
     size_t numBlocks = effectiveMemorySize / (blockSize + sizeof(size_t));
     return numBlocks;
 }
-
-prt::ContainerAllocator prt::ContainerAllocator::defaultContainerAllocator = 
-                        prt::ContainerAllocator(malloc(DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES),
-                                                DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES,
-                                                DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES,
-                                                DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES);
 
 prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySizeBytes,
                         size_t blockSize, size_t alignment)

@@ -3,6 +3,8 @@
 
 #include "src/graphics/geometry/model.h"
 
+#include "src/container/vector.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -18,10 +20,10 @@
 #include <stdexcept>
 #include <algorithm>
 #include <chrono>
-#include <vector>
+
 #include <cstring>
 #include <cstdlib>
-//#include <optional>
+#include <optional>
 #include <set>
 #include <unordered_map>
 
@@ -35,9 +37,9 @@ extern std::string BASE_PATH;
 
 extern const unsigned int MAX_FRAMES_IN_FLIGHT;
 
-extern const std::vector<const char*> validationLayers;
+extern const prt::vector<const char*> validationLayers;
 
-extern const std::vector<const char*> deviceExtensions;
+extern const prt::vector<const char*> deviceExtensions;
 
 extern const bool enableValidationLayers;
 
@@ -56,8 +58,8 @@ struct QueueFamilyIndices {
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    prt::vector<VkSurfaceFormatKHR> formats;
+    prt::vector<VkPresentModeKHR> presentModes;
 };
 
 struct UniformBufferObject {
@@ -85,11 +87,11 @@ private:
     VkQueue presentQueue;
     
     VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
+    prt::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
+    prt::vector<VkImageView> swapChainImageViews;
+    prt::vector<VkFramebuffer> swapChainFramebuffers;
     
     VkRenderPass renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -112,25 +114,25 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
     
-    //std::vector<Vertex> vertices;
-    //std::vector<uint32_t> indices;
+    //prt::vector<Vertex> vertices;
+    //prt::vector<uint32_t> indices;
     Model model;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    prt::vector<VkBuffer> uniformBuffers;
+    prt::vector<VkDeviceMemory> uniformBuffersMemory;
     
     VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    prt::vector<VkDescriptorSet> descriptorSets;
     
-    std::vector<VkCommandBuffer> commandBuffers;
+    prt::vector<VkCommandBuffer> commandBuffers;
     
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
+    prt::vector<VkSemaphore> imageAvailableSemaphores;
+    prt::vector<VkSemaphore> renderFinishedSemaphores;
+    prt::vector<VkFence> inFlightFences;
     size_t currentFrame = 0;
     
     bool framebufferResized = false;
@@ -179,7 +181,7 @@ private:
     
     void createDepthResources();
     
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, 
+    VkFormat findSupportedFormat(const prt::vector<VkFormat>& candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
     
     VkFormat findDepthFormat();
@@ -243,11 +245,11 @@ private:
     
     void drawFrame();
     
-    VkShaderModule createShaderModule(const std::vector<char>& code);
+    VkShaderModule createShaderModule(const prt::vector<char>& code);
     
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const prt::vector<VkSurfaceFormatKHR>& availableFormats);
     
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkPresentModeKHR chooseSwapPresentMode(const prt::vector<VkPresentModeKHR>& availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     
@@ -259,11 +261,11 @@ private:
     
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     
-    std::vector<const char*> getRequiredExtensions();
+    prt::vector<const char*> getRequiredExtensions();
     
     bool checkValidationLayerSupport();
     
-    static std::vector<char> readFile(const std::string& filename);
+    static prt::vector<char> readFile(const std::string& filename);
     
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, 
                                                         VkDebugUtilsMessageTypeFlagsEXT /*messageType*/, 
