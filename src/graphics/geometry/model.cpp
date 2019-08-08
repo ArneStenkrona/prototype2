@@ -148,7 +148,7 @@ void Model::load(const char* path) {
             };
 
             for (unsigned int i = 0; i < 3; i++) {
-                if (uniqueVertices.find(vertices[i]) != uniqueVertices.end()) {
+                if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
                 indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
