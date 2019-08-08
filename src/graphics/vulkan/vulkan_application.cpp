@@ -1,6 +1,6 @@
 #include "vulkan_application.h"
 
-#include "src/memory/stack_allocator.h"
+#include "src/container/array.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
