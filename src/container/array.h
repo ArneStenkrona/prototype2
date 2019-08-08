@@ -19,7 +19,7 @@ namespace prt {
                                                     alignment));
 
             for (size_t i = 0; i < size; i++) {
-                _data[i] = T();
+                new (&_data[i]) T();
             }
         }
 

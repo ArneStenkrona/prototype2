@@ -162,7 +162,6 @@ namespace prt {
             for (auto it = begin(); it != end(); it++) {
                 temp[count++] = *it;
             }
-            
             _vector.clear();
             _vector.resize(2 * capacity);
 

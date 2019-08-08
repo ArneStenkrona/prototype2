@@ -2,6 +2,8 @@
 #include <catch2/catch.hpp>
 #include "src/container/vector.h"
 
+#include <string>
+
 TEST_CASE( "Test vector", "[Vector]") {
     prt::vector<uint32_t> vec1;
     for (size_t i = 0; i < 100; i++) {
@@ -18,5 +20,16 @@ TEST_CASE( "Test vector", "[Vector]") {
     }
     for (size_t i = 0; i < 10000; i++) {
         REQUIRE(vec2[i] == i*i + i);
+    }
+}
+
+TEST_CASE( "Test insert string", "[Vector]") {
+    prt::vector<std::string> vec;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec.push_back(str);
+    }
+    for (size_t i = 0; i < 1000; i++) {
+        REQUIRE(vec[i] == std::to_string(i));
     }
 }
