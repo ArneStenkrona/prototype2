@@ -30,6 +30,24 @@ TEST_CASE( "Test subscript", "[hash_table]") {
     }
 }
 
+TEST_CASE( "Test find", "[hash_table]") {
+    prt::HashTable<std::string, uint32_t> table;
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        table[str] = i;
+    }
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        assert(table.find(str) != table.end());
+    }
+    for (uint32_t i = 1000; i < 2000; i++) {
+        std::string str = std::to_string(i);
+        assert(table.find(str) == table.end());
+    }
+}
+
 TEST_CASE( "Test iterate", "[hash_table]") {
     prt::HashTable<std::string, uint32_t> table;
 
