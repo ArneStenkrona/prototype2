@@ -20,7 +20,9 @@ namespace prt
           _alignment(alignment), _allocator(allocator) {}
 
         ~vector() {
-            _allocator.free(_data);
+            if (_data != nullptr) {
+                _allocator.free(_data);
+            }
         }
 
         T operator [](size_t index) const { 
@@ -40,7 +42,7 @@ namespace prt
                 reserve(newCapacity);
             }
 
-            _data[_size] = t;
+            new (&_data[_size]) T(t);
             _size++;
         }
 
@@ -51,8 +53,8 @@ namespace prt
         void resize(size_t size) {
             if (size > _size) {
                 reserve(size);
-                for (size_t i = _size; i < size; i++) {
-                    _data[i] = T();
+                for (size_t i = _size; i < _capacity; i++) {
+                    new (&_data[i]) T();
                 }
                 _size = size;
             }
@@ -77,9 +79,7 @@ namespace prt
                 std::copy(_data, _data + _size,
                           newPointer);
 
-                if (_data != newPointer) {
-                    _allocator.free(_data);
-                }
+                _allocator.free(_data);
             }
 
             _capacity = capacity;
