@@ -3,7 +3,6 @@
 
 #include "src/memory/container_allocator.h"
 #include "src/container/vector.h"
-#include "src/container/array.h"
 
 namespace prt {
     template<typename K, typename V> class HashTable;
@@ -59,7 +58,7 @@ namespace prt {
                     _vector[ind].present = false;
                     _size--;
                 }
-                ind = ind == _vector.size - 1 ? 0 : ind + 1;
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
         }
 
@@ -156,7 +155,9 @@ namespace prt {
         inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
-            prt::array<HashNode<K, V> > temp(_size);
+            prt::vector<HashNode<K, V> > temp;
+
+            temp.resize(_size);
 
             size_t count = 0;
             for (auto it = begin(); it != end(); it++) {
