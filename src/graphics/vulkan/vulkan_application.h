@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <optional>
 #include <set>
-#include <unordered_map>
 
 extern const int WIDTH;
 extern const int HEIGHT;
