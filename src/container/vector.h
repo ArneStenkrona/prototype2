@@ -76,7 +76,7 @@ namespace prt
                                                 _alignment));
 
             if (_data != nullptr) {
-                std::copy(_data, _data + _size,
+                std::copy(begin(), end(),
                           newPointer);
 
                 _allocator.free(_data);
