@@ -4,6 +4,7 @@
 #include "src/graphics/geometry/model.h"
 
 #include "src/container/vector.h"
+#include "src/container/optional.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -23,7 +24,6 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <optional>
 #include <set>
 
 extern const int WIDTH;
@@ -47,8 +47,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
 struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
+    prt::optional<uint32_t> graphicsFamily;
+    prt::optional<uint32_t> presentFamily;
     
     bool isComplete() {
         return graphicsFamily.has_value() && presentFamily.has_value();
