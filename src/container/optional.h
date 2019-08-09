@@ -6,7 +6,24 @@ namespace prt {
     class optional {
     public:
         constexpr optional();
+
+        optional<T>& operator*() { return *_current; }
+        optional<T>* operator->() { return _current; }
+
+        constexpr explicit operator bool() const noexcept {}
+        constexpr bool has_value() const noexcept {}
+
+        constexpr T& value() &;
+        constexpr const T & value() const &;
+
+        template< class U > 
+        constexpr T value_or( U&& default_value ) const&;
+
+        template< class U > 
+        constexpr T value_or( U&& default_value ) &&;
+        
     private:   
+        T _value;
     };
 }
 
@@ -70,7 +87,7 @@ bool operator<(const prt::optional<T>& lhs, const U& rhs) {
 }
 
 template<typename T, typename U>
-bool operator<=(const T& lhs, const prt::optional<U>& rhs) {
+bool operator<=(const T & lhs, const prt::optional<U>& rhs) {
     return false;
 }
 template<typename T, typename U>
