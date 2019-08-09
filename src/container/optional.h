@@ -80,87 +80,110 @@ namespace prt {
 /* Operators for comparing optional and optional */
 template<typename T, typename U>
 bool operator==(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    if (!lhs._present || !rhs._present) {
+        return false;
+    }
+    return *lhs == *rhs;
 }
 
 template<typename T, typename U>
 bool operator!=(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    return !(lhs == rhs);
 }
 
 template<typename T, typename U>
 bool operator<(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    if (!bool(rhs)) {
+        return false;
+    } else if (!bool(lhs)) {
+        return true;
+    } 
+    return *lhs < *rhs;
 }
 
 template<typename T, typename U>
 bool operator<=(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    if (!bool(rhs)) {
+        return false;
+    } else if (!bool(lhs)) {
+        return true;
+    } 
+    return *lhs <= *rhs;
 }
 
 template<typename T, typename U>
 bool operator>(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    if (!bool(lhs)) {
+        return false;
+    } else if (!bool(rhs)) {
+        return true;
+    } 
+    return *lhs > *rhs;
 }
 
 template<typename T, typename U>
 bool operator>=(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    return false;
+    if (!bool(lhs)) {
+        return false;
+    } else if (!bool(rhs)) {
+        return true;
+    } 
+    return *lhs >= *rhs;
 }
 
 /* Operators for comparing optional and value */
 template<typename T, typename U>
-bool operator==(const T& lhs, const prt::optional<U>& rhs) {
-    return false;
+bool operator==(const T& value, const prt::optional<U>& opt) {
+    return bool(opt) ? value == *opt : false;
 }
 template<typename T, typename U>
-bool operator==(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
-}
-
-template<typename T, typename U>
-bool operator!=(const T& lhs, const prt::optional<U>& rhs) {
-    return false;
-}
-template<typename T, typename U>
-bool operator!=(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
+bool operator==(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt == value : false;
 }
 
 template<typename T, typename U>
-bool operator<(const T& lhs, const prt::optional<U>& rhs) {
-    return false;
+bool operator!=(const T& value, const prt::optional<U>& opt) {
+    return bool(opt) ? value != *opt : false;
 }
 template<typename T, typename U>
-bool operator<(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
-}
-
-template<typename T, typename U>
-bool operator<=(const T & lhs, const prt::optional<U>& rhs) {
-    return false;
-}
-template<typename T, typename U>
-bool operator<=(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
+bool operator!=(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt != value : false;
 }
 
 template<typename T, typename U>
-bool operator>(const T& lhs, const prt::optional<U>& rhs) {
-    return false;
+bool operator<(const T& value, const prt::optional<U>& opt) {
+    return bool(opt) ? value < *opt : false;
 }
 template<typename T, typename U>
-bool operator>(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
+bool operator<(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt < value : false;
 }
 
 template<typename T, typename U>
-bool operator>=(const T& lhs, const prt::optional<U>& rhs) {
-    return false;
+bool operator<=(const T & value, const prt::optional<U>& opt) {
+    return bool(opt) ? value <= *opt : false;
 }
 template<typename T, typename U>
-bool operator>=(const prt::optional<T>& lhs, const U& rhs) {
-    return false;
+bool operator<=(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt <= value : false;
+}
+
+template<typename T, typename U>
+bool operator>(const T& value, const prt::optional<U>& opt) {
+    return bool(opt) ? value > *opt : false;
+}
+template<typename T, typename U>
+bool operator>(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt > value : false;
+}
+
+template<typename T, typename U>
+bool operator>=(const T& value, const prt::optional<U>& opt) {
+    return bool(opt) ? value >= *opt : false;
+}
+template<typename T, typename U>
+bool operator>=(const prt::optional<T>& opt, const U& value) {
+    return bool(opt) ? *opt >= value : false;
 }
 
 #endif
