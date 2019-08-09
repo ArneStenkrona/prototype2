@@ -13,6 +13,20 @@ namespace prt {
             _present = true;
         }
 
+        constexpr optional( const optional& other ): _present(false) {
+            if (other.has_value()) {
+                new (&_value[0]) T(other.value());
+                _present = true;
+            }
+        }
+
+        constexpr optional( optional&& other ): _present(false) {
+            if (other.has_value()) {
+                new (&_value[0]) T(other.value());
+                _present = true;
+            }
+        }
+
         constexpr optional& operator=( const optional& other ) {
             if (_present) {
                 T& t = value();
@@ -98,10 +112,10 @@ namespace prt {
 /* Operators for comparing optional and optional */
 template<typename T, typename U>
 bool operator==(const prt::optional<T>& lhs, const prt::optional<U>& rhs) {
-    if (!lhs._present || !rhs._present) {
+    if (!bool(lhs) || !bool(rhs)) {
         return false;
     }
-    return *lhs == *rhs;
+    return lhs.value() == rhs.value();
 }
 
 template<typename T, typename U>
