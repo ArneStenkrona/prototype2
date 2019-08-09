@@ -10,13 +10,25 @@ namespace prt {
     template<typename K, typename V>
     class HashNode {
     public:
-        K key;
-        V value;
+        K& key() {
+            assert(present);
+            return *reinterpret_cast<K*>(&_key[0]);
+        }
+        V& value() {
+            assert(present);
+            return *reinterpret_cast<V*>(&_value[0]);
+        }
         HashNode(): present(false) {}
     private:
+        uint8_t _key[sizeof(K)];
+        uint8_t _value[sizeof(V)];
+
         bool present;
 
-        HashNode(K key, V value): key(key), value(value), present(true) {}
+        HashNode(K key, V value): present(true) {
+            this->key() = key;
+            this->value() = value;
+        }
         friend class HashTable<K, V>;
     };
 
@@ -40,7 +52,7 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key != key) {
+            while(_vector[ind].present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
@@ -54,7 +66,7 @@ namespace prt {
             size_t ind = hashIndex(key);
 
             while(_vector[ind].present) {
-                if (_vector[ind].key == key) {
+                if (_vector[ind].key() == key) {
                     _vector[ind].present = false;
                     _size--;
                 }
@@ -69,7 +81,7 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key != key) {
+            while(_vector[ind].present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
@@ -77,7 +89,7 @@ namespace prt {
                 _vector[ind] = HashNode<K, V>(key, V());
                 _size++;
             }
-            return _vector[ind].value;
+            return _vector[ind].value();
         }
 
         inline size_t size() const { return _size; }
@@ -88,7 +100,7 @@ namespace prt {
             
             while(_vector[ind].present && counter < _vector.size()) {
                 
-                if (_vector[ind].key == key) {
+                if (_vector[ind].key() == key) {
                     return iterator(&_vector[ind], _vector.end());
                 }
 
@@ -167,9 +179,9 @@ namespace prt {
             _vector.resize(2 * capacity);
 
             for (size_t i = 0; i < temp.size(); i++) {
-                size_t ind = hashIndex(temp[i].key);
+                size_t ind = hashIndex(temp[i].key());
 
-                while(_vector[ind].present && _vector[ind].key != temp[i].key) {
+                while(_vector[ind].present && _vector[ind].key() != temp[i].key()) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
                 _vector[ind] = temp[i];
