@@ -11,7 +11,7 @@ TEST_CASE( "Test insert", "[hash_table]") {
         table.insert(i, i * i - i);
     }
     for (uint32_t i = 0; i < 1000; i++) {
-        REQUIRE(table.find(i)->value == i * i - i);
+        REQUIRE(table.find(i)->value() == i * i - i);
     }
 }
 
@@ -48,7 +48,7 @@ TEST_CASE( "Test subscript", "[hash_table]") {
         table[i] = i * i - i;
     }
     for (uint32_t i = 0; i < 1000; i++) {
-        REQUIRE(table.find(i)->value == i * i - i);
+        REQUIRE(table.find(i)->value() == i * i - i);
     }
 }
 
@@ -79,8 +79,8 @@ TEST_CASE( "Test iterate", "[hash_table]") {
     }
 
     for (auto it = table.begin(); it != table.end(); it++) {
-        std::string& key = it->key;
-        uint32_t val = it->value;
+        std::string& key = it->key();
+        uint32_t val = it->value();
         REQUIRE(key == std::to_string(val));
     }
 }

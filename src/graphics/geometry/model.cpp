@@ -162,6 +162,6 @@ void Model::load(const char* path) {
     
     indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
-        vertexBuffer[it->value] = it->key;
+        vertexBuffer[it->value()] = it->key();
     }
 }
