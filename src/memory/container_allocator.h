@@ -87,7 +87,7 @@ namespace prt {
         inline size_t pointerToBlockIndex(void* pointer) const {
             uintptr_t ptr = reinterpret_cast<uintptr_t>(pointer);
             uintptr_t memStart = reinterpret_cast<uintptr_t>(_memoryPointer) + 
-                                _initialPadding;
+                                 _initialPadding;
 
             assert(ptr >= memStart);
 

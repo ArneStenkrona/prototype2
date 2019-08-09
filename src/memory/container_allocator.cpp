@@ -61,7 +61,7 @@ void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
 
     // Make sure to round up.
-    size_t blocks =  alignment <= _alignment ? 
+    size_t blocks = alignment <= _alignment ? 
         (sizeBytes + (_blockSize - 1)) / _blockSize :
         ((sizeBytes + alignment) + (_blockSize - 1)) / _blockSize;
 
