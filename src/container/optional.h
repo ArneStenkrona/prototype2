@@ -58,7 +58,7 @@ namespace prt {
             if (_present) {
                 return *static_cast<T*>(&_value[0]);
             } else {
-                return U;
+                return default_value;
             }
         }
 
