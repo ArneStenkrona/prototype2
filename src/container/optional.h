@@ -7,27 +7,41 @@ namespace prt {
     public:
         constexpr optional(): _present(false) {}
 
+        template < class U = T >
+        constexpr optional( U&& value ): _present(true) {
+            new (&_value[0]) T(value);
+            _present = true;
+        }
+
         constexpr optional& operator=( const optional& other ) {
-            T& t = value();
-            t.~T();
+            if (_present) {
+                T& t = value();
+                t.~T();
+            }
             new (&_value[0]) T(other.value);
             _present = true;
         }
 
         template< class U = T > 
         optional& operator=( U&& value ) {
-            T& t = value();
-            t.~T();
+            if (_present) {
+                T& t = this->value();
+                t.~T();
+            }
             new (&_value[0]) T(value);
             _present = true;
+            return *this;
         }
 
         template< class U >
         optional& operator=( const optional<U>& other ) {
-            T& t = value();
-            t.~T();
+            if (_present) {
+                T& t = value();
+                t.~T();
+            }
             new (&_value[0]) T(other.value);
             _present = true;
+            return *this;
         }
 
         template< class U >
@@ -36,27 +50,31 @@ namespace prt {
             t.~T();
             new (&_value[0]) T(other.value);
             _present = true;
+            return *this;
         }
 
         optional<T>& operator*() { return value(); }
         optional<T>* operator->() { 
             assert(_present);
-            return static_cast<T*>(&_value[0]);
+            return reinterpret_cast<T*>(&_value[0]);
         }
 
         constexpr explicit operator bool() const noexcept { return _present; }
         constexpr bool has_value() const noexcept { return _present; }
 
-        constexpr T& value() &;
+        constexpr T& value() & {
+            assert(_present);
+            return *reinterpret_cast<T*>(&_value[0]);
+        }
         constexpr const T & value() const & {
             assert(_present);
-            return *static_cast<T*>(&_value[0]);
+            return *reinterpret_cast<const T*>(&_value[0]);
         }
 
         template< class U > 
         constexpr T value_or( U&& default_value ) const& {
             if (_present) {
-                return *static_cast<T*>(&_value[0]);
+                return *reinterpret_cast<const T*>(&_value[0]);
             } else {
                 return default_value;
             }
