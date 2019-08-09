@@ -1,8 +1,6 @@
 #ifndef PRT_ARRAY_H
 #define PRT_ARRAY_H
 
-//#include "src/memory/container_allocator.h"
-
 #include <cstdint>
 #include <cassert>
 
