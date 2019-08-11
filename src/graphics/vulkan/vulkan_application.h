@@ -3,6 +3,8 @@
 
 #include "src/graphics/geometry/model.h"
 
+#include <vulkan/vulkan.h>
+
 #include "src/container/vector.h"
 #include "src/container/optional.h"
 

@@ -10,18 +10,17 @@ namespace prt
     template<class T>
     class vector {
     public:
-        vector(): vector(ContainerAllocator::getDefaultContainerAllocator(), 1) {}
+        vector(): vector(ContainerAllocator::getDefaultContainerAllocator()) {}
         
-        vector(size_t count, size_t alignment = 1)
-        : vector(ContainerAllocator::getDefaultContainerAllocator(), alignment) {
+        vector(size_t count)
+        : vector(ContainerAllocator::getDefaultContainerAllocator()) {
             resize(count);
         }
 
         vector(size_t count, 
                const T& value,
-               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
-               size_t alignment = 1)
-        : vector(allocator, alignment) {
+               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
+        : vector(allocator) {
             reserve(count);
             for (size_t i = 0; i < count; i++) {
                     new (&_data[i]) T(value);
@@ -30,9 +29,8 @@ namespace prt
         }
 
         vector(T* first, T* last,
-               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
-               size_t alignment = 1)
-        : vector(allocator, alignment) {
+               ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
+        : vector(allocator) {
             assert(first <= last);
             size_t numOfT = last - first;
             reserve(numOfT);
@@ -41,19 +39,21 @@ namespace prt
         }
 
         vector(std::initializer_list<T> ilist, 
-                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator(),
-                size_t alignment = 1) 
-        : vector(allocator, alignment) {
+                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator()) 
+        : vector(allocator) {
             reserve(ilist.size());
             std::copy(ilist.begin(), ilist.end(), _data);
             _size = ilist.size();
         }
 
-        vector(ContainerAllocator& allocator, size_t alignment = 1)
+        vector(ContainerAllocator& allocator)
         : _data(nullptr), _size(0), _capacity(0),
-          _alignment(alignment), _allocator(allocator) {}
+          _alignment(alignof(T)), _allocator(allocator) {}
 
         ~vector() {
+            for (size_t i = 0; i < _size; i++) {
+                _data[i].~T();
+            }
             if (_data != nullptr) {
                 _allocator.free(_data);
             }
@@ -81,6 +81,7 @@ namespace prt
         }
 
         void pop_back() {
+            back().~T();
             _size--;
         }
 
@@ -95,6 +96,9 @@ namespace prt
         }
 
         void clear() {
+            for (size_t i = 0; i < _size; i++) {
+                _data[i].~T();
+            }
             _allocator.free(_data);
             _data = nullptr;
             _size = 0;

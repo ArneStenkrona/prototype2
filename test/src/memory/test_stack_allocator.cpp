@@ -52,7 +52,7 @@ TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
     StackAllocator allocator = 
         StackAllocator(malloc(bytes), bytes);
 
-    size_t alignment = 1;
+    size_t alignment = alignof(uint32_t);
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
                     .allocate(n * sizeof(uint32_t), alignment));
@@ -82,6 +82,10 @@ TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
                     .allocate(n * sizeof(uint32_t), sizeof(uint32_t)));
+
+    for (uint32_t i = 0; i < n; i++){
+        integers[i] = i * i;
+    }
 
     allocator.clear();
     REQUIRE(allocator.getMarker() == 0);

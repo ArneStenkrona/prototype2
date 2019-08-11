@@ -5,8 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tinyobjloader-master/tiny_obj_loader.h>
+//#define TINYOBJLOADER_IMPLEMENTATION
+//#include <tinyobjloader-master/tiny_obj_loader.h>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;

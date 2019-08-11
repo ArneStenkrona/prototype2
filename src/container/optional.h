@@ -104,7 +104,7 @@ namespace prt {
         // constexpr T value_or( U&& default_value ) &&;
 
     private:   
-        uint8_t _value[sizeof(T)];
+        alignas(alignof(T)) char _value[sizeof(T)];
         bool _present;
     };
 }

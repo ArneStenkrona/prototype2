@@ -46,12 +46,7 @@ TEST_CASE( "Test variable length allocation", "[container_allocator]") {
     constexpr size_t blocksize = 4 * sizeof(uint32_t);
     constexpr size_t alignment = sizeof(uint32_t);
 
-    // number of blocks without considering allocator padding
-    constexpr size_t estimatedNumBlocks = bytes / blocksize;
-
     prt::ContainerAllocator allocator = prt::ContainerAllocator(malloc(bytes), bytes, blocksize, alignment);
-
-    size_t numBlocks = allocator.getNumberOfBlocks();
 
     uint32_t* ints1;
     uint32_t* ints2[2]; // array of 2
