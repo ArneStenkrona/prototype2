@@ -10,8 +10,9 @@ TEST_CASE( "Test stack allocation", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
+    void* mem = malloc(bytes);
     StackAllocator allocator = 
-        StackAllocator(malloc(bytes), bytes);
+        StackAllocator(mem, bytes);
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
@@ -23,6 +24,7 @@ TEST_CASE( "Test stack allocation", "[stack_allocator]" ) {
     for (uint32_t i = 0; i < n; i++) {
         REQUIRE(integers[i] == i * i);
     }
+    free(mem);
 }
 
 TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
@@ -30,8 +32,10 @@ TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
+
+    void* mem = malloc(bytes);
     StackAllocator allocator = 
-        StackAllocator(malloc(bytes), bytes);
+        StackAllocator(mem, bytes);
 
     size_t powersOfTwo[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
     
@@ -42,6 +46,7 @@ TEST_CASE( "Test stack alignment", "[stack_allocator]" ) {
                         .allocate(sizeof(uint32_t), alignment));
         REQUIRE(pointer % alignment == 0);
     }
+    free(mem);
 }
 
 TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
@@ -49,8 +54,10 @@ TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
+
+    void* mem = malloc(bytes);
     StackAllocator allocator = 
-        StackAllocator(malloc(bytes), bytes);
+        StackAllocator(mem, bytes);
 
     size_t alignment = alignof(uint32_t);
     uint32_t* integers = static_cast<uint32_t*>
@@ -69,6 +76,8 @@ TEST_CASE( "Test free stack memory", "[stack_allocator]" ) {
     // is gone, so we compare this with new logic.
     allocator.free(reinterpret_cast<void*>(integers));
     REQUIRE(allocator.getMarker() == 0);
+
+    free(mem);
 }
 
 TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
@@ -76,8 +85,9 @@ TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
+    void* mem = malloc(bytes);
     StackAllocator allocator = 
-        StackAllocator(malloc(bytes), bytes);
+        StackAllocator(mem, bytes);
 
     uint32_t* integers = static_cast<uint32_t*>
                     (allocator
@@ -89,6 +99,8 @@ TEST_CASE( "Test clear stack memory", "[stack_allocator]" ) {
 
     allocator.clear();
     REQUIRE(allocator.getMarker() == 0);
+
+    free(mem);
 }
 
 TEST_CASE( "Test reuse stack memory", "[stack_allocator]" ) {
@@ -96,8 +108,9 @@ TEST_CASE( "Test reuse stack memory", "[stack_allocator]" ) {
     // We need to allocated memory for n elements + n bytes for
     // alignment metadata
     size_t bytes = n * sizeof(uint32_t) + n;
+    void* mem = malloc(bytes);
     StackAllocator allocator = 
-        StackAllocator(malloc(bytes), bytes);
+        StackAllocator(mem, bytes);
 
    uint32_t* integers = static_cast<uint32_t*>
                     (allocator
@@ -118,4 +131,6 @@ TEST_CASE( "Test reuse stack memory", "[stack_allocator]" ) {
     for (uint32_t i = 0; i < n; i++) {
         REQUIRE(integers[i] == i * i * i);
     }
+
+    free(mem);
 }

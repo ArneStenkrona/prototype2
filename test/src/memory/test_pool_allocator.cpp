@@ -11,7 +11,8 @@ TEST_CASE( "Test pool allocation", "[pool_allocator]" ) {
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
-    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+    void* mem = malloc(bytes);
+    PoolAllocator allocator = PoolAllocator(mem, bytes, blocksize, alignment);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -33,21 +34,25 @@ TEST_CASE( "Test pool allocation", "[pool_allocator]" ) {
             REQUIRE(integers[i][j] == i * i + j * j);
         }
     }
+    free(mem);
 }
 
 TEST_CASE( "Test pool alignment", "[pool_allocator]" ) {
     size_t powersOfTwo[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 
+    constexpr size_t bytes = 5000;
+    constexpr size_t blocksize = 128;
+
+    // number of blocks without considering allocator padding
+    constexpr size_t estimatedNumBlocks = bytes / blocksize;
+
+    void* mem = malloc(bytes);
+    
     for (uint32_t i = 0; i < 8; i++) {
-        constexpr size_t bytes = 5000;
 
-        constexpr size_t blocksize = 128;
         size_t alignment = powersOfTwo[i];
-
-        // number of blocks without considering allocator padding
-        constexpr size_t estimatedNumBlocks = bytes / blocksize;
-
-        PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+        
+        PoolAllocator allocator = PoolAllocator(mem, bytes, blocksize, alignment);
 
         size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -59,6 +64,7 @@ TEST_CASE( "Test pool alignment", "[pool_allocator]" ) {
             REQUIRE(pointers[j] % alignment == 0);
         }
     }
+    free(mem);
 }
 
 TEST_CASE( "Test free pool memory", "[pool_allocator]" ) {
@@ -70,7 +76,8 @@ TEST_CASE( "Test free pool memory", "[pool_allocator]" ) {
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
-    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+    void* mem = malloc(bytes);
+    PoolAllocator allocator = PoolAllocator(mem, bytes, blocksize, alignment);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -86,6 +93,7 @@ TEST_CASE( "Test free pool memory", "[pool_allocator]" ) {
         allocator.free(blocks[i]);
         REQUIRE(allocator.getNumberOfFreeBlocks() == i + 1);       
     }
+    free(mem);
 }
 
 TEST_CASE( "Test clear pool memory", "[pool_allocator]" ) {
@@ -96,8 +104,9 @@ TEST_CASE( "Test clear pool memory", "[pool_allocator]" ) {
 
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
-
-    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+    
+    void* mem = malloc(bytes);
+    PoolAllocator allocator = PoolAllocator(mem, bytes, blocksize, alignment);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -112,6 +121,8 @@ TEST_CASE( "Test clear pool memory", "[pool_allocator]" ) {
     allocator.clear();
 
     REQUIRE(allocator.getNumberOfFreeBlocks() == numBlocks);
+
+    free(mem);
 }
 
 TEST_CASE( "Test reuse pool memory", "[pool_allocator]" ) {
@@ -123,7 +134,8 @@ TEST_CASE( "Test reuse pool memory", "[pool_allocator]" ) {
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
-    PoolAllocator allocator = PoolAllocator(malloc(bytes), bytes, blocksize, alignment);
+    void* mem = malloc(bytes);
+    PoolAllocator allocator = PoolAllocator(mem, bytes, blocksize, alignment);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -159,4 +171,5 @@ TEST_CASE( "Test reuse pool memory", "[pool_allocator]" ) {
             REQUIRE(integers[i][j] == i * i * i + j * j * j);
         }
     }
+    free(mem);
 }
