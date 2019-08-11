@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-static uint8_t defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
+static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
 
 prt::ContainerAllocator& prt::ContainerAllocator::getDefaultContainerAllocator() {
     static prt::ContainerAllocator* defaultContainerAllocator = 
