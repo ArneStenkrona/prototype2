@@ -28,19 +28,6 @@ namespace prt {
             return *reinterpret_cast<V*>(&_value[0]);
         }
         
-        // HashNode & operator=(const HashNode<K, V> & rhs) {
-        //     if(this == &rhs) {
-        //         return *this;
-        //     }
-        //     if (rhs.present) {
-        //         present = true;
-        //         std::memcpy(_key, rhs._key, sizeof(_key));
-        //         std::memcpy(_value, rhs._value, sizeof(_value));
-        //     } else {
-        //         present = false;
-        //     }
-        //     return *this;
-        // }
     private:
         alignas(K) char _key[sizeof(K)];
         alignas(V) char _value[sizeof(V)];
