@@ -10,6 +10,15 @@ namespace prt {
     template<typename K, typename V>
     class HashNode {
     public:
+        HashNode(): present(false) {}
+
+        ~HashNode() {
+            if (present) {
+                key().~K();
+                value().~V();
+            }
+        }
+
         K& key() {
             assert(present);
             return *reinterpret_cast<K*>(&_key[0]);
@@ -18,14 +27,27 @@ namespace prt {
             assert(present);
             return *reinterpret_cast<V*>(&_value[0]);
         }
-        HashNode(): present(false) {}
+        
+        // HashNode & operator=(const HashNode<K, V> & rhs) {
+        //     if(this == &rhs) {
+        //         return *this;
+        //     }
+        //     if (rhs.present) {
+        //         present = true;
+        //         std::memcpy(_key, rhs._key, sizeof(_key));
+        //         std::memcpy(_value, rhs._value, sizeof(_value));
+        //     } else {
+        //         present = false;
+        //     }
+        //     return *this;
+        // }
     private:
-        alignas(alignof(K)) char _key[sizeof(K)];
-        alignas(alignof(V)) char _value[sizeof(V)];
+        alignas(K) char _key[sizeof(K)];
+        alignas(V) char _value[sizeof(V)];
 
         bool present;
 
-        HashNode(K key, V value): present(true) {
+        HashNode(const K& key, const V& value): present(true) {
             this->key() = key;
             this->value() = value;
         }
@@ -99,7 +121,6 @@ namespace prt {
             size_t counter = 0;
             
             while(_vector[ind].present && counter < _vector.size()) {
-                
                 if (_vector[ind].key() == key) {
                     return iterator(&_vector[ind], _vector.end());
                 }
@@ -115,12 +136,12 @@ namespace prt {
             iterator(HashNode<K, V>* current, HashNode<K, V>* end)
             : _current(current), _end(end) {}
 
-            const iterator& operator++() { 
+            const iterator& operator++() {
                 while (_current != _end) {
                     _current++;
-                    if (_current->present) {
-                        break;
-                    }
+                    if (_current == _end || _current->present) {
+                        return *this;
+                    } 
                 }
                 return *this; 
             }
