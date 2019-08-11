@@ -22,9 +22,7 @@ namespace prt
                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : vector(allocator) {
             reserve(count);
-            for (size_t i = 0; i < count; i++) {
-                    new (&_data[i]) T(value);
-            }
+            std::fill(&_data[0], &_data[count], value);
             _size = count;
         }
 
@@ -51,10 +49,8 @@ namespace prt
           _alignment(alignof(T)), _allocator(allocator) {}
 
         ~vector() {
-            for (size_t i = 0; i < _size; i++) {
-                _data[i].~T();
-            }
             if (_data != nullptr) {
+                std::destroy(&_data[0], &_data[_size]);
                 _allocator.free(_data);
             }
         }
@@ -88,9 +84,7 @@ namespace prt
         void resize(size_t size) {
             if (size > _size) {
                 reserve(size);
-                for (size_t i = _size; i < _capacity; i++) {
-                    new (&_data[i]) T();
-                }
+                std::fill(&_data[_size], &_data[size], T());
                 _size = size;
             }
         }
