@@ -1,6 +1,6 @@
 #include "model.h"
 
-#include "src/container/hash_table.h"
+#include "src/container/hash_map.h"
 
 // Helper function for counting meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
@@ -56,7 +56,7 @@ void Model::load(const char* path) {
     // Temporary vertex buffer
     Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
     //std::unordered_map<Vertex, uint32_t> uniqueVertices = {}; 
-    prt::HashTable<Vertex, uint32_t> uniqueVertices; 
+    prt::hash_map<Vertex, uint32_t> uniqueVertices; 
 
     // Variables for counting
     size_t meshCount = 0;

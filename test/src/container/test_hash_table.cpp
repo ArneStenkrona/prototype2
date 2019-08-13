@@ -1,11 +1,11 @@
 #include "test/src/prt_test.h"
 #include <catch2/catch.hpp>
-#include "src/container/hash_table.h"
+#include "src/container/hash_map.h"
 
 #include <string>
 
 TEST_CASE( "Test insert", "[hash_table]") {
-    prt::HashTable<uint32_t, uint32_t> table;
+    prt::hash_map<uint32_t, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
         table.insert(i, i * i - i);
@@ -16,7 +16,7 @@ TEST_CASE( "Test insert", "[hash_table]") {
 }
 
 TEST_CASE( "Test remove", "[hash_table]") {
-    prt::HashTable<uint32_t, uint32_t> table;
+    prt::hash_map<uint32_t, uint32_t> table;
 
     size_t s = 0;
     for (uint32_t i = 0; i < 1000; i++) {
@@ -42,7 +42,7 @@ TEST_CASE( "Test remove", "[hash_table]") {
 }
 
 TEST_CASE( "Test subscript", "[hash_table]") {
-    prt::HashTable<uint32_t, uint32_t> table;
+    prt::hash_map<uint32_t, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
         table[i] = i * i - i;
@@ -53,7 +53,7 @@ TEST_CASE( "Test subscript", "[hash_table]") {
 }
 
 TEST_CASE( "Test find", "[hash_table]") {
-    prt::HashTable<std::string, uint32_t> table;
+    prt::hash_map<std::string, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);
@@ -71,7 +71,7 @@ TEST_CASE( "Test find", "[hash_table]") {
 }
 
 TEST_CASE( "Test iterate", "[hash_table]") {
-    prt::HashTable<std::string, uint32_t> table;
+    prt::hash_map<std::string, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);

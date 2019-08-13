@@ -5,14 +5,14 @@
 #include "src/container/vector.h"
 
 namespace prt {
-    template<typename K, typename V> class HashTable;
+    template<typename K, typename V> class hash_map;
 
     template<typename K, typename V>
-    class HashNode {
+    class hash_map_node {
     public:
-        HashNode(): present(false) {}
+        hash_map_node(): present(false) {}
 
-        ~HashNode() {
+        ~hash_map_node() {
             if (present) {
                 key().~K();
                 value().~V();
@@ -34,22 +34,22 @@ namespace prt {
 
         bool present;
 
-        HashNode(const K& key, const V& value): present(true) {
+        hash_map_node(const K& key, const V& value): present(true) {
             this->key() = key;
             this->value() = value;
         }
-        friend class HashTable<K, V>;
+        friend class hash_map<K, V>;
     };
 
     template<typename K, typename V>
-    class HashTable {
+    class hash_map {
     public:
         class iterator;
 
-        HashTable()
-        : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
+        hash_map()
+        : hash_map(ContainerAllocator::getDefaultContainerAllocator()) {}
 
-        HashTable(ContainerAllocator& allocator) 
+        hash_map(ContainerAllocator& allocator) 
         : _vector(allocator), _size(0) {
             _vector.resize(1);
         }
@@ -68,7 +68,7 @@ namespace prt {
             if (!_vector[ind].present) {
                 _size++;
             }
-            _vector[ind] = HashNode<K, V>(key, value);
+            _vector[ind] = hash_map_node<K, V>(key, value);
         }
 
         void remove(const K& key) {
@@ -95,7 +95,7 @@ namespace prt {
             }
 
             if (!_vector[ind].present) {
-                _vector[ind] = HashNode<K, V>(key, V());
+                _vector[ind] = hash_map_node<K, V>(key, V());
                 _size++;
             }
             return _vector[ind].value();
@@ -120,7 +120,7 @@ namespace prt {
 
         class iterator {
         public:        
-            iterator(HashNode<K, V>* current, HashNode<K, V>* end)
+            iterator(hash_map_node<K, V>* current, hash_map_node<K, V>* end)
             : _current(current), _end(end) {}
 
             const iterator& operator++() {
@@ -147,11 +147,11 @@ namespace prt {
                 return !(*this == other);
             }
 
-            HashNode<K, V>& operator*() { return *_current; }
-            HashNode<K, V>* operator->() { return _current; }
+            hash_map_node<K, V>& operator*() { return *_current; }
+            hash_map_node<K, V>* operator->() { return _current; }
         private:
-            HashNode<K, V>* _current;
-            HashNode<K, V>* _end;    
+            hash_map_node<K, V>* _current;
+            hash_map_node<K, V>* _end;    
         };
         
         iterator begin() {
@@ -168,14 +168,14 @@ namespace prt {
 
     private:
         // vector to store the elements.
-        vector<HashNode<K, V> > _vector;
+        vector<hash_map_node<K, V> > _vector;
         // number of key value pairs in table
         size_t _size;
 
         inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
-            prt::vector<HashNode<K, V> > temp;
+            prt::vector<hash_map_node<K, V> > temp;
 
             temp.resize(_size);
 
