@@ -4,7 +4,7 @@
 
 #include <string>
 
-TEST_CASE( "Test insert", "[hash_table]") {
+TEST_CASE( "Test insert hash table", "[hash_table]") {
     prt::hash_map<uint32_t, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
@@ -15,7 +15,7 @@ TEST_CASE( "Test insert", "[hash_table]") {
     }
 }
 
-TEST_CASE( "Test remove", "[hash_table]") {
+TEST_CASE( "Test remove hash table", "[hash_table]") {
     prt::hash_map<uint32_t, uint32_t> table;
 
     size_t s = 0;
@@ -41,7 +41,7 @@ TEST_CASE( "Test remove", "[hash_table]") {
     REQUIRE(table.size() == s);
 }
 
-TEST_CASE( "Test subscript", "[hash_table]") {
+TEST_CASE( "Test subscript hash table", "[hash_table]") {
     prt::hash_map<uint32_t, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
@@ -52,7 +52,7 @@ TEST_CASE( "Test subscript", "[hash_table]") {
     }
 }
 
-TEST_CASE( "Test find", "[hash_table]") {
+TEST_CASE( "Test find hash table", "[hash_table]") {
     prt::hash_map<std::string, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
@@ -70,7 +70,7 @@ TEST_CASE( "Test find", "[hash_table]") {
     }
 }
 
-TEST_CASE( "Test iterate", "[hash_table]") {
+TEST_CASE( "Test iterate hash table", "[hash_table]") {
     prt::hash_map<std::string, uint32_t> table;
 
     for (uint32_t i = 0; i < 1000; i++) {
