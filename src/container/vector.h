@@ -5,8 +5,6 @@
 
 #include <algorithm>
 
-#include <iostream>
-
 namespace prt
 {
     template<class T>
