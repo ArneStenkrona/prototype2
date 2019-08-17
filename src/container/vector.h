@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+#include <iostream>
+
 namespace prt
 {
     template<class T>
@@ -45,8 +47,30 @@ namespace prt
         }
 
         vector(ContainerAllocator& allocator)
-        : _data(nullptr), _size(0), _capacity(0),
-          _alignment(alignof(T)), _allocator(allocator) {}
+        : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
+
+        vector(const vector& other)
+        : vector(other, other._allocator) {}
+
+        vector(const vector& other, ContainerAllocator& allocator)
+        :   vector(allocator) {
+            reserve(other._size);
+            if (other._data != nullptr) {
+                std::copy(other.begin(), other.end(), _data);
+            }
+            _size = other._size;
+        }
+
+        vector& operator=(const vector& other) {
+            if (this != &other) {
+                reserve(other._size);
+                if (other._data != nullptr) {
+                    std::copy(other.begin(), other.end(), _data);
+                }
+                _size = other._size;
+            }
+            return *this;
+        }
 
         ~vector() {
             if (_data != nullptr) {
@@ -105,7 +129,7 @@ namespace prt
             }
 
             T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
-                                                _alignment));
+                                                alignof(T)));
 
             if (_data != nullptr) {
                 std::copy(begin(), end(),
@@ -139,8 +163,6 @@ namespace prt
         size_t _size;
         // Buffer size in bytes.
         size_t _capacity;
-        // Alignment
-        size_t _alignment;
         // Allocator
         ContainerAllocator& _allocator;
     };

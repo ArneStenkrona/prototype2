@@ -33,3 +33,31 @@ TEST_CASE( "Test insert string", "[Vector]") {
         REQUIRE(vec[i] == std::to_string(i));
     }
 }
+
+TEST_CASE( "Test copy constructor", "[Vector]") {
+    prt::vector<std::string> vec1;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+    prt::vector<std::string> vec2 = vec1;
+    REQUIRE(vec2.size() == vec1.size());
+
+    for (size_t i = 0; i < 1000; i++) {
+        REQUIRE(vec2[i] == std::to_string(i));
+    }
+}
+
+TEST_CASE( "Test copy assignment operator", "[Vector]") {
+    prt::vector<std::string> vec1, vec2;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+    vec2 = vec1;
+    REQUIRE(vec2.size() == vec1.size());
+
+    for (size_t i = 0; i < 1000; i++) {
+        REQUIRE(vec2[i] == std::to_string(i));
+    }
+}
