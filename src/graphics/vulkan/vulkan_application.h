@@ -114,8 +114,6 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
     
-    //prt::vector<Vertex> vertices;
-    //prt::vector<uint32_t> indices;
     Model model;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
