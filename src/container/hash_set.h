@@ -12,6 +12,25 @@ namespace prt {
     public:
         hash_set_node(): _present(false) {}
 
+        hash_set_node(const hash_set_node& other) {
+            if (this != &other) {
+                _present = other._present;
+                if (_present) {
+                    new (&_value) T(*reinterpret_cast<const T*>(&other._value[0]));
+                }
+            }
+        }
+
+        hash_set_node& operator=(const hash_set_node& other) {
+            if (this != &other) {
+                _present = other._present;
+                if (_present) {
+                    new (&_value) T(*reinterpret_cast<const T*>(&other._value[0]));
+                }
+            } 
+            return *this;
+        }
+
         ~hash_set_node() {
             if (_present) {
                 value().~T();
@@ -41,13 +60,30 @@ namespace prt {
         hash_set()
         : hash_set(ContainerAllocator::getDefaultContainerAllocator()) {}
 
+        hash_set(std::initializer_list<T> ilist, 
+            ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator()) 
+        : hash_set(allocator) {
+            for (auto it = ilist.begin(); it != ilist.end(); it++) {
+                insert(*it);
+            }
+        }
+
+        template< class InputIt >
+        hash_set(InputIt first, InputIt last,
+            ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
+        : hash_set(allocator) {
+            assert(first <= last);
+            for (auto it = first; it != last; it++) {
+                insert(*it);
+            }
+        }
+
         hash_set(ContainerAllocator& allocator) 
         : _vector(allocator), _size(0) {
-            _vector.resize(1);
+            increaseCapacity(2);
         }
         
         void insert(const T& value) {
-
             if (2 * _size > _vector.capacity()) {
                 increaseCapacity(2 * _vector.capacity());
             }
@@ -61,24 +97,57 @@ namespace prt {
             if (!_vector[ind]._present) {
                 _size++;
                 _vector[ind] = hash_set_node<T>(value);
-            }   
+            }    
         }
 
-        // WILL IMPLEMENT WHEN NEEDED void remove(const T& value) {}
+        void erase(const T& value) {
+            size_t ind = hashIndex(value);
+            size_t counter = 0;
+            // Loop through until first gap.
+            // Worst case is O(n), though average is O(1)
+            while (_vector[ind]._present) {
+                if (_vector[ind].value() == value) {
+                    // remove the value and shift appropriate
+                    // nodes to avoid invalidating future searches
+                    _size--;
+                    _vector[ind]._present = false;
+                    size_t next = ind == _vector.size() - 1 ? 0 : ind + 1;
+                    // Loop through nodes to be shifted
+                    // Worst case is O(n), though average is O(1)
+                    while (_vector[next]._present) {
+                        // Store the value as temp and remove it
+                        T& temp = _vector[next].value();
+                        _vector[next]._present = false;
+                        size_t nextInd = hashIndex(temp);
+                        // Reinsert
+                        // Worst case is O(n), though average is O(1)
+                        while (_vector[nextInd]._present) {
+                            nextInd = nextInd == _vector.size() - 1 ? 0 : nextInd + 1;
+                        }
+                        _vector[nextInd] = hash_set_node<T>(temp);
+                        
+                        next = next == _vector.size() - 1 ? 0 : next + 1;
+                    }
+                    // return
+                    return;
+                }
+                counter++;
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            }
+        }
 
         inline size_t size() const { return _size; }
+        inline bool empty() const { return _size == 0; }
 
         iterator find(const T& value) {
             size_t ind = hashIndex(value);
-            size_t counter = 0;
             
-            while (_vector[ind]._present && counter < _vector.size()) {
+            while (_vector[ind]._present) {
                 if (_vector[ind].value() == value) {
+                    // return iterator to value
                     return iterator(&_vector[ind], _vector.end());
                 }
-
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-                counter++;
             }
             return end();
         }
@@ -138,8 +207,8 @@ namespace prt {
         size_t _size;
 
         std::hash<T> hash_fn;
-
-        inline size_t hashIndex(T value) const { return hash_fn(value) % _vector.size(); }
+        // Todo: make distribution more uniform
+        inline size_t hashIndex(const T& value) const { return hash_fn(value) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_set_node<T> > temp;
@@ -151,14 +220,15 @@ namespace prt {
                 temp[count++] = *it;
             }
             _vector.clear();
-            _vector.resize(2 * capacity);
+            _vector.resize(capacity);
 
             for (size_t i = 0; i < temp.size(); i++) {
                 size_t ind = hashIndex(temp[i].value());
 
-                while (_vector[ind]._present && _vector[ind].value() != temp[i].value()) {
+                while (_vector[ind]._present) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
+                
                 _vector[ind] = temp[i];
             }
         }

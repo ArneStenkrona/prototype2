@@ -51,7 +51,7 @@ namespace prt {
 
         hash_map(ContainerAllocator& allocator) 
         : _vector(allocator), _size(0) {
-            _vector.resize(1);
+            increaseCapacity(2);
         }
         
         void insert(const K& key, const V& value) {
@@ -71,7 +71,42 @@ namespace prt {
             _vector[ind] = hash_map_node<K, V>(key, value);
         }
 
-        // WILL IMPLEMENT WHEN NEEDED void remove(const K& key) {}
+        void erase(const K& key) {
+            size_t ind = hashIndex(key);
+            size_t counter = 0;
+            // Loop through until first gap.
+            // Worst case is O(n), though average is O(1)
+            while (_vector[ind]._present) {
+                if (_vector[ind].key() == key) {
+                    // remove the value and shift appropriate
+                    // nodes to avoid invalidating future searches
+                    _size--;
+                    _vector[ind]._present = false;
+                    size_t next = ind == _vector.size() - 1 ? 0 : ind + 1;
+                    // Loop through nodes to be shifted
+                    // Worst case is O(n), though average is O(1)
+                    while (_vector[next]._present) {
+                        // Store the value as temp and remove it
+                        K& tempK = _vector[next].key();
+                        V& tempV = _vector[next].value();
+                        _vector[next]._present = false;
+                        size_t nextInd = hashIndex(tempK);
+                        // Reinsert
+                        // Worst case is O(n), though average is O(1)
+                        while (_vector[nextInd]._present) {
+                            nextInd = nextInd == _vector.size() - 1 ? 0 : nextInd + 1;
+                        }
+                        _vector[nextInd] = hash_map_node<K, V>(tempK, tempV);
+                        
+                        next = next == _vector.size() - 1 ? 0 : next + 1;
+                    }
+                    // return
+                    return;
+                }
+                counter++;
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            }
+        }
 
         V & operator [](const K& key) {
             if (2 * _size > _vector.capacity()) {
@@ -92,6 +127,7 @@ namespace prt {
         }
 
         inline size_t size() const { return _size; }
+        inline bool empty() const { return _size == 0; }
 
         iterator find(const K& key) {
             size_t ind = hashIndex(key);
@@ -163,8 +199,8 @@ namespace prt {
         size_t _size;
 
         std::hash<K> hash_fn;
-
-        inline size_t hashIndex(K key) const { return hash_fn(key) % _vector.size(); }
+        // Todo: make distribution more uniform
+        inline size_t hashIndex(const K& key) const { return hash_fn(key) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_map_node<K, V> > temp;
@@ -176,12 +212,12 @@ namespace prt {
                 temp[count++] = *it;
             }
             _vector.clear();
-            _vector.resize(2 * capacity);
+            _vector.resize(capacity);
 
             for (size_t i = 0; i < temp.size(); i++) {
                 size_t ind = hashIndex(temp[i].key());
 
-                while (_vector[ind]._present && _vector[ind].key() != temp[i].key()) {
+                while (_vector[ind]._present) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
                 _vector[ind] = temp[i];

@@ -15,6 +15,32 @@ TEST_CASE( "hash_table: Test insert", "[hash_table]") {
     }
 }
 
+TEST_CASE( "hash_table: Test erase", "[hash_table]") {
+    prt::hash_map<uint32_t, uint32_t> table;
+
+    size_t s = 0;
+    for (uint32_t i = 0; i < 1000; i++) {
+        table.insert(i, i * i - i);
+        s++;
+    }
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        if (i % 3 == 0) {
+            table.erase(i);
+            s--;
+        }
+    }
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        if (i % 3 == 0) {
+            REQUIRE((table.find(i) == table.end()));
+        } else {
+            REQUIRE((table.find(i) != table.end()));
+        }
+    }
+    REQUIRE(table.size() == s);
+}
+
 TEST_CASE( "hash_table: Test subscript", "[hash_table]") {
     prt::hash_map<uint32_t, uint32_t> table;
 

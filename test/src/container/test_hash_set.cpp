@@ -17,6 +17,38 @@ TEST_CASE( "hash_set: Test insert", "[hash_set]") {
     }
 }
 
+TEST_CASE( "hash_set: Test erase", "[hash_set]") {
+    prt::hash_set<std::string> set;
+
+    size_t s = 0;
+    for (uint32_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);        
+        set.insert(str);
+        s++;
+    }
+    
+    REQUIRE((set.size() == 1000));
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        if (i % 3 == 0) {
+            std::string str = std::to_string(i);
+            set.erase(str);
+            s--;
+        }
+    }
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        if (i % 3 == 0) {
+            std::string str = std::to_string(i);
+            //REQUIRE((set.find(str) == set.end()));
+        } else {
+            std::string str = std::to_string(i);
+            //REQUIRE((set.find(str) != set.end()));
+        }
+    }
+    REQUIRE(set.size() == s);
+}
+
 TEST_CASE( "hash_set: Test find", "[hash_set]") {
     prt::hash_set<std::string> set;
 
