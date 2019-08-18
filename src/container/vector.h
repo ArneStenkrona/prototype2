@@ -27,7 +27,8 @@ namespace prt
             _size = count;
         }
 
-        vector(T* first, T* last,
+        template< class InputIt >
+        vector(InputIt first, InputIt last,
                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : vector(allocator) {
             assert(first <= last);
