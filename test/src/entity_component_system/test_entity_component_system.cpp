@@ -9,10 +9,7 @@ public:
 };
 
 TEST_CASE( "Test add component", "[pool_allocator]" ) {
-    size_t memory = 64 * 1024;
-    EntityManager entityManager = EntityManager(
-                                malloc(memory), 
-                                memory);
+    EntityManager entityManager = EntityManager();
 
     EntityID id = entityManager.createEntity();
 
