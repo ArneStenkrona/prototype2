@@ -120,6 +120,15 @@ namespace prt
             }
         }
 
+
+        void resize(size_t size, const T& value) {
+            if (size > _size) {
+                reserve(size);
+                std::fill(&_data[_size], &_data[size], T(value));
+                _size = size;
+            }
+        }
+
         void clear() {
             if (_data != nullptr) {
                 std::destroy(&_data[0], &_data[_size]);
