@@ -10,21 +10,21 @@ namespace prt {
     template<typename K, typename V>
     class hash_map_node {
     public:
-        hash_map_node(): present(false) {}
+        hash_map_node(): _present(false) {}
 
         ~hash_map_node() {
-            if (present) {
+            if (_present) {
                 key().~K();
                 value().~V();
             }
         }
 
         K& key() {
-            assert(present);
+            assert(_present);
             return *reinterpret_cast<K*>(&_key[0]);
         }
         V& value() {
-            assert(present);
+            assert(_present);
             return *reinterpret_cast<V*>(&_value[0]);
         }
         
@@ -32,11 +32,11 @@ namespace prt {
         alignas(K) char _key[sizeof(K)];
         alignas(V) char _value[sizeof(V)];
 
-        bool present;
+        bool _present;
 
-        hash_map_node(const K& key, const V& value): present(true) {
-            this->key() = key;
-            this->value() = value;
+        hash_map_node(const K& key, const V& value): _present(true) {
+            new (&_key) K(key);
+            new (&_value) V(value);
         }
         friend class hash_map<K, V>;
     };
@@ -61,27 +61,17 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key() != key) {
+            while (_vector[ind]._present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind].present) {
+            if (!_vector[ind]._present) {
                 _size++;
             }
             _vector[ind] = hash_map_node<K, V>(key, value);
         }
 
-        void remove(const K& key) {
-            size_t ind = hashIndex(key);
-
-            while(_vector[ind].present) {
-                if (_vector[ind].key() == key) {
-                    _vector[ind].present = false;
-                    _size--;
-                }
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-            }
-        }
+        // WILL IMPLEMENT WHEN NEEDED void remove(const K& key) {}
 
         V & operator [](const K& key) {
             if (2 * _size > _vector.capacity()) {
@@ -90,11 +80,11 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key() != key) {
+            while(_vector[ind]._present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind].present) {
+            if (!_vector[ind]._present) {
                 _vector[ind] = hash_map_node<K, V>(key, V());
                 _size++;
             }
@@ -107,7 +97,7 @@ namespace prt {
             size_t ind = hashIndex(key);
             size_t counter = 0;
             
-            while(_vector[ind].present && counter < _vector.size()) {
+            while(_vector[ind]._present && counter < _vector.size()) {
                 if (_vector[ind].key() == key) {
                     return iterator(&_vector[ind], _vector.end());
                 }
@@ -126,7 +116,7 @@ namespace prt {
             const iterator& operator++() {
                 while (_current != _end) {
                     _current++;
-                    if (_current == _end || _current->present) {
+                    if (_current == _end || _current->_present) {
                         return *this;
                     } 
                 }
@@ -156,7 +146,7 @@ namespace prt {
         
         iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
-                if (_vector[i].present) {
+                if (_vector[i]._present) {
                     return iterator(&_vector[i], _vector.end());
                 }
             }
@@ -172,7 +162,9 @@ namespace prt {
         // number of key value pairs in table
         size_t _size;
 
-        inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
+        std::hash<K> hash_fn;
+
+        inline size_t hashIndex(K key) const { return hash_fn(key) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_map_node<K, V> > temp;
@@ -189,7 +181,7 @@ namespace prt {
             for (size_t i = 0; i < temp.size(); i++) {
                 size_t ind = hashIndex(temp[i].key());
 
-                while(_vector[ind].present && _vector[ind].key() != temp[i].key()) {
+                while (_vector[ind]._present && _vector[ind].key() != temp[i].key()) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
                 _vector[ind] = temp[i];

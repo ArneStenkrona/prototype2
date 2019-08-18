@@ -4,7 +4,7 @@
 
 #include <string>
 
-TEST_CASE( "Test vector", "[Vector]") {
+TEST_CASE( "vector: Test vector", "[vector]") {
     prt::vector<uint32_t> vec1;
     for (size_t i = 0; i < 100; i++) {
         vec1.push_back(i*i + i);
@@ -23,7 +23,7 @@ TEST_CASE( "Test vector", "[Vector]") {
     }
 }
 
-TEST_CASE( "Test insert string", "[Vector]") {
+TEST_CASE( "vector: Test insert string", "[vector]") {
     prt::vector<std::string> vec;
     for (size_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);
@@ -34,7 +34,7 @@ TEST_CASE( "Test insert string", "[Vector]") {
     }
 }
 
-TEST_CASE( "Test copy constructor", "[Vector]") {
+TEST_CASE( "vector: Test copy constructor", "[vector]") {
     prt::vector<std::string> vec1;
     for (size_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);
@@ -48,7 +48,7 @@ TEST_CASE( "Test copy constructor", "[Vector]") {
     }
 }
 
-TEST_CASE( "Test copy assignment operator", "[Vector]") {
+TEST_CASE( "vector: Test copy assignment operator", "[vector]") {
     prt::vector<std::string> vec1, vec2;
     for (size_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);

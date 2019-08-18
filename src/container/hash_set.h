@@ -10,25 +10,25 @@ namespace prt {
     template<typename T>
     class hash_set_node {
     public:
-        hash_set_node(): present(false) {}
+        hash_set_node(): _present(false) {}
 
         ~hash_set_node() {
-            if (present) {
+            if (_present) {
                 value().~T();
             }
         }
         T& value() {
-            assert(present);
+            assert(_present);
             return *reinterpret_cast<T*>(&_value[0]);
         }
         
     private:
         alignas(T) char _value[sizeof(T)];
 
-        bool present;
+        bool _present;
 
-        hash_set_node(const T& value): present(true) {
-            this->value() = value;
+        hash_set_node(const T& value): _present(true) {
+            new (&_value) T(value);
         }
         friend class hash_set<T>;
     };
@@ -47,33 +47,24 @@ namespace prt {
         }
         
         void insert(const T& value) {
+
             if (2 * _size > _vector.capacity()) {
                 increaseCapacity(2 * _vector.capacity());
             }
             
             size_t ind = hashIndex(value);
 
-            while(_vector[ind].present && _vector[ind].value() != value) {
+            while (_vector[ind]._present && _vector[ind].value() != value) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind].present) {
+            if (!_vector[ind]._present) {
                 _size++;
-            }
-            _vector[ind] = hash_set_node<T>(value);
+                _vector[ind] = hash_set_node<T>(value);
+            }   
         }
 
-        void remove(const T& value) {
-            size_t ind = hashIndex(value);
-
-            while(_vector[ind].present) {
-                if (_vector[ind].value() == value) {
-                    _vector[ind].present = false;
-                    _size--;
-                }
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-            }
-        }
+        // WILL IMPLEMENT WHEN NEEDED void remove(const T& value) {}
 
         inline size_t size() const { return _size; }
 
@@ -81,7 +72,7 @@ namespace prt {
             size_t ind = hashIndex(value);
             size_t counter = 0;
             
-            while(_vector[ind].present && counter < _vector.size()) {
+            while (_vector[ind]._present && counter < _vector.size()) {
                 if (_vector[ind].value() == value) {
                     return iterator(&_vector[ind], _vector.end());
                 }
@@ -100,7 +91,7 @@ namespace prt {
             const iterator& operator++() {
                 while (_current != _end) {
                     _current++;
-                    if (_current == _end || _current->present) {
+                    if (_current == _end || _current->_present) {
                         return *this;
                     } 
                 }
@@ -130,7 +121,7 @@ namespace prt {
         
         iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
-                if (_vector[i].present) {
+                if (_vector[i]._present) {
                     return iterator(&_vector[i], _vector.end());
                 }
             }
@@ -146,7 +137,9 @@ namespace prt {
         // number of key value pairs in table
         size_t _size;
 
-        inline size_t hashIndex(T value) const { return std::hash<T>{}(value) % _vector.size(); }
+        std::hash<T> hash_fn;
+
+        inline size_t hashIndex(T value) const { return hash_fn(value) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_set_node<T> > temp;
@@ -163,7 +156,7 @@ namespace prt {
             for (size_t i = 0; i < temp.size(); i++) {
                 size_t ind = hashIndex(temp[i].value());
 
-                while(_vector[ind].present && _vector[ind].value() != temp[i].value()) {
+                while (_vector[ind]._present && _vector[ind].value() != temp[i].value()) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
                 _vector[ind] = temp[i];
