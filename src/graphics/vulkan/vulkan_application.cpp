@@ -1,6 +1,7 @@
 #include "vulkan_application.h"
 
 #include "src/container/array.h"
+#include "src/container/hash_set.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
@@ -297,13 +298,14 @@ void VulkanApplication::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     
     prt::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    prt::hash_set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
+    for (auto it = uniqueQueueFamilies.begin(); it != uniqueQueueFamilies.end(); it++) {
+    //for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueFamilyIndex = it->value();
         queueCreateInfo.queueCount = 1;
         queueCreateInfo.pQueuePriorities = &queuePriority;
         queueCreateInfos.push_back(queueCreateInfo);
@@ -1480,7 +1482,7 @@ bool VulkanApplication::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     prt::vector<VkExtensionProperties> availableExtensions(extensionCount);
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
     
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    prt::hash_set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
     
     for (const auto& extension : availableExtensions) {
         requiredExtensions.erase(extension.extensionName);

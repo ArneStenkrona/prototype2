@@ -26,7 +26,6 @@
 
 #include <cstring>
 #include <cstdlib>
-#include <set>
 
 extern const int WIDTH;
 extern const int HEIGHT;
