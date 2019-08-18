@@ -5,7 +5,10 @@
 #include "src/entity_component_system/component/component.h"
 
 #include "src/memory/stack_allocator.h"
-#include "src/memory/pool_allocator.h"
+//#include "src/memory/pool_allocator.h"
+
+#include "src/container/array.h"
+#include "src/container/vector.h"
 
 #include <cstddef> 
 #include <cassert>
@@ -24,19 +27,21 @@ public:
 
     EntityID createEntity();
 
-    template<class T>
+    template<class ComponentType>
     void addComponent(EntityID entityID) {
-        // T must be of Component Type
+        // ComponentType must be of Component Type
         assert(_entities[entityID]);
-        ComponentManager<T>& componentManager = getComponentManager<T>();
+        ComponentManager<ComponentType>& componentManager = 
+                        getComponentManager<ComponentType>();
         
         componentManager.addComponent(entityID);
     }
 
-    template<class T>
+    template<class ComponentType>
     void removeComponent(EntityID entityID) {
-        // T must be of Component Type
-        ComponentManager<T>& componentManager = getComponentManager<T>();
+        // ComponentType must be of Component Type
+        ComponentManager<ComponentType>& componentManager = 
+                        getComponentManager<ComponentType>();
     
         componentManager.removeComponent(entityID);
     }
@@ -55,38 +60,32 @@ private:
     // Stack allocator for the entity manager.
     StackAllocator _stackAllocator;
 
-    size_t _entititesSize;
-    bool* _entities;
+    //size_t _entitiesSize;
+    //bool* _entities;
+    prt::array<bool, UINT16_MAX> _entities;
+    
 
-    static constexpr size_t NUMBER_OF_SUPPORTED_COMPONENT_TYPES = 50;
-    AbstractComponentManager* componentManagers[NUMBER_OF_SUPPORTED_COMPONENT_TYPES];
+    //static constexpr size_t NUMBER_OF_SUPPORTED_COMPONENT_TYPES = 50;
+    //IComponentManager* componentManagers[NUMBER_OF_SUPPORTED_COMPONENT_TYPES];
+    prt::vector<IComponentManager*> componentManagers;
 
-    template<class T>
-    ComponentManager<T>& getComponentManager() {
-        static_assert(std::is_base_of<Component, T>::value, "T must be of base Component");
+    template<class ComponentType>
+    ComponentManager<ComponentType>& getComponentManager() {
+        static_assert(std::is_base_of<Component, ComponentType>::value, "ComponentType must be of base Component");
         ComponentTypeID cID = 
-                    ComponentManager<T>::STATIC_COMPONENT_TYPE_ID;
-
+                    ComponentManager<ComponentType>::STATIC_COMPONENT_TYPE_ID;
+                    
         // Check if manager already exists.
-        if (componentManagers[cID] != nullptr) {
-            return *(static_cast<ComponentManager<T>*>(componentManagers[cID]));      
-        } else {
+        if (componentManagers[cID] == nullptr) {
             // If not, create one.
             componentManagers[cID] =
-                reinterpret_cast<ComponentManager<T>*>(_stackAllocator.
-                                allocate(sizeof(ComponentManager<T>), 1));
+                reinterpret_cast<ComponentManager<ComponentType>*>(_stackAllocator.
+                                allocate(sizeof(ComponentManager<ComponentType>), 1));
 
-            size_t paddingBuffer = 8;
-            size_t managerMemSize = UINT16_MAX * sizeof(T) +
-                                    2 * UINT16_MAX * sizeof(uint16_t)
-                                    + paddingBuffer;
-            void* managerMemPointer = _stackAllocator.
-                                      allocate(managerMemSize, sizeof(T));
-
-            new(componentManagers[cID]) ComponentManager<T>(managerMemPointer, managerMemSize);
+            new(componentManagers[cID]) ComponentManager<ComponentType>();
             
-            return *(static_cast<ComponentManager<T>*>(componentManagers[cID]));      
         }
+        return *(static_cast<ComponentManager<ComponentType>*>(componentManagers[cID]));      
     }
 };
 

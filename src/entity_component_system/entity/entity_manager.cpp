@@ -4,15 +4,17 @@
 
 EntityManager::EntityManager(void* memoryPointer, size_t  memorySizeBytes) 
     : _nextID(0), _stackAllocator(StackAllocator(memoryPointer, memorySizeBytes)) {
-        _entititesSize = UINT16_MAX;
-        _entities = reinterpret_cast<bool*>(
-            _stackAllocator.
-            allocate(_entititesSize * sizeof(bool), sizeof(bool)));
+    // Number of different components
+    // This is possible due to all component types are known at compile time
+    static ComponentTypeID numDiffComponents = IComponentManager::totalNumTypes();
+
+    // resize component manager container
+    componentManagers.resize(numDiffComponents, nullptr);
 }
 
 EntityID EntityManager::createEntity() {
     EntityID id = _nextID;
-    assert(id < _entititesSize);
+    assert(id < _entities.size());
     _entities[id] = true;
     _nextID++;
     return id;

@@ -1,3 +1,3 @@
 #include "component_manager.h"
 
-ComponentTypeID AbstractComponentManager::_nextTypeID = 0;
+ComponentTypeID IComponentManager::_nextTypeID = 0;

@@ -12,16 +12,17 @@
 typedef uint16_t EntityID;
 typedef uint16_t ComponentTypeID;
 
-class AbstractComponentManager {
+class IComponentManager {
 public:
-    //virtual ~AbstractComponentManager() = 0;
+    //virtual ~IComponentManager() = 0;
+    static ComponentTypeID totalNumTypes() { return _nextTypeID; }
 protected:
     static ComponentTypeID getID() { return _nextTypeID++; }
     static ComponentTypeID _nextTypeID;
 };
 
-template<class Component>
-class ComponentManager : public AbstractComponentManager {
+template<class ComponentType>
+class ComponentManager : public IComponentManager {
 public:    
     // ID indicating type of component manager
     static const ComponentTypeID STATIC_COMPONENT_TYPE_ID;
@@ -44,16 +45,16 @@ private:
     // d-cache misses due to their sparsity
     prt::array<uint16_t, UINT16_MAX> _entityIDToComponent;
     prt::array<EntityID, UINT16_MAX> _componentToEntityID;
-    prt::vector<Component> _components;
+    prt::vector<ComponentType> _components;
 
     void addComponent(EntityID entityID) {
         assert(_entityIDToComponent[entityID] == UNDEFINED_MAP);
         _entityIDToComponent[entityID] = _components.size();
         _componentToEntityID[_components.size()] = entityID;
-        _components.push_back(Component());
+        _components.push_back(ComponentType());
     }
 
-    inline Component getComponent(EntityID entityID) const {
+    inline ComponentType getComponent(EntityID entityID) const {
         uint16_t index = _entityIDToComponent[entityID];
         assert(index != UNDEFINED_MAP);
         return _components[index];
@@ -73,9 +74,9 @@ private:
     friend class EntityManager;
 };
 
-template<class T>
-const ComponentTypeID ComponentManager<T>::STATIC_COMPONENT_TYPE_ID = 
-                                    AbstractComponentManager::getID();
+template<class ComponentType>
+const ComponentTypeID ComponentManager<ComponentType>::STATIC_COMPONENT_TYPE_ID = 
+                                    IComponentManager::getID();
 
 
 #endif
