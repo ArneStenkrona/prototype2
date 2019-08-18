@@ -5,11 +5,14 @@
 
 #include <string.h>
 
+#include <new>
+
+alignas(prt::ContainerAllocator) static char defaultContainerAllocatorBuffer[sizeof(prt::ContainerAllocator)];
 static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
 
 prt::ContainerAllocator& prt::ContainerAllocator::getDefaultContainerAllocator() {
     static prt::ContainerAllocator* defaultContainerAllocator = 
-        new prt::ContainerAllocator(static_cast<void*>(defaultContainerAllocatorMemory),
+        new (&defaultContainerAllocatorBuffer) prt::ContainerAllocator(static_cast<void*>(defaultContainerAllocatorMemory),
                                     DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES,
                                     DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES,
                                     DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES);
