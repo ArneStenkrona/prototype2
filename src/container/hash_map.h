@@ -5,26 +5,26 @@
 #include "src/container/vector.h"
 
 namespace prt {
-    template<typename K, typename V> class HashTable;
+    template<typename K, typename V> class hash_map;
 
     template<typename K, typename V>
-    class HashNode {
+    class hash_map_node {
     public:
-        HashNode(): present(false) {}
+        hash_map_node(): _present(false) {}
 
-        ~HashNode() {
-            if (present) {
+        ~hash_map_node() {
+            if (_present) {
                 key().~K();
                 value().~V();
             }
         }
 
         K& key() {
-            assert(present);
+            assert(_present);
             return *reinterpret_cast<K*>(&_key[0]);
         }
         V& value() {
-            assert(present);
+            assert(_present);
             return *reinterpret_cast<V*>(&_value[0]);
         }
         
@@ -32,24 +32,24 @@ namespace prt {
         alignas(K) char _key[sizeof(K)];
         alignas(V) char _value[sizeof(V)];
 
-        bool present;
+        bool _present;
 
-        HashNode(const K& key, const V& value): present(true) {
-            this->key() = key;
-            this->value() = value;
+        hash_map_node(const K& key, const V& value): _present(true) {
+            new (&_key) K(key);
+            new (&_value) V(value);
         }
-        friend class HashTable<K, V>;
+        friend class hash_map<K, V>;
     };
 
     template<typename K, typename V>
-    class HashTable {
+    class hash_map {
     public:
         class iterator;
 
-        HashTable()
-        : HashTable(ContainerAllocator::getDefaultContainerAllocator()) {}
+        hash_map()
+        : hash_map(ContainerAllocator::getDefaultContainerAllocator()) {}
 
-        HashTable(ContainerAllocator& allocator) 
+        hash_map(ContainerAllocator& allocator) 
         : _vector(allocator), _size(0) {
             _vector.resize(1);
         }
@@ -61,27 +61,17 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key() != key) {
+            while (_vector[ind]._present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind].present) {
+            if (!_vector[ind]._present) {
                 _size++;
             }
-            _vector[ind] = HashNode<K, V>(key, value);
+            _vector[ind] = hash_map_node<K, V>(key, value);
         }
 
-        void remove(const K& key) {
-            size_t ind = hashIndex(key);
-
-            while(_vector[ind].present) {
-                if (_vector[ind].key() == key) {
-                    _vector[ind].present = false;
-                    _size--;
-                }
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-            }
-        }
+        // WILL IMPLEMENT WHEN NEEDED void remove(const K& key) {}
 
         V & operator [](const K& key) {
             if (2 * _size > _vector.capacity()) {
@@ -90,12 +80,12 @@ namespace prt {
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind].present && _vector[ind].key() != key) {
+            while(_vector[ind]._present && _vector[ind].key() != key) {
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind].present) {
-                _vector[ind] = HashNode<K, V>(key, V());
+            if (!_vector[ind]._present) {
+                _vector[ind] = hash_map_node<K, V>(key, V());
                 _size++;
             }
             return _vector[ind].value();
@@ -107,7 +97,7 @@ namespace prt {
             size_t ind = hashIndex(key);
             size_t counter = 0;
             
-            while(_vector[ind].present && counter < _vector.size()) {
+            while(_vector[ind]._present && counter < _vector.size()) {
                 if (_vector[ind].key() == key) {
                     return iterator(&_vector[ind], _vector.end());
                 }
@@ -120,13 +110,13 @@ namespace prt {
 
         class iterator {
         public:        
-            iterator(HashNode<K, V>* current, HashNode<K, V>* end)
+            iterator(hash_map_node<K, V>* current, hash_map_node<K, V>* end)
             : _current(current), _end(end) {}
 
             const iterator& operator++() {
                 while (_current != _end) {
                     _current++;
-                    if (_current == _end || _current->present) {
+                    if (_current == _end || _current->_present) {
                         return *this;
                     } 
                 }
@@ -147,16 +137,16 @@ namespace prt {
                 return !(*this == other);
             }
 
-            HashNode<K, V>& operator*() { return *_current; }
-            HashNode<K, V>* operator->() { return _current; }
+            hash_map_node<K, V>& operator*() { return *_current; }
+            hash_map_node<K, V>* operator->() { return _current; }
         private:
-            HashNode<K, V>* _current;
-            HashNode<K, V>* _end;    
+            hash_map_node<K, V>* _current;
+            hash_map_node<K, V>* _end;    
         };
         
         iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
-                if (_vector[i].present) {
+                if (_vector[i]._present) {
                     return iterator(&_vector[i], _vector.end());
                 }
             }
@@ -168,14 +158,16 @@ namespace prt {
 
     private:
         // vector to store the elements.
-        vector<HashNode<K, V> > _vector;
+        vector<hash_map_node<K, V> > _vector;
         // number of key value pairs in table
         size_t _size;
 
-        inline size_t hashIndex(K key) const { return std::hash<K>{}(key) % _vector.size(); }
+        std::hash<K> hash_fn;
+
+        inline size_t hashIndex(K key) const { return hash_fn(key) % _vector.size(); }
     
         void increaseCapacity(size_t capacity) {
-            prt::vector<HashNode<K, V> > temp;
+            prt::vector<hash_map_node<K, V> > temp;
 
             temp.resize(_size);
 
@@ -189,7 +181,7 @@ namespace prt {
             for (size_t i = 0; i < temp.size(); i++) {
                 size_t ind = hashIndex(temp[i].key());
 
-                while(_vector[ind].present && _vector[ind].key() != temp[i].key()) {
+                while (_vector[ind]._present && _vector[ind].key() != temp[i].key()) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
                 _vector[ind] = temp[i];

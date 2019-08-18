@@ -62,9 +62,13 @@ namespace prt {
 
         inline size_t getAlignment() const { return _alignment; }
 
+        inline size_t getBlockSize() const { return _blockSize; }
+
         inline size_t getNumberOfBlocks() const { return _numBlocks; }
 
         inline size_t getNumberOfFreeBlocks() const { return _numFreeBlocks; }
+
+        inline size_t getFreeMemory() const { return _numFreeBlocks * _blockSize; }
 
         /**
          * @return default container allocator

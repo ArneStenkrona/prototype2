@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+#include <iostream>
+
 namespace prt
 {
     template<class T>
@@ -17,8 +19,7 @@ namespace prt
             resize(count);
         }
 
-        vector(size_t count, 
-               const T& value,
+        vector(size_t count, const T& value,
                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : vector(allocator) {
             reserve(count);
@@ -45,8 +46,37 @@ namespace prt
         }
 
         vector(ContainerAllocator& allocator)
-        : _data(nullptr), _size(0), _capacity(0),
-          _alignment(alignof(T)), _allocator(allocator) {}
+        : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
+
+        vector(const vector& other)
+        : vector(other, other._allocator) {}
+
+        vector(const vector& other, ContainerAllocator& allocator)
+        : vector(allocator) {
+            if (this != &other) {
+                if (other._data != nullptr) {
+                    reserve(other._size);
+                    for (size_t i = 0; i < other._size; i++) {
+                        new (&_data[i]) T(other[i]);
+                    }
+                    _size = other._size;
+                }
+            }
+        }
+
+        vector& operator=(const vector& other) {
+            if (this != &other) {
+                clear();
+                if (other._data != nullptr) {
+                    reserve(other._size);
+                    for (size_t i = 0; i < other._size; i++) {
+                        new (&_data[i]) T(other[i]);
+                    }
+                    _size = other._size;
+                } 
+            } 
+            return *this;
+        }
 
         ~vector() {
             if (_data != nullptr) {
@@ -55,12 +85,12 @@ namespace prt
             }
         }
 
-        T operator [](size_t index) const { 
+        T & operator [](size_t index) {
             assert(index < _size);
             return _data[index];
         }
 
-        T & operator [](size_t index) {
+        const T & operator [](size_t index) const {
             assert(index < _size);
             return _data[index];
         }
@@ -90,13 +120,13 @@ namespace prt
         }
 
         void clear() {
-            for (size_t i = 0; i < _size; i++) {
-                _data[i].~T();
+            if (_data != nullptr) {
+                std::destroy(&_data[0], &_data[_size]);
+                // _allocator.free(_data);
+                // _data = nullptr;
+                _size = 0;
+                // _capacity = 0;
             }
-            _allocator.free(_data);
-            _data = nullptr;
-            _size = 0;
-            _capacity = 0;
         }
 
         void reserve(size_t capacity) {
@@ -105,7 +135,7 @@ namespace prt
             }
 
             T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
-                                                _alignment));
+                                            alignof(T)));
 
             if (_data != nullptr) {
                 std::copy(begin(), end(),
@@ -127,7 +157,7 @@ namespace prt
         inline size_t capacity() const { return _capacity; }
         inline T* data() const { return _data; }
 
-        inline T* begin() const { return _data; }
+        inline T* begin() const { return &_data[0]; }
         inline T* end() const { return &_data[_size]; }
 
     private:
@@ -139,8 +169,6 @@ namespace prt
         size_t _size;
         // Buffer size in bytes.
         size_t _capacity;
-        // Alignment
-        size_t _alignment;
         // Allocator
         ContainerAllocator& _allocator;
     };

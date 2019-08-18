@@ -4,7 +4,7 @@
 
 #include <string>
 
-TEST_CASE( "Test vector", "[Vector]") {
+TEST_CASE( "vector: Test vector", "[vector]") {
     prt::vector<uint32_t> vec1;
     for (size_t i = 0; i < 100; i++) {
         vec1.push_back(i*i + i);
@@ -23,7 +23,7 @@ TEST_CASE( "Test vector", "[Vector]") {
     }
 }
 
-TEST_CASE( "Test insert string", "[Vector]") {
+TEST_CASE( "vector: Test insert string", "[vector]") {
     prt::vector<std::string> vec;
     for (size_t i = 0; i < 1000; i++) {
         std::string str = std::to_string(i);
@@ -31,5 +31,33 @@ TEST_CASE( "Test insert string", "[Vector]") {
     }
     for (size_t i = 0; i < 1000; i++) {
         REQUIRE(vec[i] == std::to_string(i));
+    }
+}
+
+TEST_CASE( "vector: Test copy constructor", "[vector]") {
+    prt::vector<std::string> vec1;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+    prt::vector<std::string> vec2 = vec1;
+    REQUIRE(vec2.size() == vec1.size());
+
+    for (size_t i = 0; i < 1000; i++) {
+        REQUIRE(vec2[i] == std::to_string(i));
+    }
+}
+
+TEST_CASE( "vector: Test copy assignment operator", "[vector]") {
+    prt::vector<std::string> vec1, vec2;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+    vec2 = vec1;
+    REQUIRE(vec2.size() == vec1.size());
+
+    for (size_t i = 0; i < 1000; i++) {
+        REQUIRE(vec2[i] == std::to_string(i));
     }
 }
