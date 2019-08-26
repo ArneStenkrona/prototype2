@@ -63,6 +63,8 @@ private:
     //size_t _entitiesSize;
     //bool* _entities;
     prt::array<bool, UINT16_MAX> _entities;
+
+    
     
 
     //static constexpr size_t NUMBER_OF_SUPPORTED_COMPONENT_TYPES = 50;
@@ -71,7 +73,7 @@ private:
 
     template<class ComponentType>
     ComponentManager<ComponentType>& getComponentManager() {
-        static_assert(std::is_base_of<Component, ComponentType>::value, "ComponentType must be of base Component");
+        //static_assert(std::is_base_of<Component, ComponentType>::value, "ComponentType must be of base Component");
         ComponentTypeID cID = 
                     ComponentManager<ComponentType>::STATIC_COMPONENT_TYPE_ID;
                     
@@ -87,6 +89,8 @@ private:
         }
         return *(static_cast<ComponentManager<ComponentType>*>(componentManagers[cID]));      
     }
+
+    friend class Game;
 };
 
 #endif

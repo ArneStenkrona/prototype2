@@ -18,6 +18,9 @@ set (DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES 1*1024*1024)
 set (DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES 256)
 set (DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES 4)
 
+# Entity Component System
+set (TOTAL_ENTITIES 16384)
+
 #END CONFIG VARIABLES
 
 # Set paths
@@ -51,8 +54,10 @@ file(GLOB SOURCES
     "src/config/*.cpp"
     "src/memory/*.cpp"
     "src/container/*.cpp"
-    "src/entity_component_system/component/*.cpp"
+    "src/game/*.cpp"
     "src/entity_component_system/entity/*.cpp"
+    "src/entity_component_system/component/*.cpp"
+    "src/entity_component_system/system/*.cpp"
     "src/graphics/vulkan/*.cpp"
     "src/graphics/geometry/*.cpp"
 )

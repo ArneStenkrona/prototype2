@@ -4,10 +4,10 @@
 #include "src/container/array.h"
 #include "src/container/vector.h"
 
+#include "src/config/prototype2Config.h"
 #include <cstddef> 
 #include <typeindex>
 #include <typeinfo>
-#include <iostream>
 
 typedef uint16_t EntityID;
 typedef uint16_t ComponentTypeID;
@@ -41,10 +41,8 @@ private:
     static constexpr uint16_t UNDEFINED_MAP = static_cast<uint16_t>(-1);
 
     // Array mappings
-    // Systems should internally cache these to avoid
-    // d-cache misses due to their sparsity
-    prt::array<uint16_t, UINT16_MAX> _entityIDToComponent;
-    prt::array<EntityID, UINT16_MAX> _componentToEntityID;
+    prt::array<uint16_t, TOTAL_ENTITIES> _entityIDToComponent;
+    prt::array<EntityID, TOTAL_ENTITIES> _componentToEntityID;
     prt::vector<ComponentType> _components;
 
     void addComponent(EntityID entityID) {
@@ -54,10 +52,10 @@ private:
         _components.push_back(ComponentType());
     }
 
-    inline ComponentType getComponent(EntityID entityID) const {
+    inline ComponentType& getComponent(EntityID entityID) const {
         uint16_t index = _entityIDToComponent[entityID];
         assert(index != UNDEFINED_MAP);
-        return _components[index];
+        return &_components[index];
     }
 
     void removeComponent(EntityID entityID) {
@@ -72,6 +70,7 @@ private:
     } 
 
     friend class EntityManager;
+    friend class Game;
 };
 
 template<class ComponentType>
