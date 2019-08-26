@@ -24,12 +24,11 @@ namespace prt {
             return _data[index];
         }
 
-        inline size_t size() const { return _size; }
-        inline T* data() const { return &_data[0]; }
-        inline T* data() { return &_data[0]; }
+        constexpr inline size_t size() const { return _size; }
+        constexpr inline T* data() { return &_data[0]; }
 
-        inline T* begin() const { return &_data[0]; }
-        inline T* end() const { return &_data[_size]; }
+        constexpr inline T* begin() { return &_data[0]; }
+        constexpr inline T* end() { return &_data[_size]; }
     };
 }
 
