@@ -33,7 +33,7 @@ $ sudo cmake --build build/ --target install
 
 ## Building
 
-* Building requires CMake versoin 3.14.4 or later
+* Building requires CMake version 3.14.4 or later
 
 * Make sure you are in the root directory
 ```
