@@ -55,6 +55,7 @@ file(GLOB SOURCES
     "src/entity_component_system/entity/*.cpp"
     "src/graphics/vulkan/*.cpp"
     "src/graphics/geometry/*.cpp"
+    "src/system/assets/*.cpp"
 )
 
 file(GLOB TESTSOURCES
@@ -74,6 +75,8 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 # glm
 find_package(glm REQUIRED)
+# libxml2
+find_package(LibXml2 REQUIRED)
 
 # build prototype2
 # add the executable
@@ -85,12 +88,14 @@ target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefi
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)
 target_link_libraries(prototype2 glm)
+#target_link_libraries(prototype2 LibXml2)
 
 # build prototype2 as library
 add_library(prototype2.lib ${SOURCES})
 target_link_libraries(prototype2.lib Vulkan::Vulkan)
 target_link_libraries(prototype2.lib glfw)
 target_link_libraries(prototype2.lib glm)
+#target_link_libraries(prototype2.lib LibXml2)
 
 # test project
 add_executable(prototype2_tests ${TESTSOURCES})

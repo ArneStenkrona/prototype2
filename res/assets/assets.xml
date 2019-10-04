@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<base_path>/Users/arnestenkrona/Documents/Repositories/prototype2/res/assets</base_path>
+<textures>
+    <subfolder>/textures</subfolder>
+    <texture>
+        <name>suzanne</name>
+        <obj_path>/debug/test.obj</obj_path>
+    </texture>
+</textures>
+
+<shaders>
+</shaders>
+
+<models>
+    <subfolder>/models</subfolder>
+    <model>
+        <name>suzanne</name>
+        <obj_path>/debug/test.obj</obj_path>
+        <texture>suzanne</texture>
+    </model>
+</models>
