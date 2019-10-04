@@ -12,12 +12,12 @@ namespace prt {
     public:
         hash_map_node(): _present(false) {}
 
-        ~hash_map_node() {
-            if (_present) {
-                key().~K();
-                value().~V();
-            }
-        }
+        //~hash_map_node() {
+        //    if (_present) {
+        //        key().~K();
+        //        value().~V();
+        //    }
+        //}
 
         K& key() {
             assert(_present);
