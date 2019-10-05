@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.14.4)
 project (prototype2)
 
-# Set C++ language version to C++11
+# Set C++ language version to C++17
 set (CMAKE_CXX_STANDARD 17)
 
 # Set debug mode
@@ -37,10 +37,9 @@ configure_file (
 
 # Copy resource folder to build
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
-
  
 # add the binary tree to the search path for include files
-# so that we will find TutorialConfig.h
+# so that we will find prototype2Config.h
 include_directories(
   "${PROJECT_BINARY_DIR}"
   "${PROJECT_SOURCE_DIR}"
@@ -69,7 +68,7 @@ file(GLOB TESTSOURCES
   "test/src/container/*.cpp"
 )
 
-# add libraries
+# Add libraries
 # vulkan
 project(vulkaninfo)
 find_package(Vulkan REQUIRED)
@@ -83,30 +82,62 @@ find_package(glm REQUIRED)
 # libxml2
 find_package(LibXml2 REQUIRED)
 
-# build prototype2
-# add the executable
+# Compile shaders
+#if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL <<TARGET PLATFORM>>)
+set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}bin/glslangValidator")
+#elseif(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "<<ANOTHER TARGET PLATFORM>>)
+#set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/PROPER/PATH/TO/GLSLANG_VALIDATOR")
+#endif()
+
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+"res/shaders/*.frag"
+"res/shaders/*.vert"
+    )
+    
+foreach(GLSL ${GLSL_SOURCE_FILES})
+get_filename_component(FILE_NAME ${GLSL} NAME)
+set(SPIRV "${PROJECT_BINARY_DIR}/res/shaders/${FILE_NAME}.spv")
+add_custom_command(
+OUTPUT ${SPIRV}
+COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+DEPENDS ${GLSL})
+list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL)
+add_custom_target(
+    Shaders 
+DEPENDS ${SPIRV_BINARY_FILES}
+    )
+
+# Build prototype2
+# Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
 target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
 target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-# link libraries
+# Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)
 target_link_libraries(prototype2 glm)
 #target_link_libraries(prototype2 LibXml2)
 
-# build prototype2 as library
+# Build prototype2 as library
 add_library(prototype2.lib ${SOURCES})
 target_link_libraries(prototype2.lib Vulkan::Vulkan)
 target_link_libraries(prototype2.lib glfw)
 target_link_libraries(prototype2.lib glm)
 #target_link_libraries(prototype2.lib LibXml2)
 
-# test project
+# Test project
 add_executable(prototype2_tests ${TESTSOURCES})
 # Set compiler flags
 target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
 target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-# link libraries
+# Link libraries
 target_link_libraries(prototype2_tests Catch2::Catch2)
 target_link_libraries(prototype2_tests prototype2.lib)
+
+# Add shaders to all projects
+add_dependencies(prototype2 Shaders)
+add_dependencies(prototype2.lib Shaders)
+add_dependencies(prototype2_tests Shaders)
