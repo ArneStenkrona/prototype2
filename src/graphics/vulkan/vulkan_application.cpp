@@ -1,21 +1,18 @@
 #include "vulkan_application.h"
 
+#include "src/config/prototype2Config.h"
+
 #include "src/container/array.h"
 #include "src/container/hash_set.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
 
-//#define TINYOBJLOADER_IMPLEMENTATION
-//#include <tinyobjloader-master/tiny_obj_loader.h>
-
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-const std::string MODEL_PATH = "res/models/chalet.obj";
-const std::string TEXTURE_PATH = "res/textures/example.png";
-
-std::string BASE_PATH;
+const std::string MODEL_PATH = "models/example.obj";
+const std::string TEXTURE_PATH = "textures/example.png";
 
 const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -500,8 +497,8 @@ void VulkanApplication::createDescriptorSetLayout() {
 
 void VulkanApplication::createGraphicsPipeline() {
     
-    auto vertShaderCode = readFile(BASE_PATH + "res/shaders/shader.vert.spv");
-    auto fragShaderCode = readFile(BASE_PATH + "res/shaders/shader.frag.spv");
+    auto vertShaderCode = readFile(RESOURCE_PATH + std::string("shaders/shader.vert.spv"));
+    auto fragShaderCode = readFile(RESOURCE_PATH + std::string("shaders/shader.frag.spv"));
     
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -710,7 +707,7 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
 
 void VulkanApplication::createTextureImage() {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load((BASE_PATH + TEXTURE_PATH).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load((RESOURCE_PATH + TEXTURE_PATH).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
  
@@ -1020,7 +1017,7 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32
 }
     
 void VulkanApplication::loadModel() {
-    model.load("/Users/arnestenkrona/Documents/Repositories/prototype2/res/models/example.obj");
+    model.load((RESOURCE_PATH + MODEL_PATH).c_str());
 }
     
 void VulkanApplication::createVertexBuffer() {
@@ -1566,7 +1563,7 @@ bool VulkanApplication::checkValidationLayerSupport() {
 prt::vector<char> VulkanApplication::readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
+        throw std::runtime_error("failed to open file: " + filename);
     }
     
     size_t fileSize = (size_t) file.tellg();
@@ -1586,21 +1583,14 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanApplication::debugCallback(VkDebugUtilsMess
     return VK_FALSE;
 }
 
-int vmain(int /*argc*/, char* argv[]) {
+int vmain() {
     VulkanApplication app;
-    BASE_PATH = argv[0];
-    do {
-        BASE_PATH.pop_back();
-    } while (BASE_PATH.back() != '/');
-    do {
-        BASE_PATH.pop_back();
-    } while (BASE_PATH.back() != '/');
+
     try {
         app.run();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
- 
     return EXIT_SUCCESS;
 }

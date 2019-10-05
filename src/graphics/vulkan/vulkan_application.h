@@ -33,8 +33,6 @@ extern const int HEIGHT;
 extern const std::string MODEL_PATH;
 extern const std::string TEXTURE_PATH;
 
-extern std::string BASE_PATH;
-
 extern const unsigned int MAX_FRAMES_IN_FLIGHT;
 
 extern const prt::vector<const char*> validationLayers;
@@ -271,6 +269,6 @@ private:
                                                         void* /*pUserData*/);
 };
 
-int vmain(int /*argc*/, char* argv[]);
+int vmain();
 
 #endif

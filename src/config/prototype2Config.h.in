@@ -1,11 +1,13 @@
 #ifndef PROTOTYPE_2_CONFIG_H
 #define PROTOTYPE_2_CONFIG_H
-
 // This is the config file for prototype2
 
-
+/* VERSION */
 #define prototype2_VERSION_MAJOR @prototype2_VERSION_MAJOR@
 #define prototype2_VERSION_MINOR @prototype2_VERSION_MINOR@
+
+/* PATHS */
+#define RESOURCE_PATH @RESOURCE_PATH@
 
 /* MEMORY */
 /* Size of the entity manager stack in bytes

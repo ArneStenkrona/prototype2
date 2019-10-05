@@ -8,6 +8,8 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 #CONFIG VARIABLES
+# Paths
+set(RESOURCE_PATH "\"${PROJECT_BINARY_DIR}/res/\"")
 # Version number
 set (prototype2_VERSION_MAJOR 1)
 set (prototype2_VERSION_MINOR 0)
