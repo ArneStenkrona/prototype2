@@ -7,7 +7,9 @@
 Game::Game()
 : _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
   _vulkanApp() {
-    
+    prt::vector<std::string> paths;
+    _modelManager.getPaths(paths);
+    _vulkanApp.loadModels(paths);
 }
 
 Game::~Game() {

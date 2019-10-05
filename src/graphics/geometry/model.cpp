@@ -26,17 +26,20 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-Model::Model()
-: vertexBuffer(4 * sizeof(float)),
+Model::Model(std::string& path)
+: _path(path),
+  vertexBuffer(4 * sizeof(float)),
   indexBuffer(sizeof(uint32_t)),
   meshes(sizeof(size_t)) {}
 
-void Model::load(const char* path) {
+void Model::load() {
 
-    FILE* file = fopen(path, "r");
+    std::string modelPath = _path + "model.obj";
+
+    FILE* file = fopen((modelPath).c_str(), "r");
     if (file == nullptr) {
         printf("Could not open file '");
-        printf("%s", path);
+        printf("%s", modelPath.c_str());
         printf("'!\n");
         assert(false);
         return;
@@ -165,3 +168,5 @@ void Model::load(const char* path) {
         vertexBuffer[it->value()] = it->key();
     }
 }
+
+void Model::unload() {}

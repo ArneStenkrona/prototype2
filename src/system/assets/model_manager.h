@@ -24,6 +24,8 @@ namespace std {
 class ModelManager {
 public:
     ModelManager(const char* directory);
+
+    void getPaths(prt::vector<std::string>& v);
     
 private:
     prt::hash_map<std::string, std::string> _modelPaths;

@@ -97,11 +97,13 @@ public:
      * @param path path to .obj file.
      * @param allocator allocator for buffers
      */
-    Model();
+    Model(std::string& path);
 
-    void load(const char* path);
+    void load();
+    void unload();
 
 private:   
+    std::string _path;
 
     prt::vector<Vertex> vertexBuffer;
     prt::vector<uint32_t> indexBuffer;

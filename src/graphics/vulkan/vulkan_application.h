@@ -74,6 +74,8 @@ public:
     void initVulkan();
     void mainLoop();
     void cleanup();
+
+    void loadModels(prt::vector<std::string>& paths);
     
     bool isWindowOpen() { return !glfwWindowShouldClose(window); }
 private:
@@ -118,7 +120,8 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
     
-    Model model;
+    //Model model;
+    prt::vector<Model> models;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
