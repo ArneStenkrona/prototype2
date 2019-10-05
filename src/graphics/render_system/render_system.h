@@ -3,14 +3,14 @@
 
 //#include "src/graphics/geometry/model.h"
 
-class RenderSystem {
-public:
-
-private:
-struct RenderJob {
-    
-};
-
-};
+//class RenderSystem {
+//public:
+//
+//private:
+//struct RenderJob {
+//    
+//};
+//
+//};
 
 #endif

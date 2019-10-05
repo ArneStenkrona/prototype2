@@ -68,8 +68,14 @@ struct UniformBufferObject {
 
 class VulkanApplication {
 public:
-    void run();
+    VulkanApplication();
+
+    void initWindow();
+    void initVulkan();
+    void mainLoop();
+    void cleanup();
     
+    bool isWindowOpen() { return !glfwWindowShouldClose(window); }
 private:
     GLFWwindow* window;
     
@@ -133,17 +139,9 @@ private:
     
     bool framebufferResized = false;
     
-    void initWindow();
-    
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
     
-    void initVulkan();
-    
-    void mainLoop();
-    
     void cleanupSwapChain();
-    
-    void cleanup();
     
     void recreateSwapChain();
     
@@ -268,7 +266,5 @@ private:
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
 };
-
-int vmain();
 
 #endif

@@ -1,10 +1,10 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
-typedef uint32_t ModelIndex;
+/*typedef uint32_t ModelIndex;
 struct Model {
     ModelIndex index;
-};
+};*/
 
 struct Transform {
     struct Position { float x, y, z; } position;

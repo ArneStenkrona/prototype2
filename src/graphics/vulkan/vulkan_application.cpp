@@ -47,13 +47,10 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-void VulkanApplication::run() {
+VulkanApplication::VulkanApplication() {
     initWindow();
     initVulkan();
-    mainLoop();
-    cleanup();
-}
-    
+}   
 
 void VulkanApplication::initWindow() {
     glfwInit();
@@ -99,15 +96,17 @@ void VulkanApplication::initVulkan() {
 }
     
 void VulkanApplication::mainLoop() {
-    while (!glfwWindowShouldClose(window)) {
+    //while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         drawFrame();
-    }
+    //}
     
-    vkDeviceWaitIdle(device);
+    //vkDeviceWaitIdle(device);
 }
     
 void VulkanApplication::cleanupSwapChain() {
+    vkDeviceWaitIdle(device);
+
     vkDestroyImageView(device, depthImageView, nullptr);
     vkDestroyImage(device, depthImage, nullptr);
     vkFreeMemory(device, depthImageMemory, nullptr);
@@ -1581,16 +1580,4 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanApplication::debugCallback(VkDebugUtilsMess
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
     
     return VK_FALSE;
-}
-
-int vmain() {
-    VulkanApplication app;
-
-    try {
-        app.run();
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
 }

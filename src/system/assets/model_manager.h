@@ -6,6 +6,8 @@
 
 typedef char ModelName[128];
 
+
+
 namespace std {
     template<> struct hash<ModelName> {
         size_t operator()(ModelName const& modelName) const {
@@ -21,10 +23,10 @@ namespace std {
 
 class ModelManager {
 public:
-    ModelManager(const char* basepath);
+    ModelManager(const char* directory);
     
 private:
-    prt::hash_map<ModelName, char*> _modelPaths;
+    prt::hash_map<std::string, std::string> _modelPaths;
 
 };
 

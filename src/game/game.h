@@ -3,17 +3,24 @@
 
 #include "src/entity_component_system/entity/entity_manager.h"
 #include "src/entity_component_system/system/render_system.h"
+#include "src/system/assets/model_manager.h"
+
+#include "src/graphics/vulkan/vulkan_application.h"
 
 class Game {
 public:
-    Game(void* memoryPointer, size_t  memorySizeBytes);
+    Game();
+    ~Game();
 
     void run();
 private:
     void update();
 
-    EntityManager entityManager;
-    RenderSystem renderSystem;
+    //EntityManager _entityManager;
+    //RenderSystem _renderSystem;
+    ModelManager _modelManager;
+
+    VulkanApplication _vulkanApp;
 };
 
 #endif
