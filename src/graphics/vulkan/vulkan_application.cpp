@@ -153,10 +153,10 @@ void VulkanApplication::cleanup() {
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkFreeMemory(device, indexBufferMemory, nullptr);
  
-    for (size_t i = 0; i < vertexBuffer.size(); i++) {
-        vkDestroyBuffer(device, vertexBuffer[i], nullptr);
-        vkFreeMemory(device, vertexBufferMemory[i], nullptr);
-    }
+
+    vkDestroyBuffer(device, vertexBuffer, nullptr);
+    vkFreeMemory(device, vertexBufferMemory, nullptr);
+    
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -1045,28 +1045,33 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
 }
     
 void VulkanApplication::createVertexBuffer() {
-    vertexBuffer.resize(models.size());
-    vertexBufferMemory.resize(models.size());
+    prt::vector<Vertex> allVertices;
+    VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        VkDeviceSize bufferSize = sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
-    
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-        
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-
-        memcpy(data, models[i].vertexBuffer.data(), (size_t) bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-        
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer[i], vertexBufferMemory[i]);
-        
-        copyBuffer(stagingBuffer, vertexBuffer[i], bufferSize);
-        
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        for (size_t j = 0; j < models[i].vertexBuffer.size(); j++) {
+            allVertices.push_back(models[i].vertexBuffer[j]);
+        }
+        bufferSize  += sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
     }
+
+    //VkDeviceSize bufferSize = sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, allVertices.data(), (size_t) bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+    
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+    
+    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+    
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    
 }
 
 void VulkanApplication::createIndexBuffer() {
@@ -1298,18 +1303,18 @@ void VulkanApplication::createCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         
         if (models.size() > 0) {
-            prt::vector<VkBuffer> vertexBuffers;
-            prt::vector<VkDeviceSize> offsets;
-            VkDeviceSize currentOffset = 0;
-            for (size_t j = 0; j < models.size(); j++) {
-                vertexBuffers.push_back(vertexBuffer[j]);
-                offsets.push_back(currentOffset);
-                currentOffset += vertexBuffer.size();
-            }            
+            // prt::vector<VkBuffer> vertexBuffers;
+            // prt::vector<VkDeviceSize> offsets;
+            // VkDeviceSize currentOffset = 0;
+            // for (size_t j = 0; j < models.size(); j++) {
+            //     vertexBuffers.push_back(vertexBuffer[j]);
+            //     offsets.push_back(currentOffset);
+            //     currentOffset += vertexBuffer.size();
+            // }            
 
-            //VkBuffer vertexBuffers[] = {vertexBuffer};
-            //VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers.data(), offsets.data());
+            VkBuffer vertexBuffers[] = {vertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vertexBuffers[0], &offsets[0]);
             
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             

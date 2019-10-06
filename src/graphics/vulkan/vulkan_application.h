@@ -122,8 +122,8 @@ private:
 
     //Model model;
     prt::vector<Model> models;
-    prt::vector<VkBuffer> vertexBuffer;
-    prt::vector<VkDeviceMemory> vertexBufferMemory;
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     
