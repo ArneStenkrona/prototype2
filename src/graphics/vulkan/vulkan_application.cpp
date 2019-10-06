@@ -85,10 +85,7 @@ void VulkanApplication::initVulkan() {
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    //prt::vector<std::string> vec;
-    //std::string str = (RESOURCE_PATH + MODEL_PATH);
-    //vec.push_back(str);
-    //loadModel(vec);
+    //loadModel();
     //createVertexBuffer();
     //createIndexBuffer();
     createUniformBuffers();
@@ -152,13 +149,15 @@ void VulkanApplication::cleanup() {
     vkFreeMemory(device, textureImageMemory, nullptr);
  
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
- 
+    
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkFreeMemory(device, indexBufferMemory, nullptr);
  
-    vkDestroyBuffer(device, vertexBuffer, nullptr);
-    vkFreeMemory(device, vertexBufferMemory, nullptr);
- 
+    for (size_t i = 0; i < vertexBuffer.size(); i++) {
+        vkDestroyBuffer(device, vertexBuffer[i], nullptr);
+        vkFreeMemory(device, vertexBufferMemory[i], nullptr);
+    }
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
@@ -1038,7 +1037,6 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     createDescriptorPool();
     createDescriptorSets();
     createCommandBuffers();
-    //createSyncObjects();
     recreateSwapChain();
 
     for (size_t i = 0; i < models.size(); i++) {
@@ -1046,60 +1044,51 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     }
 }
     
-//void VulkanApplication::loadModel() {
-//    model.load((RESOURCE_PATH + MODEL_PATH).c_str());
-//}
-    
 void VulkanApplication::createVertexBuffer() {
-    VkDeviceSize bufferSize = 0;
+    vertexBuffer.resize(models.size());
+    vertexBufferMemory.resize(models.size());
     for (size_t i = 0; i < models.size(); i++) {
-        bufferSize += sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
-    }
+        VkDeviceSize bufferSize = sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
+    
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
 
-    //VkDeviceSize bufferSize = sizeof(models.vertexBuffer[0]) * model.vertexBuffer.size();
-    
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-    
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    for (size_t i = 0; i < models.size(); i++) {
-        size_t modelBufferSize = sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
-        memcpy(data, models[i].vertexBuffer.data(), (size_t) modelBufferSize);
-        data = (char*)data + modelBufferSize;
+        memcpy(data, models[i].vertexBuffer.data(), (size_t) bufferSize);
+        vkUnmapMemory(device, stagingBufferMemory);
+        
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer[i], vertexBufferMemory[i]);
+        
+        copyBuffer(stagingBuffer, vertexBuffer[i], bufferSize);
+        
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
-    //memcpy(data, model.vertexBuffer.data(), (size_t) bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-    
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-    
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-    
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void VulkanApplication::createIndexBuffer() {
+    prt::vector<uint32_t> allIndices;
+    size_t indexOffset = 0;
     VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        bufferSize += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
+        for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
+            allIndices.push_back(models[i].indexBuffer[j] + indexOffset);
+        }
+        indexOffset += models[i].vertexBuffer.size();
+        bufferSize  += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
     }
-
-    //VkDeviceSize bufferSize = sizeof(model.indexBuffer[0]) * model.indexBuffer.size();
-    
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
     
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    for (size_t i = 0; i < models.size(); i++) {
-        size_t modelBufferSize = sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
-        memcpy(data, models[i].indexBuffer.data(), (size_t) modelBufferSize);
-        data = (char*)data + modelBufferSize;
-    }
-    //memcpy(data, model.indexBuffer.data(), (size_t) bufferSize);
+
+    memcpy(data, allIndices.data(), (size_t) bufferSize);
+
     vkUnmapMemory(device, stagingBufferMemory);
     
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
@@ -1108,6 +1097,7 @@ void VulkanApplication::createIndexBuffer() {
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
+    
 }
 
 void VulkanApplication::createUniformBuffers() {
@@ -1308,9 +1298,18 @@ void VulkanApplication::createCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         
         if (models.size() > 0) {
-            VkBuffer vertexBuffers[] = {vertexBuffer};
-            VkDeviceSize offsets[] = {0};
-            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+            prt::vector<VkBuffer> vertexBuffers;
+            prt::vector<VkDeviceSize> offsets;
+            VkDeviceSize currentOffset = 0;
+            for (size_t j = 0; j < models.size(); j++) {
+                vertexBuffers.push_back(vertexBuffer[j]);
+                offsets.push_back(currentOffset);
+                currentOffset += vertexBuffer.size();
+            }            
+
+            //VkBuffer vertexBuffers[] = {vertexBuffer};
+            //VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers.data(), offsets.data());
             
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             
@@ -1319,7 +1318,6 @@ void VulkanApplication::createCommandBuffers() {
             for (size_t i = 0; i < models.size(); i++) {
                 indicesSize += models[i].indexBuffer.size();
             }
-            //vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(model.indexBuffer.size()), 1, 0, 0, 0);
             vkCmdDrawIndexed(commandBuffers[i], indicesSize, 1, 0, 0, 0);
         }
         vkCmdEndRenderPass(commandBuffers[i]);

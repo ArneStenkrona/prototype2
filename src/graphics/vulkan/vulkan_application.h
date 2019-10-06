@@ -119,11 +119,11 @@ private:
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
     VkSampler textureSampler;
-    
+
     //Model model;
     prt::vector<Model> models;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+    prt::vector<VkBuffer> vertexBuffer;
+    prt::vector<VkDeviceMemory> vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     

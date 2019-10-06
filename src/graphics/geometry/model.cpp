@@ -2,6 +2,8 @@
 
 #include "src/container/hash_map.h"
 
+#include <iostream>
+
 // Helper function for counting meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     char lineHeader[512];
