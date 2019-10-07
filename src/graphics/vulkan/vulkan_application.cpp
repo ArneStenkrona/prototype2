@@ -1033,15 +1033,12 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
 
     createVertexBuffer();
     createIndexBuffer();
-    createUniformBuffers();
-    createDescriptorPool();
-    createDescriptorSets();
-    createCommandBuffers();
-    recreateSwapChain();
 
     for (size_t i = 0; i < models.size(); i++) {
         models[i].unload();
     }
+    
+    recreateSwapChain();
 }
     
 void VulkanApplication::createVertexBuffer() {
@@ -1053,8 +1050,6 @@ void VulkanApplication::createVertexBuffer() {
         }
         bufferSize  += sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
     }
-
-    //VkDeviceSize bufferSize = sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1102,7 +1097,6 @@ void VulkanApplication::createIndexBuffer() {
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
-    
 }
 
 void VulkanApplication::createUniformBuffers() {
