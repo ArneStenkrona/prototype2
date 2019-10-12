@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 
 #include "src/container/vector.h"
+#include "src/container/array.h"
 #include "src/container/optional.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -115,10 +116,11 @@ private:
     VkImageView depthImageView;
     
     uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
+    static constexpr size_t NUM_TEXTURES = 2;
+    prt::array<VkImage, NUM_TEXTURES> textureImage;
+    prt::array<VkDeviceMemory, NUM_TEXTURES> textureImageMemory;
+    prt::array<VkImageView, NUM_TEXTURES> textureImageView;
+    prt::array<VkSampler, NUM_TEXTURES> textureSampler;
 
     //Model model;
     prt::vector<Model> models;
@@ -185,16 +187,16 @@ private:
     
     bool hasStencilComponent(VkFormat format);
     
-    void createTextureImage();
+    void createTextureImage(size_t index, std::string path);
     
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView();
+    void createTextureImageView(size_t index);
     
-    void createTextureSampler();
+    void createTextureSampler(size_t index);
     
     VkImageView createImageView(VkImage image, VkFormat format, 
                                 VkImageAspectFlags aspectFlags, uint32_t mipLevels);

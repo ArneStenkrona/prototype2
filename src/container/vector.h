@@ -155,8 +155,9 @@ namespace prt
                                             alignof(T)));
 
             if (_data != nullptr) {
-                std::copy(begin(), end(),
-                          newPointer);
+                for (size_t i = 0; i < _size; i++){
+                    new (&newPointer[i]) T(_data[i]);
+                }
 
                 _allocator->free(_data);
             }
