@@ -150,14 +150,15 @@ void VulkanApplication::cleanup() {
         vkFreeMemory(device, textureImageMemory[i], nullptr);
     }
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-    
-    vkDestroyBuffer(device, indexBuffer, nullptr);
-    vkFreeMemory(device, indexBufferMemory, nullptr);
- 
 
     vkDestroyBuffer(device, vertexBuffer, nullptr);
     vkFreeMemory(device, vertexBufferMemory, nullptr);
-    
+
+    vkDestroyBuffer(device, indexBuffer, nullptr);
+    vkFreeMemory(device, indexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, indirectCommandsBuffer, nullptr);
+    vkFreeMemory(device, indirectCommandsBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -478,22 +479,15 @@ void VulkanApplication::createDescriptorSetLayout() {
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    //VkDescriptorSetLayoutBinding samplerLayoutBinding1 = {};
-    //samplerLayoutBinding1.descriptorCount = 1;
-    //samplerLayoutBinding1.binding = 1;
-    //samplerLayoutBinding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    //samplerLayoutBinding1.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //samplerLayoutBinding1.pImmutableSamplers = nullptr;
     
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.descriptorCount = NUM_TEXTURES;//1;
+    samplerLayoutBinding.descriptorCount = NUM_TEXTURES;
     samplerLayoutBinding.binding = 1;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;//VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     
-    prt::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, /*samplerLayoutBinding1,*/ samplerLayoutBinding};
+    prt::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -606,7 +600,7 @@ void VulkanApplication::createGraphicsPipeline() {
 
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(int);
+	pushConstantRange.size = pushConstants.data_size();//sizeof(int);
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -1038,12 +1032,16 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
         return;
     }
 
+    for (size_t i = 0; i < pushConstants.size(); i++) {
+        pushConstants[i] = i;
+    }
+
     for (size_t i = 0; i < paths.size(); i++){
         Model model(paths[i]);
         models.push_back(model);
     }
 
-    for (size_t i = 0; i < NUM_TEXTURES; i++) {
+    for (size_t i = 0; i < paths.size(); i++) {
         createTextureImage(i, paths[i] + "diffuse.png");
         createTextureImageView(i);
         createTextureSampler(i);
@@ -1056,6 +1054,7 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
 
     createVertexBuffer();
     createIndexBuffer();
+    createIndirectCommandBuffer();
 
     for (size_t i = 0; i < models.size(); i++) {
         models[i].unload();
@@ -1071,6 +1070,7 @@ void VulkanApplication::createVertexBuffer() {
         for (size_t j = 0; j < models[i].vertexBuffer.size(); j++) {
             allVertices.push_back(models[i].vertexBuffer[j]);
         }
+
         bufferSize  += sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
     }
 
@@ -1103,9 +1103,12 @@ void VulkanApplication::createIndexBuffer() {
         indexOffset += models[i].vertexBuffer.size();
         bufferSize  += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
     }
+
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                 stagingBuffer, stagingBufferMemory);
     
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
@@ -1114,9 +1117,64 @@ void VulkanApplication::createIndexBuffer() {
 
     vkUnmapMemory(device, stagingBufferMemory);
     
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
     
     copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+    
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void VulkanApplication::createIndirectCommandBuffer() {
+    size_t indexOffset = 0;
+    //VkDeviceSize bufferSize = 0;
+    for (size_t i = 0; i < models.size(); i++) {
+        VkDrawIndexedIndirectCommand indirectCmd{};
+		indirectCmd.instanceCount = 1;
+		indirectCmd.firstInstance = i;
+		indirectCmd.firstIndex = indexOffset;
+		indirectCmd.indexCount = models[i].indexBuffer.size();
+
+        indirectCommands.push_back(indirectCmd);
+
+        indexOffset += models[i].indexBuffer.size();
+        //bufferSize  += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
+    }
+    VkDeviceSize bufferSize = indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand);
+    /*REMOVE->*/
+    // vks::Buffer stagingBuffer;
+	// 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
+	// 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	// 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	// 		&stagingBuffer,
+	// 		indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
+	// 		indirectCommands.data()));
+
+	// 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
+	// 		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+	// 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	// 		&indirectCommandsBuffer,
+	// 		stagingBuffer.size));
+    /*<-REMOVE*/
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, 
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                 stagingBuffer, stagingBufferMemory);
+    
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+
+    memcpy(data, indirectCommands.data(), (size_t) bufferSize);
+
+    vkUnmapMemory(device, stagingBufferMemory);
+    
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 
+                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indirectCommandsBuffer, indirectCommandsBufferMemory);
+    
+    copyBuffer(stagingBuffer, indirectCommandsBuffer, bufferSize);
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1139,10 +1197,6 @@ void VulkanApplication::createDescriptorPool() {
     poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = static_cast<uint32_t>(NUM_TEXTURES * swapChainImages.size());
-    //poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    //poolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    //poolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    //poolSizes[2].descriptorCount = static_cast<uint32_t>(NUM_TEXTURES * swapChainImages.size());
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1190,26 +1244,16 @@ void VulkanApplication::createDescriptorSets() {
         descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descriptorWrites[0].descriptorCount = 1;
         descriptorWrites[0].pBufferInfo = &bufferInfo;
-        
-        //descriptorWrites[1] = {};
-        //descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        //descriptorWrites[1].dstBinding = 1;
-        //descriptorWrites[1].dstArrayElement = 0;
-        //descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        //descriptorWrites[1].descriptorCount = 1;//1;
-        //descriptorWrites[1].dstSet = descriptorSets[i];
-        //descriptorWrites[1].pBufferInfo = 0;
-        //descriptorWrites[1].pImageInfo = imageInfos.data();//&imageInfo;
 
         descriptorWrites[1] = {};
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;//VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        descriptorWrites[1].descriptorCount = NUM_TEXTURES;//1;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = NUM_TEXTURES;
         descriptorWrites[1].dstSet = descriptorSets[i];
         descriptorWrites[1].pBufferInfo = 0;
-        descriptorWrites[1].pImageInfo = imageInfos.data();//&imageInfo;
+        descriptorWrites[1].pImageInfo = imageInfos.data();
         
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
@@ -1345,8 +1389,10 @@ void VulkanApplication::createCommandBuffers() {
             //     vertexBuffers.push_back(vertexBuffer[j]);
             //     offsets.push_back(currentOffset);
             //     currentOffset += vertexBuffer.size();
-            // }            
-
+            // }
+            vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
+                               0, pushConstants.data_size(), (void*)pushConstants.data());
+     
             VkBuffer vertexBuffers[] = {vertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vertexBuffers[0], &offsets[0]);
@@ -1358,7 +1404,27 @@ void VulkanApplication::createCommandBuffers() {
             for (size_t i = 0; i < models.size(); i++) {
                 indicesSize += models[i].indexBuffer.size();
             }
-            vkCmdDrawIndexed(commandBuffers[i], indicesSize, 1, 0, 0, 0);
+            //vkCmdDrawIndexed(commandBuffers[i], indicesSize, 1, 0, 0, 0);
+            // If the multi draw feature is supported:
+			// One draw call for an arbitrary number of ojects
+			// Index offsets and instance count are taken from the indirect buffer
+            bool MYBOOLEAN = false; //THIS SHOULD INSTEAD BE WETHER OR NOT THE DEVICE SUPPORTS multiDrawIndirect
+			if (MYBOOLEAN)
+			{
+				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 0, indirectCommands.size(), sizeof(VkDrawIndexedIndirectCommand));
+			}
+			else
+			{
+				// If multi draw is not available, we must issue separate draw commands
+				for (size_t j = 0; j < indirectCommands.size(); j++)
+				{
+                    vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
+                                       VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), (void *)&j );
+					vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 
+                                             j * sizeof(VkDrawIndexedIndirectCommand), 
+                                             1, sizeof(VkDrawIndexedIndirectCommand));
+				}
+			}
         }
         vkCmdEndRenderPass(commandBuffers[i]);
         

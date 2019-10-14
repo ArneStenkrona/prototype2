@@ -122,6 +122,15 @@ private:
     prt::array<VkImageView, NUM_TEXTURES> textureImageView;
     prt::array<VkSampler, NUM_TEXTURES> textureSampler;
 
+    // Push constants
+    prt::array<uint32_t, 1> pushConstants;
+
+    // Indirect commands
+    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
+    // Contains the indirect drawing commands
+	VkBuffer indirectCommandsBuffer;
+    VkDeviceMemory indirectCommandsBufferMemory;
+
     //Model model;
     prt::vector<Model> models;
     VkBuffer vertexBuffer;
@@ -217,6 +226,8 @@ private:
     void createVertexBuffer();
     
     void createIndexBuffer();
+
+    void createIndirectCommandBuffer();
     
     void createUniformBuffers();
     
