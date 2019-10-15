@@ -1,6 +1,6 @@
 #include "camera.h"
 
-Camera::Camera(GLFWwindow* window, glm::vec3 position, glm::vec3 up, float yaw, float pitch)
+Camera::Camera(Input& input, glm::vec3 position, glm::vec3 up, float yaw, float pitch)
     : position(position), 
       front(glm::vec3(0.0f, 0.0f, -1.0f)),
       worldUp(up), 
@@ -9,16 +9,14 @@ Camera::Camera(GLFWwindow* window, glm::vec3 position, glm::vec3 up, float yaw, 
       MovementSpeed(2.5f), 
       MouseSensitivity(0.15f), 
       fieldOfView(45.0f),
-      window(window),
-      lastX(0.0f), lastY(0.0f)
-
+      _input(input)
 {
     //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     updateCameraVectors();
 }
 
-Camera::Camera(GLFWwindow* window, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
-    : Camera(window, glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
+Camera::Camera(Input& input, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
+    : Camera(input, glm::vec3(posX, posY, posZ), glm::vec3(upX, upY, upZ), yaw, pitch)
 {
 }
 
@@ -38,32 +36,29 @@ void Camera::processKeyboard(float deltaTime)
 {
     //Movement
     float cameraSpeed = MovementSpeed * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_W) == GLFW_PRESS)
         position += front * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_S) == GLFW_PRESS)
         position -= front * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_A) == GLFW_PRESS)
         position -= glm::normalize(glm::cross(front, up)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_D) == GLFW_PRESS)
         position += glm::normalize(glm::cross(front, up)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_SPACE) == GLFW_PRESS)
         position += glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
         position -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)) * cameraSpeed;
     //Reset field of view
-    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+    if (_input.getKey(GLFW_KEY_R) == GLFW_PRESS)
         fieldOfView = 45.0f;
 }
 
 void Camera::processMouseMovement()
 {
     //Mouse
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
-    float dx = ((float)xpos - lastX) * MouseSensitivity, dy = ((float)ypos - lastY) * MouseSensitivity;
-
-    lastX = xpos;
-    lastY = ypos;
+    double x, y;
+    _input.getCursorDelta(x, y);
+    float dx = (float)x * MouseSensitivity, dy = (float)y * MouseSensitivity;
 
     Yaw += dx;
     Pitch -= dy;

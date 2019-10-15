@@ -2,12 +2,27 @@
 #define PRT_INPUT_H
 #include <GLFW/glfw3.h>
 
-namespace input {
 
-int getKey(int keyCode); 
+class Input {
+public:
+    Input(GLFWwindow* window);
 
-void getCursorPos(double* xpos, double* ypos);
+    int getKey(int keyCode); 
 
+    void getCursorPos(double& xpos, double& ypos);
+    void getCursorDelta(double& dx, double& dy);
+private:
+    GLFWwindow* _window;
+
+    double _lastCursorX;
+    double _lastCursorY;
+    double _dx;
+    double _dy;
+
+    void update();
+
+    friend class Game;
 };
+
 
 #endif

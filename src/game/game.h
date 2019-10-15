@@ -7,6 +7,7 @@
 
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/vulkan/vulkan_application.h"
+#include "src/system/input/input.h"
 
 class Game {
 public:
@@ -15,9 +16,8 @@ public:
 
     void run();
 private:
-    void update();
-
     VulkanApplication _vulkanApp;
+    Input _input;
     //EntityManager _entityManager;
     //RenderSystem _renderSystem;
     ModelManager _modelManager;
