@@ -110,15 +110,18 @@ public:
     bool meshesAreLoaded() const { return _meshesAreLoaded; }
     bool texturesAreLoaded() const { return _texturesAreLoaded; }
 
+    const prt::vector<Vertex>& vertexBuffer() const { assert(_meshesAreLoaded); return  _vertexBuffer; }
+    const prt::vector<uint32_t>& indexBuffer() const { assert(_meshesAreLoaded); return  _indexBuffer; }
+
     const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
 
 private:   
     std::string _path;
 
-    prt::vector<Vertex> vertexBuffer;
-    prt::vector<uint32_t> indexBuffer;
+    prt::vector<Vertex> _vertexBuffer;
+    prt::vector<uint32_t> _indexBuffer;
 
-    prt::vector<Mesh> meshes;
+    prt::vector<Mesh> _meshes;
     
     Texture _texture;
 
@@ -138,7 +141,7 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     */
-   friend class VulkanApplication;
+    //friend class VulkanApplication;
 };
 
 #endif

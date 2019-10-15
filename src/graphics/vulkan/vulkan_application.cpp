@@ -140,9 +140,7 @@ void VulkanApplication::cleanup() {
     cleanupSwapChain();
  
     for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
-        //vkDestroySampler(device, textureSampler[i], nullptr);
         vkDestroyImageView(device, textureImageView[i], nullptr);
-    
         vkDestroyImage(device, textureImage[i], nullptr);
         vkFreeMemory(device, textureImageMemory[i], nullptr);
     }
@@ -1051,23 +1049,21 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     createVertexBuffer();
     createIndexBuffer();
     createIndirectCommandBuffer();
-
+    recreateSwapChain();
     for (size_t i = 0; i < models.size(); i++) {
         models[i].free();
     }
-
-    recreateSwapChain();
 }
     
 void VulkanApplication::createVertexBuffer() {
     prt::vector<Vertex> allVertices;
     VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i].vertexBuffer.size(); j++) {
-            allVertices.push_back(models[i].vertexBuffer[j]);
+        for (size_t j = 0; j < models[i].vertexBuffer().size(); j++) {
+            allVertices.push_back(models[i].vertexBuffer()[j]);
         }
 
-        bufferSize  += sizeof(models[i].vertexBuffer[0]) * models[i].vertexBuffer.size();
+        bufferSize  += sizeof(models[i].vertexBuffer()[0]) * models[i].vertexBuffer().size();
     }
 
     VkBuffer stagingBuffer;
@@ -1093,11 +1089,11 @@ void VulkanApplication::createIndexBuffer() {
     size_t indexOffset = 0;
     VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
-            allIndices.push_back(models[i].indexBuffer[j] + indexOffset);
+        for (size_t j = 0; j < models[i].indexBuffer().size(); j++) {
+            allIndices.push_back(models[i].indexBuffer()[j] + indexOffset);
         }
-        indexOffset += models[i].vertexBuffer.size();
-        bufferSize  += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
+        indexOffset += models[i].vertexBuffer().size();
+        bufferSize  += sizeof(models[i].indexBuffer()[0]) * models[i].indexBuffer().size();
     }
 
     VkBuffer stagingBuffer;
@@ -1129,11 +1125,11 @@ void VulkanApplication::createIndirectCommandBuffer() {
 		indirectCmd.instanceCount = 1;
 		indirectCmd.firstInstance = i;
 		indirectCmd.firstIndex = indexOffset;
-		indirectCmd.indexCount = models[i].indexBuffer.size();
+		indirectCmd.indexCount = models[i].indexBuffer().size();
 
         indirectCommands.push_back(indirectCmd);
 
-        indexOffset += models[i].indexBuffer.size();
+        indexOffset += models[i].indexBuffer().size();
     }
     VkDeviceSize bufferSize = indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand);
 
@@ -1389,7 +1385,7 @@ void VulkanApplication::createCommandBuffers() {
             vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
             uint32_t indicesSize = 0;
             for (size_t i = 0; i < models.size(); i++) {
-                indicesSize += models[i].indexBuffer.size();
+                indicesSize += models[i].indexBuffer().size();
             }
 			// Issue indirect commands
 			for (size_t j = 0; j < indirectCommands.size(); j++)

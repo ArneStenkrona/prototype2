@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-// Helper function for counting meshes and indices in obj file.
+// Helper function for counting _meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     char lineHeader[512];
     int res = fscanf(file, "%s%*[^\n]", lineHeader);
@@ -33,9 +33,9 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
 
 Model::Model(std::string& path)
 : _path(path),
-  vertexBuffer(4 * sizeof(float)),
-  indexBuffer(sizeof(uint32_t)),
-  meshes(sizeof(size_t)),
+  _vertexBuffer(4 * sizeof(float)),
+  _indexBuffer(sizeof(uint32_t)),
+  _meshes(sizeof(size_t)),
   _meshesAreLoaded(false),
   _texturesAreLoaded(false) {}
 
@@ -62,8 +62,8 @@ void Model::loadMeshes() {
 
     countAttributes(file, numMesh, numIndex);
     
-    meshes.resize(numMesh);
-    indexBuffer.resize(numIndex);
+    _meshes.resize(numMesh);
+    _indexBuffer.resize(numIndex);
 
     // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
@@ -85,9 +85,9 @@ void Model::loadMeshes() {
 
     // An obj-file with a single object may not have
     // an "o" header.
-    if (meshes.size() == 1) {
-        meshes[0].numIndices = indexBuffer.size();
-        meshes[0].startIndex = 0;
+    if (_meshes.size() == 1) {
+        _meshes[0].numIndices = _indexBuffer.size();
+        _meshes[0].startIndex = 0;
     }
 
     // Parse the contents.
@@ -104,17 +104,17 @@ void Model::loadMeshes() {
             fscanf(file, "%*[^\n]\n", NULL);
 
             if (meshCount > 0) {
-                meshes[meshCount].startIndex = 
-                    meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
-                meshes[meshCount - 1].numIndices = 
-                    indexCount - meshes[meshCount - 1].startIndex;                
+                _meshes[meshCount].startIndex = 
+                    _meshes[meshCount - 1].startIndex + _meshes[meshCount - 1].numIndices;
+                _meshes[meshCount - 1].numIndices = 
+                    indexCount - _meshes[meshCount - 1].startIndex;                
             } else {
-                meshes[meshCount].startIndex = 0;
+                _meshes[meshCount].startIndex = 0;
             }
             // This will be overwritten unless we've reached
             // the final mesh.
-            meshes[meshCount].numIndices = 
-                indexCount - indexBuffer.size();
+            _meshes[meshCount].numIndices = 
+                indexCount - _indexBuffer.size();
 
             meshCount++;
 
@@ -166,18 +166,18 @@ void Model::loadMeshes() {
                 if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
-                indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
+                _indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
             }        
         }
      
         res = fscanf(file, "%s", lineHeader);
     }
     size_t numVertex = uniqueVertices.size();
-    vertexBuffer.resize(numVertex);
+    _vertexBuffer.resize(numVertex);
     
     indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
-        vertexBuffer[it->value()] = it->key();
+        _vertexBuffer[it->value()] = it->key();
     }
     _meshesAreLoaded = true;
 }
@@ -210,9 +210,9 @@ void Model::free() {
 }
 
 void Model::freeMeshes() {
-    vertexBuffer = prt::vector<Vertex>();
-    indexBuffer = prt::vector<uint32_t>();
-    meshes = prt::vector<Mesh>();
+    _vertexBuffer = prt::vector<Vertex>();
+    _indexBuffer = prt::vector<uint32_t>();
+    _meshes = prt::vector<Mesh>();
 
     _meshesAreLoaded = false;
 }
