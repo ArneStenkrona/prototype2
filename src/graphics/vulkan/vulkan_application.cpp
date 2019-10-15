@@ -85,6 +85,7 @@ void VulkanApplication::initVulkan() {
     //createTextureImage();
     //createTextureImageView();
     //createTextureSampler();
+    createSampler();
     //loadModel();
     //createVertexBuffer();
     //createIndexBuffer();
@@ -138,13 +139,15 @@ void VulkanApplication::cleanupSwapChain() {
 void VulkanApplication::cleanup() {
     cleanupSwapChain();
  
-    for (size_t i = 0; i < NUM_TEXTURES; i++) {
-        vkDestroySampler(device, textureSampler[i], nullptr);
+    for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
+        //vkDestroySampler(device, textureSampler[i], nullptr);
         vkDestroyImageView(device, textureImageView[i], nullptr);
     
         vkDestroyImage(device, textureImage[i], nullptr);
         vkFreeMemory(device, textureImageMemory[i], nullptr);
     }
+    vkDestroySampler(device, sampler, nullptr);
+
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
     vkDestroyBuffer(device, vertexBuffer, nullptr);
@@ -475,14 +478,29 @@ void VulkanApplication::createDescriptorSetLayout() {
     uboLayoutBinding.pImmutableSamplers = nullptr;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     
+    //VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+    //samplerLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
+    //samplerLayoutBinding.binding = 1;
+    //samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    //samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
+    //samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding textureLayoutBinding = {};
+    textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
+    textureLayoutBinding.binding = 1;
+    textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;;
+    textureLayoutBinding.pImmutableSamplers = nullptr;
+
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.descriptorCount = NUM_TEXTURES;
-    samplerLayoutBinding.binding = 1;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.binding = 2;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
-    
-    prt::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+
+    //prt::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+    prt::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, textureLayoutBinding, samplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -850,7 +868,26 @@ void VulkanApplication::createTextureImageView(size_t index) {
     textureImageView[index] = createImageView(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
-void VulkanApplication::createTextureSampler(size_t index) {
+void VulkanApplication::createSampler() {
+    VkSamplerCreateInfo samplerCreateInfo = {};
+    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
+    samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.anisotropyEnable = VK_FALSE;
+	samplerCreateInfo.maxAnisotropy = 0.0f;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+    if (vkCreateSampler(device, &samplerCreateInfo, 0, &sampler) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create sampler!");
+    }
+}
+
+void VulkanApplication::createTextureSampler(size_t /*index*/) {
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -869,7 +906,7 @@ void VulkanApplication::createTextureSampler(size_t index) {
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0;
     
-    if (vkCreateSampler(device, &samplerInfo, nullptr, /*nullptr*/&textureSampler[index]) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &samplerInfo, nullptr, nullptr/*&textureSampler[index]*/) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");
     }
 }
@@ -1039,7 +1076,7 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     for (size_t i = 0; i < paths.size(); i++) {
         createTextureImage(i, paths[i] + "diffuse.png");
         createTextureImageView(i);
-        createTextureSampler(i);
+        //createTextureSampler(i);
     }
     //createTextureSampler(0);
 
@@ -1171,11 +1208,13 @@ void VulkanApplication::createUniformBuffers() {
 }
 
 void VulkanApplication::createDescriptorPool() {
-    prt::array<VkDescriptorPoolSize, 2> poolSizes = {};
+    prt::array<VkDescriptorPoolSize, 3> poolSizes = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(NUM_TEXTURES * swapChainImages.size());
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_TEXTURES * swapChainImages.size());
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    poolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1207,14 +1246,14 @@ void VulkanApplication::createDescriptorSets() {
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(UniformBufferObject);
         
-        prt::array<VkDescriptorImageInfo, NUM_TEXTURES> imageInfos;
-        for (size_t j = 0; j < NUM_TEXTURES; j++) {
-            imageInfos[j].sampler = textureSampler[j];
+        prt::array<VkDescriptorImageInfo, NUMBER_SUPPORTED_TEXTURES> imageInfos;
+        for (size_t j = 0; j < NUMBER_SUPPORTED_TEXTURES; j++) {
+            imageInfos[j].sampler = sampler;//textureSampler[j];
             imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfos[j].imageView = textureImageView[j];
         }
         
-        prt::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
+        prt::array<VkWriteDescriptorSet, 3> descriptorWrites = {};
         
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSets[i];
@@ -1228,12 +1267,25 @@ void VulkanApplication::createDescriptorSets() {
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = NUM_TEXTURES;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        descriptorWrites[1].descriptorCount = NUMBER_SUPPORTED_TEXTURES;
         descriptorWrites[1].dstSet = descriptorSets[i];
         descriptorWrites[1].pBufferInfo = 0;
         descriptorWrites[1].pImageInfo = imageInfos.data();
-        
+
+        VkDescriptorImageInfo samplerInfo = {};
+	    samplerInfo.sampler = sampler;
+
+        descriptorWrites[2] = {};
+        descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[2].dstBinding = 2;
+        descriptorWrites[2].dstArrayElement = 0;
+        descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descriptorWrites[2].descriptorCount = 1;
+        descriptorWrites[2].dstSet = descriptorSets[i];
+        descriptorWrites[2].pBufferInfo = 0;
+        descriptorWrites[2].pImageInfo = &samplerInfo;
+
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 }

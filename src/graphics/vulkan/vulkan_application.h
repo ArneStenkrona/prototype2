@@ -8,6 +8,7 @@
 #include "src/container/vector.h"
 #include "src/container/array.h"
 #include "src/container/optional.h"
+#include "src/config/prototype2Config.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -115,37 +116,37 @@ private:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
     
+    // Textures
     uint32_t mipLevels;
-    static constexpr size_t NUM_TEXTURES = 2;
-    prt::array<VkImage, NUM_TEXTURES> textureImage;
-    prt::array<VkDeviceMemory, NUM_TEXTURES> textureImageMemory;
-    prt::array<VkImageView, NUM_TEXTURES> textureImageView;
-    prt::array<VkSampler, NUM_TEXTURES> textureSampler;
+    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
+    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
+    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
+    //prt::array<VkSampler, NUMBER_SUPPORTED_TEXTURES> textureSampler;
+    // Sampler
+    VkSampler sampler;
 
     // Push constants
     prt::array<uint32_t, 1> pushConstants;
-
-    // Indirect commands
-    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
-    // Contains the indirect drawing commands
-	VkBuffer indirectCommandsBuffer;
-    VkDeviceMemory indirectCommandsBufferMemory;
-
-    //Model model;
+    // Models data;
     prt::vector<Model> models;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
-    
+    // Uniform data
     prt::vector<VkBuffer> uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBuffersMemory;
-    
+    // Descriptors
     VkDescriptorPool descriptorPool;
     prt::vector<VkDescriptorSet> descriptorSets;
-    
+    // Commands
     prt::vector<VkCommandBuffer> commandBuffers;
-    
+    // Indirect commands
+    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
+    // Contains the indirect drawing commands
+	VkBuffer indirectCommandsBuffer;
+    VkDeviceMemory indirectCommandsBufferMemory;
+    // Concurrency
     prt::vector<VkSemaphore> imageAvailableSemaphores;
     prt::vector<VkSemaphore> renderFinishedSemaphores;
     prt::vector<VkFence> inFlightFences;
@@ -205,6 +206,8 @@ private:
     
     void createTextureImageView(size_t index);
     
+    void createSampler();
+
     void createTextureSampler(size_t index);
     
     VkImageView createImageView(VkImage image, VkFormat format, 
