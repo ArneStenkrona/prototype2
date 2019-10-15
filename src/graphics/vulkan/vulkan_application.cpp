@@ -95,13 +95,9 @@ void VulkanApplication::initVulkan() {
     createSyncObjects();
 }
     
-void VulkanApplication::mainLoop() {
-    //while (!glfwWindowShouldClose(window)) {
+void VulkanApplication::update() {
         glfwPollEvents();
-        drawFrame();
-    //}
-    
-    //vkDeviceWaitIdle(device);
+        drawFrame();    
 }
     
 void VulkanApplication::cleanupSwapChain() {
@@ -302,7 +298,6 @@ void VulkanApplication::createLogicalDevice() {
     
     float queuePriority = 1.0f;
     for (auto it = uniqueQueueFamilies.begin(); it != uniqueQueueFamilies.end(); it++) {
-    //for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = it->value();
@@ -600,7 +595,7 @@ void VulkanApplication::createGraphicsPipeline() {
 
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = pushConstants.data_size();//sizeof(int);
+	pushConstantRange.size = pushConstants.data_size();
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
@@ -718,7 +713,7 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
 
 void VulkanApplication::createTextureImage(size_t index, std::string path) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(( /*RESOURCE_PATH + TEXTURE_PATH*/ path).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
  
@@ -1128,7 +1123,6 @@ void VulkanApplication::createIndexBuffer() {
 
 void VulkanApplication::createIndirectCommandBuffer() {
     size_t indexOffset = 0;
-    //VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
         VkDrawIndexedIndirectCommand indirectCmd{};
 		indirectCmd.instanceCount = 1;
@@ -1139,24 +1133,9 @@ void VulkanApplication::createIndirectCommandBuffer() {
         indirectCommands.push_back(indirectCmd);
 
         indexOffset += models[i].indexBuffer.size();
-        //bufferSize  += sizeof(models[i].indexBuffer[0]) * models[i].indexBuffer.size();
     }
     VkDeviceSize bufferSize = indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand);
-    /*REMOVE->*/
-    // vks::Buffer stagingBuffer;
-	// 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
-	// 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	// 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	// 		&stagingBuffer,
-	// 		indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand),
-	// 		indirectCommands.data()));
 
-	// 	VK_CHECK_RESULT(vulkanDevice->createBuffer(
-	// 		VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-	// 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-	// 		&indirectCommandsBuffer,
-	// 		stagingBuffer.size));
-    /*<-REMOVE*/
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBuffer(bufferSize, 
@@ -1382,14 +1361,6 @@ void VulkanApplication::createCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         
         if (models.size() > 0) {
-            // prt::vector<VkBuffer> vertexBuffers;
-            // prt::vector<VkDeviceSize> offsets;
-            // VkDeviceSize currentOffset = 0;
-            // for (size_t j = 0; j < models.size(); j++) {
-            //     vertexBuffers.push_back(vertexBuffer[j]);
-            //     offsets.push_back(currentOffset);
-            //     currentOffset += vertexBuffer.size();
-            // }
             vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
                                0, pushConstants.data_size(), (void*)pushConstants.data());
      
@@ -1404,26 +1375,14 @@ void VulkanApplication::createCommandBuffers() {
             for (size_t i = 0; i < models.size(); i++) {
                 indicesSize += models[i].indexBuffer.size();
             }
-            //vkCmdDrawIndexed(commandBuffers[i], indicesSize, 1, 0, 0, 0);
-            // If the multi draw feature is supported:
-			// One draw call for an arbitrary number of ojects
-			// Index offsets and instance count are taken from the indirect buffer
-            bool MYBOOLEAN = false; //THIS SHOULD INSTEAD BE WETHER OR NOT THE DEVICE SUPPORTS multiDrawIndirect
-			if (MYBOOLEAN)
+			// Issue indirect commands
+			for (size_t j = 0; j < indirectCommands.size(); j++)
 			{
-				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 0, indirectCommands.size(), sizeof(VkDrawIndexedIndirectCommand));
-			}
-			else
-			{
-				// If multi draw is not available, we must issue separate draw commands
-				for (size_t j = 0; j < indirectCommands.size(); j++)
-				{
-                    vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
-                                       VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), (void *)&j );
-					vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 
-                                             j * sizeof(VkDrawIndexedIndirectCommand), 
-                                             1, sizeof(VkDrawIndexedIndirectCommand));
-				}
+                vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
+                                   VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), (void *)&j );
+				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 
+                                         j * sizeof(VkDrawIndexedIndirectCommand), 
+                                         1, sizeof(VkDrawIndexedIndirectCommand));
 			}
         }
         vkCmdEndRenderPass(commandBuffers[i]);

@@ -18,7 +18,7 @@ Game::~Game() {
 
 void Game::run() {
     while (_vulkanApp.isWindowOpen()) {
-        _vulkanApp.mainLoop();
+        _vulkanApp.update();
     }
 }
 

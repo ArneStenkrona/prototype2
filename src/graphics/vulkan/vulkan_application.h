@@ -73,7 +73,7 @@ public:
 
     void initWindow();
     void initVulkan();
-    void mainLoop();
+    void update();
     void cleanup();
 
     void loadModels(prt::vector<std::string>& paths);
