@@ -5,6 +5,7 @@
 #include "src/entity_component_system/system/render_system.h"
 #include "src/system/assets/model_manager.h"
 
+#include "src/graphics/camera/camera.h"
 #include "src/graphics/vulkan/vulkan_application.h"
 
 class Game {
@@ -16,11 +17,12 @@ public:
 private:
     void update();
 
+    VulkanApplication _vulkanApp;
     //EntityManager _entityManager;
     //RenderSystem _renderSystem;
     ModelManager _modelManager;
 
-    VulkanApplication _vulkanApp;
+    Camera _camera;
 };
 
 #endif

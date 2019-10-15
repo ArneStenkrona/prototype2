@@ -63,6 +63,8 @@ file(GLOB SOURCES
     "src/entity_component_system/system/*.cpp"
     "src/graphics/vulkan/*.cpp"
     "src/graphics/geometry/*.cpp"
+    "src/graphics/camera/*.cpp"
+    "src/system/input/*.cpp"
     "src/system/assets/*.cpp"
 )
 

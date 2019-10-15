@@ -5,8 +5,9 @@
 #include "src/config/prototype2Config.h"
 
 Game::Game()
-: _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
-  _vulkanApp() {
+: _vulkanApp(),
+  _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
+  _camera(_vulkanApp.getWindow()) {
     prt::vector<std::string> paths;
     _modelManager.getPaths(paths);
     _vulkanApp.loadModels(paths);
@@ -18,7 +19,11 @@ Game::~Game() {
 
 void Game::run() {
     while (_vulkanApp.isWindowOpen()) {
-        _vulkanApp.update();
+        _camera.update(0.1f);
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        glm::mat4 viewMatrix = _camera.getViewMatrix();
+        glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
+        _vulkanApp.update(modelMatrix, viewMatrix, projectionMatrix);
     }
 }
 

@@ -74,10 +74,12 @@ public:
 
     void initWindow();
     void initVulkan();
-    void update();
+    void update(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     void cleanup();
 
     void loadModels(prt::vector<std::string>& paths);
+
+    GLFWwindow* getWindow() const { return window; }
     
     bool isWindowOpen() { return !glfwWindowShouldClose(window); }
 private:
@@ -251,9 +253,9 @@ private:
     
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(uint32_t currentImage, glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     
-    void drawFrame();
+    void drawFrame(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     
