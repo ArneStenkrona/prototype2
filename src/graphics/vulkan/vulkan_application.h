@@ -196,7 +196,7 @@ private:
     
     bool hasStencilComponent(VkFormat format);
     
-    void createTextureImage(size_t index, std::string path);
+    void createTextureImage(size_t index);
     
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, uint32_t mipLevels);

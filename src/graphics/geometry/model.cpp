@@ -209,7 +209,19 @@ void Model::free() {
     freeTextures();
 }
 
-void Model::freeMeshes() {}
+void Model::freeMeshes() {
+    vertexBuffer = prt::vector<Vertex>();
+    indexBuffer = prt::vector<uint32_t>();
+    meshes = prt::vector<Mesh>();
+
+    _meshesAreLoaded = false;
+}
 
 void Model::freeTextures() {
+    _texture.pixelBuffer = prt::vector<unsigned char>();
+    _texture.texWidth = 0;
+    _texture.texHeight = 0;
+    _texture.texChannels = 0;
+    
+    _texturesAreLoaded = false;
 }

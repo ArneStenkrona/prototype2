@@ -721,16 +721,10 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void VulkanApplication::createTextureImage(size_t index, std::string /*path*/) {
-    //int texWidth, texHeight, texChannels;
-    //stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+void VulkanApplication::createTextureImage(size_t index) {
     const Texture& texture = models[index].texture();
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
- 
-    //if (!pixels) {
-    //    throw std::runtime_error("failed to load texture image!");
-    //}
 
     auto pixels = texture.pixelBuffer.data();
  
@@ -742,9 +736,7 @@ void VulkanApplication::createTextureImage(size_t index, std::string /*path*/) {
     vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBufferMemory);
- 
-    //stbi_image_free(pixels);
- 
+
     createImage(texture.texWidth, texture.texHeight, mipLevels, 
                 VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
                 VK_IMAGE_TILING_OPTIMAL, 
@@ -1052,7 +1044,7 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     }
 
     for (size_t i = 0; i < paths.size(); i++) {
-        createTextureImage(i, paths[i] + "diffuse.png");
+        createTextureImage(i);
         createTextureImageView(i);
     }
 
