@@ -13,7 +13,7 @@ Camera::Camera(GLFWwindow* window, glm::vec3 position, glm::vec3 up, float yaw, 
       lastX(0.0f), lastY(0.0f)
 
 {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     updateCameraVectors();
 }
 

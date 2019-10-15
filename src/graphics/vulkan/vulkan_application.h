@@ -24,7 +24,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
-#include <chrono>
 
 #include <cstring>
 #include <cstdlib>
