@@ -1,5 +1,8 @@
 #include "model.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb-master/stb_image.h>
+
 #include "src/container/hash_map.h"
 
 #include <iostream>
@@ -32,9 +35,16 @@ Model::Model(std::string& path)
 : _path(path),
   vertexBuffer(4 * sizeof(float)),
   indexBuffer(sizeof(uint32_t)),
-  meshes(sizeof(size_t)) {}
+  meshes(sizeof(size_t)),
+  _meshesAreLoaded(false),
+  _texturesAreLoaded(false) {}
 
 void Model::load() {
+    loadMeshes();
+    loadTextures();
+}
+
+void Model::loadMeshes() {
 
     std::string modelPath = _path + "model.obj";
 
@@ -169,6 +179,37 @@ void Model::load() {
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         vertexBuffer[it->value()] = it->key();
     }
+    _meshesAreLoaded = true;
 }
 
-void Model::unload() {}
+void Model::loadTextures() {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load((_path + "diffuse.png").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+ 
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    _texture.texWidth = texWidth;
+    _texture.texHeight = texHeight;
+    _texture.texChannels = texChannels;
+
+    size_t bufferSize = texWidth * texHeight * 4;
+    _texture.pixelBuffer.resize(bufferSize);
+    for (size_t i = 0; i < _texture.pixelBuffer.size(); i++) {
+        _texture.pixelBuffer[i] = pixels[i];
+    }
+
+    stbi_image_free(pixels);
+    _texturesAreLoaded = true;
+}
+
+void Model::free() {
+    freeMeshes();
+    freeTextures();
+}
+
+void Model::freeMeshes() {}
+
+void Model::freeTextures() {
+}

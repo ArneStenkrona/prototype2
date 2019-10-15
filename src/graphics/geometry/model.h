@@ -78,6 +78,11 @@ struct Mesh {
     size_t numIndices;
 };
 
+struct Texture {
+    prt::vector<unsigned char> pixelBuffer;
+    int texWidth, texHeight, texChannels;
+};
+
 struct Material {
     /* TODO: Add members */
 };
@@ -100,7 +105,12 @@ public:
     Model(std::string& path);
 
     void load();
-    void unload();
+    void free();
+
+    bool meshesAreLoaded() const { return _meshesAreLoaded; }
+    bool texturesAreLoaded() const { return _texturesAreLoaded; }
+
+    const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
 
 private:   
     std::string _path;
@@ -109,6 +119,18 @@ private:
     prt::vector<uint32_t> indexBuffer;
 
     prt::vector<Mesh> meshes;
+    
+    Texture _texture;
+
+    bool _meshesAreLoaded;
+    bool _texturesAreLoaded;
+
+    void loadMeshes();
+    void loadTextures();
+
+    void freeMeshes();
+    void freeTextures();
+
     //prt::array<Material> materials;
     /*
     VkBuffer vertexBuffer;

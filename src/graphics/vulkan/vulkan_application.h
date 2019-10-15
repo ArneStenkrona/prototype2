@@ -121,7 +121,6 @@ private:
     prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
     prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
     prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
-    //prt::array<VkSampler, NUMBER_SUPPORTED_TEXTURES> textureSampler;
     // Sampler
     VkSampler sampler;
 
@@ -207,8 +206,6 @@ private:
     void createTextureImageView(size_t index);
     
     void createSampler();
-
-    void createTextureSampler(size_t index);
     
     VkImageView createImageView(VkImage image, VkFormat format, 
                                 VkImageAspectFlags aspectFlags, uint32_t mipLevels);

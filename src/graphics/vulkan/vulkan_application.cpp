@@ -5,8 +5,8 @@
 #include "src/container/array.h"
 #include "src/container/hash_set.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb-master/stb_image.h>
+//#define STB_IMAGE_IMPLEMENTATION
+//#include <stb-master/stb_image.h>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -477,13 +477,6 @@ void VulkanApplication::createDescriptorSetLayout() {
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    
-    //VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    //samplerLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
-    //samplerLayoutBinding.binding = 1;
-    //samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    //samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
-    //samplerLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding textureLayoutBinding = {};
     textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
@@ -499,7 +492,6 @@ void VulkanApplication::createDescriptorSetLayout() {
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
 
-    //prt::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
     prt::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, textureLayoutBinding, samplerLayoutBinding};
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -729,15 +721,18 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void VulkanApplication::createTextureImage(size_t index, std::string path) {
-    int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+void VulkanApplication::createTextureImage(size_t index, std::string /*path*/) {
+    //int texWidth, texHeight, texChannels;
+    //stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    const Texture& texture = models[index].texture();
+    VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
  
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
+    //if (!pixels) {
+    //    throw std::runtime_error("failed to load texture image!");
+    //}
+
+    auto pixels = texture.pixelBuffer.data();
  
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -748,18 +743,21 @@ void VulkanApplication::createTextureImage(size_t index, std::string path) {
     memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBufferMemory);
  
-    stbi_image_free(pixels);
+    //stbi_image_free(pixels);
  
-    createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage[index], textureImageMemory[index]);
+    createImage(texture.texWidth, texture.texHeight, mipLevels, 
+                VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
+                VK_IMAGE_TILING_OPTIMAL, 
+                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage[index], textureImageMemory[index]);
  
     transitionImageLayout(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-    copyBufferToImage(stagingBuffer, textureImage[index], static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    copyBufferToImage(stagingBuffer, textureImage[index], static_cast<uint32_t>(texture.texWidth), static_cast<uint32_t>(texture.texHeight));
     //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
- 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
  
-    generateMipmaps(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, mipLevels);
+    generateMipmaps(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, texture.texWidth, texture.texHeight, mipLevels);
 }
     
 void VulkanApplication::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
@@ -884,30 +882,6 @@ void VulkanApplication::createSampler() {
 
     if (vkCreateSampler(device, &samplerCreateInfo, 0, &sampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create sampler!");
-    }
-}
-
-void VulkanApplication::createTextureSampler(size_t /*index*/) {
-    VkSamplerCreateInfo samplerInfo = {};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = 16;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.minLod = 0;
-    samplerInfo.maxLod = static_cast<float>(mipLevels);
-    samplerInfo.mipLodBias = 0;
-    
-    if (vkCreateSampler(device, &samplerInfo, nullptr, nullptr/*&textureSampler[index]*/) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
     }
 }
 
@@ -1073,15 +1047,13 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
         models.push_back(model);
     }
 
+    for (size_t i = 0; i < models.size(); i++) {
+        models[i].load();
+    }
+
     for (size_t i = 0; i < paths.size(); i++) {
         createTextureImage(i, paths[i] + "diffuse.png");
         createTextureImageView(i);
-        //createTextureSampler(i);
-    }
-    //createTextureSampler(0);
-
-    for (size_t i = 0; i < models.size(); i++) {
-        models[i].load();
     }
 
     createVertexBuffer();
@@ -1089,7 +1061,7 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
     createIndirectCommandBuffer();
 
     for (size_t i = 0; i < models.size(); i++) {
-        models[i].unload();
+        models[i].free();
     }
 
     recreateSwapChain();
@@ -1248,7 +1220,7 @@ void VulkanApplication::createDescriptorSets() {
         
         prt::array<VkDescriptorImageInfo, NUMBER_SUPPORTED_TEXTURES> imageInfos;
         for (size_t j = 0; j < NUMBER_SUPPORTED_TEXTURES; j++) {
-            imageInfos[j].sampler = sampler;//textureSampler[j];
+            imageInfos[j].sampler = sampler;
             imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfos[j].imageView = textureImageView[j];
         }
