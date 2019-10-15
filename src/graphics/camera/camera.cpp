@@ -7,11 +7,10 @@ Camera::Camera(Input& input, glm::vec3 position, glm::vec3 up, float yaw, float 
       Yaw(yaw), 
       Pitch(pitch),
       MovementSpeed(2.5f), 
-      MouseSensitivity(0.15f), 
+      MouseSensitivity(0.30f), 
       fieldOfView(45.0f),
       _input(input)
 {
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     updateCameraVectors();
 }
 
