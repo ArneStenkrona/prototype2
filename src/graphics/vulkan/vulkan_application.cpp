@@ -90,9 +90,9 @@ void VulkanApplication::initVulkan() {
     createSyncObjects();
 }
     
-void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
+void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {
         glfwPollEvents();
-        drawFrame(modelMatrices, viewMatrix, projectionMatrix);    
+        drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition);    
 }
     
 void VulkanApplication::cleanupSwapChain() {
@@ -468,7 +468,7 @@ void VulkanApplication::createDescriptorSetLayout() {
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutBinding textureLayoutBinding = {};
     textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
@@ -1425,7 +1425,7 @@ void VulkanApplication::createSyncObjects() {
     }
 }
 
-void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {    
+void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {    
     UniformBufferObject ubo = {};
     for (size_t i = 0; i < modelMatrices.size(); i++) {
         ubo.model[i] = modelMatrices[i];
@@ -1433,6 +1433,7 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::ve
     ubo.view = viewMatrix;
     ubo.proj = projectionMatrix;
     ubo.proj[1][1] *= -1;
+    ubo.viewPosition = viewPosition;
     
     void* data;
     vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
@@ -1440,7 +1441,7 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::ve
     vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }
 
-void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
+void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     
     uint32_t imageIndex;
@@ -1453,7 +1454,7 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, g
         throw std::runtime_error("failed to acquire swap chain image!");
     }
     
-    updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix);
+    updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
     
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

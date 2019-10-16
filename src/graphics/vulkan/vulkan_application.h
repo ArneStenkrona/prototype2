@@ -62,6 +62,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model[MAXIMUM_STATIC_ENTITIES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
+    alignas(16) glm::vec3 viewPosition;
 };
 
 class VulkanApplication {
@@ -70,7 +71,7 @@ public:
 
     void initWindow();
     void initVulkan();
-    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     void cleanup();
 
     void loadModels(prt::vector<std::string>& paths);
@@ -252,9 +253,11 @@ private:
     
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, 
+                             glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     
-    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, 
+                   glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     

@@ -38,6 +38,7 @@ void Game::run() {
 
         glm::mat4 viewMatrix = _camera.getViewMatrix();
         glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
-        _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix);
+        glm::vec3 viewPosition = _camera.getPosition();
+        _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition);
     }
 }
