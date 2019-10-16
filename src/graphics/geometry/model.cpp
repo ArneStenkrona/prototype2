@@ -125,7 +125,7 @@ void Model::loadMeshes() {
             vertexPosCount++;
         } else if (strcmp(lineHeader, "vn") == 0) {
             // Parse vertex normal.
-            glm::vec3& normal = vertexBufferTemp[vertexPosCount].normal;
+            glm::vec3& normal = vertexBufferTemp[vertexNormalCount].normal;
             fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
             vertexNormalCount++;
         } else if (strcmp(lineHeader, "vt") == 0) {

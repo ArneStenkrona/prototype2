@@ -31,9 +31,6 @@
 extern const int WIDTH;
 extern const int HEIGHT;
 
-extern const std::string MODEL_PATH;
-extern const std::string TEXTURE_PATH;
-
 extern const unsigned int MAX_FRAMES_IN_FLIGHT;
 
 extern const prt::vector<const char*> validationLayers;
@@ -62,7 +59,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 model[MAXIMUM_STATIC_ENTITIES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 };
@@ -73,10 +70,11 @@ public:
 
     void initWindow();
     void initVulkan();
-    void update(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     void cleanup();
 
     void loadModels(prt::vector<std::string>& paths);
+    void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return window; }
     
@@ -126,7 +124,9 @@ private:
     VkSampler sampler;
 
     // Push constants
-    prt::array<uint32_t, 1> pushConstants;
+    prt::array<uint32_t, 2> pushConstants;
+    // Entities
+     prt::vector<uint32_t> _modelIDs;
     // Models data;
     prt::vector<Model> models;
     VkBuffer vertexBuffer;
@@ -252,9 +252,9 @@ private:
     
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage, glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     
-    void drawFrame(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
+    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix);
     
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     

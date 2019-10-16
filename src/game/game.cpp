@@ -10,10 +10,14 @@ Game::Game()
 : _vulkanApp(),
   _input(_vulkanApp.getWindow()),
   _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
+  _staticEntityManager(),
   _camera(_input) {
     prt::vector<std::string> paths;
     _modelManager.getPaths(paths);
     _vulkanApp.loadModels(paths);
+    prt::vector<uint32_t> modelIDs;
+    _staticEntityManager.getModelIDs(modelIDs);
+    _vulkanApp.bindStaticEntities(modelIDs);
 }
 
 Game::~Game() {
@@ -29,9 +33,11 @@ void Game::run() {
         lastTime = currentTime;
         _input.update();
         _camera.update(deltaTime);
-        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        prt::vector<glm::mat4> modelMatrices; 
+        _staticEntityManager.getTransformMatrixes(modelMatrices);
+
         glm::mat4 viewMatrix = _camera.getViewMatrix();
         glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
-        _vulkanApp.update(modelMatrix, viewMatrix, projectionMatrix);
+        _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix);
     }
 }

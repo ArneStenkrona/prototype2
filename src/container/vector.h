@@ -122,18 +122,22 @@ namespace prt
         void resize(size_t size) {
             if (size > _size) {
                 reserve(size);
-                std::fill(&_data[_size], &_data[size], T());
-                _size = size;
+                for (size_t i = _size; i < size; i++){
+                    new (&_data[i]) T();
+                }
             }
+                _size = size;
         }
 
 
         void resize(size_t size, const T& value) {
             if (size > _size) {
                 reserve(size);
-                std::fill(&_data[_size], &_data[size], T(value));
-                _size = size;
+                for (size_t i = _size; i < size; i++){
+                    new (&_data[i]) T(value);
+                }
             }
+                _size = size;
         }
 
         void clear() {

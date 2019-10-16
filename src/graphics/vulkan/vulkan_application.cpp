@@ -5,14 +5,8 @@
 #include "src/container/array.h"
 #include "src/container/hash_set.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
-//#include <stb-master/stb_image.h>
-
 const int WIDTH = 800;
 const int HEIGHT = 600;
-
-const std::string MODEL_PATH = "models/example.obj";
-const std::string TEXTURE_PATH = "textures/example.png";
 
 const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -92,13 +86,13 @@ void VulkanApplication::initVulkan() {
     createUniformBuffers();
     //createDescriptorPool();
     //createDescriptorSets();
-    createCommandBuffers();
+    //createCommandBuffers();
     createSyncObjects();
 }
     
-void VulkanApplication::update(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
+void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
         glfwPollEvents();
-        drawFrame(modelMatrix, viewMatrix, projectionMatrix);    
+        drawFrame(modelMatrices, viewMatrix, projectionMatrix);    
 }
     
 void VulkanApplication::cleanupSwapChain() {
@@ -604,7 +598,7 @@ void VulkanApplication::createGraphicsPipeline() {
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
 	pushConstantRange.size = pushConstants.data_size();
-	pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
@@ -1276,6 +1270,12 @@ void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
+void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
+    _modelIDs = modelIDs;
+    createCommandBuffers();
+    //createSyncObjects();
+}
+
 VkCommandBuffer VulkanApplication::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1373,9 +1373,6 @@ void VulkanApplication::createCommandBuffers() {
         vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         
         if (models.size() > 0) {
-            vkCmdPushConstants(commandBuffers[i], pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                               0, pushConstants.data_size(), (void*)pushConstants.data());
-     
             VkBuffer vertexBuffers[] = {vertexBuffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vertexBuffers[0], &offsets[0]);
@@ -1383,17 +1380,19 @@ void VulkanApplication::createCommandBuffers() {
             vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             
             vkCmdBindDescriptorSets(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
-            uint32_t indicesSize = 0;
-            for (size_t i = 0; i < models.size(); i++) {
-                indicesSize += models[i].indexBuffer().size();
-            }
+            // uint32_t indicesSize = 0;
+            // for (size_t i = 0; i < models.size(); i++) {
+            //     indicesSize += models[i].indexBuffer().size();
+            // }
 			// Issue indirect commands
-			for (size_t j = 0; j < indirectCommands.size(); j++)
+			for (size_t j = 0; j < _modelIDs.size(); j++)
 			{
                 vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
-                                   VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int), (void *)&j );
+                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), (void *)&j );
+                vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
+                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_modelIDs[j] );
 				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 
-                                         j * sizeof(VkDrawIndexedIndirectCommand), 
+                                         _modelIDs[j] * sizeof(VkDrawIndexedIndirectCommand), 
                                          1, sizeof(VkDrawIndexedIndirectCommand));
 			}
         }
@@ -1426,11 +1425,13 @@ void VulkanApplication::createSyncObjects() {
     }
 }
 
-void VulkanApplication::updateUniformBuffer(uint32_t currentImage, glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {    
+void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {    
     UniformBufferObject ubo = {};
-    ubo.model = modelMatrix;//glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = viewMatrix;//glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.proj = projectionMatrix;//glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
+    for (size_t i = 0; i < modelMatrices.size(); i++) {
+        ubo.model[i] = modelMatrices[i];
+    }
+    ubo.view = viewMatrix;
+    ubo.proj = projectionMatrix;
     ubo.proj[1][1] *= -1;
     
     void* data;
@@ -1439,7 +1440,7 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage, glm::mat4& mo
     vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }
 
-void VulkanApplication::drawFrame(glm::mat4& modelMatrix, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
+void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix) {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     
     uint32_t imageIndex;
@@ -1452,7 +1453,7 @@ void VulkanApplication::drawFrame(glm::mat4& modelMatrix, glm::mat4& viewMatrix,
         throw std::runtime_error("failed to acquire swap chain image!");
     }
     
-    updateUniformBuffer(imageIndex, modelMatrix, viewMatrix, projectionMatrix);
+    updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix);
     
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

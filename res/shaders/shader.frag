@@ -10,7 +10,7 @@ layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(push_constant) uniform PER_OBJECT
 {
-	int imgIdx;
+	layout(offset = 4) int imgIdx;
 }pc;
 
 layout(location = 0) out vec4 outColor;

@@ -23,6 +23,9 @@ set (DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES 4)
 # Entity Component System
 set (TOTAL_ENTITIES 16384)
 
+# Entities
+set (MAXIMUM_STATIC_ENTITIES 10)
+
 set (NUMBER_SUPPORTED_TEXTURES 2)
 
 # END CONFIG VARIABLES
@@ -58,6 +61,7 @@ file(GLOB SOURCES
     "src/memory/*.cpp"
     "src/container/*.cpp"
     "src/game/*.cpp"
+    "src/game/entities/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/entity_component_system/system/*.cpp"

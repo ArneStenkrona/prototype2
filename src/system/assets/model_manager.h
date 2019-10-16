@@ -6,8 +6,6 @@
 
 typedef char ModelName[128];
 
-
-
 namespace std {
     template<> struct hash<ModelName> {
         size_t operator()(ModelName const& modelName) const {
@@ -25,11 +23,13 @@ class ModelManager {
 public:
     ModelManager(const char* directory);
 
-    void getPaths(prt::vector<std::string>& v);
+    void getPaths(prt::vector<std::string>& paths);
+
+    static constexpr uint32_t UNDEFINED_MODEL = -1;
     
 private:
     prt::hash_map<std::string, std::string> _modelPaths;
-
+    prt::hash_map<std::string, uint32_t> _modelIDs;
 };
 
 #endif
