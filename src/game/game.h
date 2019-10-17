@@ -16,6 +16,7 @@ public:
     ~Game();
 
     void run();
+
 private:
     VulkanApplication _vulkanApp;
     Input _input;
@@ -24,6 +25,14 @@ private:
     StaticEntityManager _staticEntityManager;
 
     Camera _camera;
+
+    uint32_t _frameRate;
+    uint32_t _microsecondsPerFrame;
+
+    uint64_t _currentFrame;
+
+    void update(float deltaTime);
+    void updateGraphics();
 };
 
 #endif
