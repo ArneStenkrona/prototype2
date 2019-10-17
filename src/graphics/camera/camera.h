@@ -20,30 +20,30 @@ public:
     void update(float deltaTime);
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
-    inline glm::mat4 getViewMatrix() const { return glm::lookAt(position, position + front, up); }
+    inline glm::mat4 getViewMatrix() const { return glm::lookAt(_position, _position + _front, _up); }
     glm::mat4 getProjectionMatrix() const;
     
 
-    inline glm::vec3 getPosition() const { return position; }
-    inline glm::vec3 getFront() const { return front; }
-    inline glm::vec3 getUp() const { return up; }
-    inline glm::vec3 getRight() const { return right; }
-    inline glm::vec3 getWorldUp() const { return worldUp; }
+    inline glm::vec3 getPosition() const { return _position; }
+    inline glm::vec3 getFront() const { return _front; }
+    inline glm::vec3 getUp() const { return _up; }
+    inline glm::vec3 getRight() const { return _right; }
+    inline glm::vec3 getWorldUp() const { return _worldUp; }
 
 private:
     // Camera Attributes
-    glm::vec3 position;
-    glm::vec3 front;
-    glm::vec3 up;
-    glm::vec3 right;
-    glm::vec3 worldUp;
+    glm::vec3 _position;
+    glm::vec3 _front;
+    glm::vec3 _up;
+    glm::vec3 _right;
+    glm::vec3 _worldUp;
     // Euler Angles
-    float Yaw;
-    float Pitch;
+    float _yaw;
+    float _pitch;
     // Camera options
-    float MovementSpeed;
-    float MouseSensitivity;
-    float fieldOfView;
+    float _movementSpeed;
+    float _mouseSensitivity;
+    float _fieldOfView;
 
     Input& _input;
 
