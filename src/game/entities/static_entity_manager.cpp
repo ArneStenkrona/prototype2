@@ -5,7 +5,7 @@
 StaticEntityManager::StaticEntityManager() {
     for (size_t i = 0; i < MAXIMUM_STATIC_ENTITIES; i++) {
         glm::vec3 position = { 10.0f * i, 0.0f, 0.0f };
-        uint32_t id = (i % 2);
+        uint32_t id = (i % 3);
         _staticEntities.positions[i] = position;
         _staticEntities.modelIDs[i] = id;
     }

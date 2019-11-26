@@ -185,7 +185,6 @@ void Model::loadMeshes() {
 void Model::loadTextures() {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load((_path + "diffuse.png").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
- 
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }

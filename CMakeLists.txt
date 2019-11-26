@@ -27,10 +27,15 @@ set (TOTAL_ENTITIES 16384)
 set (MAXIMUM_STATIC_ENTITIES 10)
 
 # Graphics
-set (NUMBER_SUPPORTED_TEXTURES 2)
+set (NUMBER_SUPPORTED_TEXTURES 3)
 
 # Game
 set (FRAME_RATE 60)
+
+# Write to shaders
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag" "${filedata}")
 
 # END CONFIG VARIABLES
 
