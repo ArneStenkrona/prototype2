@@ -10,6 +10,9 @@ ModelManager::ModelManager(const char* directory) {
     }
 
     uint16_t nextID = 0;
+    // Add default
+    _modelPaths.insert("DEFAULT", std::string(directory) + "DEFAULT/");
+    _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {
         if (strncmp (entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
             auto modelDir = std::string(entry->d_name);

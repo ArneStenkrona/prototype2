@@ -4,7 +4,7 @@
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
-layout(set = 0, binding = 1) uniform texture2D textures[3];
+layout(set = 0, binding = 1) uniform texture2D textures[10];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {

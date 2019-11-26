@@ -198,14 +198,14 @@ private:
     
     bool hasStencilComponent(VkFormat format);
     
-    void createTextureImage(size_t index);
+    void createTextureImage(size_t index, const Texture& texture);
     
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView(size_t index);
+    void createTextureImageView(size_t index, VkImage &texIm);
     
     void createSampler();
     

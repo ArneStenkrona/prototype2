@@ -713,8 +713,8 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void VulkanApplication::createTextureImage(size_t index) {
-    const Texture& texture = models[index].texture();
+void VulkanApplication::createTextureImage(size_t index, const Texture& texture) {
+    //const Texture& texture = models[index].texture();
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
 
@@ -846,8 +846,8 @@ VkSampleCountFlagBits VulkanApplication::getMaxUsableSampleCount() {
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void VulkanApplication::createTextureImageView(size_t index) {
-    textureImageView[index] = createImageView(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+void VulkanApplication::createTextureImageView(size_t index, VkImage &texIm) {
+    textureImageView[index] = createImageView(texIm/*textureImage[index]*/, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void VulkanApplication::createSampler() {
@@ -1035,10 +1035,17 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
         models[i].load();
     }
 
+    assert((paths.size() < NUMBER_SUPPORTED_TEXTURES));
+
     for (size_t i = 0; i < paths.size(); i++) {
-        createTextureImage(i);
-        createTextureImageView(i);
+        createTextureImage(i, models[i].texture());
+        createTextureImageView(i, textureImage[i]);
     }
+
+     for (size_t i = paths.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
+        createTextureImage(i, models[0].texture());
+        createTextureImageView(i, textureImage[0]);
+     }
 
     createVertexBuffer();
     createIndexBuffer();
