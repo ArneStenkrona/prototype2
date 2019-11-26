@@ -31,11 +31,15 @@ namespace prt
         vector(InputIt first, InputIt last,
                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : vector(allocator) {
-            assert(first <= last);
+            /*assert(first <= last);
             size_t numOfT = last - first;
             reserve(numOfT);
             std::copy(first, last, _data);
-            _size = numOfT;
+            _size = numOfT;*/
+
+            for (auto it = first; it != last; it++) {
+                push_back(*it);
+            }
         }
 
         vector(std::initializer_list<T> ilist, 
@@ -47,10 +51,10 @@ namespace prt
         }
 
         vector(ContainerAllocator& allocator)
-        : _data(nullptr), _size(0), _capacity(0), _allocator(allocator) {}
+        : _data(nullptr), _size(0), _capacity(0), _allocator(&allocator) {}
 
         vector(const vector& other)
-        : vector(other, other._allocator) {}
+        : vector(other, *other._allocator) {}
 
         vector(const vector& other, ContainerAllocator& allocator)
         : vector(allocator) {
@@ -68,6 +72,7 @@ namespace prt
         vector& operator=(const vector& other) {
             if (this != &other) {
                 clear();
+                _allocator = other._allocator;
                 if (other._data != nullptr) {
                     reserve(other._size);
                     for (size_t i = 0; i < other._size; i++) {
@@ -82,7 +87,7 @@ namespace prt
         ~vector() {
             if (_data != nullptr) {
                 std::destroy(&_data[0], &_data[_size]);
-                _allocator.free(_data);
+                _allocator->free(_data);
             }
         }
 
@@ -108,35 +113,41 @@ namespace prt
         }
 
         void pop_back() {
-            back().~T();
-            _size--;
+            if (_size > 0) {
+                back().~T();
+                _size--;
+            }
         }
 
         void resize(size_t size) {
             if (size > _size) {
                 reserve(size);
-                std::fill(&_data[_size], &_data[size], T());
-                _size = size;
+                for (size_t i = _size; i < size; i++){
+                    new (&_data[i]) T();
+                }
             }
+                _size = size;
         }
 
 
         void resize(size_t size, const T& value) {
             if (size > _size) {
                 reserve(size);
-                std::fill(&_data[_size], &_data[size], T(value));
-                _size = size;
+                for (size_t i = _size; i < size; i++){
+                    new (&_data[i]) T(value);
+                }
             }
+                _size = size;
         }
 
         void clear() {
             if (_data != nullptr) {
                 std::destroy(&_data[0], &_data[_size]);
-                // _allocator.free(_data);
-                // _data = nullptr;
-                _size = 0;
-                // _capacity = 0;
+                _allocator->free(_data);
             }
+            _data = nullptr;
+            _size = 0;
+            _capacity = 0;
         }
 
         void reserve(size_t capacity) {
@@ -144,14 +155,15 @@ namespace prt
                 return;
             }
 
-            T* newPointer = static_cast<T*>(_allocator.allocate(capacity * sizeof(T),
+            T* newPointer = static_cast<T*>(_allocator->allocate(capacity * sizeof(T),
                                             alignof(T)));
 
             if (_data != nullptr) {
-                std::copy(begin(), end(),
-                          newPointer);
+                for (size_t i = 0; i < _size; i++){
+                    new (&newPointer[i]) T(_data[i]);
+                }
 
-                _allocator.free(_data);
+                _allocator->free(_data);
             }
 
             _capacity = capacity;
@@ -180,7 +192,7 @@ namespace prt
         // Buffer size in bytes.
         size_t _capacity;
         // Allocator
-        ContainerAllocator& _allocator;
+        ContainerAllocator* _allocator;
     };
 }
 

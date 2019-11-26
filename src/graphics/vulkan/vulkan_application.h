@@ -6,7 +6,9 @@
 #include <vulkan/vulkan.h>
 
 #include "src/container/vector.h"
+#include "src/container/array.h"
 #include "src/container/optional.h"
+#include "src/config/prototype2Config.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -22,18 +24,12 @@
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
-#include <chrono>
 
 #include <cstring>
 #include <cstdlib>
 
 extern const int WIDTH;
 extern const int HEIGHT;
-
-extern const std::string MODEL_PATH;
-extern const std::string TEXTURE_PATH;
-
-extern std::string BASE_PATH;
 
 extern const unsigned int MAX_FRAMES_IN_FLIGHT;
 
@@ -63,15 +59,27 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 model[MAXIMUM_STATIC_ENTITIES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
+    alignas(16) glm::vec3 viewPosition;
 };
 
 class VulkanApplication {
 public:
-    void run();
+    VulkanApplication();
+
+    void initWindow();
+    void initVulkan();
+    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
+    void cleanup();
+
+    void loadModels(prt::vector<std::string>& paths);
+    void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
+
+    GLFWwindow* getWindow() const { return window; }
     
+    bool isWindowOpen() { return !glfwWindowShouldClose(window); }
 private:
     GLFWwindow* window;
     
@@ -108,26 +116,38 @@ private:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
     
+    // Textures
     uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-    
-    Model model;
+    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
+    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
+    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
+    // Sampler
+    VkSampler sampler;
+
+    // Push constants
+    prt::array<uint32_t, 2> pushConstants;
+    // Entities
+     prt::vector<uint32_t> _modelIDs;
+    // Models data;
+    prt::vector<Model> models;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
-    
+    // Uniform data
     prt::vector<VkBuffer> uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBuffersMemory;
-    
+    // Descriptors
     VkDescriptorPool descriptorPool;
     prt::vector<VkDescriptorSet> descriptorSets;
-    
+    // Commands
     prt::vector<VkCommandBuffer> commandBuffers;
-    
+    // Indirect commands
+    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
+    // Contains the indirect drawing commands
+	VkBuffer indirectCommandsBuffer;
+    VkDeviceMemory indirectCommandsBufferMemory;
+    // Concurrency
     prt::vector<VkSemaphore> imageAvailableSemaphores;
     prt::vector<VkSemaphore> renderFinishedSemaphores;
     prt::vector<VkFence> inFlightFences;
@@ -135,17 +155,9 @@ private:
     
     bool framebufferResized = false;
     
-    void initWindow();
-    
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
     
-    void initVulkan();
-    
-    void mainLoop();
-    
     void cleanupSwapChain();
-    
-    void cleanup();
     
     void recreateSwapChain();
     
@@ -186,16 +198,16 @@ private:
     
     bool hasStencilComponent(VkFormat format);
     
-    void createTextureImage();
+    void createTextureImage(size_t index);
     
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView();
+    void createTextureImageView(size_t index);
     
-    void createTextureSampler();
+    void createSampler();
     
     VkImageView createImageView(VkImage image, VkFormat format, 
                                 VkImageAspectFlags aspectFlags, uint32_t mipLevels);
@@ -216,6 +228,8 @@ private:
     void createVertexBuffer();
     
     void createIndexBuffer();
+
+    void createIndirectCommandBuffer();
     
     void createUniformBuffers();
     
@@ -239,9 +253,11 @@ private:
     
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, 
+                             glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     
-    void drawFrame();
+    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, 
+                   glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     
@@ -270,7 +286,5 @@ private:
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
 };
-
-int vmain(int /*argc*/, char* argv[]);
 
 #endif

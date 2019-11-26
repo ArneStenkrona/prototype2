@@ -3,6 +3,8 @@
 
 #include "src/container/vector.h"
 
+#include <vulkan/vulkan.h>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -78,6 +80,11 @@ struct Mesh {
     size_t numIndices;
 };
 
+struct Texture {
+    prt::vector<unsigned char> pixelBuffer;
+    int texWidth, texHeight, texChannels;
+};
+
 struct Material {
     /* TODO: Add members */
 };
@@ -97,16 +104,38 @@ public:
      * @param path path to .obj file.
      * @param allocator allocator for buffers
      */
-    Model();
+    Model(std::string& path);
 
-    void load(const char* path);
+    void load();
+    void free();
+
+    bool meshesAreLoaded() const { return _meshesAreLoaded; }
+    bool texturesAreLoaded() const { return _texturesAreLoaded; }
+
+    const prt::vector<Vertex>& vertexBuffer() const { assert(_meshesAreLoaded); return  _vertexBuffer; }
+    const prt::vector<uint32_t>& indexBuffer() const { assert(_meshesAreLoaded); return  _indexBuffer; }
+
+    const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
 
 private:   
+    std::string _path;
 
-    prt::vector<Vertex> vertexBuffer;
-    prt::vector<uint32_t> indexBuffer;
+    prt::vector<Vertex> _vertexBuffer;
+    prt::vector<uint32_t> _indexBuffer;
 
-    prt::vector<Mesh> meshes;
+    prt::vector<Mesh> _meshes;
+    
+    Texture _texture;
+
+    bool _meshesAreLoaded;
+    bool _texturesAreLoaded;
+
+    void loadMeshes();
+    void loadTextures();
+
+    void freeMeshes();
+    void freeTextures();
+
     //prt::array<Material> materials;
     /*
     VkBuffer vertexBuffer;
@@ -114,7 +143,7 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     */
-   friend class VulkanApplication;
+    //friend class VulkanApplication;
 };
 
 #endif

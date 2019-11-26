@@ -21,11 +21,15 @@ namespace std {
 
 class ModelManager {
 public:
-    ModelManager(const char* basepath);
+    ModelManager(const char* directory);
+
+    void getPaths(prt::vector<std::string>& paths);
+
+    static constexpr uint32_t UNDEFINED_MODEL = -1;
     
 private:
-    prt::hash_map<ModelName, char*> _modelPaths;
-
+    prt::hash_map<std::string, std::string> _modelPaths;
+    prt::hash_map<std::string, uint32_t> _modelIDs;
 };
 
 #endif

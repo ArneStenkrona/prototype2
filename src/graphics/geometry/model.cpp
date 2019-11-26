@@ -1,8 +1,13 @@
 #include "model.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb-master/stb_image.h>
+
 #include "src/container/hash_map.h"
 
-// Helper function for counting meshes and indices in obj file.
+#include <iostream>
+
+// Helper function for counting _meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     char lineHeader[512];
     int res = fscanf(file, "%s%*[^\n]", lineHeader);
@@ -26,17 +31,27 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-Model::Model()
-: vertexBuffer(4 * sizeof(float)),
-  indexBuffer(sizeof(uint32_t)),
-  meshes(sizeof(size_t)) {}
+Model::Model(std::string& path)
+: _path(path),
+  _vertexBuffer(4 * sizeof(float)),
+  _indexBuffer(sizeof(uint32_t)),
+  _meshes(sizeof(size_t)),
+  _meshesAreLoaded(false),
+  _texturesAreLoaded(false) {}
 
-void Model::load(const char* path) {
+void Model::load() {
+    loadMeshes();
+    loadTextures();
+}
 
-    FILE* file = fopen(path, "r");
+void Model::loadMeshes() {
+
+    std::string modelPath = _path + "model.obj";
+
+    FILE* file = fopen((modelPath).c_str(), "r");
     if (file == nullptr) {
         printf("Could not open file '");
-        printf("%s", path);
+        printf("%s", modelPath.c_str());
         printf("'!\n");
         assert(false);
         return;
@@ -47,8 +62,8 @@ void Model::load(const char* path) {
 
     countAttributes(file, numMesh, numIndex);
     
-    meshes.resize(numMesh);
-    indexBuffer.resize(numIndex);
+    _meshes.resize(numMesh);
+    _indexBuffer.resize(numIndex);
 
     // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
@@ -70,9 +85,9 @@ void Model::load(const char* path) {
 
     // An obj-file with a single object may not have
     // an "o" header.
-    if (meshes.size() == 1) {
-        meshes[0].numIndices = indexBuffer.size();
-        meshes[0].startIndex = 0;
+    if (_meshes.size() == 1) {
+        _meshes[0].numIndices = _indexBuffer.size();
+        _meshes[0].startIndex = 0;
     }
 
     // Parse the contents.
@@ -89,17 +104,17 @@ void Model::load(const char* path) {
             fscanf(file, "%*[^\n]\n", NULL);
 
             if (meshCount > 0) {
-                meshes[meshCount].startIndex = 
-                    meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
-                meshes[meshCount - 1].numIndices = 
-                    indexCount - meshes[meshCount - 1].startIndex;                
+                _meshes[meshCount].startIndex = 
+                    _meshes[meshCount - 1].startIndex + _meshes[meshCount - 1].numIndices;
+                _meshes[meshCount - 1].numIndices = 
+                    indexCount - _meshes[meshCount - 1].startIndex;                
             } else {
-                meshes[meshCount].startIndex = 0;
+                _meshes[meshCount].startIndex = 0;
             }
             // This will be overwritten unless we've reached
             // the final mesh.
-            meshes[meshCount].numIndices = 
-                indexCount - indexBuffer.size();
+            _meshes[meshCount].numIndices = 
+                indexCount - _indexBuffer.size();
 
             meshCount++;
 
@@ -110,7 +125,7 @@ void Model::load(const char* path) {
             vertexPosCount++;
         } else if (strcmp(lineHeader, "vn") == 0) {
             // Parse vertex normal.
-            glm::vec3& normal = vertexBufferTemp[vertexPosCount].normal;
+            glm::vec3& normal = vertexBufferTemp[vertexNormalCount].normal;
             fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
             vertexNormalCount++;
         } else if (strcmp(lineHeader, "vt") == 0) {
@@ -151,17 +166,62 @@ void Model::load(const char* path) {
                 if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
-                indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
+                _indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
             }        
         }
      
         res = fscanf(file, "%s", lineHeader);
     }
     size_t numVertex = uniqueVertices.size();
-    vertexBuffer.resize(numVertex);
+    _vertexBuffer.resize(numVertex);
     
     indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
-        vertexBuffer[it->value()] = it->key();
+        _vertexBuffer[it->value()] = it->key();
     }
+    _meshesAreLoaded = true;
+}
+
+void Model::loadTextures() {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load((_path + "diffuse.png").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+ 
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    _texture.texWidth = texWidth;
+    _texture.texHeight = texHeight;
+    _texture.texChannels = texChannels;
+
+    size_t bufferSize = texWidth * texHeight * 4;
+    _texture.pixelBuffer.resize(bufferSize);
+    for (size_t i = 0; i < _texture.pixelBuffer.size(); i++) {
+        _texture.pixelBuffer[i] = pixels[i];
+    }
+
+    stbi_image_free(pixels);
+    _texturesAreLoaded = true;
+}
+
+void Model::free() {
+    freeMeshes();
+    freeTextures();
+}
+
+void Model::freeMeshes() {
+    _vertexBuffer = prt::vector<Vertex>();
+    _indexBuffer = prt::vector<uint32_t>();
+    _meshes = prt::vector<Mesh>();
+
+    _meshesAreLoaded = false;
+}
+
+void Model::freeTextures() {
+    _texture.pixelBuffer = prt::vector<unsigned char>();
+    _texture.texWidth = 0;
+    _texture.texHeight = 0;
+    _texture.texChannels = 0;
+    
+    _texturesAreLoaded = false;
 }

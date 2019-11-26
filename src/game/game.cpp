@@ -1,28 +1,76 @@
 #include "game.h"
 
 #include "src/container/vector.h"
-
 #include "src/entity_component_system/component/component.h"
+#include "src/config/prototype2Config.h"
 
-Game::Game(void* memoryPointer, size_t  memorySizeBytes)
-: entityManager(memoryPointer, memorySizeBytes),
-  renderSystem() {
+#include <chrono>
+#include <thread>
 
+#include <iostream>
+
+Game::Game()
+: _vulkanApp(),
+  _input(_vulkanApp.getWindow()),
+  _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
+  _staticEntityManager(),
+  _camera(_input),
+  _frameRate(FRAME_RATE),
+  _microsecondsPerFrame(1000000 / _frameRate),
+  _currentFrame(0) {
+    prt::vector<std::string> paths;
+    _modelManager.getPaths(paths);
+    _vulkanApp.loadModels(paths);
+    prt::vector<uint32_t> modelIDs;
+    _staticEntityManager.getModelIDs(modelIDs);
+    _vulkanApp.bindStaticEntities(modelIDs);
+}
+
+Game::~Game() {
+    _vulkanApp.cleanup();
 }
 
 void Game::run() {
-    while (true /*<- use condition instead*/) {
-        update();
+    using clock = std::chrono::high_resolution_clock;
+    //static auto startTime = std::chrono::high_resolution_clock::now();
+    auto lastTime = clock::now();
+    clock::time_point deadLine = clock::now();
+
+    uint32_t framesMeasured = 0;
+    clock::time_point nextSecond = lastTime + std::chrono::seconds(1);
+        
+    while (_vulkanApp.isWindowOpen()) {
+        deadLine = deadLine + std::chrono::microseconds(_microsecondsPerFrame);
+        auto currentTime = clock::now();
+        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        lastTime = currentTime;
+        update(deltaTime);
+
+        std::this_thread::sleep_until(deadLine);
+
+        framesMeasured++;
+        if (nextSecond <= clock::now()) {
+            nextSecond += std::chrono::seconds(1);
+            std::cout << "Frame rate: " << framesMeasured << "FPS" << std::endl;
+            framesMeasured = 0;
+        }
+
+        _currentFrame++;
     }
 }
 
-void Game::update() {
-    prt::vector<Transform> transforms;
-    prt::vector<Model> models;
-    ComponentManager<Transform>& transformManager =
-        entityManager.getComponentManager<Transform>();
-    ComponentManager<Model>& modelManager =
-        entityManager.getComponentManager<Model>();
-    renderSystem.update(modelManager._components, modelManager._componentToEntityID,
-                        transformManager._components, transformManager._entityIDToComponent);
+void Game::update(float deltaTime) {
+    _input.update();
+    _camera.update(deltaTime);
+    updateGraphics();
+}
+
+void Game::updateGraphics() {
+    prt::vector<glm::mat4> modelMatrices; 
+    _staticEntityManager.getTransformMatrixes(modelMatrices);
+
+    glm::mat4 viewMatrix = _camera.getViewMatrix();
+    glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
+    glm::vec3 viewPosition = _camera.getPosition();
+    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition);
 }

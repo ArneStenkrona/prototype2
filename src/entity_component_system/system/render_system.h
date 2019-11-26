@@ -9,23 +9,23 @@
 #include "src/container/array.h"
 #include "src/container/vector.h"
 
-class RenderSystem {
-public:
-    RenderSystem();
-    
-    void update(prt::vector<Model>& models, 
-                prt::array<EntityID, TOTAL_ENTITIES> modelIndexToEntityID,
-                prt::vector<Transform> transforms,
-                prt::array<EntityID, TOTAL_ENTITIES> entityIDToTransformIndex);
-
-    void render();
-
-private:
-    struct RenderJob { 
-        Model model;
-        Transform transform;
-    };
-    prt::vector<RenderJob> _renderQueue;
-};
+//class RenderSystem {
+//public:
+//    RenderSystem();
+//    
+//    void update(prt::vector<Model>& models, 
+//                prt::array<EntityID, TOTAL_ENTITIES> modelIndexToEntityID,
+//                prt::vector<Transform> transforms,
+//                prt::array<EntityID, TOTAL_ENTITIES> entityIDToTransformIndex);
+//
+//    void render();
+//
+//private:
+//    struct RenderJob { 
+//        Model model;
+//        Transform transform;
+//    };
+//    prt::vector<RenderJob> _renderQueue;
+//};
 
 #endif

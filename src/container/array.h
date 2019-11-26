@@ -29,6 +29,9 @@ namespace prt {
 
         constexpr inline T* begin() { return &_data[0]; }
         constexpr inline T* end() { return &_data[_size]; }
+
+        //constexpr inline size_t type_size() const { return sizeof(T); }
+        constexpr inline size_t data_size() const { return reinterpret_cast<size_t>(reinterpret_cast<uintptr_t>(&_data[_size]) - reinterpret_cast<uintptr_t>(&_data[0])); }
     };
 }
 
