@@ -13,7 +13,7 @@ Game::Game()
 : _vulkanApp(),
   _input(_vulkanApp.getWindow()),
   _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
-  _staticEntityManager(),
+  _scene(),
   _camera(_input),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
@@ -22,7 +22,7 @@ Game::Game()
     _modelManager.getPaths(paths);
     _vulkanApp.loadModels(paths);
     prt::vector<uint32_t> modelIDs;
-    _staticEntityManager.getModelIDs(modelIDs);
+    _scene.getModelIDs(modelIDs);
     _vulkanApp.bindStaticEntities(modelIDs);
 }
 
@@ -67,7 +67,7 @@ void Game::update(float deltaTime) {
 
 void Game::updateGraphics() {
     prt::vector<glm::mat4> modelMatrices; 
-    _staticEntityManager.getTransformMatrixes(modelMatrices);
+    _scene.getTransformMatrixes(modelMatrices);
 
     glm::mat4 viewMatrix = _camera.getViewMatrix();
     glm::mat4 projectionMatrix = _camera.getProjectionMatrix();

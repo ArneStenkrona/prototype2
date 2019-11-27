@@ -71,6 +71,7 @@ file(GLOB SOURCES
     "src/container/*.cpp"
     "src/game/*.cpp"
     "src/game/entities/*.cpp"
+    "src/game/scene/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/entity_component_system/system/*.cpp"

@@ -4,7 +4,7 @@
 #include "src/entity_component_system/entity/entity_manager.h"
 #include "src/entity_component_system/system/render_system.h"
 #include "src/system/assets/model_manager.h"
-#include "src/game/entities/static_entity_manager.h"
+#include "src/game/scene/scene.h"
 
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/vulkan/vulkan_application.h"
@@ -22,7 +22,8 @@ private:
     Input _input;
 
     ModelManager _modelManager;
-    StaticEntityManager _staticEntityManager;
+
+    Scene _scene;
 
     Camera _camera;
 
