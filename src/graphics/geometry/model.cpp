@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
 
+
 #include "src/container/hash_map.h"
 
 #include <iostream>
@@ -31,8 +32,9 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-Model::Model(std::string& path)
-: _path(path),
+Model::Model(std::string& modelPath, std::string& texturePath)
+: _modelPath(modelPath),
+  _texturePath(texturePath),
   _vertexBuffer(4 * sizeof(float)),
   _indexBuffer(sizeof(uint32_t)),
   _meshes(sizeof(size_t)),
@@ -46,7 +48,7 @@ void Model::load() {
 
 void Model::loadMeshes() {
 
-    std::string modelPath = _path + "model.obj";
+    std::string modelPath = _modelPath;
 
     FILE* file = fopen((modelPath).c_str(), "r");
     if (file == nullptr) {
@@ -184,7 +186,8 @@ void Model::loadMeshes() {
 
 void Model::loadTextures() {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load((_path + "diffuse.png").c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+    stbi_uc* pixels = stbi_load((_texturePath).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }

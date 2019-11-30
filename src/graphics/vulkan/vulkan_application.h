@@ -76,7 +76,7 @@ public:
     void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     void cleanup();
 
-    void loadModels(prt::vector<std::string>& paths);
+    void loadModels(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths);
     void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return window; }

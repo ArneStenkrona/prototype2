@@ -18,9 +18,10 @@ Game::Game()
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
-    prt::vector<std::string> paths;
-    _modelManager.getPaths(paths);
-    _vulkanApp.loadModels(paths);
+    prt::vector<std::string> modelPaths;
+    prt::vector<std::string> texturePaths;
+    _modelManager.getPaths(modelPaths, texturePaths);
+    _vulkanApp.loadModels(modelPaths, texturePaths);
     prt::vector<uint32_t> modelIDs;
     _scene.getModelIDs(modelIDs);
     _vulkanApp.bindStaticEntities(modelIDs);

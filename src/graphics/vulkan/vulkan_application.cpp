@@ -993,8 +993,9 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
-    if (paths.size() == 0) {
+void VulkanApplication::loadModels(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths) {
+    assert((texturePaths.size() == modelPaths.size()));
+    if (modelPaths.size() == 0) {
         return;
     }
 
@@ -1002,8 +1003,8 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
         pushConstants[i] = i;
     }
 
-    for (size_t i = 0; i < paths.size(); i++){
-        Model model(paths[i]);
+    for (size_t i = 0; i < modelPaths.size(); i++){
+        Model model(modelPaths[i], texturePaths[i]);
         models.push_back(model);
     }
 
@@ -1011,14 +1012,14 @@ void VulkanApplication::loadModels(prt::vector<std::string>& paths) {
         models[i].load();
     }
 
-    assert((paths.size() < NUMBER_SUPPORTED_TEXTURES));
+    assert((models.size() < NUMBER_SUPPORTED_TEXTURES));
 
-    for (size_t i = 0; i < paths.size(); i++) {
+    for (size_t i = 0; i < models.size(); i++) {
         createTextureImage(i, models[i].texture());
         createTextureImageView(i, textureImage[i]);
     }
 
-     for (size_t i = paths.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
+     for (size_t i = models.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
         createTextureImage(i, models[0].texture());
         createTextureImageView(i, textureImage[0]);
      }

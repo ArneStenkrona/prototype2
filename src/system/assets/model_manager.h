@@ -23,7 +23,7 @@ class ModelManager {
 public:
     ModelManager(const char* directory);
 
-    void getPaths(prt::vector<std::string>& paths);
+    void getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths);
     uint32_t getModelID(std::string& name);
     uint32_t getModelID(const char* name);
 
@@ -32,6 +32,7 @@ public:
     
 private:
     prt::hash_map<std::string, std::string> _modelPaths;
+    prt::hash_map<std::string, std::string> _texturePaths;
     prt::hash_map<std::string, uint32_t> _modelIDs;
 };
 

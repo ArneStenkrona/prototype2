@@ -104,7 +104,7 @@ public:
      * @param path path to .obj file.
      * @param allocator allocator for buffers
      */
-    Model(std::string& path);
+    Model(std::string& modelPath, std::string& texturePath);
 
     void load();
     void free();
@@ -118,7 +118,8 @@ public:
     const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
 
 private:   
-    std::string _path;
+    std::string _modelPath;
+    std::string _texturePath;
 
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
