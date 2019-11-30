@@ -7,9 +7,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "src/system/assets/model_manager.h"
+
 class Scene {
 public:
-    Scene();
+    Scene(ModelManager &modelManager);
 
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
     void getTransformMatrixes(prt::vector<glm::mat4>& transformMatrices);
@@ -22,6 +24,10 @@ private:
         glm::vec3 scales[MAXIMUM_STATIC_ENTITIES];
         //size_t num = 0;
     } _staticEntities;
+
+    void resetTransforms();
+
+    ModelManager &_modelManager;
 };
 
 #endif

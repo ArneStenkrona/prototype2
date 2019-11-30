@@ -32,3 +32,14 @@ void ModelManager::getPaths(prt::vector<std::string>& paths) {
         paths[index] = it->value();
     }
 }
+
+uint32_t ModelManager::getModelID(std::string& name) {
+    auto it = _modelIDs.find(name);
+    assert((it != _modelIDs.end()));
+    return it->value();
+}
+
+uint32_t ModelManager::getModelID(const char* name) {
+    std::string name_str = std::string(name);
+    return getModelID(name_str);
+}

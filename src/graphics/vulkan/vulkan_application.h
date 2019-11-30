@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vulkan/vulkan.hpp>
+
 #include "src/container/vector.h"
 #include "src/container/array.h"
 #include "src/container/optional.h"
@@ -83,7 +85,8 @@ public:
 private:
     GLFWwindow* window;
     
-    VkInstance instance;
+    //VkInstance instance;
+    vk::Instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
     

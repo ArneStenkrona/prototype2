@@ -4,7 +4,7 @@
 #include "src/container/hash_map.h"
 #include "src/container/vector.h"
 
-typedef char ModelName[128];
+/*typedef char ModelName[128];
 
 namespace std {
     template<> struct hash<ModelName> {
@@ -17,15 +17,18 @@ namespace std {
             return result;
         }
     };
-}
+}*/
 
 class ModelManager {
 public:
     ModelManager(const char* directory);
 
     void getPaths(prt::vector<std::string>& paths);
+    uint32_t getModelID(std::string& name);
+    uint32_t getModelID(const char* name);
 
     static constexpr uint32_t UNDEFINED_MODEL = -1;
+    static constexpr uint32_t DEFAULT_MODEL = 0;
     
 private:
     prt::hash_map<std::string, std::string> _modelPaths;

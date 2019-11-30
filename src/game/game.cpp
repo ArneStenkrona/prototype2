@@ -13,7 +13,7 @@ Game::Game()
 : _vulkanApp(),
   _input(_vulkanApp.getWindow()),
   _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
-  _scene(),
+  _scene(_modelManager),
   _camera(_input),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
