@@ -90,7 +90,8 @@ private:
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
     
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    //VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    vk::PhysicalDevice physicalDevice;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
     
