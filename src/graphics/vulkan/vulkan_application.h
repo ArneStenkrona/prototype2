@@ -93,7 +93,8 @@ private:
     //VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     vk::PhysicalDevice physicalDevice;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    VkDevice device;
+    //VkDevice device;
+    vk::Device device;
     
     VkQueue graphicsQueue;
     VkQueue presentQueue;

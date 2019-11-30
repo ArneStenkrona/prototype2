@@ -324,36 +324,30 @@ void VulkanApplication::createSwapChain() {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
     
-    VkSwapchainCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = surface;
-    
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+    bool presentFamily = indices.graphicsFamily == indices.presentFamily;
+    vk::SharingMode imageSharingMode = !presentFamily ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive;
+    uint32_t queueFamilyIndexCount = !presentFamily ? 2 : 0;
+    const uint32_t* pQueueFamilyIndices = !presentFamily ? queueFamilyIndices : nullptr;
+    vk::SwapchainCreateInfoKHR createInfo{vk::SwapchainCreateFlagsKHR(),
+                               surface,
+                               imageCount,
+                               vk::Format(surfaceFormat.format),
+                               vk::ColorSpaceKHR(surfaceFormat.colorSpace),
+                               extent,
+                               1,
+                               vk::ImageUsageFlagBits::eColorAttachment,
+                               vk::SharingMode(imageSharingMode),
+                               queueFamilyIndexCount,
+                               pQueueFamilyIndices,
+                               vk::SurfaceTransformFlagBitsKHR(swapChainSupport.capabilities.currentTransform),
+                               vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                               vk::PresentModeKHR(presentMode),
+                               VK_TRUE};
     
-    if (indices.graphicsFamily != indices.presentFamily) {
-        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    } else {
-        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    }
-    
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
-    
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create swap chain!");
-    }
+    swapChain = device.createSwapchainKHR(createInfo);
     
     vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
     swapChainImages.resize(imageCount);
