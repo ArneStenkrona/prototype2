@@ -61,7 +61,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model[MAXIMUM_STATIC_ENTITIES];
+    alignas(16) glm::mat4 model[MAXIMUM_MODEL_ENTITIES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
@@ -76,7 +76,7 @@ public:
     void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
     void cleanup();
 
-    void loadModels(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths);
+    void loadModels(prt::vector<Model>& models);
     void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return window; }
@@ -85,15 +85,12 @@ public:
 private:
     GLFWwindow* window;
     
-    //VkInstance instance;
     vk::Instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
     
-    //VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     vk::PhysicalDevice physicalDevice;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    //VkDevice device;
     vk::Device device;
     
     VkQueue graphicsQueue;
@@ -134,7 +131,7 @@ private:
     // Entities
      prt::vector<uint32_t> _modelIDs;
     // Models data;
-    prt::vector<Model> models;
+    //prt::vector<Model> models;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
@@ -228,13 +225,13 @@ private:
     
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     
-    void loadModel();
+    //void loadModel();
     
-    void createVertexBuffer();
+    void createVertexBuffer(prt::vector<Model>& models);
     
-    void createIndexBuffer();
+    void createIndexBuffer(prt::vector<Model>& models);
 
-    void createIndirectCommandBuffer();
+    void createIndirectCommandBuffer(prt::vector<Model>& models);
     
     void createUniformBuffers();
     

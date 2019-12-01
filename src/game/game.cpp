@@ -12,16 +12,16 @@
 Game::Game()
 : _vulkanApp(),
   _input(_vulkanApp.getWindow()),
-  _modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
-  _scene(_modelManager),
+  _assetManager(RESOURCE_PATH),
+  //_modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
+  _scene(_assetManager.getModelManager()),
   _camera(_input),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
-    prt::vector<std::string> modelPaths;
-    prt::vector<std::string> texturePaths;
-    _modelManager.getPaths(modelPaths, texturePaths);
-    _vulkanApp.loadModels(modelPaths, texturePaths);
+    prt::vector<Model> models;
+    _assetManager.loadModels(models);
+    _vulkanApp.loadModels(models);
     prt::vector<uint32_t> modelIDs;
     _scene.getModelIDs(modelIDs);
     _vulkanApp.bindStaticEntities(modelIDs);

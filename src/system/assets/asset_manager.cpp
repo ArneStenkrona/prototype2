@@ -1,12 +1,56 @@
-#include "model.h"
+#include "asset_manager.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
 
+#include <dirent.h>
+#include <cstring>
 
-#include "src/container/hash_map.h"
+AssetManager::AssetManager(const char* assetDirectory)
+    :_modelManager((std::string(assetDirectory) + "/models/").c_str()) {
+    struct dirent *entry;
+    DIR *dir = opendir(assetDirectory);
+    if (dir == NULL) {
+        return;
+    }
 
-#include <iostream>
+    while ((entry = readdir(dir)) != NULL) {
+        if (strncmp(entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
+
+        }
+    }
+
+    closedir(dir);
+}
+
+void AssetManager::loadModels(prt::vector<Model>& models) {
+    prt::vector<std::string> modelPaths;
+    prt::vector<std::string> texturePaths;
+    _modelManager.getPaths(modelPaths, texturePaths);
+    assert((modelPaths.size() == texturePaths.size()));
+        models.resize(modelPaths.size());
+    for (uint32_t i = 0; i < modelPaths.size(); i++) {
+        std::string modelStorage = modelPaths[i].substr(0, modelPaths[i].find("/"));
+    
+        if (modelStorage.compare("P") == 0) { // persistent storage
+            std::string modelPath = modelPaths[i].substr(modelPaths[i].find("/") + 1);
+            loadMeshes(modelPath.c_str(), models[i]._meshes, models[i]._vertexBuffer, models[i]._indexBuffer);
+        } else if (modelStorage.compare("N") == 0) { //  non-persistent storage
+            // TODO: add loading for non-persistent data
+        }
+
+        std::string textureStorage = texturePaths[i].substr(0, texturePaths[i].find("/"));
+    
+        if (textureStorage.compare("P") == 0) { // persistent storage
+            std::string texturePath = texturePaths[i].substr(texturePaths[i].find("/") + 1);
+            loadTextures(texturePath.c_str(), models[i]._texture);
+        } else if (textureStorage.compare("N") == 0) { //  non-persistent storage
+            // TODO: add loading for non-persistent data
+        }
+    }
+
+ 
+}
 
 // Helper function for counting _meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
@@ -32,28 +76,16 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-Model::Model(std::string& modelPath, std::string& texturePath)
-: _modelPath(modelPath),
-  _texturePath(texturePath),
-  _vertexBuffer(4 * sizeof(float)),
-  _indexBuffer(sizeof(uint32_t)),
-  _meshes(sizeof(size_t)),
-  _meshesAreLoaded(false),
-  _texturesAreLoaded(false) {}
+void AssetManager::loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes, 
+                                                    prt::vector<Vertex>& vertexBuffer,
+                                                    prt::vector<uint32_t>& indexBuffer) {
 
-void Model::load() {
-    loadMeshes();
-    loadTextures();
-}
+    //std::string modelPath = _modelPath;
 
-void Model::loadMeshes() {
-
-    std::string modelPath = _modelPath;
-
-    FILE* file = fopen((modelPath).c_str(), "r");
+    FILE* file = fopen(modelPath, "r");
     if (file == nullptr) {
         printf("Could not open file '");
-        printf("%s", modelPath.c_str());
+        printf("%s", modelPath);
         printf("'!\n");
         assert(false);
         return;
@@ -64,15 +96,14 @@ void Model::loadMeshes() {
 
     countAttributes(file, numMesh, numIndex);
     
-    _meshes.resize(numMesh);
-    _indexBuffer.resize(numIndex);
+    meshes.resize(numMesh);
+    indexBuffer.resize(numIndex);
 
     // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
 
     // Temporary vertex buffer
     Vertex vertexBufferTemp[VERTEX_BUFFER_SIZE];
-    //std::unordered_map<Vertex, uint32_t> uniqueVertices = {}; 
     prt::hash_map<Vertex, uint32_t> uniqueVertices; 
 
     // Variables for counting
@@ -87,9 +118,9 @@ void Model::loadMeshes() {
 
     // An obj-file with a single object may not have
     // an "o" header.
-    if (_meshes.size() == 1) {
-        _meshes[0].numIndices = _indexBuffer.size();
-        _meshes[0].startIndex = 0;
+    if (meshes.size() == 1) {
+        meshes[0].numIndices = indexBuffer.size();
+        meshes[0].startIndex = 0;
     }
 
     // Parse the contents.
@@ -106,17 +137,17 @@ void Model::loadMeshes() {
             fscanf(file, "%*[^\n]\n", NULL);
 
             if (meshCount > 0) {
-                _meshes[meshCount].startIndex = 
-                    _meshes[meshCount - 1].startIndex + _meshes[meshCount - 1].numIndices;
-                _meshes[meshCount - 1].numIndices = 
-                    indexCount - _meshes[meshCount - 1].startIndex;                
+                meshes[meshCount].startIndex = 
+                    meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
+                meshes[meshCount - 1].numIndices = 
+                    indexCount - meshes[meshCount - 1].startIndex;                
             } else {
-                _meshes[meshCount].startIndex = 0;
+                meshes[meshCount].startIndex = 0;
             }
             // This will be overwritten unless we've reached
             // the final mesh.
-            _meshes[meshCount].numIndices = 
-                indexCount - _indexBuffer.size();
+            meshes[meshCount].numIndices = 
+                indexCount - indexBuffer.size();
 
             meshCount++;
 
@@ -168,62 +199,38 @@ void Model::loadMeshes() {
                 if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
-                _indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
+                indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
             }        
         }
      
         res = fscanf(file, "%s", lineHeader);
     }
     size_t numVertex = uniqueVertices.size();
-    _vertexBuffer.resize(numVertex);
+    vertexBuffer.resize(numVertex);
     
     indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
-        _vertexBuffer[it->value()] = it->key();
+        vertexBuffer[it->value()] = it->key();
     }
-    _meshesAreLoaded = true;
 }
 
-void Model::loadTextures() {
+void AssetManager::loadTextures(const char* texturePath, Texture& texture) {
     int texWidth, texHeight, texChannels;
 
-    stbi_uc* pixels = stbi_load((_texturePath).c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
 
-    _texture.texWidth = texWidth;
-    _texture.texHeight = texHeight;
-    _texture.texChannels = texChannels;
+    texture.texWidth = texWidth;
+    texture.texHeight = texHeight;
+    texture.texChannels = texChannels;
 
     size_t bufferSize = texWidth * texHeight * 4;
-    _texture.pixelBuffer.resize(bufferSize);
-    for (size_t i = 0; i < _texture.pixelBuffer.size(); i++) {
-        _texture.pixelBuffer[i] = pixels[i];
+    texture.pixelBuffer.resize(bufferSize);
+    for (size_t i = 0; i < texture.pixelBuffer.size(); i++) {
+        texture.pixelBuffer[i] = pixels[i];
     }
 
     stbi_image_free(pixels);
-    _texturesAreLoaded = true;
-}
-
-void Model::free() {
-    freeMeshes();
-    freeTextures();
-}
-
-void Model::freeMeshes() {
-    _vertexBuffer = prt::vector<Vertex>();
-    _indexBuffer = prt::vector<uint32_t>();
-    _meshes = prt::vector<Mesh>();
-
-    _meshesAreLoaded = false;
-}
-
-void Model::freeTextures() {
-    _texture.pixelBuffer = prt::vector<unsigned char>();
-    _texture.texWidth = 0;
-    _texture.texHeight = 0;
-    _texture.texChannels = 0;
-    
-    _texturesAreLoaded = false;
 }

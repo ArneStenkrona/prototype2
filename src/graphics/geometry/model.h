@@ -3,6 +3,8 @@
 
 #include "src/container/vector.h"
 
+#include "src/graphics/geometry/parametric_shapes.h"
+
 #include <vulkan/vulkan.h>
 
 #define GLFW_INCLUDE_VULKAN
@@ -89,62 +91,68 @@ struct Material {
     /* TODO: Add members */
 };
 
-class Model {
-public:
-    /**
-     * Initializes an empty model.
-     */
-    //Model()
-    //: vertexBuffer(4 * sizeof(float)),
-    //  indexBuffer(sizeof(uint32_t)),
-    //  meshes(sizeof(size_t)) {}
-
-    /**
-     * Loads a model from a path.
-     * @param path path to .obj file.
-     * @param allocator allocator for buffers
-     */
-    Model(std::string& modelPath, std::string& texturePath);
-
-    void load();
-    void free();
-
-    bool meshesAreLoaded() const { return _meshesAreLoaded; }
-    bool texturesAreLoaded() const { return _texturesAreLoaded; }
-
-    const prt::vector<Vertex>& vertexBuffer() const { assert(_meshesAreLoaded); return  _vertexBuffer; }
-    const prt::vector<uint32_t>& indexBuffer() const { assert(_meshesAreLoaded); return  _indexBuffer; }
-
-    const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
-
-private:   
-    std::string _modelPath;
-    std::string _texturePath;
-
+struct Model {
+    prt::vector<Mesh> _meshes;
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
-
-    prt::vector<Mesh> _meshes;
-    
+    //prt::vector<Texture> _meshes; Supposed to be 1 texture per mesh
     Texture _texture;
-
-    bool _meshesAreLoaded;
-    bool _texturesAreLoaded;
-
-    void loadMeshes();
-    void loadTextures();
-
-    void freeMeshes();
-    void freeTextures();
-
-    //prt::array<Material> materials;
-    /*
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-    */
-    //friend class VulkanApplication;
 };
+
+// class Model {
+// public:
+//     /**
+//      * Loads a model from a path.
+//      * @param path path to .obj file.
+//      * @param allocator allocator for buffers
+//      */
+//     Model(std::string& modelPath, std::string& texturePath);
+//     //Model(parametric_shapes::Quad quad, std::string& texturePath);
+//     //Model(parametric_shapes::Cuboid cuboid, std::string& texturePath);
+//     //Model(parametric_shapes::Sphere sphere, std::string& texturePath);
+//     //Model(parametric_shapes::Cylinder cylinder, std::string& texturePath);
+//     //Model(parametric_shapes::Capsule capsule, std::string& texturePath);
+
+
+//     void load();
+//     void free();
+
+//     bool meshesAreLoaded() const { return _meshesAreLoaded; }
+//     bool texturesAreLoaded() const { return _texturesAreLoaded; }
+
+//     const prt::vector<Vertex>& vertexBuffer() const { assert(_meshesAreLoaded); return  _vertexBuffer; }
+//     const prt::vector<uint32_t>& indexBuffer() const { assert(_meshesAreLoaded); return  _indexBuffer; }
+
+//     const Texture& texture() const { assert(_texturesAreLoaded); return _texture; }
+
+// private:   
+//     std::string _modelPath;
+//     std::string _texturePath;
+
+//     prt::vector<Vertex> _vertexBuffer;
+//     prt::vector<uint32_t> _indexBuffer;
+
+//     prt::vector<Mesh> _meshes;
+    
+//     Texture _texture;
+
+//     bool _meshesAreLoaded;
+//     bool _texturesAreLoaded;
+
+//     void loadMeshes();
+//     void loadTextures();
+
+//     void freeMeshes();
+//     void freeTextures();
+
+//     //prt::array<Material> materials;
+//     /*
+//     VkBuffer vertexBuffer;
+//     VkDeviceMemory vertexBufferMemory;
+//     VkBuffer indexBuffer;
+//     VkDeviceMemory indexBufferMemory;
+//     */
+//     //friend class VulkanApplication;
+// };
 
 #endif

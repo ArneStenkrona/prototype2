@@ -4,6 +4,7 @@
 #include "src/entity_component_system/entity/entity_manager.h"
 #include "src/entity_component_system/system/render_system.h"
 #include "src/system/assets/model_manager.h"
+#include "src/system/assets/asset_manager.h"
 #include "src/game/scene/scene.h"
 
 #include "src/graphics/camera/camera.h"
@@ -21,7 +22,8 @@ private:
     VulkanApplication _vulkanApp;
     Input _input;
 
-    ModelManager _modelManager;
+    AssetManager _assetManager;
+    //ModelManager _modelManager;
 
     Scene _scene;
 

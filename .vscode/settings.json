@@ -78,5 +78,6 @@
         "unordered_set": "cpp",
         "valarray": "cpp",
         "complex": "cpp"
-    }
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

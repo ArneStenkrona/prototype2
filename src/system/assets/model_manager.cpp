@@ -18,17 +18,18 @@ ModelManager::ModelManager(const char* directory) {
 
     uint16_t nextID = 0;
     // Add default
-    _modelPaths.insert("DEFAULT", std::string(directory) + "DEFAULT/model.obj");
-    _texturePaths.insert("DEFAULT", std::string(directory) + "DEFAULT/diffuse.png");
+    std::string modelAssetPath = std::string("P/") + directory;
+    _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT/model.obj");
+    _texturePaths.insert("DEFAULT", modelAssetPath + "DEFAULT/diffuse.png");
     _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {
         if (strncmp (entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
             auto modelDir = std::string(entry->d_name);
             std::string modelName = modelDir.substr(strlen("MODEL_"));
             assert((modelName.compare("DEFAULT") != 0));
-            _modelPaths.insert(modelName, directory + modelDir + "/model.obj");
+            _modelPaths.insert(modelName, modelAssetPath + modelDir + "/model.obj");
             auto texturePath = is_file_exist((directory + modelDir + "/diffuse.png").c_str()) ?
-                               directory + modelDir + "/diffuse.png" : std::string(directory) + "DEFAULT/diffuse.png";
+                               modelAssetPath + modelDir + "/diffuse.png" : modelAssetPath + "DEFAULT/diffuse.png";
             _texturePaths.insert(modelName, texturePath);
             _modelIDs.insert(modelName, nextID++);
         }

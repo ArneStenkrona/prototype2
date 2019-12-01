@@ -1,6 +1,8 @@
 #ifndef PRT_SCENE_H
 #define PRT_SCENE_H
 
+#include "src/graphics/geometry/parametric_shapes.h"
+
 #include "src/container/vector.h"
 #include "src/config/prototype2Config.h"
 
@@ -17,13 +19,13 @@ public:
     void getTransformMatrixes(prt::vector<glm::mat4>& transformMatrices);
     
 private:
-    struct StaticEntities {
-        uint32_t modelIDs[MAXIMUM_STATIC_ENTITIES];
-        glm::vec3 positions[MAXIMUM_STATIC_ENTITIES];
-        glm::fquat rotations[MAXIMUM_STATIC_ENTITIES];
-        glm::vec3 scales[MAXIMUM_STATIC_ENTITIES];
+    struct ModelEntities {
+        uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
+        glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
+        glm::fquat rotations[MAXIMUM_MODEL_ENTITIES];
+        glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
         //size_t num = 0;
-    } _staticEntities;
+    } _modelEntities;
 
     void resetTransforms();
 
