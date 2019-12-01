@@ -2,11 +2,14 @@
 
 #include "src/graphics/geometry/model.h" 
 
+#include <cmath>
+
+#include <iostream>
 void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Quad quad) {
     uint32_t nw = quad.resW + 2;
     uint32_t nh = quad.resH + 2; 
     vertices.resize(nw * nh);
-    vertices.resize(((nw - 1) * (nh - 2)) * 6);
+    indices.resize(((nw - 1) * (nh - 1)) * 6);
     // vertices
     for (uint32_t iw = 0; iw < nw; iw++) {
          for (uint32_t ih = 0; ih < nh; ih++) {

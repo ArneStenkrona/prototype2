@@ -3,6 +3,8 @@
 #include <dirent.h>
 #include <fstream>
 
+#include <string>   
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb-master/stb_image.h>
 
@@ -15,6 +17,13 @@ bool is_file_exist(const char *fileName)
 ModelManager::ModelManager(const char* directory)
     : _directory(directory) {
     loadPersistent(directory);
+    parametric_shapes::Quad quad;
+    quad.width = 20;
+    quad.height = 150;
+    quad.resW = 20;
+    quad.resH = 150;
+    prt::vector<parametric_shapes::Quad> quads = { quad };
+    insertQuads(quads);
 }
 
 void ModelManager::loadPersistent(const char* directory) {
@@ -45,7 +54,7 @@ void ModelManager::loadPersistent(const char* directory) {
 }
 
 void ModelManager::insertQuads(prt::vector<parametric_shapes::Quad>& quads) {
-    std::string nonPersistentModelAssetPath = "P/model/";
+    std::string nonPersistentModelAssetPath = "N/model/";
     std::string modelAssetPath = std::string("P/") + _directory;
     uint32_t currInd = _quads.size();
     _quads.resize(_quads.size() + quads.size());
@@ -54,8 +63,7 @@ void ModelManager::insertQuads(prt::vector<parametric_shapes::Quad>& quads) {
 
         _modelPaths.insert("QUAD" + std::to_string(currInd), nonPersistentModelAssetPath + "QUAD/" + std::to_string(currInd));
         _texturePaths.insert("QUAD" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
-        _modelIDs.insert("DEFAULT", nextID++);
-
+        _modelIDs.insert("QUAD" + std::to_string(currInd), nextID++);
         currInd++;
     }
 }
@@ -89,7 +97,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
     prt::vector<std::string> texturePaths;
     getPaths(modelPaths, texturePaths);
     assert((modelPaths.size() == texturePaths.size()));
-        models.resize(modelPaths.size());
+    models.resize(nextID);
     for (uint32_t i = 0; i < modelPaths.size(); i++) {
         std::string modelStorage = modelPaths[i].substr(0, modelPaths[i].find("/"));
     
@@ -98,6 +106,13 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
             loadMeshes(modelPath.c_str(), models[i]._meshes, models[i]._vertexBuffer, models[i]._indexBuffer);
         } else if (modelStorage.compare("N") == 0) { //  non-persistent storage
             // TODO: add loading for non-persistent data
+            std::string modelPath = modelPaths[i].substr(modelPaths[i].find("/") + 1);
+            uint32_t quadIndex = std::stoi(modelPaths[i].substr(modelPaths[i].find("QUAD") + 5));
+            parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[quadIndex]);
+            Mesh mesh;
+            mesh.startIndex = 0;
+            mesh.numIndices = models[i]._indexBuffer.size();
+            models[i]._meshes.push_back(mesh);
         }
 
         std::string textureStorage = texturePaths[i].substr(0, texturePaths[i].find("/"));
