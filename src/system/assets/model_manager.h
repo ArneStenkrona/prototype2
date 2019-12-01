@@ -4,6 +4,12 @@
 #include "src/container/hash_map.h"
 #include "src/container/vector.h"
 
+#include "src/graphics/geometry/parametric_shapes.h"
+
+#include "src/graphics/geometry/model.h"
+
+#include <dirent.h>
+
 /*typedef char ModelName[128];
 
 namespace std {
@@ -22,6 +28,15 @@ namespace std {
 class ModelManager {
 public:
     ModelManager(const char* directory);
+    void insertQuads(prt::vector<parametric_shapes::Quad>& quads);
+
+    void loadModels(prt::vector<Model>& models);
+    void loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes,
+                                          prt::vector<Vertex>& vertexBuffer,
+                                          prt::vector<uint32_t>& indexBuffer);
+
+    void loadTextures(const char* texturePath, Texture& texture);
+
 
     void getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths);
     uint32_t getModelID(std::string& name);
@@ -34,6 +49,14 @@ private:
     prt::hash_map<std::string, std::string> _modelPaths;
     prt::hash_map<std::string, std::string> _texturePaths;
     prt::hash_map<std::string, uint32_t> _modelIDs;
+
+    // Parametrics
+    prt::vector<parametric_shapes::Quad> _quads;
+
+    std::string _directory;
+    uint16_t nextID = 0;
+    
+    void loadPersistent(const char* directory);
 };
 
 #endif

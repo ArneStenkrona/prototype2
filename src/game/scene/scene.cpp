@@ -2,14 +2,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
-Scene::Scene(ModelManager &modelManager)
-    :_modelManager(modelManager) {
+Scene::Scene(AssetManager &assetManager)
+    :_assetManager(assetManager) {
     resetTransforms();
 
     uint32_t default_index = ModelManager::DEFAULT_MODEL;
-    uint32_t monkey_index = _modelManager.getModelID("MONKEY");
-    uint32_t sphere_index = _modelManager.getModelID("SPHERE");
-    uint32_t plane_index = _modelManager.getModelID("PLANE");
+    uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("SPHERE");
+    uint32_t plane_index = _assetManager.getModelManager().getModelID("PLANE");
 
     uint32_t indices[3] = {default_index, monkey_index, sphere_index};
 

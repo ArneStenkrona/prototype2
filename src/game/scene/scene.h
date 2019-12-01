@@ -1,19 +1,20 @@
 #ifndef PRT_SCENE_H
 #define PRT_SCENE_H
 
+#include "src/config/prototype2Config.h"
+
+#include "src/system/assets/asset_manager.h"
 #include "src/graphics/geometry/parametric_shapes.h"
 
 #include "src/container/vector.h"
-#include "src/config/prototype2Config.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include "src/system/assets/model_manager.h"
 
 class Scene {
 public:
-    Scene(ModelManager &modelManager);
+    Scene(AssetManager &assetManager);
 
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
     void getTransformMatrixes(prt::vector<glm::mat4>& transformMatrices);
@@ -29,7 +30,7 @@ private:
 
     void resetTransforms();
 
-    ModelManager &_modelManager;
+    AssetManager &_assetManager;
 };
 
 #endif

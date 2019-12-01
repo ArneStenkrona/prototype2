@@ -23,7 +23,6 @@ private:
     Input _input;
 
     AssetManager _assetManager;
-    //ModelManager _modelManager;
 
     Scene _scene;
 
