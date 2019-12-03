@@ -19,9 +19,9 @@ struct Cuboid {
     float width = 1.0f;
     float height = 1.0f;
     float depth = 1.0f;
-    uint32_t resW = 0;
-    uint32_t resH = 0;
-    uint32_t resD = 0;
+    //uint32_t resW = 0;
+    //uint32_t resH = 0;
+    //uint32_t resD = 0;
 };
 
 struct Sphere {

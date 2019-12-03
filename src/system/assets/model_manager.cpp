@@ -28,6 +28,11 @@ ModelManager::ModelManager(const char* directory)
     quad.resH = 150;
     prt::vector<parametric_shapes::Quad> quads = { quad };
     insertQuads(quads);
+    parametric_shapes::Sphere sphere;
+    sphere.radius = 10.0f;
+    sphere.res = 50;
+    prt::vector<parametric_shapes::Sphere> spheres = { sphere };
+    insertSpheres(spheres);
 }
 
 void ModelManager::loadPersistent(const char* directory) {
@@ -68,6 +73,21 @@ void ModelManager::insertQuads(prt::vector<parametric_shapes::Quad>& quads) {
         _modelPaths.insert("QUAD" + std::to_string(currInd), nonPersistentModelAssetPath + "QUAD/" + std::to_string(currInd));
         _texturePaths.insert("QUAD" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
         _modelIDs.insert("QUAD" + std::to_string(currInd), nextID++);
+        currInd++;
+    }
+}
+
+void ModelManager::insertSpheres(prt::vector<parametric_shapes::Sphere>& spheres) {
+    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
+    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
+    uint32_t currInd = _spheres.size();
+    _spheres.resize(_spheres.size() + spheres.size());
+    for (uint32_t i = 0; i < spheres.size(); i++) {
+        _spheres[currInd] = spheres[i];
+
+        _modelPaths.insert("SPHERE" + std::to_string(currInd), nonPersistentModelAssetPath + "SPHERE/" + std::to_string(currInd));
+        _texturePaths.insert("SPHERE" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
+        _modelIDs.insert("SPHERE" + std::to_string(currInd), nextID++);
         currInd++;
     }
 }
@@ -117,6 +137,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
                 parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[index]);
             } else if (type.compare("CUBOID") == 0) {
             } else if (type.compare("SPHERE") == 0) {
+                parametric_shapes::createSphere(models[i]._vertexBuffer, models[i]._indexBuffer, _spheres[index]);
             } else if (type.compare("CYLINDER") == 0) {
             } else if (type.compare("CAPSULE") == 0) {
             }

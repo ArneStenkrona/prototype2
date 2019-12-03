@@ -29,6 +29,7 @@ class ModelManager {
 public:
     ModelManager(const char* directory);
     void insertQuads(prt::vector<parametric_shapes::Quad>& quads);
+    void insertSpheres(prt::vector<parametric_shapes::Sphere>& spheres);
 
     void loadModels(prt::vector<Model>& models);
     void loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes,
@@ -52,6 +53,7 @@ private:
 
     // Parametrics
     prt::vector<parametric_shapes::Quad> _quads;
+    prt::vector<parametric_shapes::Sphere> _spheres;
 
     std::string _directory;
     uint16_t nextID = 0;

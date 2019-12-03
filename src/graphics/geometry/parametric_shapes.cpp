@@ -37,15 +37,81 @@ void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<ui
         }
     }
 }
-/*
-void parametric_shapes::createCuboid(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cuboid cuboid) {
 
-}
+// void parametric_shapes::createCuboid(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cuboid cuboid) {
+// /*
+//     float width = 1.0f;
+//     float height = 1.0f;
+//     float depth = 1.0f;
+//     uint32_t resW = 0;
+//     uint32_t resH = 0;
+//     uint32_t resD = 0;
+// */
+//     /* face 1 */
+//     uint32_t nx = cuboid.resD;
+//     uint32_t ny = cuboid.resH; 
+//     // vertices
+//     /*for (uint32_t ix = 0; ix < nx; ix++) {
+//         for (uint32_t iy = 0; iy < ny; iy++) {
+//             float fx = (float(ix) / float(nx-1)); 
+//             float fy = (float(iy) / float(ny-1)); 
+//             Vertex v;
+//             v.pos = glm::vec3{ 0.5f * cuboid.resW, iy, ix };
+//             v.normal = glm::vec3{ 1.0f, 0.0f, 0.0f };
+//             //v.texCoord = glm::vec2{ fw, fh};
+//             vertices[ix + (iy * nx)] = v;
+//         }
+//     }
+// }
 
 void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Sphere sphere) {
+    //float radius = 1.0f;
+    //uint32_t res = 0;
+    //(x,y,z) = (rcos(th)sin(ph),rsin(th)sin(ph),rcos(ph))
+    uint32_t ntheta = sphere.res + 2;
+    uint32_t nphi = std::max(1u, ntheta/2);
+    uint32_t vi = 0;
+    vertices.resize(ntheta*nphi);
+    indices.resize(((ntheta - 1) * (nphi - 1)) * 6);
+    Vertex v; 
+    v.pos = glm::vec3{0.0f, 0.0f, sphere.radius};
+    v.normal = glm::normalize(v.pos);
+    v.texCoord = glm::vec2(0.0f, 0.0f);
+    vertices[vi++] = v;
+    for (uint32_t iphi = 1; iphi < nphi-1; iphi++) {
+        float phi = (float(iphi) / float(nphi-1)) * glm::pi<float>();
+        for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+            float theta = (float(itheta) / float(ntheta-1)) * 2 * glm::pi<float>();
+            v.pos = glm::vec3{sphere.radius * glm::cos(theta) * glm::sin(phi),
+                              sphere.radius * glm::sin(theta) * glm::sin(phi), 
+                              sphere.radius * glm::cos(phi)};
+            v.normal = glm::normalize(v.pos);
+            v.texCoord = glm::vec2{theta / (2 * glm::pi<float>()), phi / glm::pi<float>()};
+            vertices[iphi + (itheta * nphi)/*vi++*/] = v;
+        }
+    }
+    v.pos = glm::vec3{0.0f, 0.0f, -sphere.radius};
+    v.normal = glm::normalize(v.pos);
+    v.texCoord = glm::vec2(1.0f, 1.0f);
+    vertices[vi++] = v;
 
+    uint32_t index = 0;
+    // indices
+    for (uint32_t iphi = 1; iphi < nphi - 1; iphi++) {
+         for (uint32_t itheta = 0; itheta < ntheta - 1; itheta++) {
+            // triangle 1
+            indices[index++] = iphi + (itheta * nphi);
+            indices[index++] = iphi + 1 + (itheta * nphi);
+            indices[index++] = iphi + ((itheta + 1) * nphi);
+            // triangle 2
+            indices[index++] = iphi + 1 + (itheta * nphi);
+            indices[index++] = iphi + 1 + ((itheta + 1) * nphi);
+            indices[index++] = iphi + ((itheta + 1) * nphi);
+        }
+    }
 }
 
+/*
 void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cylinder cylinder) {
 
 }
