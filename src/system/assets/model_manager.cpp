@@ -1,5 +1,9 @@
 #include "model_manager.h"
 
+#include "src/system/assets/asset_manager.h"
+
+#include "src/util/string_util.h"
+
 #include <dirent.h>
 #include <fstream>
 
@@ -33,7 +37,7 @@ void ModelManager::loadPersistent(const char* directory) {
         return;
     }
     // Add default
-    std::string modelAssetPath = std::string("P/") + directory;
+    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + directory;
     _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT/model.obj");
     _texturePaths.insert("DEFAULT", modelAssetPath + "DEFAULT/diffuse.png");
     _modelIDs.insert("DEFAULT", nextID++);
@@ -54,8 +58,8 @@ void ModelManager::loadPersistent(const char* directory) {
 }
 
 void ModelManager::insertQuads(prt::vector<parametric_shapes::Quad>& quads) {
-    std::string nonPersistentModelAssetPath = "N/model/";
-    std::string modelAssetPath = std::string("P/") + _directory;
+    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
+    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
     uint32_t currInd = _quads.size();
     _quads.resize(_quads.size() + quads.size());
     for (uint32_t i = 0; i < quads.size(); i++) {
@@ -101,14 +105,21 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
     for (uint32_t i = 0; i < modelPaths.size(); i++) {
         std::string modelStorage = modelPaths[i].substr(0, modelPaths[i].find("/"));
     
-        if (modelStorage.compare("P") == 0) { // persistent storage
-            std::string modelPath = modelPaths[i].substr(modelPaths[i].find("/") + 1);
+        if (modelStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
+            std::string modelPath = modelPaths[i].substr(modelPaths[i].find(AssetManager::persistentStorageString) + 2);
             loadMeshes(modelPath.c_str(), models[i]._meshes, models[i]._vertexBuffer, models[i]._indexBuffer);
-        } else if (modelStorage.compare("N") == 0) { //  non-persistent storage
-            // TODO: add loading for non-persistent data
-            std::string modelPath = modelPaths[i].substr(modelPaths[i].find("/") + 1);
-            uint32_t quadIndex = std::stoi(modelPaths[i].substr(modelPaths[i].find("QUAD") + 5));
-            parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[quadIndex]);
+        } else if (modelStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
+            std::string modelPath = modelPaths[i].substr(modelPaths[i].find(AssetManager::NonPersistentStorageString) + 2);
+            prt::vector<std::string> split = string_util::splitString(modelPath, '/');
+            std::string& type = split[1];
+            uint32_t index = std::stoi(split[2]);
+            if (type.compare("QUAD") == 0) {
+                parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[index]);
+            } else if (type.compare("CUBOID") == 0) {
+            } else if (type.compare("SPHERE") == 0) {
+            } else if (type.compare("CYLINDER") == 0) {
+            } else if (type.compare("CAPSULE") == 0) {
+            }
             Mesh mesh;
             mesh.startIndex = 0;
             mesh.numIndices = models[i]._indexBuffer.size();
@@ -117,10 +128,10 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
 
         std::string textureStorage = texturePaths[i].substr(0, texturePaths[i].find("/"));
     
-        if (textureStorage.compare("P") == 0) { // persistent storage
-            std::string texturePath = texturePaths[i].substr(texturePaths[i].find("/") + 1);
+        if (textureStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
+            std::string texturePath = texturePaths[i].substr(texturePaths[i].find(AssetManager::persistentStorageString) + 2);
             loadTextures(texturePath.c_str(), models[i]._texture);
-        } else if (textureStorage.compare("N") == 0) { //  non-persistent storage
+        } else if (textureStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
             // TODO: add loading for non-persistent data
         }
     }

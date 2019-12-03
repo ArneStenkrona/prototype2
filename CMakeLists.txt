@@ -133,8 +133,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)
@@ -151,8 +151,8 @@ target_link_libraries(prototype2.lib glm)
 # Test project
 add_executable(prototype2_tests ${TESTSOURCES})
 # Set compiler flags
-target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
+target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
 # Link libraries
 target_link_libraries(prototype2_tests Catch2::Catch2)
 target_link_libraries(prototype2_tests prototype2.lib)

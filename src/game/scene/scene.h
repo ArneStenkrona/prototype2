@@ -9,6 +9,7 @@
 #include "src/container/vector.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 
@@ -23,7 +24,7 @@ private:
     struct ModelEntities {
         uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
-        glm::fquat rotations[MAXIMUM_MODEL_ENTITIES];
+        glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
         //size_t num = 0;
     } _modelEntities;

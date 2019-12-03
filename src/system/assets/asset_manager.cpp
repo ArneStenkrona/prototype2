@@ -19,7 +19,3 @@ AssetManager::AssetManager(const char* assetDirectory)
 
     closedir(dir);
 }
-
-void AssetManager::loadModels(prt::vector<Model>& models) {
-    _modelManager.loadModels(models);
-}

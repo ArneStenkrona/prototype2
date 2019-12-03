@@ -9,12 +9,10 @@ public:
 
     ModelManager& getModelManager() { return _modelManager; };
 
-    void loadModels(prt::vector<Model>& models);
-    /*void loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes,
-                                          prt::vector<Vertex>& vertexBuffer,
-                                          prt::vector<uint32_t>& indexBuffer);
+    inline void loadModels(prt::vector<Model>& models) { _modelManager.loadModels(models); }
 
-    void loadTextures(const char* texturePath, Texture& texture);*/
+    static constexpr const char* persistentStorageString = "P:";
+    static constexpr const char* NonPersistentStorageString = "N:";
 
 private:
     ModelManager _modelManager;
