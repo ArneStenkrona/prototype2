@@ -32,6 +32,9 @@ public:
     inline void insertQuads(prt::vector<parametric_shapes::Quad>& quads){
         insertParametric(_quads, quads, "QUAD");    
     }
+    inline void insertCuboids(prt::vector<parametric_shapes::Cuboid>& cuboids){
+        insertParametric(_cuboids, cuboids, "CUBOID");    
+    }
     inline void insertSpheres(prt::vector<parametric_shapes::Sphere>& spheres){
         insertParametric(_spheres, spheres, "SPHERE");    
     }
@@ -64,6 +67,7 @@ private:
 
     // Parametrics
     prt::vector<parametric_shapes::Quad> _quads;
+    prt::vector<parametric_shapes::Cuboid> _cuboids;
     prt::vector<parametric_shapes::Sphere> _spheres;
     prt::vector<parametric_shapes::Cylinder> _cylinders;
     prt::vector<parametric_shapes::Capsule> _capsules;

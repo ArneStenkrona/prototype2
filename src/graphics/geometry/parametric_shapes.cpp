@@ -38,31 +38,77 @@ void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<ui
     }
 }
 
-// void parametric_shapes::createCuboid(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cuboid cuboid) {
-// /*
-//     float width = 1.0f;
-//     float height = 1.0f;
-//     float depth = 1.0f;
-//     uint32_t resW = 0;
-//     uint32_t resH = 0;
-//     uint32_t resD = 0;
-// */
-//     /* face 1 */
-//     uint32_t nx = cuboid.resD;
-//     uint32_t ny = cuboid.resH; 
-//     // vertices
-//     /*for (uint32_t ix = 0; ix < nx; ix++) {
-//         for (uint32_t iy = 0; iy < ny; iy++) {
-//             float fx = (float(ix) / float(nx-1)); 
-//             float fy = (float(iy) / float(ny-1)); 
-//             Vertex v;
-//             v.pos = glm::vec3{ 0.5f * cuboid.resW, iy, ix };
-//             v.normal = glm::vec3{ 1.0f, 0.0f, 0.0f };
-//             //v.texCoord = glm::vec2{ fw, fh};
-//             vertices[ix + (iy * nx)] = v;
-//         }
-//     }
-// }
+void parametric_shapes::createCuboid(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cuboid cuboid) {
+    float w = cuboid.width / 2;
+    float h = cuboid.height / 2;
+    float d = cuboid.depth / 2;
+    vertices.resize(4*6);
+    indices.resize(6*6);
+    // I split each face to get correct normals
+    /* face 1 */
+    vertices[0].pos = glm::vec3{w, h, d};
+    vertices[1].pos = glm::vec3{w, h, -d};
+    vertices[2].pos = glm::vec3{-w, h, -d};
+    vertices[3].pos = glm::vec3{-w, h, d};
+
+    /* face 2 */
+    vertices[7].pos = glm::vec3{w, -h, d};
+    vertices[6].pos = glm::vec3{w, -h, -d};
+    vertices[5].pos = glm::vec3{-w, -h, -d};
+    vertices[4].pos = glm::vec3{-w, -h, d};
+
+    /* face 3 */
+    vertices[11].pos = glm::vec3{w, h, d};
+    vertices[10].pos = glm::vec3{w, h, -d};
+    vertices[9].pos = glm::vec3{w, -h, -d};
+    vertices[8].pos = glm::vec3{w, -h, d};
+
+    /* face 4 */
+    vertices[12].pos = glm::vec3{-w, h, d};
+    vertices[13].pos = glm::vec3{-w, h, -d};
+    vertices[14].pos = glm::vec3{-w, -h, -d};
+    vertices[15].pos = glm::vec3{-w, -h, d};
+
+    /* face 5 */
+    vertices[19].pos = glm::vec3{w, h, d};
+    vertices[18].pos = glm::vec3{w, -h, d};
+    vertices[17].pos = glm::vec3{-w, -h, d};
+    vertices[16].pos = glm::vec3{-w, h, d};
+
+    /* face 6 */
+    vertices[20].pos = glm::vec3{w, h, -d};
+    vertices[21].pos = glm::vec3{w, -h, -d};
+    vertices[22].pos = glm::vec3{-w, -h, -d};
+    vertices[23].pos = glm::vec3{-w, h, -d};
+
+    glm::vec3 normals[6] = { glm::vec3{ 0.0f, 1.0f, 0.0f},
+                             glm::vec3{ 0.0f, -1.0f, 0.0f},
+                             glm::vec3{ 1.0f, 0.0f, 0.0f},
+                             glm::vec3{ -1.0f, 0.0f, 0.0f},
+                             glm::vec3{ 0.0f, 0.0f, 1.0f},
+                             glm::vec3{ 0.0f, 0.0f, -1.0f}};
+
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < 6; i++) {
+        indices[index++] = (i * 4);
+        indices[index++] = (i * 4) + 1;
+        indices[index++] = (i * 4) + 2;
+
+        indices[index++] = (i * 4) + 2;
+        indices[index++] = (i * 4) + 3;
+        indices[index++] = (i * 4);
+
+        vertices[i * 4].normal = normals[i];
+        vertices[i * 4 + 1].normal = normals[i];
+        vertices[i * 4 + 2].normal = normals[i];
+        vertices[i * 4 + 3].normal = normals[i];
+
+        vertices[i * 4].texCoord = glm::vec2(1.0f, 0.0f);
+        vertices[i * 4 + 1].texCoord = glm::vec2(0.0f, 0.0f);
+        vertices[i * 4 + 2].texCoord = glm::vec2(0.0f, 1.0f);
+        vertices[i * 4 + 3].texCoord = glm::vec2(1.0f, 1.0f);
+    }
+}
 
 void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Sphere sphere) {
     uint32_t ntheta = sphere.res + 2;

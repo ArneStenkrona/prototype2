@@ -45,6 +45,12 @@ ModelManager::ModelManager(const char* directory)
     capsule.res = 50;
     prt::vector<parametric_shapes::Capsule> capsules = { capsule };
     insertCapsules(capsules);
+    parametric_shapes::Cuboid cuboid;
+    cuboid.width = 5.0f;
+    cuboid.depth = 8.0f;
+    cuboid.height = 6.0f;
+    prt::vector<parametric_shapes::Cuboid> cuboids = { cuboid };
+    insertCuboids(cuboids);
 }
 
 void ModelManager::loadPersistent(const char* directory) {
@@ -118,6 +124,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
             if (type.compare("QUAD") == 0) {
                 parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[index]);
             } else if (type.compare("CUBOID") == 0) {
+                parametric_shapes::createCuboid(models[i]._vertexBuffer, models[i]._indexBuffer, _cuboids[index]);
             } else if (type.compare("SPHERE") == 0) {
                 parametric_shapes::createSphere(models[i]._vertexBuffer, models[i]._indexBuffer, _spheres[index]);
             } else if (type.compare("CYLINDER") == 0) {
