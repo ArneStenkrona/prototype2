@@ -32,8 +32,7 @@ struct Sphere {
 struct Cylinder {
     float radius = 1.0f;
     float height = 1.0f;
-    uint32_t resR = 0;
-    uint32_t resH = 0;
+    uint32_t res = 0;
 };
 
 struct Capsule {

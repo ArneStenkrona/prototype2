@@ -22,8 +22,8 @@ void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<ui
              vertices[iw + (ih * nw)] = v;
         }
     }
-    uint32_t index = 0;
     // indices
+    uint32_t index = 0;
     for (uint32_t iw = 0; iw < nw - 1; iw++) {
          for (uint32_t ih = 0; ih < nh - 1; ih++) {
             // triangle 1
@@ -71,22 +71,26 @@ void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<
     indices.resize((ntheta * (nphi - 1)) * 6);
     uint32_t vi = 0;
     for (uint32_t iphi = 0; iphi < nphi; iphi++) {
-        float phi = (float(iphi) / float(nphi-1)) * glm::pi<float>();
+        float fphi = (float(iphi) / float(nphi-1));
+        float phi = fphi * glm::pi<float>();
         for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
-            float theta = (float(itheta) / float(ntheta-1)) * 2 * glm::pi<float>();
+            float ftheta = (float(itheta) / float(ntheta-1));
+            float theta = ftheta * 2 * glm::pi<float>();
             Vertex v; 
-            v.pos = glm::vec3{sphere.radius * glm::cos(theta) * glm::sin(phi),
-                              sphere.radius * glm::sin(theta) * glm::sin(phi), 
-                              sphere.radius * glm::cos(phi)};                
+            v.pos = glm::vec3{
+                              sphere.radius * glm::sin(theta) * glm::sin(phi),
+                              sphere.radius * glm::cos(phi),
+                              sphere.radius * glm::cos(theta) * glm::sin(phi)
+                              };                
             v.normal = glm::normalize(v.pos);
-            v.texCoord = glm::vec2{theta / (2 * glm::pi<float>()), phi / glm::pi<float>()};
+            v.texCoord = glm::vec2{ftheta, fphi};
             vertices[vi++] = v;
         }
     }
 
     uint32_t index = 0;
     // indices
-    // top cap
+    // bottom cap
     for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
         indices[index++] = itheta;
         indices[index++] = ntheta + itheta;
@@ -104,7 +108,7 @@ void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<
             indices[index++] = iphi * ntheta + ((itheta + 1) % ntheta);
         }
     }
-    // bottom cap
+    // top cap
     for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
         indices[index++] = (nphi - 2) * ntheta + ((itheta + 1) % ntheta);
         indices[index++] = (nphi - 2) * ntheta + itheta;
@@ -112,11 +116,47 @@ void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<
     }
 }
 
-/*
+
 void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cylinder cylinder) {
+    uint32_t ntheta = cylinder.res + 2;
+    vertices.resize(4 * ntheta);
+    indices.resize(3 * ntheta);
+    uint32_t vi = 0;
+    /* bottom */
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        float theta = ftheta * 2 * glm::pi<float>();
+        Vertex v; 
+        v.pos = glm::vec3{ cylinder.radius * glm::cos(theta),
+                           cylinder.radius * glm::sin(theta), 
+                           0.0f };      
+        v.normal = glm::vec3{ glm::cos(theta), glm::sin(theta), 0.0f };                   
+        v.texCoord = glm::vec2{ftheta, 0.0f};
+        vertices[vi++] = v;
+    }
+    /* top */
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        float theta = ftheta * 2 * glm::pi<float>();
+        Vertex v; 
+        v.pos = glm::vec3{ cylinder.radius * glm::cos(theta),
+                           cylinder.radius * glm::sin(theta), 
+                           cylinder.height };      
+        v.normal = glm::vec3{ glm::cos(theta), glm::sin(theta), 0.0f };                   
+        v.texCoord = glm::vec2{ftheta, 1.0f};
+        vertices[vi++] = v;
+    }
 
+    /* indices */
+    uint32_t index = 0;
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        // triangle 1
+        indices[index++] = itheta;
+        indices[index++] = itheta + ntheta;
+        indices[index++] = (itheta % ntheta) + ntheta;
+    }
 }
-
+/*
 void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule) {
 
 }

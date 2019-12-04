@@ -33,6 +33,12 @@ ModelManager::ModelManager(const char* directory)
     sphere.res = 50;
     prt::vector<parametric_shapes::Sphere> spheres = { sphere };
     insertSpheres(spheres);
+    parametric_shapes::Cylinder cylinder;
+    cylinder.radius = 10.0f;
+    cylinder.height = 20.0f;
+    sphere.res = 50;
+    prt::vector<parametric_shapes::Cylinder> cylinders = { cylinder };
+    insertCylinders(cylinders);
 }
 
 void ModelManager::loadPersistent(const char* directory) {
@@ -92,6 +98,21 @@ void ModelManager::insertSpheres(prt::vector<parametric_shapes::Sphere>& spheres
     }
 }
 
+void ModelManager::insertCylinders(prt::vector<parametric_shapes::Cylinder>& cylinders) {
+    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
+    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
+    uint32_t currInd = _cylinders.size();
+    _cylinders.resize(_cylinders.size() + cylinders.size());
+    for (uint32_t i = 0; i < cylinders.size(); i++) {
+        _cylinders[currInd] = cylinders[i];
+
+        _modelPaths.insert("CYLINDER" + std::to_string(currInd), nonPersistentModelAssetPath + "CYLINDER/" + std::to_string(currInd));
+        _texturePaths.insert("CYLINDER" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
+        _modelIDs.insert("CYLINDER" + std::to_string(currInd), nextID++);
+        currInd++;
+    }
+}
+
 void ModelManager::getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths) {
     modelPaths.resize(_modelPaths.size());
     for (auto it = _modelPaths.begin(); it != _modelPaths.end(); it++) {
@@ -139,6 +160,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
             } else if (type.compare("SPHERE") == 0) {
                 parametric_shapes::createSphere(models[i]._vertexBuffer, models[i]._indexBuffer, _spheres[index]);
             } else if (type.compare("CYLINDER") == 0) {
+                parametric_shapes::createCylinder(models[i]._vertexBuffer, models[i]._indexBuffer, _cylinders[index]);
             } else if (type.compare("CAPSULE") == 0) {
             }
             Mesh mesh;
