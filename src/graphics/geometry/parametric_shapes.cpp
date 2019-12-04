@@ -119,18 +119,62 @@ void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<
 
 void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cylinder cylinder) {
     uint32_t ntheta = cylinder.res + 2;
-    vertices.resize(4 * ntheta);
-    indices.resize(3 * ntheta);
+    vertices.resize(3 * 4 * ntheta);
+    indices.resize(3 * 6 * ntheta);
     uint32_t vi = 0;
+    /* middle */
     /* bottom */
     for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
         float ftheta = (float(itheta) / float(ntheta-1));
         float theta = ftheta * 2 * glm::pi<float>();
         Vertex v; 
-        v.pos = glm::vec3{ cylinder.radius * glm::cos(theta),
+        v.pos = glm::vec3{ 
+                           cylinder.radius * glm::sin(theta),
+                           0.0f,
+                           cylinder.radius * glm::cos(theta)
+                           };      
+        v.normal = glm::vec3{ glm::sin(theta), 0.0f, glm::cos(theta) };                             
+        v.texCoord = glm::vec2{ftheta, 1.0f};
+        vertices[vi++] = v;
+    }
+    /* top */
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        float theta = ftheta * 2 * glm::pi<float>();
+        Vertex v; 
+        v.pos = glm::vec3{ 
                            cylinder.radius * glm::sin(theta), 
-                           0.0f };      
-        v.normal = glm::vec3{ glm::cos(theta), glm::sin(theta), 0.0f };                   
+                           cylinder.height,
+                           cylinder.radius * glm::cos(theta)
+                           };      
+        v.normal = glm::vec3{ glm::sin(theta), 0.0f, glm::cos(theta) };                   
+        v.texCoord = glm::vec2{ftheta, 0.0f};
+        vertices[vi++] = v;
+    }
+    /* caps */
+    /* bottom */
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        Vertex v; 
+        v.pos = glm::vec3{ 
+                           0.0f,
+                           0.0f,
+                           0.0f,
+                           };      
+        v.normal = glm::vec3{ 0.0f, -1.0f, 0.0f };                             
+        v.texCoord = glm::vec2{ftheta, 1.0f};
+        vertices[vi++] = v;
+    }
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        float theta = ftheta * 2 * glm::pi<float>();
+        Vertex v; 
+        v.pos = glm::vec3{ 
+                           cylinder.radius * glm::sin(theta),
+                           0.0f,
+                           cylinder.radius * glm::cos(theta)
+                           };      
+        v.normal = glm::vec3{ 0.0f, -1.0f, 0.0f };                                                          
         v.texCoord = glm::vec2{ftheta, 0.0f};
         vertices[vi++] = v;
     }
@@ -139,21 +183,61 @@ void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vecto
         float ftheta = (float(itheta) / float(ntheta-1));
         float theta = ftheta * 2 * glm::pi<float>();
         Vertex v; 
-        v.pos = glm::vec3{ cylinder.radius * glm::cos(theta),
+        v.pos = glm::vec3{ 
                            cylinder.radius * glm::sin(theta), 
-                           cylinder.height };      
-        v.normal = glm::vec3{ glm::cos(theta), glm::sin(theta), 0.0f };                   
+                           cylinder.height,
+                           cylinder.radius * glm::cos(theta)
+                           };      
+        v.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };                                                
+        v.texCoord = glm::vec2{ftheta, 0.0f};
+        vertices[vi++] = v;
+    }
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        float ftheta = (float(itheta) / float(ntheta-1));
+        Vertex v; 
+        v.pos = glm::vec3{ 
+                           0.0f, 
+                           cylinder.height,
+                           0.0f
+                           };      
+        v.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };                                               
         v.texCoord = glm::vec2{ftheta, 1.0f};
         vertices[vi++] = v;
     }
 
     /* indices */
+    /* middle */
     uint32_t index = 0;
     for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
         // triangle 1
         indices[index++] = itheta;
+        indices[index++] = ((itheta + 1) % ntheta);
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta;
+        // triangle 2
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta;
         indices[index++] = itheta + ntheta;
-        indices[index++] = (itheta % ntheta) + ntheta;
+        indices[index++] = itheta;
+    }
+    /* caps */
+        for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        // triangle 1
+        indices[index++] = itheta + 2 * ntheta;
+        indices[index++] = ((itheta + 1) % ntheta) + 2 * ntheta;
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 2 * ntheta;
+        // triangle 2
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 2 * ntheta;
+        indices[index++] = itheta + ntheta + 2 * ntheta;
+        indices[index++] = itheta + 2 * ntheta;
+    }
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        // triangle 1
+        indices[index++] = itheta + 4 * ntheta;
+        indices[index++] = ((itheta + 1) % ntheta) + 4 * ntheta;
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 4 * ntheta;
+        // triangle 2
+        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 4 * ntheta;
+        indices[index++] = itheta + ntheta + 4 * ntheta;
+        indices[index++] = itheta + 4 * ntheta;
     }
 }
 /*

@@ -36,7 +36,7 @@ ModelManager::ModelManager(const char* directory)
     parametric_shapes::Cylinder cylinder;
     cylinder.radius = 10.0f;
     cylinder.height = 20.0f;
-    sphere.res = 50;
+    cylinder.res = 50;
     prt::vector<parametric_shapes::Cylinder> cylinders = { cylinder };
     insertCylinders(cylinders);
 }
