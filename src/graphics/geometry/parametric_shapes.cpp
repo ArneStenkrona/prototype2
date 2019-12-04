@@ -231,6 +231,72 @@ void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vecto
     }
 }
 
-/*void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule) {
+void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule) {
+    uint32_t ntheta = capsule.res + 2;
+    uint32_t nphi = ntheta/2;
+    vertices.resize(nphi * ntheta);
+    indices.resize((ntheta * (nphi - 1)) * 6);
+    float h = std::max(0.0f, capsule.height - 2 * capsule.radius);
+    uint32_t vi = 0;
+    for (uint32_t iphi = 0; iphi < nphi / 2; iphi++) {
+        float fphi = (float(iphi) / float(nphi-1));
+        float phi = fphi * glm::pi<float>();
+        for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+            float ftheta = (float(itheta) / float(ntheta-1));
+            float theta = ftheta * 2 * glm::pi<float>();
+            Vertex v; 
+            v.pos = glm::vec3{
+                              capsule.radius * glm::sin(theta) * glm::sin(phi),
+                              capsule.radius * glm::cos(phi) + h,
+                              capsule.radius * glm::cos(theta) * glm::sin(phi)
+                              };                
+            v.normal = glm::normalize(v.pos);
+            v.texCoord = glm::vec2{ftheta, fphi};
+            vertices[vi++] = v;
+        }
+    }
+    for (uint32_t iphi = nphi / 2; iphi < nphi; iphi++) {
+        float fphi = (float(iphi) / float(nphi-1));
+        float phi = fphi * glm::pi<float>();
+        for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+            float ftheta = (float(itheta) / float(ntheta-1));
+            float theta = ftheta * 2 * glm::pi<float>();
+            Vertex v; 
+            v.pos = glm::vec3{
+                              capsule.radius * glm::sin(theta) * glm::sin(phi),
+                              capsule.radius * glm::cos(phi),
+                              capsule.radius * glm::cos(theta) * glm::sin(phi)
+                              };                
+            v.normal = glm::normalize(v.pos);
+            v.texCoord = glm::vec2{ftheta, fphi};
+            vertices[vi++] = v;
+        }
+    }
 
-}*/
+    uint32_t index = 0;
+    // indices
+    // bottom cap
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        indices[index++] = itheta;
+        indices[index++] = ntheta + itheta;
+        indices[index++] = ntheta + ((itheta + 1) % ntheta);
+    }
+    for (uint32_t iphi = 1; iphi < nphi - 2; iphi++) {
+         for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+            // triangle 1
+            indices[index++] = (iphi + 1) * ntheta + itheta;
+            indices[index++] = iphi * ntheta + ((itheta + 1) % ntheta);
+            indices[index++] = iphi * ntheta + itheta;
+            // triangle 2
+            indices[index++] = (iphi + 1) * ntheta + itheta;
+            indices[index++] = (iphi + 1) * ntheta + ((itheta + 1) % ntheta);
+            indices[index++] = iphi * ntheta + ((itheta + 1) % ntheta);
+        }
+    }
+    // top cap
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        indices[index++] = (nphi - 2) * ntheta + ((itheta + 1) % ntheta);
+        indices[index++] = (nphi - 2) * ntheta + itheta;
+        indices[index++] = (nphi - 1) * ntheta + itheta;
+    }
+}

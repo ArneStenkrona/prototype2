@@ -39,6 +39,12 @@ ModelManager::ModelManager(const char* directory)
     cylinder.res = 50;
     prt::vector<parametric_shapes::Cylinder> cylinders = { cylinder };
     insertCylinders(cylinders);
+    parametric_shapes::Capsule capsule;
+    capsule.radius = 10.0f;
+    capsule.height = 40.0f;
+    capsule.res = 50;
+    prt::vector<parametric_shapes::Capsule> capsules = { capsule };
+    insertCapsules(capsules);
 }
 
 void ModelManager::loadPersistent(const char* directory) {
@@ -66,51 +72,6 @@ void ModelManager::loadPersistent(const char* directory) {
     }
 
     closedir(dir);
-}
-
-void ModelManager::insertQuads(prt::vector<parametric_shapes::Quad>& quads) {
-    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
-    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
-    uint32_t currInd = _quads.size();
-    _quads.resize(_quads.size() + quads.size());
-    for (uint32_t i = 0; i < quads.size(); i++) {
-        _quads[currInd] = quads[i];
-
-        _modelPaths.insert("QUAD" + std::to_string(currInd), nonPersistentModelAssetPath + "QUAD/" + std::to_string(currInd));
-        _texturePaths.insert("QUAD" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
-        _modelIDs.insert("QUAD" + std::to_string(currInd), nextID++);
-        currInd++;
-    }
-}
-
-void ModelManager::insertSpheres(prt::vector<parametric_shapes::Sphere>& spheres) {
-    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
-    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
-    uint32_t currInd = _spheres.size();
-    _spheres.resize(_spheres.size() + spheres.size());
-    for (uint32_t i = 0; i < spheres.size(); i++) {
-        _spheres[currInd] = spheres[i];
-
-        _modelPaths.insert("SPHERE" + std::to_string(currInd), nonPersistentModelAssetPath + "SPHERE/" + std::to_string(currInd));
-        _texturePaths.insert("SPHERE" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
-        _modelIDs.insert("SPHERE" + std::to_string(currInd), nextID++);
-        currInd++;
-    }
-}
-
-void ModelManager::insertCylinders(prt::vector<parametric_shapes::Cylinder>& cylinders) {
-    std::string nonPersistentModelAssetPath = AssetManager::NonPersistentStorageString + std::string("/model/");
-    std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + _directory;
-    uint32_t currInd = _cylinders.size();
-    _cylinders.resize(_cylinders.size() + cylinders.size());
-    for (uint32_t i = 0; i < cylinders.size(); i++) {
-        _cylinders[currInd] = cylinders[i];
-
-        _modelPaths.insert("CYLINDER" + std::to_string(currInd), nonPersistentModelAssetPath + "CYLINDER/" + std::to_string(currInd));
-        _texturePaths.insert("CYLINDER" + std::to_string(currInd), modelAssetPath + "DEFAULT/diffuse.png");
-        _modelIDs.insert("CYLINDER" + std::to_string(currInd), nextID++);
-        currInd++;
-    }
 }
 
 void ModelManager::getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths) {
@@ -162,6 +123,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
             } else if (type.compare("CYLINDER") == 0) {
                 parametric_shapes::createCylinder(models[i]._vertexBuffer, models[i]._indexBuffer, _cylinders[index]);
             } else if (type.compare("CAPSULE") == 0) {
+                parametric_shapes::createCapsule(models[i]._vertexBuffer, models[i]._indexBuffer, _capsules[index]);
             }
             Mesh mesh;
             mesh.startIndex = 0;

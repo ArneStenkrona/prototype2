@@ -38,8 +38,7 @@ struct Cylinder {
 struct Capsule {
     float radius = 1.0f;
     float height = 1.0f;
-    uint32_t resR = 0;
-    uint32_t resH = 0;
+    uint32_t res = 0;
 };
 
 void createQuad(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Quad quad);
