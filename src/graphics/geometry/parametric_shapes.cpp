@@ -65,49 +65,50 @@ void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<ui
 // }
 
 void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Sphere sphere) {
-    //float radius = 1.0f;
-    //uint32_t res = 0;
-    //(x,y,z) = (rcos(th)sin(ph),rsin(th)sin(ph),rcos(ph))
     uint32_t ntheta = sphere.res + 2;
-    uint32_t nphi = std::max(1u, ntheta/2);
+    uint32_t nphi = ntheta/2;
+    vertices.resize(nphi * ntheta);
+    indices.resize((ntheta * (nphi - 1)) * 6);
     uint32_t vi = 0;
-    vertices.resize(ntheta*nphi);
-    indices.resize(((ntheta - 1) * (nphi - 1)) * 6);
-    Vertex v; 
-    v.pos = glm::vec3{0.0f, 0.0f, sphere.radius};
-    v.normal = glm::normalize(v.pos);
-    v.texCoord = glm::vec2(0.0f, 0.0f);
-    vertices[vi++] = v;
-    for (uint32_t iphi = 1; iphi < nphi-1; iphi++) {
+    for (uint32_t iphi = 0; iphi < nphi; iphi++) {
         float phi = (float(iphi) / float(nphi-1)) * glm::pi<float>();
         for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
             float theta = (float(itheta) / float(ntheta-1)) * 2 * glm::pi<float>();
+            Vertex v; 
             v.pos = glm::vec3{sphere.radius * glm::cos(theta) * glm::sin(phi),
                               sphere.radius * glm::sin(theta) * glm::sin(phi), 
-                              sphere.radius * glm::cos(phi)};
+                              sphere.radius * glm::cos(phi)};                
             v.normal = glm::normalize(v.pos);
             v.texCoord = glm::vec2{theta / (2 * glm::pi<float>()), phi / glm::pi<float>()};
-            vertices[iphi + (itheta * nphi)/*vi++*/] = v;
+            vertices[vi++] = v;
         }
     }
-    v.pos = glm::vec3{0.0f, 0.0f, -sphere.radius};
-    v.normal = glm::normalize(v.pos);
-    v.texCoord = glm::vec2(1.0f, 1.0f);
-    vertices[vi++] = v;
 
     uint32_t index = 0;
     // indices
-    for (uint32_t iphi = 1; iphi < nphi - 1; iphi++) {
-         for (uint32_t itheta = 0; itheta < ntheta - 1; itheta++) {
+    // top cap
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        indices[index++] = itheta;
+        indices[index++] = ntheta + itheta;
+        indices[index++] = ntheta + ((itheta + 1) % ntheta);
+    }
+    for (uint32_t iphi = 1; iphi < nphi - 2; iphi++) {
+         for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
             // triangle 1
-            indices[index++] = iphi + (itheta * nphi);
-            indices[index++] = iphi + 1 + (itheta * nphi);
-            indices[index++] = iphi + ((itheta + 1) * nphi);
+            indices[index++] = (iphi + 1) * ntheta + itheta;
+            indices[index++] = iphi * ntheta + ((itheta + 1) % ntheta);
+            indices[index++] = iphi * ntheta + itheta;
             // triangle 2
-            indices[index++] = iphi + 1 + (itheta * nphi);
-            indices[index++] = iphi + 1 + ((itheta + 1) * nphi);
-            indices[index++] = iphi + ((itheta + 1) * nphi);
+            indices[index++] = (iphi + 1) * ntheta + itheta;
+            indices[index++] = (iphi + 1) * ntheta + ((itheta + 1) % ntheta);
+            indices[index++] = iphi * ntheta + ((itheta + 1) % ntheta);
         }
+    }
+    // bottom cap
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
+        indices[index++] = (nphi - 2) * ntheta + ((itheta + 1) % ntheta);
+        indices[index++] = (nphi - 2) * ntheta + itheta;
+        indices[index++] = (nphi - 1) * ntheta + itheta;
     }
 }
 
