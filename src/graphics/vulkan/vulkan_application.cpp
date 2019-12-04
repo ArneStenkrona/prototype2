@@ -84,7 +84,7 @@ void VulkanApplication::initVulkan() {
     //createVertexBuffer();
     //createIndexBuffer();
     createUniformBuffers();
-    //createDescriptorPool();
+    createDescriptorPool();
     //createDescriptorSets();
     //createCommandBuffers();
     createSyncObjects();

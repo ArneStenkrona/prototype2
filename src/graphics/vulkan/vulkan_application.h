@@ -129,7 +129,7 @@ private:
     // Push constants
     prt::array<uint32_t, 2> pushConstants;
     // Entities
-     prt::vector<uint32_t> _modelIDs;
+    prt::vector<uint32_t> _modelIDs;
     // Models data;
     //prt::vector<Model> models;
     VkBuffer vertexBuffer;
