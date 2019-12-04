@@ -10,7 +10,7 @@ Scene::Scene(AssetManager &assetManager)
     uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
     uint32_t sphere_index = _assetManager.getModelManager().getModelID("SPHERE");
     uint32_t plane_index = _assetManager.getModelManager().getModelID("PLANE");
-    uint32_t quad_index = _assetManager.getModelManager().getModelID("SPHERE0");
+    uint32_t quad_index = _assetManager.getModelManager().getModelID("QUAD0");
 
     uint32_t indices[4] = {default_index, monkey_index, sphere_index, quad_index};
 

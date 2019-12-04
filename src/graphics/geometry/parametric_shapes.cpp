@@ -27,13 +27,13 @@ void parametric_shapes::createQuad(prt::vector<Vertex>& vertices, prt::vector<ui
     for (uint32_t iw = 0; iw < nw - 1; iw++) {
          for (uint32_t ih = 0; ih < nh - 1; ih++) {
             // triangle 1
+            indices[index++] = iw + ((ih + 1) * nw);
+            indices[index++] = iw + 1 + (ih * nw);
             indices[index++] = iw + (ih * nw);
-            indices[index++] = iw + 1 + (ih * nw);
-            indices[index++] = iw + ((ih + 1) * nw);
             // triangle 2
-            indices[index++] = iw + 1 + (ih * nw);
-            indices[index++] = iw + 1 + ((ih + 1) * nw);
             indices[index++] = iw + ((ih + 1) * nw);
+            indices[index++] = iw + 1 + ((ih + 1) * nw);
+            indices[index++] = iw + 1 + (ih * nw);
         }
     }
 }
