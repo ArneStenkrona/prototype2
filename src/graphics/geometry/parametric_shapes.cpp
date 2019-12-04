@@ -120,7 +120,7 @@ void parametric_shapes::createSphere(prt::vector<Vertex>& vertices, prt::vector<
 void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cylinder cylinder) {
     uint32_t ntheta = cylinder.res + 2;
     vertices.resize(3 * 4 * ntheta);
-    indices.resize(3 * 6 * ntheta);
+    indices.resize(2 * 6 * ntheta);
     uint32_t vi = 0;
     /* middle */
     /* bottom */
@@ -219,29 +219,18 @@ void parametric_shapes::createCylinder(prt::vector<Vertex>& vertices, prt::vecto
         indices[index++] = itheta;
     }
     /* caps */
-        for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
-        // triangle 1
-        indices[index++] = itheta + 2 * ntheta;
-        indices[index++] = ((itheta + 1) % ntheta) + 2 * ntheta;
-        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 2 * ntheta;
-        // triangle 2
+    for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
         indices[index++] = ((itheta + 1) % ntheta) + ntheta + 2 * ntheta;
         indices[index++] = itheta + ntheta + 2 * ntheta;
         indices[index++] = itheta + 2 * ntheta;
     }
     for (uint32_t itheta = 0; itheta < ntheta; itheta++) {
-        // triangle 1
         indices[index++] = itheta + 4 * ntheta;
         indices[index++] = ((itheta + 1) % ntheta) + 4 * ntheta;
         indices[index++] = ((itheta + 1) % ntheta) + ntheta + 4 * ntheta;
-        // triangle 2
-        indices[index++] = ((itheta + 1) % ntheta) + ntheta + 4 * ntheta;
-        indices[index++] = itheta + ntheta + 4 * ntheta;
-        indices[index++] = itheta + 4 * ntheta;
     }
 }
-/*
-void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule) {
 
-}
-*/
+/*void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule) {
+
+}*/
