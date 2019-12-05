@@ -80,6 +80,8 @@ file(GLOB SOURCES
     "src/graphics/camera/*.cpp"
     "src/system/input/*.cpp"
     "src/system/assets/*.cpp"
+    # external
+    "external/*/*.cpp"
 )
 
 file(GLOB TESTSOURCES

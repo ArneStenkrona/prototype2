@@ -3,6 +3,8 @@
 
 #include "src/graphics/geometry/model.h"
 
+//#include "imgui_application.h"
+
 #include <vulkan/vulkan.h>
 
 #include <vulkan/vulkan.hpp>
@@ -84,6 +86,8 @@ public:
     bool isWindowOpen() { return !glfwWindowShouldClose(window); }
 private:
     GLFWwindow* window;
+
+    //ImGuiApplication _imGuiApplication;
     
     vk::Instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -131,7 +135,6 @@ private:
     // Entities
     prt::vector<uint32_t> _modelIDs;
     // Models data;
-    //prt::vector<Model> models;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
@@ -225,9 +228,10 @@ private:
     
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     
-    //void loadModel();
-    
     void createVertexBuffer(prt::vector<Model>& models);
+    void createVertexBuffer(prt::vector<Vertex>& vertices);
+
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize);
     
     void createIndexBuffer(prt::vector<Model>& models);
 
@@ -287,6 +291,8 @@ private:
                                                         VkDebugUtilsMessageTypeFlagsEXT /*messageType*/, 
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
+    
+    friend class ImGuiApplication;
 };
 
 #endif

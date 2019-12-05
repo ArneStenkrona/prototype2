@@ -5,8 +5,6 @@
 #include "src/container/array.h"
 #include "src/container/hash_set.h"
 
-//#include <imgui.h>
-
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
@@ -82,7 +80,6 @@ void VulkanApplication::initVulkan() {
     //createTextureImageView();
     //createTextureSampler();
     createSampler();
-    //loadModel();
     //createVertexBuffer();
     //createIndexBuffer();
     createUniformBuffers();
@@ -1020,14 +1017,15 @@ void VulkanApplication::loadModels(prt::vector<Model>& models) {
     
 void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
     prt::vector<Vertex> allVertices;
-    VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._vertexBuffer.size(); j++) {
             allVertices.push_back(models[i]._vertexBuffer[j]);
         }
-
-        bufferSize  += sizeof(models[i]._vertexBuffer[0]) * models[i]._vertexBuffer.size();
     }
+    createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size());    
+}
+void VulkanApplication::createVertexBuffer(prt::vector<Vertex>& vertices) {
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1035,7 +1033,7 @@ void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
     
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, allVertices.data(), (size_t) bufferSize);
+    memcpy(data, vertices.data(), (size_t) bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
     
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
@@ -1044,7 +1042,24 @@ void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize) {
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
     
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, bufferData, (size_t) bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+    
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+    
+    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+    
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
