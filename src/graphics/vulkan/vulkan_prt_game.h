@@ -20,7 +20,7 @@
 class VulkanPRTGame {
 public:
     VulkanPRTGame(VulkanApplication& vulkanApplication);
-    //~VulkanPRTGame();
+    ~VulkanPRTGame();
 
     /*void update(const prt::vector<glm::mat4>& modelMatrices, 
                 glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);*/
@@ -29,6 +29,22 @@ public:
 
 private:
     VulkanApplication& _vulkanApplication;
+
+    // Geometry data;
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+    // Texture data
+    uint32_t mipLevels;
+    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
+    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
+    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
+    // Sampler
+    VkSampler sampler;
+    // Contains the indirect drawing commands
+	VkBuffer indirectCommandBuffer;
+    VkDeviceMemory indirectCommandBufferMemory;
 
     void createTextureImage(size_t index, const Texture& texture);
     void createTextureImageView(size_t index, VkImage &texIm);

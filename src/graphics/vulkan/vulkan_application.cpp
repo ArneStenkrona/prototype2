@@ -688,7 +688,8 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void VulkanApplication::createTextureImage(size_t index, const Texture& texture) {
+void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, 
+                                           const Texture& texture) {
     //const Texture& texture = models[index].texture();
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
@@ -708,15 +709,15 @@ void VulkanApplication::createTextureImage(size_t index, const Texture& texture)
                 VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
                 VK_IMAGE_TILING_OPTIMAL, 
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage[index], textureImageMemory[index]);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texImage, texImageMemory);
  
-    transitionImageLayout(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
-    copyBufferToImage(stagingBuffer, textureImage[index], static_cast<uint32_t>(texture.texWidth), static_cast<uint32_t>(texture.texHeight));
+    transitionImageLayout(texImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+    copyBufferToImage(stagingBuffer, texImage, static_cast<uint32_t>(texture.texWidth), static_cast<uint32_t>(texture.texHeight));
     //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
  
-    generateMipmaps(textureImage[index], VK_FORMAT_R8G8B8A8_UNORM, texture.texWidth, texture.texHeight, mipLevels);
+    generateMipmaps(texImage, VK_FORMAT_R8G8B8A8_UNORM, texture.texWidth, texture.texHeight, mipLevels);
 }
     
 void VulkanApplication::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
@@ -821,8 +822,8 @@ VkSampleCountFlagBits VulkanApplication::getMaxUsableSampleCount() {
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void VulkanApplication::createTextureImageView(size_t index, VkImage &texIm) {
-    textureImageView[index] = createImageView(texIm/*textureImage[index]*/, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+void VulkanApplication::createTextureImageView(VkImageView& texImageView, VkImage &texIm) {
+    texImageView = createImageView(texIm, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void VulkanApplication::createSampler() {
@@ -1002,19 +1003,19 @@ void VulkanApplication::loadModels(prt::vector<Model>& models) {
     assert((models.size() < NUMBER_SUPPORTED_TEXTURES));
 
     for (size_t i = 0; i < models.size(); i++) {
-        createTextureImage(i, models[i]._texture);
-        createTextureImageView(i, textureImage[i]);
+        createTextureImage(textureImage[i], textureImageMemory[i], models[i]._texture);
+        createTextureImageView(textureImageView[i], textureImage[i]);
     }
 
     for (size_t i = models.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
-        createTextureImage(i, models[0]._texture);
-        createTextureImageView(i, textureImage[0]);
+        createTextureImage(textureImage[i], textureImageMemory[i], models[0]._texture);
+        createTextureImageView(textureImageView[i], textureImage[0]);
     }
 
     createIndirectCommandBuffer(models);
     recreateSwapChain();
 }
-    
+
 void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
     prt::vector<Vertex> allVertices;
     for (size_t i = 0; i < models.size(); i++) {
@@ -1025,29 +1026,6 @@ void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
     createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                        vertexBuffer, vertexBufferMemory);    
-}
-
-void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize,
-                                           VkBufferUsageFlagBits BufferUsageFlagBits,
-                                           VkBuffer& destinationBuffer,
-                                           VkDeviceMemory& destinationBufferMemory) {
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                 stagingBuffer, stagingBufferMemory);
-    
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, bufferData, (size_t) bufferSize);
-    vkUnmapMemory(device, stagingBufferMemory);
-    
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | BufferUsageFlagBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, destinationBuffer, destinationBufferMemory);
-    
-    copyBuffer(stagingBuffer, destinationBuffer, bufferSize);
-    
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
@@ -1203,6 +1181,29 @@ void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage
     }
     
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize,
+                                           VkBufferUsageFlagBits BufferUsageFlagBits,
+                                           VkBuffer& destinationBuffer,
+                                           VkDeviceMemory& destinationBufferMemory) {
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                 stagingBuffer, stagingBufferMemory);
+    
+    void* data;
+    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, bufferData, (size_t) bufferSize);
+    vkUnmapMemory(device, stagingBufferMemory);
+    
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | BufferUsageFlagBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, destinationBuffer, destinationBufferMemory);
+    
+    copyBuffer(stagingBuffer, destinationBuffer, bufferSize);
+    
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {

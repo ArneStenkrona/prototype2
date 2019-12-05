@@ -203,14 +203,14 @@ private:
     
     bool hasStencilComponent(VkFormat format);
     
-    void createTextureImage(size_t index, const Texture& texture);
+    void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView(size_t index, VkImage &texIm);
+    void createTextureImageView(VkImageView& texImageView, VkImage &texIm);
     
     void createSampler();
     
@@ -230,8 +230,6 @@ private:
     
     void createVertexBuffer(prt::vector<Model>& models);
 
-    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
-                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     void createIndexBuffer(prt::vector<Model>& models);
 
@@ -246,6 +244,9 @@ private:
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
                       VkDeviceMemory& bufferMemory);
+
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
+                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     VkCommandBuffer beginSingleTimeCommands();
     
@@ -292,6 +293,7 @@ private:
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
     
+    friend class VulkanPRTGame;
     friend class ImGuiApplication;
 };
 
