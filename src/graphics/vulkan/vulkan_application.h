@@ -148,10 +148,10 @@ private:
     // Commands
     prt::vector<VkCommandBuffer> commandBuffers;
     // Indirect commands
-    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
+    //prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
     // Contains the indirect drawing commands
-	VkBuffer indirectCommandsBuffer;
-    VkDeviceMemory indirectCommandsBufferMemory;
+	VkBuffer indirectCommandBuffer;
+    VkDeviceMemory indirectCommandBufferMemory;
     // Concurrency
     prt::vector<VkSemaphore> imageAvailableSemaphores;
     prt::vector<VkSemaphore> renderFinishedSemaphores;

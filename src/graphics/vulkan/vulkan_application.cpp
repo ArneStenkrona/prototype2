@@ -147,8 +147,8 @@ void VulkanApplication::cleanup() {
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkFreeMemory(device, indexBufferMemory, nullptr);
 
-    vkDestroyBuffer(device, indirectCommandsBuffer, nullptr);
-    vkFreeMemory(device, indirectCommandsBufferMemory, nullptr);
+    vkDestroyBuffer(device, indirectCommandBuffer, nullptr);
+    vkFreeMemory(device, indirectCommandBufferMemory, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
@@ -1053,13 +1053,11 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
 void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
     prt::vector<uint32_t> allIndices;
     size_t indexOffset = 0;
-    VkDeviceSize bufferSize = 0;
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._indexBuffer.size(); j++) {
             allIndices.push_back(models[i]._indexBuffer[j] + indexOffset);
         }
         indexOffset += models[i]._vertexBuffer.size();
-        bufferSize  += sizeof(models[i]._indexBuffer[0]) * models[i]._indexBuffer.size();
     }
 
     createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
@@ -1068,6 +1066,7 @@ void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
 }
 
 void VulkanApplication::createIndirectCommandBuffer(prt::vector<Model>& models) {
+    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
     size_t indexOffset = 0;
     for (size_t i = 0; i < models.size(); i++) {
         VkDrawIndexedIndirectCommand indirectCmd{};
@@ -1080,29 +1079,10 @@ void VulkanApplication::createIndirectCommandBuffer(prt::vector<Model>& models) 
 
         indexOffset += models[i]._indexBuffer.size();
     }
-    VkDeviceSize bufferSize = indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand);
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(bufferSize, 
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                 stagingBuffer, stagingBufferMemory);
-    
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-
-    memcpy(data, indirectCommands.data(), (size_t) bufferSize);
-
-    vkUnmapMemory(device, stagingBufferMemory);
-    
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, 
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indirectCommandsBuffer, indirectCommandsBufferMemory);
-    
-    copyBuffer(stagingBuffer, indirectCommandsBuffer, bufferSize);
-    
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    createAndMapBuffer(indirectCommands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirectCommands.size(),
+                       VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+                       indirectCommandBuffer, indirectCommandBufferMemory);
 }
 
 void VulkanApplication::createUniformBuffers() {
@@ -1343,7 +1323,7 @@ void VulkanApplication::createCommandBuffers() {
                                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), (void *)&j );
                 vkCmdPushConstants(commandBuffers[i], pipelineLayout, 
                                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_modelIDs[j] );
-				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandsBuffer, 
+				vkCmdDrawIndexedIndirect(commandBuffers[i], indirectCommandBuffer, 
                                          _modelIDs[j] * sizeof(VkDrawIndexedIndirectCommand), 
                                          1, sizeof(VkDrawIndexedIndirectCommand));
 			}
