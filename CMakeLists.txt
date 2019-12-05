@@ -99,8 +99,6 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(${GLFW_INCLUDE_DIRS})
 # glm
 find_package(glm REQUIRED)
-# libxml2
-find_package(LibXml2 REQUIRED)
 
 # Compile shaders
 #if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL <<TARGET PLATFORM>>)

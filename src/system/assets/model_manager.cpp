@@ -10,7 +10,7 @@
 #include <string>   
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb-master/stb_image.h>
+#include <stb/stb_image.h>
 
 bool is_file_exist(const char *fileName)
 {
