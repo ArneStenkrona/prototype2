@@ -229,9 +229,9 @@ private:
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     
     void createVertexBuffer(prt::vector<Model>& models);
-    void createVertexBuffer(prt::vector<Vertex>& vertices);
 
-    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize);
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
+                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     void createIndexBuffer(prt::vector<Model>& models);
 
