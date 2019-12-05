@@ -1,10 +1,16 @@
 #include "vulkan_prt_game.h"
-#ifdef IGNORE_THIS
+//#ifdef IGNORE_THIS
 
 VulkanPRTGame::VulkanPRTGame(VulkanApplication& vulkanApplication)
     : _vulkanApplication(vulkanApplication) {}
 
 VulkanPRTGame::~VulkanPRTGame() {
+    for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
+        vkDestroyImageView(_vulkanApplication.device, textureImageView[i], nullptr);
+        vkDestroyImage(_vulkanApplication.device, textureImage[i], nullptr);
+        vkFreeMemory(_vulkanApplication.device, textureImageMemory[i], nullptr);
+    }
+
     vkDestroyBuffer(_vulkanApplication.device, vertexBuffer, nullptr);
     vkFreeMemory(_vulkanApplication.device, vertexBufferMemory, nullptr);
 
@@ -17,25 +23,25 @@ VulkanPRTGame::~VulkanPRTGame() {
 
 void VulkanPRTGame::loadModels(prt::vector<Model>& models) {
     assert(!models.empty());
-    for (size_t i = 0; i < pushConstants.size(); i++) {
-        pushConstants[i] = i;
+    for (size_t i = 0; i < _vulkanApplication.pushConstants.size(); i++) {
+        _vulkanApplication.pushConstants[i] = i;
     }
     createVertexBuffer(models);
     createIndexBuffer(models);
     assert((models.size() < NUMBER_SUPPORTED_TEXTURES));
 
     for (size_t i = 0; i < models.size(); i++) {
-        createTextureImage(i, models[i]._texture);
-        createTextureImageView(i, textureImage[i]);
+        _vulkanApplication.createTextureImage(textureImage[i], textureImageMemory[i], models[i]._texture);
+        _vulkanApplication.createTextureImageView(textureImageView[i], textureImage[i]);
     }
 
     for (size_t i = models.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
-        createTextureImage(i, models[0]._texture);
-        createTextureImageView(i, textureImage[0]);
+        _vulkanApplication.createTextureImage(textureImage[i], textureImageMemory[i], models[0]._texture);
+        _vulkanApplication.createTextureImageView(textureImageView[i], textureImage[0]);
     }
 
     createIndirectCommandBuffer(models);
-    recreateSwapChain();
+    _vulkanApplication.recreateSwapChain();
 }
 
 void VulkanPRTGame::createVertexBuffer(prt::vector<Model>& models) {
@@ -85,4 +91,4 @@ void VulkanPRTGame::createIndirectCommandBuffer(prt::vector<Model>& models) {
                                          indirectCommandBuffer, indirectCommandBufferMemory);
 }
 
-#endif
+//#endif
