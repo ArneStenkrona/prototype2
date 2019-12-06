@@ -241,18 +241,18 @@ private:
     
     void createDescriptorSets();
     
-    /*void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
-                      VkDeviceMemory& bufferMemory);*/
+                      VkDeviceMemory& bufferMemory);
 
-    /*void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
-                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);*/
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
+                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     VkCommandBuffer beginSingleTimeCommands();
     
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     
-    /*void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);*/
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     

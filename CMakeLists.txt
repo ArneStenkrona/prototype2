@@ -66,7 +66,6 @@ include_directories(
 
 file(GLOB SOURCES
     "src/main/*.cpp"
-    "src/util/*.cpp"
     "src/config/*.cpp"
     "src/memory/*.cpp"
     "src/container/*.cpp"

@@ -1,7 +1,5 @@
 #include "vulkan_application.h"
 
-#include "src/util/vulkan_util.h"
-
 #include "src/config/prototype2Config.h"
 
 #include "src/container/array.h"
@@ -700,10 +698,7 @@ void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& te
  
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    vulkan_util::createBuffer(physicalDevice, device, imageSize, 
-                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                              stagingBuffer, stagingBufferMemory);
+    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
  
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
@@ -1028,11 +1023,9 @@ void VulkanApplication::createVertexBuffer(prt::vector<Model>& models) {
             allVertices.push_back(models[i]._vertexBuffer[j]);
         }
     }
-    vulkan_util::createAndMapBuffer(physicalDevice, device, 
-                                    allVertices.data(), sizeof(Vertex) * allVertices.size(),
-                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                    vertexBuffer, vertexBufferMemory,
-                                    commandPool, graphicsQueue);    
+    createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size(),
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                       vertexBuffer, vertexBufferMemory);    
 }
 
 void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
@@ -1045,11 +1038,9 @@ void VulkanApplication::createIndexBuffer(prt::vector<Model>& models) {
         indexOffset += models[i]._vertexBuffer.size();
     }
 
-    vulkan_util::createAndMapBuffer(physicalDevice, device, 
-                                    allIndices.data(), sizeof(uint32_t) * allIndices.size(),
-                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                    indexBuffer, indexBufferMemory,
-                                    commandPool, graphicsQueue); 
+    createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                       indexBuffer, indexBufferMemory);
 }
 
 void VulkanApplication::createIndirectCommandBuffer(prt::vector<Model>& models) {
@@ -1067,11 +1058,9 @@ void VulkanApplication::createIndirectCommandBuffer(prt::vector<Model>& models) 
         indexOffset += models[i]._indexBuffer.size();
     }
 
-    vulkan_util::createAndMapBuffer(physicalDevice, device, 
-                                    indirectCommands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirectCommands.size(),
-                                    VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                                    indirectCommandBuffer, indirectCommandBufferMemory,
-                                    commandPool, graphicsQueue); 
+    createAndMapBuffer(indirectCommands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirectCommands.size(),
+                       VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+                       indirectCommandBuffer, indirectCommandBufferMemory);
 }
 
 void VulkanApplication::createUniformBuffers() {
@@ -1081,10 +1070,7 @@ void VulkanApplication::createUniformBuffers() {
     uniformBuffersMemory.resize(swapChainImages.size());
     
     for (size_t i = 0; i < swapChainImages.size(); i++) {
-        vulkan_util::createBuffer(physicalDevice, device, bufferSize, 
-                                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                                  uniformBuffers[i], uniformBuffersMemory[i]);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
     }
 }
 
@@ -1171,7 +1157,7 @@ void VulkanApplication::createDescriptorSets() {
     }
 }
 
-/*void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -1195,9 +1181,9 @@ void VulkanApplication::createDescriptorSets() {
     }
     
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
-}*/
+}
 
-/*void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize,
+void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize,
                                            VkBufferUsageFlagBits BufferUsageFlagBits,
                                            VkBuffer& destinationBuffer,
                                            VkDeviceMemory& destinationBufferMemory) {
@@ -1218,7 +1204,7 @@ void VulkanApplication::createDescriptorSets() {
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
-}*/
+}
 
 void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
     _modelIDs = modelIDs;
@@ -1259,7 +1245,7 @@ void VulkanApplication::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-/*void VulkanApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void VulkanApplication::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     
     VkBufferCopy copyRegion = {};
@@ -1267,7 +1253,7 @@ void VulkanApplication::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
     
     endSingleTimeCommands(commandBuffer);
-}*/
+}
 
 uint32_t VulkanApplication::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
