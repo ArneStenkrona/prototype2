@@ -2,12 +2,33 @@
 
 #include "vulkan_application.h"
 
-#ifdef IGNORETHIS
+#ifdef IGNORE_THIS
+
+// Options and values to display/toggle from the UI
+struct UISettings {
+	bool displayModels = true;
+	bool displayLogos = true;
+	bool displayBackground = true;
+	bool animateLight = false;
+	float lightSpeed = 0.25f;
+	std::array<float, 50> frameTimes{};
+	float frameTimeMin = 9999.0f, frameTimeMax = 0.0f;
+	float lightTimer = 0.0f;
+} uiSettings;
+
+void setImageLayout(
+    VkCommandBuffer cmdbuffer,
+    VkImage image,
+    VkImageAspectFlags aspectMask,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask);
 
 ImGuiApplication::ImGuiApplication()
 {
     ImGui::CreateContext();
-};
+}
 
 ImGuiApplication::~ImGuiApplication()
 {
@@ -77,14 +98,20 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    VK_CHECK_RESULT(vkCreateImage(*_device, &imageInfo, nullptr, &fontImage));
+    if (vkCreateImage(*_device, &imageInfo, nullptr, &fontImage) != VK_SUCCESS) {
+        assert(false && "failed to create texture image!");
+    }
     VkMemoryRequirements memReqs;
     vkGetImageMemoryRequirements(*_device, fontImage, &memReqs);
     VkMemoryAllocateInfo memAllocInfo = {};
     memAllocInfo.allocationSize = memReqs.size;
     memAllocInfo.memoryTypeIndex = _vulkanApplication->findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    VK_CHECK_RESULT(vkAllocateMemory(*_device, &memAllocInfo, nullptr, &fontMemory));
-    VK_CHECK_RESULT(vkBindImageMemory(*_device, fontImage, fontMemory, 0));
+    if(vkAllocateMemory(*_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
+        assert(false && "failed to allocate memory!");
+    }
+    if (vkBindImageMemory(*_device, fontImage, fontMemory, 0) != VK_SUCCESS) {
+        assert(false && "failed to bind image memory!");
+    }
 
     // Image view
     VkImageViewCreateInfo viewInfo = {};
@@ -94,39 +121,62 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.layerCount = 1;
-    VK_CHECK_RESULT(vkCreateImageView(*_device, &viewInfo, nullptr, &fontView));
+    if (vkCreateImageView(*_device, &viewInfo, nullptr, &fontView) != VK_SUCCESS) {
+        assert(false && "failed to create texture image view!");
+    }
 
     // Staging buffers for font data upload
-    vk::Buffer stagingBuffer;
+    //vk::Buffer stagingBuffer;
 
-    VK_CHECK_RESULT(_device->createBuffer(
+    /*if(_device->createBuffer(
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &stagingBuffer,
-        uploadSize));
+        uploadSize) != VK_SUCCESS) {
+        assert(false && "failed to create buffer!");
+    }
 
     stagingBuffer.map();
     memcpy(stagingBuffer.mapped, fontData, uploadSize);
-    stagingBuffer.unmap();
+    stagingBuffer.unmap();*/
 
-    // VkBuffer stagingBuffer;
-    // VkDeviceMemory stagingBufferMemory;
-    // _vulkanApplication->createBuffer(uploadSize, 
-    //                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-    //                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    //                                  stagingBuffer,
-    //                                  stagingBufferMemory);
+        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
+                      VkMemoryPropertyFlags properties, VkBuffer& buffer, 
+                      VkDeviceMemory& bufferMemory);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    _vulkanApplication->createBuffer(uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                                     stagingBuffer, stagingBufferMemory);
     
-    // void* data;
-    // vkMapMemory(*_device, stagingBufferMemory, 0, uploadSize, 0, &fontData);
-    // memcpy(fontData, allVertices.data(), (size_t) uploadSize);
-    // vkUnmapMemory(device, stagingBufferMemory);
+    void* data;
+    vkMapMemory(*_device, stagingBufferMemory, 0, uploadSize, 0, &data);
+    memcpy(data, fontData, (size_t) uploadSize);
+    vkUnmapMemory(*_device, stagingBufferMemory);
+
     
     // Copy buffer data to font image
-    VkCommandBuffer copyCmd = _device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+    //VkCommandBuffer copyCmd = _device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+    // Begin command buffer
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = _vulkanApplication->commandPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    VkCommandBuffer copyCmd;
+    if (vkAllocateCommandBuffers(*_device, &commandBufferAllocateInfo, &copyCmd) != VK_SUCCESS) {
+        assert(false && "failed to create command buffer!");
+    }
+    VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+    cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    if (vkBeginCommandBuffer(copyCmd, &cmdBufferBeginInfo) != VK_SUCCESS) {
+        assert(false && "failed to begin command buffer!");
+    }
 
     // Prepare for transfer
-    vk::tools::setImageLayout(
+    setImageLayout(
         copyCmd,
         fontImage,
         VK_IMAGE_ASPECT_COLOR_BIT,
@@ -145,7 +195,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     vkCmdCopyBufferToImage(
         copyCmd,
-        stagingBuffer.buffer,
+        stagingBuffer,
         fontImage,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
@@ -153,7 +203,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     );
 
     // Prepare for shader read
-    vks::tools::setImageLayout(
+    setImageLayout(
         copyCmd,
         fontImage,
         VK_IMAGE_ASPECT_COLOR_BIT,
@@ -162,9 +212,42 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-    _device->flushCommandBuffer(copyCmd, copyQueue, true);
+    //_device->flushCommandBuffer(copyCmd, copyQueue, true);
+    // flush command buffer
+    if(vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
+        assert(false && "failed to end command buffer!");
+    }
 
-    stagingBuffer.destroy();
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &copyCmd;
+
+    // Create fence to ensure that the command buffer has finished executing
+    VkFenceCreateInfo fenceInfo = {};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = 0;
+    VkFence fence;
+    if (vkCreateFence(*_device, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+        assert(false && "failed to create fence!");
+    }
+    
+    // Submit to the queue
+    if (vkQueueSubmit(copyQueue, 1, &submitInfo, fence) != VK_SUCCESS) {
+        assert(false && "failed to submit fence to queue!");
+    }
+    // Wait for the fence to signal that command buffer has finished executing
+    if (vkWaitForFences(*_device, 1, &fence, VK_TRUE, 100000000000) != VK_SUCCESS) {
+        assert(false && "failed to wait for fence!");
+    }
+
+    vkDestroyFence(*_device, fence, nullptr);
+
+    vkFreeCommandBuffers(*_device, _vulkanApplication->commandPool, 1, &copyCmd);
+
+    //stagingBuffer.destroy();
+    vkDestroyBuffer(*_device, stagingBuffer, nullptr);
+    vkFreeMemory(*_device, stagingBufferMemory, nullptr);
 
     // Font texture Sampler
     VkSamplerCreateInfo samplerInfo = {};
@@ -175,7 +258,9 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    VK_CHECK_RESULT(vkCreateSampler(_device, &samplerInfo, nullptr, &sampler));
+    if (vkCreateSampler(*_device, &samplerInfo, nullptr, &sampler)  != VK_SUCCESS) {
+        assert(false && "failed to create sampler!");
+    }
 
     // Descriptor pool
     VkDescriptorPoolSize poolSize = {};
@@ -185,11 +270,13 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         poolSize
     };
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 2;
-    poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(poolSizes.size());
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device, &descriptorPoolInfo, nullptr, &descriptorPool));
+    descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolInfo.poolSizeCount = 2;
+    descriptorPoolInfo.pPoolSizes = poolSizes.data();
+    descriptorPoolInfo.maxSets = static_cast<uint32_t>(poolSizes.size());
+    if (vkCreateDescriptorPool(*_device, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+        assert(false && "failed to create descriptor pool!");
+    }
 
     // Descriptor set layout
     VkDescriptorSetLayoutBinding setLayoutBinding = {};
@@ -203,9 +290,11 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     };
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.pBindings = &setLayoutBinding;
-    descriptorSetLayoutCreateInfo.bindingCount = setLayoutBindings.data();
-    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+    descriptorSetLayoutCreateInfo.pBindings = setLayoutBindings.data();
+    descriptorSetLayoutCreateInfo.bindingCount = setLayoutBindings.size();
+    if (vkCreateDescriptorSetLayout(*_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        assert(false && "failed to create descriptor set layout!");
+    }
 
     // Descriptor set
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo {};
@@ -213,27 +302,32 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &descriptorSetAllocateInfo, &descriptorSet));
+    if(vkAllocateDescriptorSets(*_device, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
+        assert(false && "failed to create descriptor sets!");
+    }
     VkDescriptorImageInfo fontDescriptor {};
-    descriptorImageInfo.sampler = sampler;
-    descriptorImageInfo.imageView = fontView;
-    descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    fontDescriptor.sampler = sampler;
+    fontDescriptor.imageView = fontView;
+    fontDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // vks::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)
     VkWriteDescriptorSet writeDescriptorSet {};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = descriptorSet;
     writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSet.dstBinding = 0;
-    writeDescriptorSet.pBufferInfo = &fontDescriptor;
+    writeDescriptorSet.pImageInfo = &fontDescriptor;
     writeDescriptorSet.descriptorCount = 1;
     prt::vector<VkWriteDescriptorSet> writeDescriptorSets = {
         writeDescriptorSet
     };
-    vkUpdateDescriptorSets(_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+    vkUpdateDescriptorSets(*_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     
     // Pipeline cache
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-    VK_CHECK_RESULT(vkCreatePipelineCache(_device, &pipelineCacheCreateInfo, nullptr, &pipelineCache));
+    if (vkCreatePipelineCache(*_device, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS) {
+        assert(false && "failed to create pipeline cache!");
+    }
 
     // Pipeline layout
     // Push constants for UI rendering parameters
@@ -247,23 +341,25 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
     pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
-    VK_CHECK_RESULT(vkCreatePipelineLayout(_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
+    if (vkCreatePipelineLayout(*_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        assert(false && "failed to create pipeline layout!");
+    }
 
     // Setup graphics pipeline for UI rendering
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState {};
-    pipelineInputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    pipelineInputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    pipelineInputAssemblyStateCreateInfo.flags = 0;
-    pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+    inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssemblyState.flags = 0;
+    inputAssemblyState.primitiveRestartEnable = VK_FALSE;
 
     VkPipelineRasterizationStateCreateInfo rasterizationState {};
-    pipelineRasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    pipelineRasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    pipelineRasterizationStateCreateInfo.cullMode = VK_CULL_MODE_NONE;
-    pipelineRasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    pipelineRasterizationStateCreateInfo.flags = 0;
-    pipelineRasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
-    pipelineRasterizationStateCreateInfo.lineWidth = 1.0f;
+    rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationState.cullMode = VK_CULL_MODE_NONE;
+    rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationState.flags = 0;
+    rasterizationState.depthClampEnable = VK_FALSE;
+    rasterizationState.lineWidth = 1.0f;
 
     // Enable blending
     VkPipelineColorBlendAttachmentState blendAttachmentState{};
@@ -277,49 +373,48 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 
     VkPipelineColorBlendStateCreateInfo colorBlendState {};
-    pipelineColorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    pipelineColorBlendStateCreateInfo.attachmentCount = 1;
-    pipelineColorBlendStateCreateInfo.pAttachments = &blendAttachmentState;
+    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendState.attachmentCount = 1;
+    colorBlendState.pAttachments = &blendAttachmentState;
 
     VkPipelineDepthStencilStateCreateInfo depthStencilState {};
-    pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
-    pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_FALSE;
-    pipelineDepthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    pipelineDepthStencilStateCreateInfo.front = pipelineDepthStencilStateCreateInfo.back;
-    pipelineDepthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencilState.depthTestEnable = VK_FALSE;
+    depthStencilState.depthWriteEnable = VK_FALSE;
+    depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencilState.front = depthStencilState.back;
+    depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
 
     VkPipelineViewportStateCreateInfo viewportState {};
-    pipelineViewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    pipelineViewportStateCreateInfo.viewportCount = 1;
-    pipelineViewportStateCreateInfo.scissorCount = 1;
-    pipelineViewportStateCreateInfo.flags = 0;
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount = 1;
+    viewportState.flags = 0;
 
     VkPipelineMultisampleStateCreateInfo multisampleState {};
-    pipelineMultisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    pipelineMultisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    pipelineMultisampleStateCreateInfo.flags = 0;
+    multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.flags = 0;
 
     prt::vector<VkDynamicState> dynamicStateEnables = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR
     };
     VkPipelineDynamicStateCreateInfo dynamicState {};
-    pipelineDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    pipelineDynamicStateCreateInfo.pDynamicStates = dynamicStateEnables.data();
-    pipelineDynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-    pipelineDynamicStateCreateInfo.flags = 0;
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.pDynamicStates = dynamicStateEnables.data();
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+    dynamicState.flags = 0;
 
     prt::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo {};
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
     pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineCreateInfo.layout = pipelineLayout;
     pipelineCreateInfo.renderPass = renderPass;
     pipelineCreateInfo.flags = 0;
     pipelineCreateInfo.basePipelineIndex = -1;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo = vks::initializers::pipelineCreateInfo(pipelineLayout, renderPass);
 
     pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
     pipelineCreateInfo.pRasterizationState = &rasterizationState;
@@ -360,7 +455,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         vInputAttribDescription2	// Location 0: Color
     };
     VkPipelineVertexInputStateCreateInfo vertexInputState {};
-    pipelineVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputState.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size());
     vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
     vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
@@ -368,10 +463,32 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     pipelineCreateInfo.pVertexInputState = &vertexInputState;
 
-    shaderStages[0] = example->loadShader(ASSET_PATH "shaders/imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = example->loadShader(ASSET_PATH "shaders/imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+    //shaderStages[0] = example->loadShader(ASSET_PATH "shaders/imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    //shaderStages[1] = example->loadShader(ASSET_PATH "shaders/imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+    auto vertShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
+    auto fragShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
+    
+    VkShaderModule vertShaderModule = _vulkanApplication->createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = _vulkanApplication->createShaderModule(fragShaderCode);
+    
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+    
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
 
-    VK_CHECK_RESULT(vkCreateGraphicsPipelines(_device->logicalDevice, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline));
+    shaderStages[0] = vertShaderStageInfo;
+    shaderStages[1] = fragShaderStageInfo;
+    
+    if (vkCreateGraphicsPipelines(*_device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
+        assert(false && "failed to create graphics pipeline!");
+    }
 }
 
 // Starts a new imGui frame and sets up windows and ui elements
@@ -383,13 +500,13 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
 
     ImVec4 clear_color = ImColor(114, 144, 154);
     static float f = 0.0f;
-    ImGui::TextUnformatted(example->title.c_str());
-    ImGui::TextUnformatted(_device->properties.deviceName);
+    ImGui::TextUnformatted("IMGUI TEST");
+    ImGui::TextUnformatted("IMGUI TEST");
 
     // Update frame time display
     if (updateFrameGraph) {
         std::rotate(uiSettings.frameTimes.begin(), uiSettings.frameTimes.begin() + 1, uiSettings.frameTimes.end());
-        float frameTime = 1000.0f / (example->frameTimer * 1000.0f);
+        float frameTime = 13370f;//1000.0f / (example->frameTimer * 1000.0f);
         uiSettings.frameTimes.back() = frameTime;
         if (frameTime < uiSettings.frameTimeMin) {
             uiSettings.frameTimeMin = frameTime;
@@ -401,9 +518,9 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
 
     ImGui::PlotLines("Frame Times", &uiSettings.frameTimes[0], 50, 0, "", uiSettings.frameTimeMin, uiSettings.frameTimeMax, ImVec2(0, 80));
 
-    ImGui::Text("Camera");
-    ImGui::InputFloat3("position", &example->camera.position.x, 2);
-    ImGui::InputFloat3("rotation", &example->camera.rotation.x, 2);
+    //ImGui::Text("Camera");
+    //ImGui::InputFloat3("position", &example->camera.position.x, 2);
+    //ImGui::InputFloat3("rotation", &example->camera.rotation.x, 2);
 
     ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiSetCond_FirstUseEver);
     ImGui::Begin("Example settings");
@@ -442,7 +559,10 @@ void ImGuiApplication::updateBuffers()
             vkDestroyBuffer(*_device, vertexBuffer, nullptr);
             vkFreeMemory(*_device, vertexBufferMemory, nullptr);
         }
-        VK_CHECK_RESULT(_device->createBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize));
+        if (_device->createBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
+            assert(false && "failed to create vertex buffer!");
+        }
         vertexCount = imDrawData->TotalVtxCount;
         vertexBuffer.unmap();
         vertexBuffer.map();
@@ -453,7 +573,9 @@ void ImGuiApplication::updateBuffers()
     if ((indexBuffer.buffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
         indexBuffer.unmap();
         indexBuffer.destroy();
-        VK_CHECK_RESULT(_device->createBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize));
+        if (_device->createBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
+            assert(false && "failed to create index buffer!");
+        }
         indexCount = imDrawData->TotalIdxCount;
         indexBuffer.map();
     }
@@ -520,6 +642,148 @@ void ImGuiApplication::drawFrame(VkCommandBuffer commandBuffer)
             vertexOffset += cmd_list->VtxBuffer.Size;
         }
     }
+}
+
+void setImageLayout(
+    VkCommandBuffer cmdbuffer,
+    VkImage image,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkImageSubresourceRange subresourceRange,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask)
+{
+    // Create an image barrier object
+    VkImageMemoryBarrier imageMemoryBarrier = {};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.oldLayout = oldImageLayout;
+    imageMemoryBarrier.newLayout = newImageLayout;
+    imageMemoryBarrier.image = image;
+    imageMemoryBarrier.subresourceRange = subresourceRange;
+
+    // Source layouts (old)
+    // Source access mask controls actions that have to be finished on the old layout
+    // before it will be transitioned to the new layout
+    switch (oldImageLayout)
+    {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        // Image layout is undefined (or does not matter)
+        // Only valid as initial layout
+        // No flags required, listed only for completeness
+        imageMemoryBarrier.srcAccessMask = 0;
+        break;
+
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+        // Image is preinitialized
+        // Only valid as initial layout for linear images, preserves memory contents
+        // Make sure host writes have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        // Image is a color attachment
+        // Make sure any writes to the color buffer have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        // Image is a depth/stencil attachment
+        // Make sure any writes to the depth/stencil buffer have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        // Image is a transfer source 
+        // Make sure any reads from the image have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        // Image is a transfer destination
+        // Make sure any writes to the image have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        // Image is read by a shader
+        // Make sure any shader reads from the image have been finished
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        break;
+    }
+
+    // Target layouts (new)
+    // Destination access mask controls the dependency for the new image layout
+    switch (newImageLayout)
+    {
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        // Image will be used as a transfer destination
+        // Make sure any writes to the image have been finished
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        // Image will be used as a transfer source
+        // Make sure any reads from the image have been finished
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        // Image will be used as a color attachment
+        // Make sure any writes to the color buffer have been finished
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        // Image layout will be used as a depth/stencil attachment
+        // Make sure any writes to depth/stencil buffer have been finished
+        imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        // Image will be read in a shader (sampler, input attachment)
+        // Make sure any writes to the image have been finished
+        if (imageMemoryBarrier.srcAccessMask == 0)
+        {
+            imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        break;
+    }
+
+    // Put barrier inside setup command buffer
+    vkCmdPipelineBarrier(
+        cmdbuffer,
+        srcStageMask,
+        dstStageMask,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &imageMemoryBarrier);
+}
+
+void setImageLayout(
+    VkCommandBuffer cmdbuffer,
+    VkImage image,
+    VkImageAspectFlags aspectMask,
+    VkImageLayout oldImageLayout,
+    VkImageLayout newImageLayout,
+    VkPipelineStageFlags srcStageMask,
+    VkPipelineStageFlags dstStageMask)
+{
+    VkImageSubresourceRange subresourceRange = {};
+    subresourceRange.aspectMask = aspectMask;
+    subresourceRange.baseMipLevel = 0;
+    subresourceRange.levelCount = 1;
+    subresourceRange.layerCount = 1;
+    setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 }
 
 #endif

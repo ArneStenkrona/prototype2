@@ -3,7 +3,7 @@
 
 #include "src/graphics/geometry/model.h"
 
-//#include "imgui_application.h"
+#include "imgui_application.h"
 
 #include <vulkan/vulkan.h>
 
@@ -245,7 +245,7 @@ private:
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
                       VkDeviceMemory& bufferMemory);
 
-    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits BufferUsageFlagBits,
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                             VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     VkCommandBuffer beginSingleTimeCommands();

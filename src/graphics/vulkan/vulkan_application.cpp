@@ -1184,7 +1184,7 @@ void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage
 }
 
 void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize,
-                                           VkBufferUsageFlagBits BufferUsageFlagBits,
+                                           VkBufferUsageFlagBits bufferUsageFlagBits,
                                            VkBuffer& destinationBuffer,
                                            VkDeviceMemory& destinationBufferMemory) {
     VkBuffer stagingBuffer;
@@ -1198,7 +1198,7 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
     memcpy(data, bufferData, (size_t) bufferSize);
     vkUnmapMemory(device, stagingBufferMemory);
     
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | BufferUsageFlagBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, destinationBuffer, destinationBufferMemory);
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | bufferUsageFlagBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, destinationBuffer, destinationBufferMemory);
     
     copyBuffer(stagingBuffer, destinationBuffer, bufferSize);
     
