@@ -23,9 +23,10 @@ MacOS does not actually natively support Vulkan. However KhronosGroup has provid
 * Add Vulkan to your environment variables.
 ```
  $ echo "export VK_ICD_FILENAMES=[YOUR PATH TO VULKAN HERE]/macOS/etc/vulkan/icd.d/MoltenVK_icd.json" >> ~/.profile
- $ echo "export VULKAN_SDK=[YOUR PATH TO VULKAN HERE]/macOS" >> ~/.profile
+ $ echo "export VULKAN_SDK=[YOUR PATH TO VULKAN HERE]/macOS/" >> ~/.profile
+ $ echo "export VK_LAYER_PATH=[YOUR PATH TO VULKAN HERE]/macOS/etc/vulkan/explicit_layer.d" >> ~/.profile
 ```
-If you are not using "~/.profile" as your shell profile you should change "~/.profile" to the path of your preferred shell profile.
+If you are not using *~/.profile* as your shell profile you should change *~/.profile* to the path of your preferred shell profile.
 ## Setting up Catch2
 * Install Catch2 from its git repository using CMake
 ```
