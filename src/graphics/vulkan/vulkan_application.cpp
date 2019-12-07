@@ -41,7 +41,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-VulkanApplication::VulkanApplication() {
+VulkanApplication::VulkanApplication()
+    : _imGuiApplication(this) {
     initWindow();
     initVulkan();
 }   
@@ -73,6 +74,10 @@ void VulkanApplication::initVulkan() {
     createDescriptorSetLayout();
     createGraphicsPipeline();
     createCommandPool();
+
+    _imGuiApplication.init(float(WIDTH), float(HEIGHT));
+    _imGuiApplication.initResources(renderPass, graphicsQueue);
+
     createColorResources();
     createDepthResources();
     createFramebuffers();
@@ -96,6 +101,8 @@ void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm:
     
 void VulkanApplication::cleanupSwapChain() {
     vkDeviceWaitIdle(device);
+
+    _imGuiApplication.cleanup();
 
     vkDestroyImageView(device, depthImageView, nullptr);
     vkDestroyImage(device, depthImage, nullptr);

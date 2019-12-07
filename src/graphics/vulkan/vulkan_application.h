@@ -87,7 +87,7 @@ public:
 private:
     GLFWwindow* window;
 
-    //ImGuiApplication _imGuiApplication;
+    ImGuiApplication _imGuiApplication;
     
     vk::Instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -97,6 +97,8 @@ private:
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     vk::Device device;
     
+    //VkQueue copyQueue;
+
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     

@@ -24,15 +24,17 @@ public:
 		glm::vec2 translate;
 	} pushConstBlock;
 
-	ImGuiApplication();
+	ImGuiApplication(VulkanApplication* vulkanApplication);
 	
 	~ImGuiApplication();
+	void cleanup();
 
 	// Initialize styles, keys, etc.
-	void init(float width, float height, vk::Device *device, VulkanApplication *vulkanApplication);
+	void init(float width, float height);
 
 	// Initialize all Vulkan resources used by the ui
 	void initResources(VkRenderPass renderPass, VkQueue copyQueue);
+
 
 	// Starts a new imGui frame and sets up windows and ui elements
 	void newFrame(/*VulkanExampleBase *example, */bool updateFrameGraph);
@@ -64,9 +66,9 @@ private:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
-	vk::Device *_device;
 	//VulkanExampleBase *example;
     VulkanApplication *_vulkanApplication;
+	vk::Device *_device;
 };
 
 #endif

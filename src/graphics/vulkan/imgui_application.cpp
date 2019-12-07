@@ -23,13 +23,18 @@ void setImageLayout(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask);
 
-ImGuiApplication::ImGuiApplication()
+ImGuiApplication::ImGuiApplication(VulkanApplication* vulkanApplication)
+    : _vulkanApplication(vulkanApplication), _device(&vulkanApplication->device)
+      
 {
     ImGui::CreateContext();
 }
 
 ImGuiApplication::~ImGuiApplication()
 {
+}
+
+void ImGuiApplication::cleanup() {
     ImGui::DestroyContext();
     // Release all Vulkan resources required for rendering imGui
     if (vertexBuffer != VK_NULL_HANDLE) {
@@ -54,10 +59,8 @@ ImGuiApplication::~ImGuiApplication()
 }
 
 // Initialize styles, keys, etc.
-void ImGuiApplication::init(float width, float height, vk::Device *device, VulkanApplication *vulkanApplication)
+void ImGuiApplication::init(float width, float height)
 {
-    _device = device;
-    _vulkanApplication = vulkanApplication;
     // Color scheme
     ImGuiStyle& style = ImGui::GetStyle();
     style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
@@ -84,6 +87,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     // Create target image for copy
     VkImageCreateInfo imageInfo = {};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
     imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
     imageInfo.extent.width = texWidth;
@@ -102,6 +106,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     VkMemoryRequirements memReqs;
     vkGetImageMemoryRequirements(*_device, fontImage, &memReqs);
     VkMemoryAllocateInfo memAllocInfo = {};
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memAllocInfo.allocationSize = memReqs.size;
     memAllocInfo.memoryTypeIndex = _vulkanApplication->findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if(vkAllocateMemory(*_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
@@ -113,6 +118,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     // Image view
     VkImageViewCreateInfo viewInfo = {};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = fontImage;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
@@ -249,6 +255,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     // Font texture Sampler
     VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -269,9 +276,9 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     };
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolInfo.poolSizeCount = 2;
+    descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descriptorPoolInfo.pPoolSizes = poolSizes.data();
-    descriptorPoolInfo.maxSets = static_cast<uint32_t>(poolSizes.size());
+    descriptorPoolInfo.maxSets = 2;
     if (vkCreateDescriptorPool(*_device, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         assert(false && "failed to create descriptor pool!");
     }
@@ -391,7 +398,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     VkPipelineMultisampleStateCreateInfo multisampleState {};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.rasterizationSamples = _vulkanApplication->msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
     multisampleState.flags = 0;
 
     prt::vector<VkDynamicState> dynamicStateEnables = {
@@ -433,18 +440,18 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         vInputBindDescription
     };
     VkVertexInputAttributeDescription vInputAttribDescription0 {};
-    vInputAttribDescription0.location = 0;
     vInputAttribDescription0.binding = 0;
+    vInputAttribDescription0.location = 0;
     vInputAttribDescription0.format = VK_FORMAT_R32G32_SFLOAT;
     vInputAttribDescription0.offset = offsetof(ImDrawVert, pos);
     VkVertexInputAttributeDescription vInputAttribDescription1 {};
-    vInputAttribDescription1.location = 0;
-    vInputAttribDescription1.binding = 1;
+    vInputAttribDescription1.binding = 0;
+    vInputAttribDescription1.location = 1;
     vInputAttribDescription1.format = VK_FORMAT_R32G32_SFLOAT;
     vInputAttribDescription1.offset = offsetof(ImDrawVert, uv);
     VkVertexInputAttributeDescription vInputAttribDescription2 {};
-    vInputAttribDescription2.location = 0;
-    vInputAttribDescription2.binding = 2;
+    vInputAttribDescription2.binding = 0;
+    vInputAttribDescription2.location = 2;
     vInputAttribDescription2.format = VK_FORMAT_R8G8B8A8_UNORM;
     vInputAttribDescription2.offset = offsetof(ImDrawVert, col);
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
@@ -452,7 +459,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         vInputAttribDescription1,	// Location 1: UV
         vInputAttribDescription2	// Location 0: Color
     };
-    VkPipelineVertexInputStateCreateInfo vertexInputState {};
+    VkPipelineVertexInputStateCreateInfo vertexInputState = {};
     vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputState.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size());
     vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
