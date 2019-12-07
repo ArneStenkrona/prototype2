@@ -101,9 +101,7 @@ void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm:
     
 void VulkanApplication::cleanupSwapChain() {
     vkDeviceWaitIdle(device);
-
-    _imGuiApplication.cleanup();
-
+    
     vkDestroyImageView(device, depthImageView, nullptr);
     vkDestroyImage(device, depthImage, nullptr);
     vkFreeMemory(device, depthImageMemory, nullptr);
@@ -137,6 +135,7 @@ void VulkanApplication::cleanupSwapChain() {
 }
     
 void VulkanApplication::cleanup() {
+    _imGuiApplication.cleanup();
     cleanupSwapChain();
  
     for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
@@ -188,8 +187,10 @@ void VulkanApplication::recreateSwapChain() {
  
     vkDeviceWaitIdle(device);
  
+    _imGuiApplication.cleanupSwapchain();
+
     cleanupSwapChain();
- 
+
     createSwapChain();
     createImageViews();
     createRenderPass();
@@ -200,6 +201,10 @@ void VulkanApplication::recreateSwapChain() {
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
+
+    _imGuiApplication.init(float(width), float(height));
+    _imGuiApplication.initResources(renderPass, graphicsQueue);
+
     createCommandBuffers();
 }
 
@@ -1287,6 +1292,9 @@ void VulkanApplication::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+
+    _imGuiApplication.newFrame(false);
+    _imGuiApplication.updateBuffers();
     
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
@@ -1336,6 +1344,8 @@ void VulkanApplication::createCommandBuffers() {
                                          1, sizeof(VkDrawIndexedIndirectCommand));
 			}
         }
+        _imGuiApplication.drawFrame(commandBuffers[i]);
+
         vkCmdEndRenderPass(commandBuffers[i]);
         
         if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {

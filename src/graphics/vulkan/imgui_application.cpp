@@ -32,14 +32,24 @@ ImGuiApplication::ImGuiApplication(VulkanApplication* vulkanApplication)
 
 ImGuiApplication::~ImGuiApplication()
 {
+    ImGui::DestroyContext();
 }
 
 void ImGuiApplication::cleanup() {
-    ImGui::DestroyContext();
     // Release all Vulkan resources required for rendering imGui
+    if (vertexBufferMapped != nullptr) {
+        vkUnmapMemory(*_device, vertexBufferMemory);
+		vertexBufferMapped = nullptr;
+    }
+
     if (vertexBuffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(*_device, vertexBuffer, nullptr);
         vkFreeMemory(*_device, vertexBufferMemory, nullptr);
+    }
+
+    if (indexBufferMapped != nullptr) {
+        vkUnmapMemory(*_device, indexBufferMemory);
+		indexBufferMapped = nullptr;
     }
 
     if (indexBuffer != VK_NULL_HANDLE) {
@@ -47,6 +57,18 @@ void ImGuiApplication::cleanup() {
         vkFreeMemory(*_device, indexBufferMemory, nullptr);
     }
     
+    vkDestroyImage(*_device, fontImage, nullptr);
+    vkDestroyImageView(*_device, fontView, nullptr);
+    vkFreeMemory(*_device, fontMemory, nullptr);
+    vkDestroySampler(*_device, sampler, nullptr);
+    vkDestroyPipelineCache(*_device, pipelineCache, nullptr);
+    vkDestroyPipeline(*_device, pipeline, nullptr);
+    vkDestroyPipelineLayout(*_device, pipelineLayout, nullptr);
+    vkDestroyDescriptorPool(*_device, descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(*_device, descriptorSetLayout, nullptr);
+}
+
+void ImGuiApplication::cleanupSwapchain() {
     vkDestroyImage(*_device, fontImage, nullptr);
     vkDestroyImageView(*_device, fontView, nullptr);
     vkFreeMemory(*_device, fontMemory, nullptr);
@@ -143,10 +165,6 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     stagingBuffer.map();
     memcpy(stagingBuffer.mapped, fontData, uploadSize);
     stagingBuffer.unmap();*/
-
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
-                      VkMemoryPropertyFlags properties, VkBuffer& buffer, 
-                      VkDeviceMemory& bufferMemory);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -555,15 +573,16 @@ void ImGuiApplication::updateBuffers()
     if ((vertexBufferSize == 0) || (indexBufferSize == 0)) {
         return;
     }
-
     // Update buffers only if vertex or index count has been changed compared to current buffer size
 
     // Vertex buffer
     if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
         //vertexBuffer.unmap();
 		//vertexBuffer.destroy();
-        vkUnmapMemory(*_device, vertexBufferMemory);
-		vertexBufferMapped = nullptr;
+        if (vertexBufferMemory != VK_NULL_HANDLE) {
+            vkUnmapMemory(*_device, vertexBufferMemory);
+		    vertexBufferMapped = nullptr;
+        }
         if (vertexBuffer != VK_NULL_HANDLE) {
             vkDestroyBuffer(*_device, vertexBuffer, nullptr);
             vkFreeMemory(*_device, vertexBufferMemory, nullptr);
@@ -577,8 +596,6 @@ void ImGuiApplication::updateBuffers()
         vertexCount = imDrawData->TotalVtxCount;
         //vertexBuffer.unmap();
         //vertexBuffer.map();
-        vkUnmapMemory(*_device, vertexBufferMemory);
-		vertexBufferMapped = nullptr;
         vkMapMemory(*_device, vertexBufferMemory, 0, VK_WHOLE_SIZE, 0, &vertexBufferMapped);
     }
 
@@ -586,8 +603,10 @@ void ImGuiApplication::updateBuffers()
     if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
         //indexBuffer.unmap();
         //indexBuffer.destroy();
-        vkUnmapMemory(*_device, indexBufferMemory);
-		indexBufferMemory = nullptr;
+        if (indexBufferMemory != VK_NULL_HANDLE) {
+            vkUnmapMemory(*_device, indexBufferMemory);
+            indexBufferMapped = nullptr;
+        }
         if (indexBuffer != VK_NULL_HANDLE) {
             vkDestroyBuffer(*_device, indexBuffer, nullptr);
             vkFreeMemory(*_device, indexBufferMemory, nullptr);

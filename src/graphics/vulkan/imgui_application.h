@@ -27,7 +27,9 @@ public:
 	ImGuiApplication(VulkanApplication* vulkanApplication);
 	
 	~ImGuiApplication();
+	
 	void cleanup();
+	void cleanupSwapchain();
 
 	// Initialize styles, keys, etc.
 	void init(float width, float height);
@@ -42,6 +44,7 @@ public:
 	// Update vertex and index buffer containing the imGui elements when required
 	void updateBuffers();
 
+
 	// Draw current imGui frame into a command buffer
 	void drawFrame(VkCommandBuffer commandBuffer);
 private:
@@ -51,10 +54,10 @@ private:
 	//vk::Buffer indexBuffer;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
-	void* vertexBufferMapped;
+	void* vertexBufferMapped = nullptr;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
-	void* indexBufferMapped;
+	void* indexBufferMapped = nullptr;
 	int32_t vertexCount = 0;
 	int32_t indexCount = 0;
 	VkDeviceMemory fontMemory = VK_NULL_HANDLE;
