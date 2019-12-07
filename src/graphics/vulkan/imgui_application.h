@@ -49,8 +49,10 @@ private:
 	//vk::Buffer indexBuffer;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
+	void* vertexBufferMapped;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+	void* indexBufferMapped;
 	int32_t vertexCount = 0;
 	int32_t indexCount = 0;
 	VkDeviceMemory fontMemory = VK_NULL_HANDLE;

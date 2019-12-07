@@ -2,8 +2,6 @@
 
 #include "vulkan_application.h"
 
-#ifdef IGNORE_THIS
-
 // Options and values to display/toggle from the UI
 struct UISettings {
 	bool displayModels = true;
@@ -498,15 +496,15 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
 
     // Init imGui windows and elements
 
-    ImVec4 clear_color = ImColor(114, 144, 154);
-    static float f = 0.0f;
+    //ImVec4 clear_color = ImColor(114, 144, 154);
+    //static float f = 0.0f;
     ImGui::TextUnformatted("IMGUI TEST");
     ImGui::TextUnformatted("IMGUI TEST");
 
     // Update frame time display
     if (updateFrameGraph) {
         std::rotate(uiSettings.frameTimes.begin(), uiSettings.frameTimes.begin() + 1, uiSettings.frameTimes.end());
-        float frameTime = 13370f;//1000.0f / (example->frameTimer * 1000.0f);
+        float frameTime = 1.0f;//1000.0f / (example->frameTimer * 1000.0f);
         uiSettings.frameTimes.back() = frameTime;
         if (frameTime < uiSettings.frameTimeMin) {
             uiSettings.frameTimeMin = frameTime;
@@ -522,7 +520,7 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
     //ImGui::InputFloat3("position", &example->camera.position.x, 2);
     //ImGui::InputFloat3("rotation", &example->camera.rotation.x, 2);
 
-    ImGui::SetNextWindowSize(ImVec2(200, 200), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 200), (1 << 2)/*ImGuiSetCond_FirstUseEver*/);
     ImGui::Begin("Example settings");
     ImGui::Checkbox("Render models", &uiSettings.displayModels);
     ImGui::Checkbox("Display logos", &uiSettings.displayLogos);
@@ -531,7 +529,7 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
     ImGui::SliderFloat("Light speed", &uiSettings.lightSpeed, 0.1f, 1.0f);
     ImGui::End();
 
-    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(650, 20), (1 << 2)/*ImGuiSetCond_FirstUseEver*/);
     ImGui::ShowDemoWindow();
 
     // Render to generate draw buffers
@@ -554,35 +552,53 @@ void ImGuiApplication::updateBuffers()
     // Update buffers only if vertex or index count has been changed compared to current buffer size
 
     // Vertex buffer
-    if ((vertexBuffer.buffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
+    if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
+        //vertexBuffer.unmap();
+		//vertexBuffer.destroy();
+        vkUnmapMemory(*_device, vertexBufferMemory);
+		vertexBufferMapped = nullptr;
         if (vertexBuffer != VK_NULL_HANDLE) {
             vkDestroyBuffer(*_device, vertexBuffer, nullptr);
             vkFreeMemory(*_device, vertexBufferMemory, nullptr);
         }
-        if (_device->createBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
-            assert(false && "failed to create vertex buffer!");
-        }
+        //if (_device->createBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+        //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
+        //    assert(false && "failed to create vertex buffer!");
+        //}
+        _vulkanApplication->createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                         vertexBuffer, vertexBufferMemory);
         vertexCount = imDrawData->TotalVtxCount;
-        vertexBuffer.unmap();
-        vertexBuffer.map();
+        //vertexBuffer.unmap();
+        //vertexBuffer.map();
+        vkUnmapMemory(*_device, vertexBufferMemory);
+		vertexBufferMapped = nullptr;
+        vkMapMemory(*_device, vertexBufferMemory, 0, VK_WHOLE_SIZE, 0, &vertexBufferMapped);
     }
 
     // Index buffer
-    VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
-    if ((indexBuffer.buffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
-        indexBuffer.unmap();
-        indexBuffer.destroy();
-        if (_device->createBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
-            assert(false && "failed to create index buffer!");
+    if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
+        //indexBuffer.unmap();
+        //indexBuffer.destroy();
+        vkUnmapMemory(*_device, indexBufferMemory);
+		indexBufferMemory = nullptr;
+        if (indexBuffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(*_device, indexBuffer, nullptr);
+            vkFreeMemory(*_device, indexBufferMemory, nullptr);
         }
+        //if (_device->createBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+        //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
+        //    assert(false && "failed to create index buffer!");
+        //}
+        _vulkanApplication->createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                         indexBuffer, indexBufferMemory);
         indexCount = imDrawData->TotalIdxCount;
-        indexBuffer.map();
+        //indexBuffer.map();
+        vkMapMemory(*_device, indexBufferMemory, 0, VK_WHOLE_SIZE, 0, &indexBufferMapped);
     }
 
     // Upload data
-    ImDrawVert* vtxDst = (ImDrawVert*)vertexBuffer.mapped;
-    ImDrawIdx* idxDst = (ImDrawIdx*)indexBuffer.mapped;
+    ImDrawVert* vtxDst = (ImDrawVert*)vertexBufferMapped;
+    ImDrawIdx* idxDst = (ImDrawIdx*)indexBufferMapped;
 
     for (int n = 0; n < imDrawData->CmdListsCount; n++) {
         const ImDrawList* cmd_list = imDrawData->CmdLists[n];
@@ -593,8 +609,20 @@ void ImGuiApplication::updateBuffers()
     }
 
     // Flush to make writes visible to GPU
-    vertexBuffer.flush();
-    indexBuffer.flush();
+    //vertexBuffer.flush();
+    //indexBuffer.flush();
+    VkMappedMemoryRange mappedRangeVert = {};
+    mappedRangeVert.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedRangeVert.memory = vertexBufferMemory;
+    mappedRangeVert.offset = 0;
+    mappedRangeVert.size = VK_WHOLE_SIZE;
+    vkFlushMappedMemoryRanges(*_device, 1, &mappedRangeVert);
+    VkMappedMemoryRange mappedRangeInd = {};
+    mappedRangeInd.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    mappedRangeInd.memory = indexBufferMemory;
+    mappedRangeInd.offset = 0;
+    mappedRangeInd.size = VK_WHOLE_SIZE;
+    vkFlushMappedMemoryRanges(*_device, 1, &mappedRangeInd);
 }
 
 // Draw current imGui frame into a command buffer
@@ -605,7 +633,12 @@ void ImGuiApplication::drawFrame(VkCommandBuffer commandBuffer)
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-    VkViewport viewport = vks::initializers::viewport(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y, 0.0f, 1.0f);
+    //VkViewport viewport = vks::initializers::viewport(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y, 0.0f, 1.0f);
+    VkViewport viewport {};
+    viewport.width = ImGui::GetIO().DisplaySize.x;
+    viewport.height = ImGui::GetIO().DisplaySize.y;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     // UI scale and translate via push constants
@@ -621,8 +654,8 @@ void ImGuiApplication::drawFrame(VkCommandBuffer commandBuffer)
     if (imDrawData->CmdListsCount > 0) {
 
         VkDeviceSize offsets[1] = { 0 };
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
         {
@@ -785,5 +818,3 @@ void setImageLayout(
     subresourceRange.layerCount = 1;
     setImageLayout(cmdbuffer, image, oldImageLayout, newImageLayout, subresourceRange, srcStageMask, dstStageMask);
 }
-
-#endif
