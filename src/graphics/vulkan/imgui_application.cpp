@@ -24,8 +24,9 @@ void setImageLayout(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask);
 
-ImGuiApplication::ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device)
-    : _physicalDevice(physicalDevice), _device(device)
+ImGuiApplication::ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device,
+                                   Input& input)
+    : _physicalDevice(physicalDevice), _device(device), _input(input)
       
 {
     ImGui::CreateContext();
@@ -255,7 +256,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& com
         assert(false && "failed to submit fence to queue!");
     }
     // Wait for the fence to signal that command buffer has finished executing
-    if (vkWaitForFences(_device, 1, &fence, VK_TRUE, 100000000000) != VK_SUCCESS) {
+    if (vkWaitForFences(_device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()) != VK_SUCCESS) {
         assert(false && "failed to wait for fence!");
     }
 
@@ -514,7 +515,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& com
 }
 
 // Starts a new imGui frame and sets up windows and ui elements
-void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrameGraph)
+void ImGuiApplication::newFrame(bool updateFrameGraph)
 {
     ImGui::NewFrame();
 
@@ -652,6 +653,20 @@ void ImGuiApplication::updateBuffers()
     mappedRangeInd.offset = 0;
     mappedRangeInd.size = VK_WHOLE_SIZE;
     vkFlushMappedMemoryRanges(_device, 1, &mappedRangeInd);
+}
+
+void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
+    // Update imGui
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.DisplaySize = ImVec2((float)width, (float)height);
+    io.DeltaTime = deltaTime;
+
+    double mouseX, mouseY;
+    _input.getCursorPos(mouseX, mouseY);
+    io.MousePos = ImVec2(mouseX, mouseY);
+    io.MouseDown[0] = _input.getMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    io.MouseDown[1] = _input.getMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 }
 
 // Draw current imGui frame into a command buffer

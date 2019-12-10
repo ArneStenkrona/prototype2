@@ -1,6 +1,8 @@
 #ifndef IMGUI_APPLICATION_H
 #define IMGUI_APPLICATION_H
 
+#include "src/system/input/input.h"
+
 #include <imgui/imgui.h>
 
 #include <vulkan/vulkan.h>
@@ -24,7 +26,8 @@ public:
 		glm::vec2 translate;
 	} pushConstBlock;
 
-	ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device);
+	ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device, 
+					 Input& input);
 	
 	~ImGuiApplication();
 	
@@ -41,11 +44,12 @@ public:
 
 
 	// Starts a new imGui frame and sets up windows and ui elements
-	void newFrame(/*VulkanExampleBase *example, */bool updateFrameGraph);
+	void newFrame(bool updateFrameGraph);
 
 	// Update vertex and index buffer containing the imGui elements when required
 	void updateBuffers();
 
+	void updateInput(float width, float height, float deltaTime);
 
 	// Draw current imGui frame into a command buffer
 	void drawFrame(VkCommandBuffer commandBuffer);
@@ -71,9 +75,10 @@ private:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
-    //VulkanApplication *_vulkanApplication;
 	VkPhysicalDevice& _physicalDevice;
 	VkDevice& _device;
+
+	Input& _input;
 };
 
 #endif

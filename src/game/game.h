@@ -19,8 +19,8 @@ public:
     void run();
 
 private:
-    VulkanApplication _vulkanApp;
     Input _input;
+    VulkanApplication _vulkanApp;
 
     AssetManager _assetManager;
 
@@ -34,7 +34,7 @@ private:
     uint64_t _currentFrame;
 
     void update(float deltaTime);
-    void updateGraphics();
+    void updateGraphics(float deltaTime);
 };
 
 #endif

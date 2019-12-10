@@ -10,8 +10,8 @@
 #include <iostream>
 
 Game::Game()
-: _vulkanApp(),
-  _input(_vulkanApp.getWindow()),
+: _input(),
+  _vulkanApp(_input),
   _assetManager(RESOURCE_PATH),
   //_modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
   _scene(_assetManager),
@@ -19,6 +19,7 @@ Game::Game()
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
+    _input.init(_vulkanApp.getWindow());
     prt::vector<Model> models;
     _assetManager.loadModels(models);
     _vulkanApp.loadModels(models);
@@ -63,15 +64,15 @@ void Game::run() {
 void Game::update(float deltaTime) {
     _input.update();
     _camera.update(deltaTime);
-    updateGraphics();
+    updateGraphics(deltaTime);
 }
 
-void Game::updateGraphics() {
+void Game::updateGraphics(float deltaTime) {
     prt::vector<glm::mat4> modelMatrices; 
     _scene.getTransformMatrixes(modelMatrices);
 
     glm::mat4 viewMatrix = _camera.getViewMatrix();
     glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
     glm::vec3 viewPosition = _camera.getPosition();
-    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition);
+    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition, deltaTime);
 }

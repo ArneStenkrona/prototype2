@@ -41,8 +41,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-VulkanApplication::VulkanApplication()
-    : _imGuiApplication(physicalDevice, device) {
+VulkanApplication::VulkanApplication(Input& input)
+    : _imGuiApplication(physicalDevice, device, input) {
     initWindow();
     initVulkan();
 }   
@@ -52,9 +52,9 @@ void VulkanApplication::initWindow() {
  
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
  
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+    _window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetFramebufferSizeCallback(_window, framebufferResizeCallback);
 }
     
 void VulkanApplication::framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/) {
@@ -95,8 +95,18 @@ void VulkanApplication::initVulkan() {
     createSyncObjects();
 }
     
-void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {
+void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, 
+                               glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition,
+                               float /*deltaTime*/) {
         glfwPollEvents();
+
+        /*int width = 0, height = 0;
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(_window, &width, &height);
+            glfwWaitEvents();
+        }
+        
+        _imGuiApplication.updateInput(float(width), float(height), deltaTime);*/
         drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition);    
 }
     
@@ -173,7 +183,7 @@ void VulkanApplication::cleanup() {
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
  
-    glfwDestroyWindow(window);
+    glfwDestroyWindow(_window);
  
     glfwTerminate();
 }
@@ -181,7 +191,7 @@ void VulkanApplication::cleanup() {
 void VulkanApplication::recreateSwapChain() {
     int width = 0, height = 0;
     while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(_window, &width, &height);
         glfwWaitEvents();
     }
  
@@ -268,7 +278,7 @@ void VulkanApplication::setupDebugMessenger() {
 }
 
 void VulkanApplication::createSurface() {
-    if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(instance, _window, nullptr, &surface) != VK_SUCCESS) {
         assert(false && "failed to create window surface!");
     }
 }
@@ -675,6 +685,7 @@ void VulkanApplication::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         assert(false && "failed to create graphics command pool!");
@@ -1247,7 +1258,6 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
 void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
     _modelIDs = modelIDs;
     createCommandBuffers();
-    //createSyncObjects();
 }
 
 VkCommandBuffer VulkanApplication::beginSingleTimeCommands() {
@@ -1325,7 +1335,7 @@ void VulkanApplication::createCommandBuffers() {
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
         
         if (vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
             assert(false && "failed to begin recording command buffer!");
@@ -1380,6 +1390,66 @@ void VulkanApplication::createCommandBuffers() {
     }
 }
 
+void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
+    _imGuiApplication.newFrame(false);
+    _imGuiApplication.updateBuffers();
+    
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    
+    if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+        assert(false && "failed to begin recording command buffer!");
+    }
+    
+    VkRenderPassBeginInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = swapChainExtent;
+    
+    std::array<VkClearValue, 2> clearValues = {};
+    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
+    clearValues[1].depthStencil = { 1.0f, 0 };
+    
+    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues = clearValues.data();
+    
+    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    
+    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    
+    if (_modelIDs.size() > 0) {
+        VkBuffer vertexBuffers[] = {vertexBuffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
+        
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        
+        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+
+        // Issue indirect commands
+        for (size_t j = 0; j < _modelIDs.size(); j++)
+        {
+            vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
+                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), (void *)&j );
+            vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
+                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_modelIDs[j] );
+            vkCmdDrawIndexedIndirect(commandBuffers[imageIndex], indirectCommandBuffer, 
+                                        _modelIDs[j] * sizeof(VkDrawIndexedIndirectCommand), 
+                                        1, sizeof(VkDrawIndexedIndirectCommand));
+        }
+    }
+    _imGuiApplication.drawFrame(commandBuffers[imageIndex]);
+
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
+    
+    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+        assert(false && "failed to record command buffer!");
+    }
+}
+
 void VulkanApplication::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1418,11 +1488,12 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::ve
 }
 
 void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-    
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    updateCommandBuffers(imageIndex);
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
@@ -1521,7 +1592,7 @@ VkExtent2D VulkanApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& c
         return capabilities.currentExtent;
     } else {
         int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(_window, &width, &height);
         
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),

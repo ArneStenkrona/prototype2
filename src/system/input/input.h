@@ -5,12 +5,15 @@
 
 class Input {
 public:
-    Input(GLFWwindow* window);
+    Input();
 
     int getKey(int keyCode); 
+    int getMouseButton(int mouseButton);
 
     void getCursorPos(double& xpos, double& ypos);
     void getCursorDelta(double& dx, double& dy);
+
+    inline GLFWwindow* getWindow() const { return _window; }
 private:
     GLFWwindow* _window;
 
@@ -19,8 +22,8 @@ private:
     double _dx;
     double _dy;
 
+    void init(GLFWwindow* window);
     void update();
-
     friend class Game;
 };
 

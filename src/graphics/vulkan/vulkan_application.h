@@ -5,6 +5,8 @@
 
 #include "imgui_application.h"
 
+#include "src/system/input/input.h"
+
 #include <vulkan/vulkan.h>
 
 #include "src/container/vector.h"
@@ -68,21 +70,23 @@ struct UniformBufferObject {
 
 class VulkanApplication {
 public:
-    VulkanApplication();
+    VulkanApplication(Input& input);
 
     void initWindow();
     void initVulkan();
-    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
+    void update(const prt::vector<glm::mat4>& modelMatrices, 
+                glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition,
+                float deltaTime);
     void cleanup();
 
     void loadModels(prt::vector<Model>& models);
     void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
-    GLFWwindow* getWindow() const { return window; }
+    GLFWwindow* getWindow() const { return _window; }
     
-    bool isWindowOpen() { return !glfwWindowShouldClose(window); }
+    bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 private:
-    GLFWwindow* window;
+    GLFWwindow* _window;
 
     ImGuiApplication _imGuiApplication;
     
@@ -256,7 +260,8 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     
     void createCommandBuffers();
-    
+    void updateCommandBuffers(size_t imageIndex);
+
     void createSyncObjects();
     
     void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, 
@@ -292,8 +297,6 @@ private:
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
     
-    friend class VulkanPRTGame;
-    friend class ImGuiApplication;
 };
 
 #endif

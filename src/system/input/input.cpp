@@ -2,20 +2,27 @@
 
 #include <cassert>
 
-Input::Input(GLFWwindow* window) 
-: _window(window),
+Input::Input() 
+: _window(nullptr),
   _lastCursorX(0.0f),
   _lastCursorY(0.0f),
   _dx(0.0),
   _dy(0.0)
 {
-    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+}
+
+void Input::init(GLFWwindow* window) {
+    _window = window;
+    glfwSetInputMode(_window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 }
 
 int Input::getKey(int keyCode) {
     assert(keyCode < GLFW_KEY_LAST);
     return glfwGetKey(_window, keyCode);
+}
+
+int Input::getMouseButton(int mouseButton) {
+    return glfwGetMouseButton(_window, mouseButton);
 }
 
 void Input::getCursorPos(double& xpos, double& ypos) {
