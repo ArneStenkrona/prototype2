@@ -24,7 +24,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <algorithm>
 
 #include <cstring>
