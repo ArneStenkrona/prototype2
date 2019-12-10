@@ -7,8 +7,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include <vulkan/vulkan.hpp>
-
 #include "src/container/vector.h"
 #include "src/container/array.h"
 #include "src/container/optional.h"
@@ -89,13 +87,13 @@ private:
 
     ImGuiApplication _imGuiApplication;
     
-    vk::Instance instance;
+    VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
     
-    vk::PhysicalDevice physicalDevice;
+    VkPhysicalDevice physicalDevice;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    vk::Device device;
+    VkDevice device;
     
     //VkQueue copyQueue;
 
