@@ -1,7 +1,10 @@
-#ifdef IO_UTIL_H
+#ifndef IO_UTIL_H
 #define IO_UTIL_H
 
-namespace IO_util {
+#include "src/container/vector.h"
+#include <fstream>
+
+namespace io_util {
     static prt::vector<char> readFile(const std::string& filename) {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
         if (!file.is_open()) {
@@ -18,7 +21,6 @@ namespace IO_util {
         
         return buffer;
     }
-
 }
 
 #endif

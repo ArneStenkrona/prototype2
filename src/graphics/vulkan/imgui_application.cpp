@@ -1,6 +1,7 @@
 #include "imgui_application.h"
-
 #include "vulkan_application.h"
+#include "vulkan_common.h"
+#include "src/util/io_util.h"
 
 // Options and values to display/toggle from the UI
 struct UISettings {
@@ -23,8 +24,8 @@ void setImageLayout(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask);
 
-ImGuiApplication::ImGuiApplication(VulkanApplication* vulkanApplication, VkDevice& device)
-    : _vulkanApplication(vulkanApplication), _device(device)
+ImGuiApplication::ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device)
+    : _physicalDevice(physicalDevice), _device(device)
       
 {
     ImGui::CreateContext();
@@ -89,7 +90,9 @@ void ImGuiApplication::init(float width, float height)
 }
 
 // Initialize all Vulkan resources used by the ui
-void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
+void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& commandPool, 
+                                     VkQueue& copyQueue,
+                                     VkSampleCountFlagBits msaaSamples)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -122,7 +125,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     VkMemoryAllocateInfo memAllocInfo = {};
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memAllocInfo.allocationSize = memReqs.size;
-    memAllocInfo.memoryTypeIndex = _vulkanApplication->findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    memAllocInfo.memoryTypeIndex = vulkan_common::findMemoryType(_physicalDevice, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if(vkAllocateMemory(_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
         assert(false && "failed to allocate memory!");
     }
@@ -160,10 +163,11 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    _vulkanApplication->createBuffer(uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                                     stagingBuffer, stagingBufferMemory);
-    
+    vulkan_common::createBuffer(_physicalDevice, _device, 
+                                uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                                stagingBuffer, stagingBufferMemory);
+
     void* data;
     vkMapMemory(_device, stagingBufferMemory, 0, uploadSize, 0, &data);
     memcpy(data, fontData, (size_t) uploadSize);
@@ -175,7 +179,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     // Begin command buffer
     VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = _vulkanApplication->commandPool;
+    commandBufferAllocateInfo.commandPool = commandPool;
     commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     commandBufferAllocateInfo.commandBufferCount = 1;
 
@@ -257,7 +261,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     vkDestroyFence(_device, fence, nullptr);
 
-    vkFreeCommandBuffers(_device, _vulkanApplication->commandPool, 1, &copyCmd);
+    vkFreeCommandBuffers(_device, commandPool, 1, &copyCmd);
 
     //stagingBuffer.destroy();
     vkDestroyBuffer(_device, stagingBuffer, nullptr);
@@ -408,7 +412,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     VkPipelineMultisampleStateCreateInfo multisampleState {};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.rasterizationSamples = _vulkanApplication->msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.rasterizationSamples = msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
     multisampleState.flags = 0;
 
     prt::vector<VkDynamicState> dynamicStateEnables = {
@@ -480,11 +484,11 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     //shaderStages[0] = example->loadShader(ASSET_PATH "shaders/imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
     //shaderStages[1] = example->loadShader(ASSET_PATH "shaders/imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    auto vertShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
-    auto fragShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
+    auto vertShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
+    auto fragShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
     
-    VkShaderModule vertShaderModule = _vulkanApplication->createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = _vulkanApplication->createShaderModule(fragShaderCode);
+    VkShaderModule vertShaderModule = vulkan_common::createShaderModule(_device, vertShaderCode);
+    VkShaderModule fragShaderModule = vulkan_common::createShaderModule(_device, fragShaderCode);
     
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -586,8 +590,10 @@ void ImGuiApplication::updateBuffers()
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create vertex buffer!");
         //}
-        _vulkanApplication->createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                         vertexBuffer, vertexBufferMemory);
+        vulkan_common::createBuffer(_physicalDevice, _device, vertexBufferSize,
+                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                    vertexBuffer, vertexBufferMemory);
         vertexCount = imDrawData->TotalVtxCount;
         //vertexBuffer.unmap();
         //vertexBuffer.map();
@@ -610,8 +616,10 @@ void ImGuiApplication::updateBuffers()
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create index buffer!");
         //}
-        _vulkanApplication->createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                         indexBuffer, indexBufferMemory);
+        vulkan_common::createBuffer(_physicalDevice, _device, indexBufferSize,
+                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                    indexBuffer, indexBufferMemory);
         indexCount = imDrawData->TotalIdxCount;
         //indexBuffer.map();
         vkMapMemory(_device, indexBufferMemory, 0, VK_WHOLE_SIZE, 0, &indexBufferMapped);

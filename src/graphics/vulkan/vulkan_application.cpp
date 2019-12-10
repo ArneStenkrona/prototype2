@@ -42,7 +42,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 }
 
 VulkanApplication::VulkanApplication()
-    : _imGuiApplication(this, device) {
+    : _imGuiApplication(physicalDevice, device) {
     initWindow();
     initVulkan();
 }   
@@ -76,7 +76,8 @@ void VulkanApplication::initVulkan() {
     createCommandPool();
 
     _imGuiApplication.init(float(WIDTH), float(HEIGHT));
-    _imGuiApplication.initResources(renderPass, graphicsQueue);
+    _imGuiApplication.initResources(renderPass, commandPool, 
+                                    graphicsQueue, msaaSamples);
 
     createColorResources();
     createDepthResources();
@@ -202,7 +203,8 @@ void VulkanApplication::recreateSwapChain() {
     createDescriptorSets();
 
     _imGuiApplication.init(float(width), float(height));
-    _imGuiApplication.initResources(renderPass, graphicsQueue);
+    _imGuiApplication.initResources(renderPass, commandPool,
+                                    graphicsQueue, msaaSamples);
 
     createCommandBuffers();
 }
@@ -1301,7 +1303,7 @@ uint32_t VulkanApplication::findMemoryType(uint32_t typeFilter, VkMemoryProperty
         }
     }
     
-    throw std::runtime_error("failed to find suitable memory type!");
+    assert(false && "failed to find suitable memory type!");
 }
 
 void VulkanApplication::createCommandBuffers() {
@@ -1484,7 +1486,7 @@ VkShaderModule VulkanApplication::createShaderModule(const prt::vector<char>& co
     
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
+        assert(false && "failed to create shader module!");
     }
     
     return shaderModule;
