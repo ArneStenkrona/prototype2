@@ -24,7 +24,7 @@ public:
 		glm::vec2 translate;
 	} pushConstBlock;
 
-	ImGuiApplication(VulkanApplication* vulkanApplication);
+	ImGuiApplication(VulkanApplication* vulkanApplication, VkDevice& device);
 	
 	~ImGuiApplication();
 	
@@ -69,9 +69,8 @@ private:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
-	//VulkanExampleBase *example;
     VulkanApplication *_vulkanApplication;
-	vk::Device *_device;
+	VkDevice& _device;
 };
 
 #endif
