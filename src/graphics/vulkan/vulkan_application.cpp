@@ -135,9 +135,8 @@ void VulkanApplication::cleanupSwapChain() {
 }
     
 void VulkanApplication::cleanup() {
-    _imGuiApplication.cleanup();
     cleanupSwapChain();
- 
+    _imGuiApplication.cleanup();
     for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
         vkDestroyImageView(device, textureImageView[i], nullptr);
         vkDestroyImage(device, textureImage[i], nullptr);

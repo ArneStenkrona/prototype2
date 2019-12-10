@@ -57,15 +57,7 @@ void ImGuiApplication::cleanup() {
         vkFreeMemory(*_device, indexBufferMemory, nullptr);
     }
     
-    vkDestroyImage(*_device, fontImage, nullptr);
-    vkDestroyImageView(*_device, fontView, nullptr);
-    vkFreeMemory(*_device, fontMemory, nullptr);
-    vkDestroySampler(*_device, sampler, nullptr);
-    vkDestroyPipelineCache(*_device, pipelineCache, nullptr);
-    vkDestroyPipeline(*_device, pipeline, nullptr);
-    vkDestroyPipelineLayout(*_device, pipelineLayout, nullptr);
-    vkDestroyDescriptorPool(*_device, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*_device, descriptorSetLayout, nullptr);
+    cleanupSwapchain();
 }
 
 void ImGuiApplication::cleanupSwapchain() {
@@ -512,6 +504,9 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     if (vkCreateGraphicsPipelines(*_device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
         assert(false && "failed to create graphics pipeline!");
     }
+
+    vkDestroyShaderModule(*_device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(*_device, vertShaderModule, nullptr);
 }
 
 // Starts a new imGui frame and sets up windows and ui elements
