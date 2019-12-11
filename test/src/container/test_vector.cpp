@@ -63,7 +63,7 @@ TEST_CASE( "vector: Test copy assignment operator", "[vector]") {
 }
 
 TEST_CASE( "vector: Test nested", "[vector]") {
-    prt::vector<prt::vector<uint32_t>> test;
+    prt::vector<prt::vector<uint32_t> > test;
     test.resize(100);
     for (uint32_t i = 0; i <  test.size(); i++) {
         test[i].resize(100);
