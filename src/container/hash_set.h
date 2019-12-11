@@ -141,13 +141,15 @@ namespace prt {
 
         iterator find(const T& value) {
             size_t ind = hashIndex(value);
-            
-            while (_vector[ind]._present) {
+            size_t counter = 0;
+
+            while (_vector[ind]._present && counter < _vector.size()) {
                 if (_vector[ind].value() == value) {
                     // return iterator to value
                     return iterator(&_vector[ind], _vector.end());
                 }
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                counter++;
             }
             return end();
         }
