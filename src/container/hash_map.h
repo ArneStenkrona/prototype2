@@ -1,5 +1,5 @@
-#ifndef PRT_HASH_TABLE_H
-#define PRT_HASH_TABLE_H
+#ifndef PRT_HASH_MAP_H
+#define PRT_HASH_MAP_H
 
 #include "src/memory/container_allocator.h"
 #include "src/container/vector.h"
