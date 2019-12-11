@@ -83,10 +83,12 @@ public:
     void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return _window; }
+    void getWindowSize(int& w, int& h) { w = width; h = height; };
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 private:
     GLFWwindow* _window;
+    int width, height;
 
     ImGuiApplication _imGuiApplication;
     

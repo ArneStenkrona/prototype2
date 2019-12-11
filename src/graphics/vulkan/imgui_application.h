@@ -47,7 +47,7 @@ public:
 	void newFrame(bool updateFrameGraph);
 
 	// Update vertex and index buffer containing the imGui elements when required
-	void updateBuffers();
+	void updateBuffers(VkFence* pFence, uint32_t nFence);
 
 	void updateInput(float width, float height, float deltaTime);
 
@@ -66,6 +66,7 @@ private:
 	void* indexBufferMapped = nullptr;
 	int32_t vertexCount = 0;
 	int32_t indexCount = 0;
+
 	VkDeviceMemory fontMemory = VK_NULL_HANDLE;
 	VkImage fontImage = VK_NULL_HANDLE;
 	VkImageView fontView = VK_NULL_HANDLE;

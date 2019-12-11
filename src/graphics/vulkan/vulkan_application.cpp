@@ -8,7 +8,7 @@
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
 const prt::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -97,16 +97,10 @@ void VulkanApplication::initVulkan() {
     
 void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, 
                                glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition,
-                               float /*deltaTime*/) {
+                               float deltaTime) {
         glfwPollEvents();
-
-        /*int width = 0, height = 0;
-        while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(_window, &width, &height);
-            glfwWaitEvents();
-        }
         
-        _imGuiApplication.updateInput(float(width), float(height), deltaTime);*/
+        _imGuiApplication.updateInput(float(width), float(height), deltaTime);
         drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition);    
 }
     
@@ -189,12 +183,13 @@ void VulkanApplication::cleanup() {
 }
 
 void VulkanApplication::recreateSwapChain() {
-    int width = 0, height = 0;
+    width = 0;
+    height = 0;
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(_window, &width, &height);
         glfwWaitEvents();
     }
- 
+
     vkDeviceWaitIdle(device);
  
     _imGuiApplication.cleanupSwapchain();
@@ -315,7 +310,6 @@ void VulkanApplication::createLogicalDevice() {
     
     float queuePriority = 1.0f;
     for (auto it = uniqueQueueFamilies.begin(); it != uniqueQueueFamilies.end(); it++) {
-    //for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = it->value();
@@ -739,7 +733,6 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
 
 void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, 
                                            const Texture& texture) {
-    //const Texture& texture = models[index].texture();
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
 
@@ -1330,7 +1323,7 @@ void VulkanApplication::createCommandBuffers() {
     }
 
     _imGuiApplication.newFrame(false);
-    _imGuiApplication.updateBuffers();
+    _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         VkCommandBufferBeginInfo beginInfo = {};
@@ -1392,7 +1385,7 @@ void VulkanApplication::createCommandBuffers() {
 
 void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
     _imGuiApplication.newFrame(false);
-    _imGuiApplication.updateBuffers();
+    _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1492,7 +1485,6 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, g
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    updateCommandBuffers(imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -1501,6 +1493,7 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, g
         assert(false && "failed to acquire swap chain image!");
     }
     
+    updateCommandBuffers(imageIndex);
     updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
     
     VkSubmitInfo submitInfo = {};

@@ -19,10 +19,10 @@ Camera::Camera(Input& input, float posX, float posY, float posZ, float upX, floa
 {
 }
 
-glm::mat4 Camera::getProjectionMatrix() const
+glm::mat4 Camera::getProjectionMatrix(float width, float height) const
 {
     /* TODO: Get screen dimensions instead of hardcoding 800x600  */
-    return glm::perspective(glm::radians(_fieldOfView), 800.0f / 600.0f, 0.1f, 100.0f);
+    return glm::perspective(glm::radians(_fieldOfView), width / height, 0.1f, 100.0f);
 }
 
 void Camera::update(float deltaTime)
