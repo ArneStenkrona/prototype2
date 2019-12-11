@@ -14,6 +14,14 @@ Input::Input()
 void Input::init(GLFWwindow* window) {
     _window = window;
     glfwSetInputMode(_window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+
+    // Set screen/pixel coordinate mapping
+    int widthW, heightW;
+    glfwGetWindowSize(window, &widthW, &heightW);
+    int widthB, heightB;
+    glfwGetFramebufferSize(window, &widthB, &heightB);
+    scaleX = float(widthB) / float(widthW);
+    scaleY = float(heightB) / float(heightW);
 }
 
 int Input::getKey(int keyCode) {
@@ -27,6 +35,8 @@ int Input::getMouseButton(int mouseButton) {
 
 void Input::getCursorPos(double& xpos, double& ypos) {
     glfwGetCursorPos(_window, &xpos, &ypos);
+    xpos *= scaleX;
+    ypos *= scaleY;
 }
 
 void Input::getCursorDelta(double& dx, double& dy) {
@@ -37,7 +47,7 @@ void Input::getCursorDelta(double& dx, double& dy) {
 void Input::update() {
     // update cursor delta
     double x, y;
-    glfwGetCursorPos(_window, &x, &y);
+    getCursorPos(x, y);
     _dx = x - _lastCursorX;
     _dy = y - _lastCursorY;
     _lastCursorX = x;

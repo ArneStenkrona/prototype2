@@ -16,6 +16,7 @@ public:
     inline GLFWwindow* getWindow() const { return _window; }
 private:
     GLFWwindow* _window;
+    double scaleX, scaleY;
 
     double _lastCursorX;
     double _lastCursorY;
