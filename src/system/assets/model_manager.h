@@ -50,9 +50,6 @@ public:
                                           prt::vector<Vertex>& vertexBuffer,
                                           prt::vector<uint32_t>& indexBuffer);
 
-    void loadTextures(const char* texturePath, Texture& texture);
-
-
     void getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths);
     uint32_t getModelID(std::string& name);
     uint32_t getModelID(const char* name);

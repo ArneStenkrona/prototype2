@@ -9,9 +9,6 @@
 
 #include <string>   
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-
 bool is_file_exist(const char *fileName)
 {
     std::ifstream infile(fileName);
@@ -142,7 +139,7 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
     
         if (textureStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
             std::string texturePath = texturePaths[i].substr(texturePaths[i].find(AssetManager::persistentStorageString) + 2);
-            loadTextures(texturePath.c_str(), models[i]._texture);
+            models[i]._texture.load(texturePath.c_str());
         } else if (textureStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
             // TODO: add loading for non-persistent data
         }
@@ -311,25 +308,4 @@ void ModelManager::loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes,
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         vertexBuffer[it->value()] = it->key();
     }
-}
-
-void ModelManager::loadTextures(const char* texturePath, Texture& texture) {
-    int texWidth, texHeight, texChannels;
-
-    stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    texture.texWidth = texWidth;
-    texture.texHeight = texHeight;
-    texture.texChannels = texChannels;
-
-    size_t bufferSize = texWidth * texHeight * 4;
-    texture.pixelBuffer.resize(bufferSize);
-    for (size_t i = 0; i < texture.pixelBuffer.size(); i++) {
-        texture.pixelBuffer[i] = pixels[i];
-    }
-
-    stbi_image_free(pixels);
 }

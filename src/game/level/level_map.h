@@ -27,11 +27,14 @@ namespace std {
 
 class LevelMap {
 public:
-    LevelMap(const char* filePath);
+    LevelMap(const char* path);
 
     void getModels(prt::vector<Model>& models);
 private:
+    void loadLevelData(const char* filePath);
+
     prt::vector<prt::vector<uint32_t> > _levelData;
+    prt::vector<std::string> _texturePaths;
 
     void findIsland(LevelIndex lvlIndex, prt::vector<LevelIndex>& island);
     void find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& neighbours);

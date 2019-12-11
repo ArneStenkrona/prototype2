@@ -85,6 +85,7 @@ struct Mesh {
 struct Texture {
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
+    void load(const char* texturePath);
 };
 
 struct Material {

@@ -6,8 +6,15 @@
 
 #include <fstream>
 
-LevelMap::LevelMap(const char* filePath) {
+LevelMap::LevelMap(const char* path) {
+    std::string levelDataPath = std::string(path) + "level.lvl";
+    loadLevelData(levelDataPath.c_str());
 
+    _texturePaths.push_back(std::string(path) + "0.png");
+    _texturePaths.push_back(std::string(path) + "1.png");
+}
+
+void LevelMap::loadLevelData(const char* filePath) {
     FILE* file = fopen(filePath, "r");
     if (file == nullptr) {
         printf("Could not open file '");
@@ -86,10 +93,7 @@ void LevelMap::find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& nei
 
 void LevelMap::getModels(prt::vector<Model>& models) {
     models.resize(0);
-    //prt::vector<Vertex> vertices;
-    //prt::vector<uint32_t> indices;
 
-    //prt::hash_map<LevelIndex, prt::vector<LevelIndex>>
     prt::hash_set<LevelIndex> inIsland;
     prt::vector<prt::vector<LevelIndex> > islands;
     
@@ -125,5 +129,57 @@ void LevelMap::getModels(prt::vector<Model>& models) {
             }
             std::cout << std::endl;
         }
+    }
+    for (size_t isl = 0; isl < islands.size(); isl++) {
+        prt::vector<LevelIndex>& island = islands[isl];
+        models.push_back(Model());
+        Model& mdl = models.back();
+
+        mdl._vertexBuffer.resize(4 * island.size());
+        mdl._indexBuffer.resize(6 * island.size());
+        uint32_t vi = 0;
+        uint32_t ii = 0;
+        for (size_t i = 0; i < island.size(); i++) {
+            size_t& row = island[i].row;
+            size_t& col = island[i].col;
+
+            Vertex v1;
+            v1.pos = glm::vec3{ float(row), 0.0f, float(col) };
+            v1.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+            v1.texCoord = glm::vec2{ 0.0f, 0.0f };
+            Vertex v2;
+            v2.pos = glm::vec3{ float(row + 1), 0.0f, float(col) };
+            v2.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+            v2.texCoord = glm::vec2{ 1.0f, 0.0f };
+            Vertex v3;
+            v3.pos = glm::vec3{ float(row + 1), 0.0f, float(col + 1) };
+            v3.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+            v3.texCoord = glm::vec2{ 1.0f, 1.0f };
+            Vertex v4;
+            v4.pos = glm::vec3{ float(row), 0.0f, float(col + 1) };
+            v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+            v4.texCoord = glm::vec2{ 0.0f, 1.0f };
+            
+            mdl._indexBuffer[ii++] = vi+2;
+            mdl._indexBuffer[ii++] = vi+1;
+            mdl._indexBuffer[ii++] = vi;
+
+            mdl._indexBuffer[ii++] = vi+3;
+            mdl._indexBuffer[ii++] = vi+2;
+            mdl._indexBuffer[ii++] = vi;
+            
+            mdl._vertexBuffer[vi++] = v1;
+            mdl._vertexBuffer[vi++] = v2;
+            mdl._vertexBuffer[vi++] = v3;
+            mdl._vertexBuffer[vi++] = v4;
+
+        }
+        Mesh mesh;
+        mesh.startIndex = 0;
+        mesh.numIndices = mdl._indexBuffer.size();
+        mdl._meshes.push_back(mesh);
+        uint32_t value = _levelData[island[0].row][island[0].col];
+        std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
+        mdl._texture.load(texturePath.c_str());
     }
 }
