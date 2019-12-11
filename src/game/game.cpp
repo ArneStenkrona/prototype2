@@ -4,6 +4,8 @@
 #include "src/entity_component_system/component/component.h"
 #include "src/config/prototype2Config.h"
 
+#include "src/game/level/level_map.h"
+
 #include <chrono>
 #include <thread>
 
@@ -26,6 +28,10 @@ Game::Game()
     prt::vector<uint32_t> modelIDs;
     _scene.getModelIDs(modelIDs);
     _vulkanApp.bindStaticEntities(modelIDs);
+
+    LevelMap map("/Users/arnestenkrona/Documents/repositories/prototype2/res/levels/test.lvl");
+    prt::vector<Model> md;
+    map.getModels(md);
 }
 
 Game::~Game() {
