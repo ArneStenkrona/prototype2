@@ -61,3 +61,19 @@ TEST_CASE( "vector: Test copy assignment operator", "[vector]") {
         REQUIRE(vec2[i] == std::to_string(i));
     }
 }
+
+TEST_CASE( "vector: Test nested", "[vector]") {
+    prt::vector<prt::vector<uint32_t>> test;
+    test.resize(100);
+    for (uint32_t i = 0; i <  test.size(); i++) {
+        test[i].resize(100);
+        for  (uint32_t j = 0; j < test[i].size(); j++) {
+            test[i][j] = i * j + i + j;
+        }
+    }
+    for (uint32_t i = 0; i <  test.size(); i++) {
+        for  (uint32_t j = 0; j < test[i].size(); j++) {
+            REQUIRE(test[i][j] == i * j + i + j);
+        }
+    }
+}
