@@ -12,7 +12,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-
 class Scene {
 public:
     Scene(AssetManager &assetManager);
@@ -29,9 +28,10 @@ private:
         //size_t num = 0;
     } _modelEntities;
 
+    AssetManager &_assetManager;
+
     void resetTransforms();
 
-    AssetManager &_assetManager;
 };
 
 #endif

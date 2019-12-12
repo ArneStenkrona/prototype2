@@ -17,40 +17,10 @@ bool is_file_exist(const char *fileName)
 
 ModelManager::ModelManager(const char* directory)
     : _directory(directory) {
-    loadPersistent(directory);
-    parametric_shapes::Quad quad;
-    quad.width = 20;
-    quad.height = 150;
-    quad.resW = 20;
-    quad.resH = 150;
-    prt::vector<parametric_shapes::Quad> quads = { quad };
-    insertQuads(quads);
-    parametric_shapes::Sphere sphere;
-    sphere.radius = 10.0f;
-    sphere.res = 50;
-    prt::vector<parametric_shapes::Sphere> spheres = { sphere };
-    insertSpheres(spheres);
-    parametric_shapes::Cylinder cylinder;
-    cylinder.radius = 10.0f;
-    cylinder.height = 20.0f;
-    cylinder.res = 50;
-    prt::vector<parametric_shapes::Cylinder> cylinders = { cylinder };
-    insertCylinders(cylinders);
-    parametric_shapes::Capsule capsule;
-    capsule.radius = 10.0f;
-    capsule.height = 40.0f;
-    capsule.res = 50;
-    prt::vector<parametric_shapes::Capsule> capsules = { capsule };
-    insertCapsules(capsules);
-    parametric_shapes::Cuboid cuboid;
-    cuboid.width = 5.0f;
-    cuboid.depth = 8.0f;
-    cuboid.height = 6.0f;
-    prt::vector<parametric_shapes::Cuboid> cuboids = { cuboid };
-    insertCuboids(cuboids);
+    loadPersistentPaths(directory);
 }
 
-void ModelManager::loadPersistent(const char* directory) {
+void ModelManager::loadPersistentPaths(const char* directory) {
     struct dirent *entry;
     DIR *dir = opendir(directory);
     if (dir == NULL) {
@@ -59,7 +29,7 @@ void ModelManager::loadPersistent(const char* directory) {
     // Add default
     std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + directory;
     _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT/model.obj");
-    _texturePaths.insert("DEFAULT", modelAssetPath + "DEFAULT/diffuse.png");
+    _texturePaths.insert("DEFAULT", {modelAssetPath + "DEFAULT/diffuse.png"});
     _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {
         if (strncmp (entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
@@ -69,7 +39,7 @@ void ModelManager::loadPersistent(const char* directory) {
             _modelPaths.insert(modelName, modelAssetPath + modelDir + "/model.obj");
             auto texturePath = is_file_exist((directory + modelDir + "/diffuse.png").c_str()) ?
                                modelAssetPath + modelDir + "/diffuse.png" : modelAssetPath + "DEFAULT/diffuse.png";
-            _texturePaths.insert(modelName, texturePath);
+            _texturePaths.insert(modelName, {texturePath});
             _modelIDs.insert(modelName, nextID++);
         }
     }
@@ -77,13 +47,13 @@ void ModelManager::loadPersistent(const char* directory) {
     closedir(dir);
 }
 
-void ModelManager::getPaths(prt::vector<std::string>& modelPaths, prt::vector<std::string>& texturePaths) {
+void ModelManager::getPaths(prt::vector<std::string>& modelPaths, prt::vector<prt::vector<std::string> >& texturePaths) {
     modelPaths.resize(_modelPaths.size());
     for (auto it = _modelPaths.begin(); it != _modelPaths.end(); it++) {
         uint32_t index = _modelIDs[it->key()];
         modelPaths[index] = it->value();
     }
-    texturePaths.resize(_texturePaths.size());
+    texturePaths.resize(_modelPaths.size());
     for (auto it = _texturePaths.begin(); it != _texturePaths.end(); it++) {
         uint32_t index = _modelIDs[it->key()];
         texturePaths[index] = it->value();
@@ -103,7 +73,7 @@ uint32_t ModelManager::getModelID(const char* name) {
 
 void ModelManager::loadModels(prt::vector<Model>& models) {
     prt::vector<std::string> modelPaths;
-    prt::vector<std::string> texturePaths;
+    prt::vector<prt::vector<std::string> > texturePaths;
     getPaths(modelPaths, texturePaths);
     assert((modelPaths.size() == texturePaths.size()));
     models.resize(nextID);
@@ -112,36 +82,23 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
     
         if (modelStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
             std::string modelPath = modelPaths[i].substr(modelPaths[i].find(AssetManager::persistentStorageString) + 2);
-            loadMeshes(modelPath.c_str(), models[i]._meshes, models[i]._vertexBuffer, models[i]._indexBuffer);
+            loadOBJ(modelPath.c_str(), models[i]);
         } else if (modelStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
             std::string modelPath = modelPaths[i].substr(modelPaths[i].find(AssetManager::NonPersistentStorageString) + 2);
-            prt::vector<std::string> split = string_util::splitString(modelPath, '/');
-            std::string& type = split[1];
-            uint32_t index = std::stoi(split[2]);
-            if (type.compare("QUAD") == 0) {
-                parametric_shapes::createQuad(models[i]._vertexBuffer, models[i]._indexBuffer, _quads[index]);
-            } else if (type.compare("CUBOID") == 0) {
-                parametric_shapes::createCuboid(models[i]._vertexBuffer, models[i]._indexBuffer, _cuboids[index]);
-            } else if (type.compare("SPHERE") == 0) {
-                parametric_shapes::createSphere(models[i]._vertexBuffer, models[i]._indexBuffer, _spheres[index]);
-            } else if (type.compare("CYLINDER") == 0) {
-                parametric_shapes::createCylinder(models[i]._vertexBuffer, models[i]._indexBuffer, _cylinders[index]);
-            } else if (type.compare("CAPSULE") == 0) {
-                parametric_shapes::createCapsule(models[i]._vertexBuffer, models[i]._indexBuffer, _capsules[index]);
-            }
-            Mesh mesh;
-            mesh.startIndex = 0;
-            mesh.numIndices = models[i]._indexBuffer.size();
-            models[i]._meshes.push_back(mesh);
+            loadParametric(modelPath.c_str(), models[i]);
         }
 
-        std::string textureStorage = texturePaths[i].substr(0, texturePaths[i].find("/"));
-    
-        if (textureStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
-            std::string texturePath = texturePaths[i].substr(texturePaths[i].find(AssetManager::persistentStorageString) + 2);
-            models[i]._texture.load(texturePath.c_str());
-        } else if (textureStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
-            // TODO: add loading for non-persistent data
+        prt::vector<std::string>& texPaths = texturePaths[i];
+        for (size_t mi = 0; mi < models[i]._meshes.size(); mi++) {
+            size_t texIdx = mi < texPaths.size() ? mi : 0;
+            std::string textureStorage = texPaths[texIdx].substr(0, texPaths[texIdx].find("/"));
+        
+            if (textureStorage.compare(AssetManager::persistentStorageString) == 0) { // persistent storage
+                std::string texturePath = texPaths[texIdx].substr(texPaths[texIdx].find(AssetManager::persistentStorageString) + 2);
+                models[i]._meshes[mi]._texture.load(texturePath.c_str());
+            } else if (textureStorage.compare(AssetManager::NonPersistentStorageString) == 0) { //  non-persistent storage
+                // TODO: add loading for non-persistent data
+            }
         }
     }
 
@@ -172,11 +129,10 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-void ModelManager::loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes, 
-                                                    prt::vector<Vertex>& vertexBuffer,
-                                                    prt::vector<uint32_t>& indexBuffer) {
-
-    //std::string modelPath = _modelPath;
+void ModelManager::loadOBJ(const char* modelPath, Model& model) {
+    prt::vector<Mesh>& meshes = model._meshes;
+    prt::vector<Vertex>& vertexBuffer = model._vertexBuffer;
+    prt::vector<uint32_t>& indexBuffer = model._indexBuffer;
 
     FILE* file = fopen(modelPath, "r");
     if (file == nullptr) {
@@ -308,4 +264,29 @@ void ModelManager::loadMeshes(const char* modelPath, prt::vector<Mesh>& meshes,
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         vertexBuffer[it->value()] = it->key();
     }
+}
+
+void ModelManager::loadParametric(const char* modelPath, Model& model) {
+    prt::vector<Mesh>& meshes = model._meshes;
+    prt::vector<Vertex>& vertexBuffer = model._vertexBuffer;
+    prt::vector<uint32_t>& indexBuffer = model._indexBuffer;
+
+    prt::vector<std::string> split = string_util::splitString(std::string(modelPath), '/');
+    std::string& type = split[1];
+    uint32_t index = std::stoi(split[2]);
+    if (type.compare("QUAD") == 0) {
+        parametric_shapes::createQuad(vertexBuffer, indexBuffer, _quads[index]);
+    } else if (type.compare("CUBOID") == 0) {
+        parametric_shapes::createCuboid(vertexBuffer, indexBuffer, _cuboids[index]);
+    } else if (type.compare("SPHERE") == 0) {
+        parametric_shapes::createSphere(vertexBuffer, indexBuffer, _spheres[index]);
+    } else if (type.compare("CYLINDER") == 0) {
+        parametric_shapes::createCylinder(vertexBuffer, indexBuffer, _cylinders[index]);
+    } else if (type.compare("CAPSULE") == 0) {
+        parametric_shapes::createCapsule(vertexBuffer, indexBuffer, _capsules[index]);
+    }
+    meshes.push_back(Mesh());
+    Mesh& mesh = meshes.back();
+    mesh.startIndex = 0;
+    mesh.numIndices = indexBuffer.size();
 }

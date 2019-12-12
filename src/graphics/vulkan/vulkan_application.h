@@ -152,8 +152,6 @@ private:
     prt::vector<VkDescriptorSet> descriptorSets;
     // Commands
     prt::vector<VkCommandBuffer> commandBuffers;
-    // Indirect commands
-    //prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
     // Contains the indirect drawing commands
 	VkBuffer indirectCommandBuffer;
     VkDeviceMemory indirectCommandBufferMemory;

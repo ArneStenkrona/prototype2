@@ -180,6 +180,6 @@ void LevelMap::getModels(prt::vector<Model>& models) {
         mdl._meshes.push_back(mesh);
         uint32_t value = _levelData[island[0].row][island[0].col];
         std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
-        mdl._texture.load(texturePath.c_str());
+        mdl._meshes.back()._texture.load(texturePath.c_str());
     }
 }

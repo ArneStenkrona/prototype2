@@ -1045,12 +1045,12 @@ void VulkanApplication::loadModels(prt::vector<Model>& models) {
     assert((models.size() < NUMBER_SUPPORTED_TEXTURES));
 
     for (size_t i = 0; i < models.size(); i++) {
-        createTextureImage(textureImage[i], textureImageMemory[i], models[i]._texture);
+        createTextureImage(textureImage[i], textureImageMemory[i], models[i]._meshes.back()._texture);
         createTextureImageView(textureImageView[i], textureImage[i]);
     }
 
     for (size_t i = models.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
-        createTextureImage(textureImage[i], textureImageMemory[i], models[0]._texture);
+        createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
         createTextureImageView(textureImageView[i], textureImage[0]);
     }
 

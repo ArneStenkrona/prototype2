@@ -13,7 +13,6 @@ Game::Game()
 : _input(),
   _vulkanApp(_input),
   _assetManager(RESOURCE_PATH),
-  //_modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
   _scene(_assetManager),
   _camera(_input),
   _frameRate(FRAME_RATE),

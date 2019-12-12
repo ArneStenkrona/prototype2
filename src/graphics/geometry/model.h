@@ -77,11 +77,6 @@ namespace std {
     };
 }
 
-struct Mesh {
-    size_t startIndex;
-    size_t numIndices;
-};
-
 struct Texture {
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
@@ -92,12 +87,18 @@ struct Material {
     /* TODO: Add members */
 };
 
+struct Mesh {
+    size_t startIndex;
+    size_t numIndices;
+    Texture _texture;
+};
+
+
+
 struct Model {
     prt::vector<Mesh> _meshes;
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
-    //prt::vector<Texture> _meshes; Supposed to be 1 texture per mesh
-    Texture _texture;
 };
 
 #endif
