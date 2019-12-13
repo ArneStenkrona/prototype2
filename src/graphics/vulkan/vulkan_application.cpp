@@ -1063,7 +1063,6 @@ void VulkanApplication::loadModels(const prt::vector<Model>& models) {
     size_t numTex = 0;
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._meshes.size(); j++) {
-            std::cout << numTex << std::endl;
             createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
             createTextureImageView(textureImageView[numTex], textureImage[numTex]);
             numTex++;
@@ -1350,7 +1349,7 @@ void VulkanApplication::createCommandBuffers() {
 
 void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
     _imGuiApplication.newFrame(false);
-    _imGuiApplication.updateBuffers();
+    _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

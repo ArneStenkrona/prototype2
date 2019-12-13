@@ -562,7 +562,7 @@ void ImGuiApplication::newFrame(bool updateFrameGraph)
 }
 
 // Update vertex and index buffer containing the imGui elements when required
-void ImGuiApplication::updateBuffers()
+void ImGuiApplication::updateBuffers(VkFence* pFence, uint32_t nFence)
 {
     ImDrawData* imDrawData = ImGui::GetDrawData();
 
@@ -577,6 +577,8 @@ void ImGuiApplication::updateBuffers()
 
     // Vertex buffer
     if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
+        vkWaitForFences(_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+
         //vertexBuffer.unmap();
 		//vertexBuffer.destroy();
         if (vertexBufferMemory != VK_NULL_HANDLE) {
@@ -603,7 +605,7 @@ void ImGuiApplication::updateBuffers()
 
     // Index buffer
     if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
-        //vkWaitForFences(_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+        vkWaitForFences(_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
         //indexBuffer.unmap();
         //indexBuffer.destroy();
         if (indexBufferMemory != VK_NULL_HANDLE) {
