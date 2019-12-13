@@ -11,12 +11,19 @@ public:
 
     ModelManager& getModelManager() { return _modelManager; };
 
-    inline void loadModels(prt::vector<Model>& models) { _modelManager.loadModels(models); }
+    inline void loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
+                                prt::vector<Model>& models, 
+                                prt::vector<uint32_t>& modelIndices) { _modelManager.loadSceneModels(modelIDs,
+                                                                                                     models,
+                                                                                                     modelIndices);}
 
     static constexpr const char* persistentStorageString = "P:";
     static constexpr const char* NonPersistentStorageString = "N:";
 
+    std::string getDirectory() const { return _assetDirectory; }
+
 private:
+    std::string _assetDirectory;
     ModelManager _modelManager;
 };
 

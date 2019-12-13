@@ -18,13 +18,21 @@ Game::Game()
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
+
     _input.init(_vulkanApp.getWindow());
-    prt::vector<Model> models;
+
+    /*prt::vector<Model> models;
     _assetManager.loadModels(models);
     _vulkanApp.loadModels(models);
+
     prt::vector<uint32_t> modelIDs;
     _scene.getModelIDs(modelIDs);
-    _vulkanApp.bindStaticEntities(modelIDs);
+    
+    _vulkanApp.bindStaticEntities(modelIDs);*/
+    prt::vector<Model> models;
+    prt::vector<uint32_t> modelIndices;
+    _scene.getEntities(models, modelIndices);
+    _vulkanApp.bindEntities(models, modelIndices);
 }
 
 Game::~Game() {

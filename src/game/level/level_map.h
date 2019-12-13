@@ -29,7 +29,7 @@ class LevelMap {
 public:
     LevelMap(const char* path);
 
-    void getModels(prt::vector<Model>& models);
+    void loadModel(Model& model);
 private:
     void loadLevelData(const char* filePath);
 

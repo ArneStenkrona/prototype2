@@ -47,7 +47,7 @@ public:
 	void newFrame(bool updateFrameGraph);
 
 	// Update vertex and index buffer containing the imGui elements when required
-	void updateBuffers(VkFence* pFence, uint32_t nFence);
+	void updateBuffers();
 
 	void updateInput(float width, float height, float deltaTime);
 

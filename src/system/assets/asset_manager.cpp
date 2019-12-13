@@ -4,5 +4,6 @@
 #include <cstring>
 
 AssetManager::AssetManager(const char* assetDirectory)
-    :_modelManager((std::string(assetDirectory) + "/models/").c_str()) {
+    : _assetDirectory(assetDirectory),
+      _modelManager((_assetDirectory + "/models/").c_str()) {
 }

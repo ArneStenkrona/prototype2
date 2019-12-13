@@ -79,7 +79,9 @@ public:
                 float deltaTime);
     void cleanup();
 
-    void loadModels(prt::vector<Model>& models);
+
+    void bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
+    void loadModels(const prt::vector<Model>& models);
     void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return _window; }
@@ -139,6 +141,13 @@ private:
     prt::array<uint32_t, 2> pushConstants;
     // Entities
     prt::vector<uint32_t> _modelIDs;
+
+    // struct RenderJob {
+    //     uint32_t _modelID;
+    //     uint32_t _imgIdx;
+    // };
+    // prt::vector<RenderJob> _renderJobs;
+
     // Models data;
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
@@ -231,12 +240,12 @@ private:
     
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
     
-    void createVertexBuffer(prt::vector<Model>& models);
+    void createVertexBuffer(const prt::vector<Model>& models);
 
     
-    void createIndexBuffer(prt::vector<Model>& models);
+    void createIndexBuffer(const prt::vector<Model>& models);
 
-    void createIndirectCommandBuffer(prt::vector<Model>& models);
+    void createIndirectCommandBuffer(const prt::vector<Model>& models);
     
     void createUniformBuffers();
     

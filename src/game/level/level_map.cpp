@@ -60,7 +60,6 @@ void LevelMap::findIsland(LevelIndex lvlIndex, prt::vector<LevelIndex>& island) 
         for (size_t i = 0; i < neighbours.size(); i++)  {
             LevelIndex& neigh = neighbours[i];
             if (visited.find(neigh) == visited.end()) {
-                std::cout << neigh.row << ", " << neigh.col << std::endl;
                 if (_levelData[neigh.row][neigh.col] == value) {
                     island.push_back(neigh);
                     stack.push_back(neigh);
@@ -91,9 +90,7 @@ void LevelMap::find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& nei
 }
 
 
-void LevelMap::getModels(prt::vector<Model>& models) {
-    models.resize(0);
-
+void LevelMap::loadModel(Model& model) {
     prt::hash_set<LevelIndex> inIsland;
     prt::vector<prt::vector<LevelIndex> > islands;
     
@@ -109,34 +106,12 @@ void LevelMap::getModels(prt::vector<Model>& models) {
             }
         }
     }
-
-    for (size_t isl = 0; isl < islands.size(); isl++) {
-        prt::vector<prt::vector<char> > prints;
-        prints.resize(_levelData.size());
-        for (size_t i = 0; i < prints.size(); i++) {
-            prints[i].resize(_levelData[0].size(), '-');
-        }
-
-        std::cout << "_______________________" << std::endl;
-        for (size_t i = 0; i < islands[isl].size(); i++) {
-            LevelIndex& idx = islands[isl][i];
-            prints[idx.row][idx.col] = '#';
-        }
-
-        for (size_t i = 0; i < prints.size(); i++) {
-            for (size_t j = 0; j < prints[i].size(); j++) {
-                std::cout << prints[i][j];
-            }
-            std::cout << std::endl;
-        }
-    }
+    uint32_t indexOffset = 0;
+    model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
+    model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
     for (size_t isl = 0; isl < islands.size(); isl++) {
         prt::vector<LevelIndex>& island = islands[isl];
-        models.push_back(Model());
-        Model& mdl = models.back();
 
-        mdl._vertexBuffer.resize(4 * island.size());
-        mdl._indexBuffer.resize(6 * island.size());
         uint32_t vi = 0;
         uint32_t ii = 0;
         for (size_t i = 0; i < island.size(); i++) {
@@ -160,26 +135,26 @@ void LevelMap::getModels(prt::vector<Model>& models) {
             v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
             v4.texCoord = glm::vec2{ 0.0f, 1.0f };
             
-            mdl._indexBuffer[ii++] = vi+2;
-            mdl._indexBuffer[ii++] = vi+1;
-            mdl._indexBuffer[ii++] = vi;
+            model._indexBuffer[indexOffset + ii++] = vi+2;
+            model._indexBuffer[indexOffset + ii++] = vi+1;
+            model._indexBuffer[indexOffset + ii++] = vi;
 
-            mdl._indexBuffer[ii++] = vi+3;
-            mdl._indexBuffer[ii++] = vi+2;
-            mdl._indexBuffer[ii++] = vi;
+            model._indexBuffer[indexOffset + ii++] = vi+3;
+            model._indexBuffer[indexOffset + ii++] = vi+2;
+            model._indexBuffer[indexOffset + ii++] = vi;
             
-            mdl._vertexBuffer[vi++] = v1;
-            mdl._vertexBuffer[vi++] = v2;
-            mdl._vertexBuffer[vi++] = v3;
-            mdl._vertexBuffer[vi++] = v4;
-
+            model._vertexBuffer[vi++] = v1;
+            model._vertexBuffer[vi++] = v2;
+            model._vertexBuffer[vi++] = v3;
+            model._vertexBuffer[vi++] = v4;
         }
         Mesh mesh;
-        mesh.startIndex = 0;
-        mesh.numIndices = mdl._indexBuffer.size();
-        mdl._meshes.push_back(mesh);
+        mesh.startIndex = indexOffset;
+        mesh.numIndices = ii;
+        indexOffset += ii;
+        model._meshes.push_back(mesh);
         uint32_t value = _levelData[island[0].row][island[0].col];
         std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
-        mdl._meshes.back()._texture.load(texturePath.c_str());
+        model._meshes.back()._texture.load(texturePath.c_str());
     }
 }

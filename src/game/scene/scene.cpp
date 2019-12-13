@@ -1,4 +1,7 @@
 #include "scene.h"
+
+#include "src/game/level/level_map.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
@@ -20,6 +23,17 @@ Scene::Scene(AssetManager &assetManager)
         _modelEntities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
         _modelEntities.scales[i] = glm::vec3{1.0f,1.0f,1.0f};
     }
+}
+
+void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
+    prt::vector<uint32_t> modelIDs;
+    modelIDs.resize(MAXIMUM_MODEL_ENTITIES);
+    for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
+        modelIDs[i] = _modelEntities.modelIDs[i];
+    }
+    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
+    //LevelMap levelMap((_assetManager.getDirectory() +  "levels/test/").c_str());
+    //levelMap.loadModel(models[0]);
 }
 
 void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {

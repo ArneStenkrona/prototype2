@@ -4,6 +4,8 @@
 
 #include "src/util/string_util.h"
 
+#include "src/container/hash_map.h"
+
 #include <dirent.h>
 #include <fstream>
 
@@ -15,12 +17,12 @@ bool is_file_exist(const char *fileName)
     return infile.good();
 }
 
-ModelManager::ModelManager(const char* directory)
-    : _directory(directory) {
-    loadPersistentPaths(directory);
+ModelManager::ModelManager(const char* modelDirectory)
+    : _modelDirectory(modelDirectory) {
+    loadOBJPaths(modelDirectory);
 }
 
-void ModelManager::loadPersistentPaths(const char* directory) {
+void ModelManager::loadOBJPaths(const char* directory) {
     struct dirent *entry;
     DIR *dir = opendir(directory);
     if (dir == NULL) {
@@ -30,6 +32,7 @@ void ModelManager::loadPersistentPaths(const char* directory) {
     std::string modelAssetPath = std::string(AssetManager::persistentStorageString) + directory;
     _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT/model.obj");
     _texturePaths.insert("DEFAULT", {modelAssetPath + "DEFAULT/diffuse.png"});
+    _idToName.insert(nextID, "DEFAULT");
     _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {
         if (strncmp (entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
@@ -40,6 +43,7 @@ void ModelManager::loadPersistentPaths(const char* directory) {
             auto texturePath = is_file_exist((directory + modelDir + "/diffuse.png").c_str()) ?
                                modelAssetPath + modelDir + "/diffuse.png" : modelAssetPath + "DEFAULT/diffuse.png";
             _texturePaths.insert(modelName, {texturePath});
+            _idToName.insert(nextID, modelName);
             _modelIDs.insert(modelName, nextID++);
         }
     }
@@ -47,16 +51,15 @@ void ModelManager::loadPersistentPaths(const char* directory) {
     closedir(dir);
 }
 
-void ModelManager::getPaths(prt::vector<std::string>& modelPaths, prt::vector<prt::vector<std::string> >& texturePaths) {
-    modelPaths.resize(_modelPaths.size());
-    for (auto it = _modelPaths.begin(); it != _modelPaths.end(); it++) {
-        uint32_t index = _modelIDs[it->key()];
-        modelPaths[index] = it->value();
-    }
-    texturePaths.resize(_modelPaths.size());
-    for (auto it = _texturePaths.begin(); it != _texturePaths.end(); it++) {
-        uint32_t index = _modelIDs[it->key()];
-        texturePaths[index] = it->value();
+void ModelManager::getPaths(const prt::vector<uint32_t>& uniqueIDs, 
+              prt::vector<std::string>& modelPaths, 
+              prt::vector<prt::vector<std::string> >& texturePaths) {
+    modelPaths.resize(uniqueIDs.size());
+    texturePaths.resize(uniqueIDs.size());
+    for (size_t i = 0; i < uniqueIDs.size(); i++) {
+        std::string& name = _idToName[uniqueIDs[i]];
+        modelPaths[i] = _modelPaths[name];
+        texturePaths[i] = _texturePaths[name];
     }
 }
 
@@ -71,12 +74,12 @@ uint32_t ModelManager::getModelID(const char* name) {
     return getModelID(name_str);
 }
 
-void ModelManager::loadModels(prt::vector<Model>& models) {
+void ModelManager::loadModels(const prt::vector<uint32_t>& uniqueIDs, prt::vector<Model>& models) {
     prt::vector<std::string> modelPaths;
     prt::vector<prt::vector<std::string> > texturePaths;
-    getPaths(modelPaths, texturePaths);
+    getPaths(uniqueIDs, modelPaths, texturePaths);
     assert((modelPaths.size() == texturePaths.size()));
-    models.resize(nextID);
+    models.resize(uniqueIDs.size());
     for (uint32_t i = 0; i < modelPaths.size(); i++) {
         std::string modelStorage = modelPaths[i].substr(0, modelPaths[i].find("/"));
     
@@ -101,8 +104,23 @@ void ModelManager::loadModels(prt::vector<Model>& models) {
             }
         }
     }
+}
 
- 
+void ModelManager::loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
+                                   prt::vector<Model>& models, 
+                                   prt::vector<uint32_t>& modelIndices) {
+    modelIndices.resize(modelIDs.size());                                  
+    prt::hash_map<uint32_t, uint32_t> idToIndex;
+    prt::vector<uint32_t> uniqueIDs;
+    for (size_t i = 0; i < modelIDs.size(); i++) {
+        const uint32_t& indx = modelIDs[i];
+        if (idToIndex.find(indx) == idToIndex.end()) {
+            idToIndex.insert(indx, uniqueIDs.size());
+            uniqueIDs.push_back(indx);
+        }
+        modelIndices[i] = idToIndex[indx];
+    }
+    loadModels(uniqueIDs, models);
 }
 
 // Helper function for counting _meshes and indices in obj file.
@@ -123,9 +141,7 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
         // Get next header
         res = fscanf(file, "%s%*[^\n]", lineHeader);
     }
-
     numMesh = numMesh == 0 ? 1 : numMesh;
-
     rewind(file);
 }
 
@@ -198,8 +214,7 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
             }
             // This will be overwritten unless we've reached
             // the final mesh.
-            meshes[meshCount].numIndices = 
-                indexCount - indexBuffer.size();
+            meshes[meshCount].numIndices = indexBuffer.size() - indexCount;
 
             meshCount++;
 
@@ -266,12 +281,12 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
     }
 }
 
-void ModelManager::loadParametric(const char* modelPath, Model& model) {
+void ModelManager::loadParametric(const char* parametricPath, Model& model) {
     prt::vector<Mesh>& meshes = model._meshes;
     prt::vector<Vertex>& vertexBuffer = model._vertexBuffer;
     prt::vector<uint32_t>& indexBuffer = model._indexBuffer;
 
-    prt::vector<std::string> split = string_util::splitString(std::string(modelPath), '/');
+    prt::vector<std::string> split = string_util::splitString(std::string(parametricPath), '/');
     std::string& type = split[1];
     uint32_t index = std::stoi(split[2]);
     if (type.compare("QUAD") == 0) {

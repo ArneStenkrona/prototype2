@@ -173,8 +173,8 @@ namespace prt
 
         inline bool empty() const { return _size == 0; }
 
-        inline T& front() const { return _data[0]; }
-        inline T& back() const { return _data[_size - 1]; }
+        inline T& front() const { assert(!empty()); return _data[0]; }
+        inline T& back() const { assert(!empty()); return _data[_size - 1]; }
 
         inline size_t size() const { return _size; }
         inline size_t capacity() const { return _capacity; }

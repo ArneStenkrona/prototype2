@@ -16,7 +16,8 @@ class Scene {
 public:
     Scene(AssetManager &assetManager);
 
-    void getModelIDs(prt::vector<uint32_t>& modelIDs);
+    void getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices);
+
     void getTransformMatrixes(prt::vector<glm::mat4>& transformMatrices);
     
 private:
@@ -28,9 +29,10 @@ private:
         //size_t num = 0;
     } _modelEntities;
 
-    AssetManager &_assetManager;
+    AssetManager& _assetManager;
 
     void resetTransforms();
+    void getModelIDs(prt::vector<uint32_t>& modelIDs);
 
 };
 
