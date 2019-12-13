@@ -82,7 +82,7 @@ public:
 
     void bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
     void loadModels(const prt::vector<Model>& models);
-    void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
+    //void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = width; h = height; };
@@ -140,13 +140,13 @@ private:
     // Push constants
     prt::array<uint32_t, 2> pushConstants;
     // Entities
-    prt::vector<uint32_t> _modelIDs;
+    //prt::vector<uint32_t> _modelIDs;
 
-    // struct RenderJob {
-    //     uint32_t _modelID;
-    //     uint32_t _imgIdx;
-    // };
-    // prt::vector<RenderJob> _renderJobs;
+    struct RenderJob {
+        uint32_t _modelMatrixIdx;
+        uint32_t _imgIdx;
+    };
+    prt::vector<RenderJob> _renderJobs;
 
     // Models data;
     VkBuffer vertexBuffer;

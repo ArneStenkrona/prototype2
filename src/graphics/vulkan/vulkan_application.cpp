@@ -1039,57 +1039,38 @@ void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt
     loadModels(models);
     createIndirectCommandBuffer(models);
     recreateSwapChain();
-    bindStaticEntities(modelIndices);
-    // createIndirectCommandBuffer(models);
-    // recreateSwapChain();
 
-    // for (size_t i = 0; i < modelIndices.size(); i++) {
-    //     const Model& model = models[modelIndices[i]];
-    //     for (size_t j = 0; j < model._meshes.size(); j++) {
-    //         RenderJob renderJob;
-    //         renderJob._modelID = modelIndices[i];
-    //         renderJob._imgIdx = modelIndices[i] + j;
-    //         _renderJobs.push_back(renderJob);
-    //     }
-    // }
-    // createCommandBuffers();
+    for (size_t i = 0; i < modelIndices.size(); i++) {
+        const Model& model = models[modelIndices[i]];
+        for (size_t j = 0; j < model._meshes.size(); j++) {
+            RenderJob renderJob;
+            renderJob._modelMatrixIdx = i;
+            renderJob._imgIdx = modelIndices[i] + j;
+            _renderJobs.push_back(renderJob);
+        }
+    }
+    createCommandBuffers();
 }
 
 void VulkanApplication::loadModels(const prt::vector<Model>& models) {
-    // assert(!models.empty());
-    // for (size_t i = 0; i < pushConstants.size(); i++) {
-    //     pushConstants[i] = i;
-    // }
-    // createVertexBuffer(models);
-    // createIndexBuffer(models);
-
-    // size_t numTex = 0;
-    // for (size_t i = 0; i < models.size(); i++) {
-    //     for (size_t j = 0; j < models[i]._meshes.size(); j++) {
-    //         createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
-    //         createTextureImageView(textureImageView[numTex], textureImage[numTex]);
-    //         numTex++;
-    //     }
-    // }
-
-    // for (size_t i = numTex; i < NUMBER_SUPPORTED_TEXTURES; i++) {
-    //     createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
-    //     createTextureImageView(textureImageView[i], textureImage[0]);
-    // }
     assert(!models.empty());
     for (size_t i = 0; i < pushConstants.size(); i++) {
         pushConstants[i] = i;
     }
     createVertexBuffer(models);
     createIndexBuffer(models);
-    assert((models.size() < NUMBER_SUPPORTED_TEXTURES));
 
+    size_t numTex = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        createTextureImage(textureImage[i], textureImageMemory[i], models[i]._meshes.back()._texture);
-        createTextureImageView(textureImageView[i], textureImage[i]);
+        for (size_t j = 0; j < models[i]._meshes.size(); j++) {
+            std::cout << numTex << std::endl;
+            createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
+            createTextureImageView(textureImageView[numTex], textureImage[numTex]);
+            numTex++;
+        }
     }
 
-    for (size_t i = models.size(); i < NUMBER_SUPPORTED_TEXTURES; i++) {
+    for (size_t i = numTex; i < NUMBER_SUPPORTED_TEXTURES; i++) {
         createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
         createTextureImageView(textureImageView[i], textureImage[0]);
     }
@@ -1125,21 +1106,10 @@ void VulkanApplication::createIndexBuffer(const prt::vector<Model>& models) {
 void VulkanApplication::createIndirectCommandBuffer(const prt::vector<Model>& models) {
     prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
     size_t indexOffset = 0;
-    // for (size_t i = 0; i < models.size(); i++) {
-    //     VkDrawIndexedIndirectCommand indirectCmd{};
-	// 	indirectCmd.instanceCount = 1;
-	// 	indirectCmd.firstInstance = i;
-	// 	indirectCmd.firstIndex = indexOffset;
-	// 	indirectCmd.indexCount = models[i]._indexBuffer.size();
-
-    //     indirectCommands.push_back(indirectCmd);
-
-    //     indexOffset += models[i]._indexBuffer.size();
-    // }
     size_t firstInstance = 0;
     for (size_t i = 0; i < models.size(); i++) {
         const Model& model = models[i];
-        for (size_t  j = 0; j < 1/*model._meshes.size()*/; j++) {
+        for (size_t  j = 0; j < model._meshes.size(); j++) {
             const Mesh& mesh = model._meshes[j];
             VkDrawIndexedIndirectCommand indirectCmd{};
             indirectCmd.instanceCount = 1;
@@ -1300,10 +1270,10 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
-    _modelIDs = modelIDs;
-    createCommandBuffers();
-}
+// void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
+//     _modelIDs = modelIDs;
+//     createCommandBuffers();
+// }
 
 VkCommandBuffer VulkanApplication::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -1408,7 +1378,7 @@ void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
     
     vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     
-    if (_modelIDs.size() > 0) {
+    if (_renderJobs.size() > 0) {
         VkBuffer vertexBuffers[] = {vertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
@@ -1418,27 +1388,17 @@ void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
 
         // Issue indirect commands
-        for (size_t j = 0; j < _modelIDs.size(); j++)
-        {
+        for (size_t j = 0; j < _renderJobs.size(); j++) {
             vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), (void *)&j );
+                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                                0, sizeof(uint32_t), (void *)&_renderJobs[j]._modelMatrixIdx );
             vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_modelIDs[j] );
+                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                                sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_renderJobs[j]._imgIdx );
             vkCmdDrawIndexedIndirect(commandBuffers[imageIndex], indirectCommandBuffer, 
-                                        _modelIDs[j] * sizeof(VkDrawIndexedIndirectCommand), 
+                                        _renderJobs[j]._imgIdx * sizeof(VkDrawIndexedIndirectCommand), 
                                         1, sizeof(VkDrawIndexedIndirectCommand));
         }
-        // for (size_t j = 0; j < _renderJobs.size(); j++) {
-        //     vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-        //                         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-        //                         0, sizeof(uint32_t), (void *)&_renderJobs[j]._modelID );
-        //     vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-        //                         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-        //                         sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_renderJobs[j]._imgIdx );
-        //     vkCmdDrawIndexedIndirect(commandBuffers[imageIndex], indirectCommandBuffer, 
-        //                                 j * sizeof(VkDrawIndexedIndirectCommand), 
-        //                                 1, sizeof(VkDrawIndexedIndirectCommand));
-        // }
     }
     _imGuiApplication.drawFrame(commandBuffers[imageIndex]);
 

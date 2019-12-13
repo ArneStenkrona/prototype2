@@ -109,11 +109,11 @@ void LevelMap::loadModel(Model& model) {
     uint32_t indexOffset = 0;
     model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
     model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
+    uint32_t vi = 0;
+    uint32_t ii = 0;
     for (size_t isl = 0; isl < islands.size(); isl++) {
         prt::vector<LevelIndex>& island = islands[isl];
 
-        uint32_t vi = 0;
-        uint32_t ii = 0;
         for (size_t i = 0; i < island.size(); i++) {
             size_t& row = island[i].row;
             size_t& col = island[i].col;
@@ -135,13 +135,13 @@ void LevelMap::loadModel(Model& model) {
             v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
             v4.texCoord = glm::vec2{ 0.0f, 1.0f };
             
-            model._indexBuffer[indexOffset + ii++] = vi+2;
-            model._indexBuffer[indexOffset + ii++] = vi+1;
-            model._indexBuffer[indexOffset + ii++] = vi;
+            model._indexBuffer[ii++] = vi+2;
+            model._indexBuffer[ii++] = vi+1;
+            model._indexBuffer[ii++] = vi;
 
-            model._indexBuffer[indexOffset + ii++] = vi+3;
-            model._indexBuffer[indexOffset + ii++] = vi+2;
-            model._indexBuffer[indexOffset + ii++] = vi;
+            model._indexBuffer[ii++] = vi+3;
+            model._indexBuffer[ii++] = vi+2;
+            model._indexBuffer[ii++] = vi;
             
             model._vertexBuffer[vi++] = v1;
             model._vertexBuffer[vi++] = v2;
