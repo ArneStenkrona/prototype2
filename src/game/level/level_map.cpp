@@ -89,50 +89,106 @@ void LevelMap::find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& nei
     }
 }
 
+// void LevelMap::loadModel(Model& model) {
+//     model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
+//     model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
+
+//     prt::hash_map<uint32_t, uint32_t> valueToMesh;
+//     prt::vector<prt::vector<LevelIndex> > indexPerMesh;
+//     uint32_t nMeshes = 0;
+//     for (size_t row = 0; row < _levelData.size(); row++) {
+//         for (size_t col = 0; col < _levelData[0].size(); col++) {
+//             uint32_t val = _levelData[row][col];
+//             if (valueToMesh.find(val) == valueToMesh.end()) {
+//                 valueToMesh.insert(val, nMeshes++);
+//                 indexPerMesh.resize(nMeshes);
+//             }
+//             uint32_t meshIndx = valueToMesh.find(val)->value();
+//             indexPerMesh[meshIndx].push_back({row, col});
+//         }
+//     }
+
+//     model._meshes.resize(nMeshes);
+//     uint32_t vi = 0;
+//     uint32_t ii = 0;
+//     uint32_t indexOffset = 0;
+//     for (size_t i = 0; i < indexPerMesh.size(); i++) {
+//         for (size_t j = 0; j < indexPerMesh[i].size(); j++) {
+//             size_t& row = indexPerMesh[i][j].row;
+//             size_t& col = indexPerMesh[i][j].col;
+
+//             Vertex v1;
+//             v1.pos = glm::vec3{ float(row), 0.0f, float(col) };
+//             v1.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+//             v1.texCoord = glm::vec2{ 0.0f, 0.0f };
+//             Vertex v2;
+//             v2.pos = glm::vec3{ float(row + 1), 0.0f, float(col) };
+//             v2.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+//             v2.texCoord = glm::vec2{ 1.0f, 0.0f };
+//             Vertex v3;
+//             v3.pos = glm::vec3{ float(row + 1), 0.0f, float(col + 1) };
+//             v3.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+//             v3.texCoord = glm::vec2{ 1.0f, 1.0f };
+//             Vertex v4;
+//             v4.pos = glm::vec3{ float(row), 0.0f, float(col + 1) };
+//             v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
+//             v4.texCoord = glm::vec2{ 0.0f, 1.0f };
+            
+//             model._indexBuffer[ii++] = vi+2;
+//             model._indexBuffer[ii++] = vi+1;
+//             model._indexBuffer[ii++] = vi;
+
+//             model._indexBuffer[ii++] = vi+3;
+//             model._indexBuffer[ii++] = vi+2;
+//             model._indexBuffer[ii++] = vi;
+            
+//             model._vertexBuffer[vi++] = v1;
+//             model._vertexBuffer[vi++] = v2;
+//             model._vertexBuffer[vi++] = v3;
+//             model._vertexBuffer[vi++] = v4;
+//         }
+//         Mesh& mesh = model._meshes[i];
+//         mesh.startIndex = indexOffset;
+//         mesh.numIndices = ii;
+//         indexOffset += ii;
+//         uint32_t value = _levelData[indexPerMesh[i][0].row][indexPerMesh[i][0].col];
+//         std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
+//         mesh.texture.load(texturePath.c_str());
+//     }
+// }
+
 void LevelMap::loadModel(Model& model) {
+    uint32_t texRes = 32;
+
     model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
     model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
 
-    prt::hash_map<uint32_t, uint32_t> valueToMesh;
-    prt::vector<prt::vector<LevelIndex> > indexPerMesh;
-    uint32_t nMeshes = 0;
-    for (size_t row = 0; row < _levelData.size(); row++) {
-        for (size_t col = 0; col < _levelData[0].size(); col++) {
-            uint32_t val = _levelData[row][col];
-            if (valueToMesh.find(val) == valueToMesh.end()) {
-                valueToMesh.insert(val, nMeshes++);
-                indexPerMesh.resize(nMeshes);
-            }
-            uint32_t meshIndx = valueToMesh.find(val)->value();
-            indexPerMesh[meshIndx].push_back({row, col});
-        }
-    }
-
-    model._meshes.resize(nMeshes);
     uint32_t vi = 0;
     uint32_t ii = 0;
-    uint32_t indexOffset = 0;
-    for (size_t i = 0; i < indexPerMesh.size(); i++) {
-        for (size_t j = 0; j < indexPerMesh[i].size(); j++) {
-            size_t& row = indexPerMesh[i][j].row;
-            size_t& col = indexPerMesh[i][j].col;
+    for (size_t row = 0; row < _levelData.size(); row++) {
+        for (size_t col = 0; col < _levelData[0].size(); col++) {
+            float texX0 = float(col) / float(_levelData[0].size());
+            float texX1 = float(col + 1) / float(_levelData[0].size());
+            float texY0 = float(row) / float(_levelData.size());
+            float texY1 = float(row + 1) / float(_levelData.size());
+
 
             Vertex v1;
-            v1.pos = glm::vec3{ float(row), 0.0f, float(col) };
+            v1.pos = glm::vec3{ float(col), 0.0f, float(row) };
             v1.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
-            v1.texCoord = glm::vec2{ 0.0f, 0.0f };
+            v1.texCoord = glm::vec2{ texX0, texY0 };
             Vertex v2;
-            v2.pos = glm::vec3{ float(row + 1), 0.0f, float(col) };
+            v2.pos = glm::vec3{ float(col + 1), 0.0f, float(row) };
             v2.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
-            v2.texCoord = glm::vec2{ 1.0f, 0.0f };
+            v2.texCoord = glm::vec2{ texX1, texY0 };
             Vertex v3;
-            v3.pos = glm::vec3{ float(row + 1), 0.0f, float(col + 1) };
+            v3.pos = glm::vec3{ float(col + 1), 0.0f, float(row + 1) };
             v3.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
-            v3.texCoord = glm::vec2{ 1.0f, 1.0f };
+            v3.texCoord = glm::vec2{ texX1, texY1 };
             Vertex v4;
-            v4.pos = glm::vec3{ float(row), 0.0f, float(col + 1) };
+            v4.pos = glm::vec3{ float(col), 0.0f, float(row + 1) };
             v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
-            v4.texCoord = glm::vec2{ 0.0f, 1.0f };
+            v4.texCoord = glm::vec2{ texX0, texY1 };
             
             model._indexBuffer[ii++] = vi+2;
             model._indexBuffer[ii++] = vi+1;
@@ -147,14 +203,13 @@ void LevelMap::loadModel(Model& model) {
             model._vertexBuffer[vi++] = v3;
             model._vertexBuffer[vi++] = v4;
         }
-        Mesh& mesh = model._meshes[i];
-        mesh.startIndex = indexOffset;
-        mesh.numIndices = ii;
-        indexOffset += ii;
-        //uint32_t value = _levelData[indexPerMesh[i][0].row][indexPerMesh[i][0].col];
-        //std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
-        createTexture(mesh._texture, 1);
     }
+
+    model._meshes.push_back(Mesh());
+    Mesh& mesh = model._meshes.back();
+    mesh.startIndex = 0;
+    mesh.numIndices = ii;
+    createTexture(mesh._texture, texRes);
 }
 
 void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
@@ -168,20 +223,49 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
         for (size_t col = 0; col < _levelData[0].size(); col++) {
             for (size_t y = 0; y < resolution; y++) {
                 for (size_t x = 0; x < resolution; x++) {
-                    auto lvlIndexOffset = texture.texChannels * resolution * row * _levelData[0].size() +
-                                          texture.texChannels * resolution * col;
+                    auto yOffset = texture.texChannels * resolution * resolution * row * _levelData[0].size() +
+                                   texture.texChannels * resolution * _levelData[0].size() * y;
 
-                    auto pixelOffset = texture.texChannels * resolution * y +
-                                       texture.texChannels * x;
+                    auto xOffset = texture.texChannels * resolution * col +
+                                   texture.texChannels * x;
 
-                    char r = 0xff;
+                    size_t bottom = row > 0 ? row - 1 : row;
+                    size_t top = row + 1 < _levelData.size() ? row + 1 : row;
+                    size_t left = col + 1 < _levelData[0].size() ? col + 1 : col;
+                    size_t right = col > 0 ? col - 1 : col;
+                    LevelIndex qx = x > resolution / 2 ? LevelIndex{row, left} : LevelIndex{row, right};
+                    LevelIndex qy = y > resolution / 2 ? LevelIndex{top, col} : LevelIndex{bottom, col};
+                    LevelIndex qxy = LevelIndex{qy.row, qx.col};
+
+                    float center = float(resolution - 1) / float(2);
+                    uint32_t val = _levelData[row][col];
+                    uint32_t xVal = _levelData[qx.row][qx.col];
+                    uint32_t yVal = _levelData[qy.row][qy.col];
+                    uint32_t xyVal = _levelData[qxy.row][qxy.col];
+                    float xDist = 2 * float(x > resolution / 2 ? 1.0f : -1.0f) * (float(x) - center) / float(resolution - 1);
+                    xDist = std::max(0.0f, xDist);
+                    float yDist = 2 * float(y > resolution / 2 ? 1.0f : -1.0f) * (float(y) - center) / float(resolution - 1);
+                    yDist = std::max(0.0f, yDist);
+
+                    float xf = val == xVal ? 1.0f : 0.0f;
+                    float yf = val == yVal ? 1.0f : 0.0f;
+                    float xyf = val == xyVal ? 1.0f : 0.0f;
+
+                    float fc = (1.0f - xDist) * (1.0f - yDist) + xf * xDist * (1.0f - yDist) + yf * (1.0f - xDist) * yDist + xyf * xf * yf * xDist * yDist;
+
+                    //fc = (1.0f - xyDist) * xyf;
+
+                    //float distCenter = std::sqrt(std::pow(float(x) - center, 2) + std::pow(float(y) - center, 2)) / (std::sqrt(2) * float(resolution - 1));
+                    uint8_t color = fc > 0.1f ? 0xff : 0x00;//static_cast<uint8_t>(0xff * fc);
+                    char r = 0x00;
                     char g = 0x00;
                     char b = 0x00;
                     char a = 0xff;
-                    texture.pixelBuffer[lvlIndexOffset + pixelOffset] = r;
-                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 1] = g;
-                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 2] = b;
-                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 3] = a;
+                    if (val == 0) r = color; else g = color;
+                    texture.pixelBuffer[yOffset + xOffset] = r;
+                    texture.pixelBuffer[yOffset + xOffset + 1] = g;
+                    texture.pixelBuffer[yOffset + xOffset + 2] = b;
+                    texture.pixelBuffer[yOffset + xOffset + 3] = a;
                 }
             }
         }
