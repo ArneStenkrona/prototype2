@@ -33,6 +33,8 @@ public:
 private:
     void loadLevelData(const char* filePath);
 
+    void createTexture(Texture& texture, uint32_t resolution);
+
     prt::vector<prt::vector<uint32_t> > _levelData;
     prt::vector<std::string> _texturePaths;
 

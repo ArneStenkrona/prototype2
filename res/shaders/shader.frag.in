@@ -8,7 +8,7 @@ layout(set = 0, binding = 1) uniform texture2D textures[@NUMBER_SUPPORTED_TEXTUR
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 model[10];
+    mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
     mat4 view;
     mat4 proj;
     vec3 viewPos;

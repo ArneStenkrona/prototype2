@@ -62,7 +62,7 @@ struct SwapChainSupportDetails {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model[MAXIMUM_MODEL_ENTITIES];
+    alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
@@ -82,7 +82,6 @@ public:
 
     void bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
     void loadModels(const prt::vector<Model>& models);
-    //void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
 
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = width; h = height; };

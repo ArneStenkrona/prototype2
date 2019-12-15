@@ -89,34 +89,33 @@ void LevelMap::find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& nei
     }
 }
 
-
 void LevelMap::loadModel(Model& model) {
-    prt::hash_set<LevelIndex> inIsland;
-    prt::vector<prt::vector<LevelIndex> > islands;
-    
-    for (size_t i = 0; i < _levelData.size(); i++) {
-        for (size_t j = 0; j < _levelData.size(); j++) {
-            if (inIsland.find({i, j}) == inIsland.end()) {
-                prt::vector<LevelIndex> island;
-                findIsland({i, j}, island);
-                islands.push_back(island);
-                for (size_t k = 0; k < island.size(); k++) {
-                    inIsland.insert(island[k]);
-                }
-            }
-        }
-    }
-    uint32_t indexOffset = 0;
     model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
     model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
+
+    prt::hash_map<uint32_t, uint32_t> valueToMesh;
+    prt::vector<prt::vector<LevelIndex> > indexPerMesh;
+    uint32_t nMeshes = 0;
+    for (size_t row = 0; row < _levelData.size(); row++) {
+        for (size_t col = 0; col < _levelData[0].size(); col++) {
+            uint32_t val = _levelData[row][col];
+            if (valueToMesh.find(val) == valueToMesh.end()) {
+                valueToMesh.insert(val, nMeshes++);
+                indexPerMesh.resize(nMeshes);
+            }
+            uint32_t meshIndx = valueToMesh.find(val)->value();
+            indexPerMesh[meshIndx].push_back({row, col});
+        }
+    }
+
+    model._meshes.resize(nMeshes);
     uint32_t vi = 0;
     uint32_t ii = 0;
-    for (size_t isl = 0; isl < islands.size(); isl++) {
-        prt::vector<LevelIndex>& island = islands[isl];
-
-        for (size_t i = 0; i < island.size(); i++) {
-            size_t& row = island[i].row;
-            size_t& col = island[i].col;
+    uint32_t indexOffset = 0;
+    for (size_t i = 0; i < indexPerMesh.size(); i++) {
+        for (size_t j = 0; j < indexPerMesh[i].size(); j++) {
+            size_t& row = indexPerMesh[i][j].row;
+            size_t& col = indexPerMesh[i][j].col;
 
             Vertex v1;
             v1.pos = glm::vec3{ float(row), 0.0f, float(col) };
@@ -148,13 +147,43 @@ void LevelMap::loadModel(Model& model) {
             model._vertexBuffer[vi++] = v3;
             model._vertexBuffer[vi++] = v4;
         }
-        Mesh mesh;
+        Mesh& mesh = model._meshes[i];
         mesh.startIndex = indexOffset;
         mesh.numIndices = ii;
         indexOffset += ii;
-        model._meshes.push_back(mesh);
-        uint32_t value = _levelData[island[0].row][island[0].col];
-        std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
-        model._meshes.back()._texture.load(texturePath.c_str());
+        //uint32_t value = _levelData[indexPerMesh[i][0].row][indexPerMesh[i][0].col];
+        //std::string texturePath = value < _texturePaths.size() ? _texturePaths[value] : _texturePaths[0];
+        createTexture(mesh._texture, 1);
+    }
+}
+
+void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
+    resolution = resolution > 0 ? resolution : 1;
+    texture.texWidth = resolution * _levelData[0].size();
+    texture.texHeight = resolution * _levelData.size();
+    texture.texChannels = 4;
+    texture.pixelBuffer.resize(texture.texChannels * texture.texWidth * texture.texHeight);
+
+    for (size_t row = 0; row < _levelData.size(); row++) {
+        for (size_t col = 0; col < _levelData[0].size(); col++) {
+            for (size_t y = 0; y < resolution; y++) {
+                for (size_t x = 0; x < resolution; x++) {
+                    auto lvlIndexOffset = texture.texChannels * resolution * row * _levelData[0].size() +
+                                          texture.texChannels * resolution * col;
+
+                    auto pixelOffset = texture.texChannels * resolution * y +
+                                       texture.texChannels * x;
+
+                    char r = 0xff;
+                    char g = 0x00;
+                    char b = 0x00;
+                    char a = 0xff;
+                    texture.pixelBuffer[lvlIndexOffset + pixelOffset] = r;
+                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 1] = g;
+                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 2] = b;
+                    texture.pixelBuffer[lvlIndexOffset + pixelOffset + 3] = a;
+                }
+            }
+        }
     }
 }

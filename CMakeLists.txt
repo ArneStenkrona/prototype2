@@ -28,14 +28,22 @@ set (MAXIMUM_MODEL_ENTITIES 10)
 
 # Graphics
 set (NUMBER_SUPPORTED_TEXTURES 20)
+set (NUMBER_SUPPORTED_MODEL_MATRICES 100)
 
 # Game
 set (FRAME_RATE 60)
 
 # Write to shaders
+# vert
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.vert.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.vert" "${filedata}")
+# frag
 file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag.in" filedata)
 string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
 file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag" "${filedata}")
+
 
 # END CONFIG VARIABLES
 

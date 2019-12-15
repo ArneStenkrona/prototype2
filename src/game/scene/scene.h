@@ -26,11 +26,11 @@ private:
         glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
         glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
-        //size_t num = 0;
+        size_t numEntities = 0;
     } _modelEntities;
 
     AssetManager& _assetManager;
-
+    
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
 
