@@ -4,6 +4,13 @@
 
 #include "src/graphics/geometry/model.h"
 
+struct Color_rgba {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+};
+
 struct LevelIndex {
     size_t row;
     size_t col;
@@ -40,6 +47,9 @@ private:
 
     void findIsland(LevelIndex lvlIndex, prt::vector<LevelIndex>& island);
     void find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& neighbours);
+
+    static constexpr Color_rgba indexToColor[2] = { { 0x5d, 0xd5, 0x5d, 0xff},
+                                                    { 0x80, 0x40, 0x00, 0xff} };
 };
 
 #endif
