@@ -81,6 +81,13 @@ struct Texture {
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
     void load(const char* texturePath);
+
+    inline unsigned char* sample(float x, float y) {
+        int sx = static_cast<int>(float(texWidth - 1) * x + 0.5f);
+        int sy = static_cast<int>(float(texHeight - 1) * y + 0.5f);
+        int si = texChannels * (sy * texWidth + sx);
+        return &pixelBuffer[si];
+    }
 };
 
 struct Material {

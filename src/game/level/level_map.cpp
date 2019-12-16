@@ -150,6 +150,12 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
     texture.texChannels = 4;
     texture.pixelBuffer.resize(texture.texChannels * texture.texWidth * texture.texHeight);
 
+    prt::vector<Texture> textures;
+    textures.resize(_texturePaths.size());
+    for (uint32_t i = 0; i < textures.size(); i++) {
+        textures[i].load(_texturePaths[i].c_str());
+    }
+
     for (size_t row = 0; row < _levelData.size(); row++) {
         for (size_t col = 0; col < _levelData[0].size(); col++) {
             for (size_t y = 0; y < resolution; y++) {
@@ -174,9 +180,9 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
                     uint32_t yVal = _levelData[qy.row][qy.col];
                     uint32_t xyVal = _levelData[qxy.row][qxy.col];
                     float xDist = 2 * float(x > resolution / 2 ? 1.0f : -1.0f) * (float(x) - center) / float(resolution - 1);
-                    xDist = std::max(0.0f, xDist);
+                    xDist =  std::pow(std::max(0.0f, xDist), 1.2f);
                     float yDist = 2 * float(y > resolution / 2 ? 1.0f : -1.0f) * (float(y) - center) / float(resolution - 1);
-                    yDist = std::max(0.0f, yDist);
+                    yDist = std::pow(std::max(0.0f, yDist), 1.2f);
 
                     float xf = val == xVal ? 1.0f : 0.0f;
                     float yf = val == yVal ? 1.0f : 0.0f;
@@ -184,12 +190,14 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
 
                     float fc = (1.0f - xDist) * (1.0f - yDist) + xf * xDist * (1.0f - yDist) + yf * (1.0f - xDist) * yDist + xyf * xf * yf * xDist * yDist;
 
-                    Color_rgba color = fc > 0.1f ? indexToColor[val] : indexToColor[0];
+                    float sx = float(x) / float(resolution - 1);
+                    float sy = float(y) / float(resolution - 1);
+                    unsigned char* color = fc > 0.3f ? textures[val].sample(sx,sy) : textures[0].sample(sx,sy);
   
-                    texture.pixelBuffer[yOffset + xOffset]     = color.r;
-                    texture.pixelBuffer[yOffset + xOffset + 1] = color.g;
-                    texture.pixelBuffer[yOffset + xOffset + 2] = color.b;
-                    texture.pixelBuffer[yOffset + xOffset + 3] = color.a;
+                    texture.pixelBuffer[yOffset + xOffset]     = color[0];
+                    texture.pixelBuffer[yOffset + xOffset + 1] = color[1];
+                    texture.pixelBuffer[yOffset + xOffset + 2] = color[2];
+                    texture.pixelBuffer[yOffset + xOffset + 3] = color[3];
                 }
             }
         }
