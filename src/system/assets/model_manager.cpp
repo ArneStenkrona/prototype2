@@ -181,37 +181,28 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);
 
-            if (meshCount > 0) {
-                meshes[meshCount].startIndex = 
-                    meshes[meshCount - 1].startIndex + meshes[meshCount - 1].numIndices;
-                meshes[meshCount - 1].numIndices = 
-                    indexCount - meshes[meshCount - 1].startIndex;                
-            } else {
-                meshes[meshCount].startIndex = 0;
-            }
-            // This will be overwritten unless we've reached
-            // the final mesh.
+            meshes[meshCount].startIndex = indexCount; 
             meshes[meshCount].numIndices = indexBuffer.size() - indexCount;
+            if (meshCount > 0) {
+                meshes[meshCount - 1].numIndices = indexCount - meshes[meshCount - 1].startIndex;   
+            }
 
             meshCount++;
 
         } else if (strcmp(lineHeader, "v") == 0) {
             // Parse vertex position.
-            glm::vec3& pos = vertexBufferTemp[vertexPosCount].pos;
+            glm::vec3& pos = vertexBufferTemp[vertexPosCount++].pos;
             fscanf(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z );
-            vertexPosCount++;
         } else if (strcmp(lineHeader, "vn") == 0) {
             // Parse vertex normal.
-            glm::vec3& normal = vertexBufferTemp[vertexNormalCount].normal;
+            glm::vec3& normal = vertexBufferTemp[vertexNormalCount++].normal;
             fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
-            vertexNormalCount++;
         } else if (strcmp(lineHeader, "vt") == 0) {
             // Parse vertex texture coordinate.
-            glm::vec2& texCoord = vertexBufferTemp[vertexTexCoordCount].texCoord;
+            glm::vec2& texCoord = vertexBufferTemp[vertexTexCoordCount++].texCoord;
             fscanf(file, "%f %f\n", &texCoord.x, &texCoord.y );
             // OBJ and Vulkan have relative flipped y axis for textures
             texCoord.y = 1.0f - texCoord.y;
-            vertexTexCoordCount++;
         } else if (strcmp(lineHeader, "f") == 0) {
             // Parse face.
             unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
