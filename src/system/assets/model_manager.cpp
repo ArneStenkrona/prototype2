@@ -161,8 +161,8 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
 
     // An obj-file with a single object may not have
     // an "o" header.
-    if (meshes.size() == 1) {
-        meshes[0].numIndices = indexBuffer.size();
+    if (numMesh == 1) {
+        meshes[0].numIndices = numIndex;
         meshes[0].startIndex = 0;
     }
 
@@ -182,7 +182,7 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
             fscanf(file, "%*[^\n]\n", NULL);
 
             meshes[meshCount].startIndex = indexCount; 
-            meshes[meshCount].numIndices = indexBuffer.size() - indexCount;
+            meshes[meshCount].numIndices = numIndex - indexCount;
             if (meshCount > 0) {
                 meshes[meshCount - 1].numIndices = indexCount - meshes[meshCount - 1].startIndex;   
             }

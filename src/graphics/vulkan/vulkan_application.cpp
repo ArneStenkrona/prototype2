@@ -1040,12 +1040,18 @@ void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt
     createIndirectCommandBuffer(models);
     recreateSwapChain();
 
+    prt::vector<uint32_t> imgIdxOffsets = { 0 };
+    imgIdxOffsets.resize(models.size());
+    for (size_t i = 1; i < models.size(); i++) {
+        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1]._meshes.size();
+    }
+
     for (size_t i = 0; i < modelIndices.size(); i++) {
         const Model& model = models[modelIndices[i]];
         for (size_t j = 0; j < model._meshes.size(); j++) {
             RenderJob renderJob;
             renderJob._modelMatrixIdx = i;
-            renderJob._imgIdx = modelIndices[i] + j;
+            renderJob._imgIdx = imgIdxOffsets[modelIndices[i]] + j;
             _renderJobs.push_back(renderJob);
         }
     }
@@ -1089,12 +1095,12 @@ void VulkanApplication::createVertexBuffer(const prt::vector<Model>& models) {
 
 void VulkanApplication::createIndexBuffer(const prt::vector<Model>& models) {
     prt::vector<uint32_t> allIndices;
-    size_t indexOffset = 0;
+    size_t vertexOffset = 0;
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._indexBuffer.size(); j++) {
-            allIndices.push_back(models[i]._indexBuffer[j] + indexOffset);
+            allIndices.push_back(models[i]._indexBuffer[j] + vertexOffset);
         }
-        indexOffset += models[i]._vertexBuffer.size();
+        vertexOffset += models[i]._vertexBuffer.size();
     }
 
     createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
