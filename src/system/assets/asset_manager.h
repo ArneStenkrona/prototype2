@@ -17,9 +17,6 @@ public:
                                                                                                      models,
                                                                                                      modelIndices);}
 
-    static constexpr const char* persistentStorageString = "P:";
-    static constexpr const char* NonPersistentStorageString = "N:";
-
     std::string getDirectory() const { return _assetDirectory; }
 
 private:

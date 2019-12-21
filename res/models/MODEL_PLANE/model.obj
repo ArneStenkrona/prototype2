@@ -1,7 +1,7 @@
 # Blender v2.81 (sub 16) OBJ File: ''
 # www.blender.org
 mtllib model.mtl
-o Plane
+o plane
 v -50.000000 0.000000 50.000000
 v 50.000000 0.000000 50.000000
 v -50.000000 0.000000 -50.000000

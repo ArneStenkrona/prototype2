@@ -193,7 +193,7 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
                     float sx = float(x) / float(resolution - 1);
                     float sy = float(y) / float(resolution - 1);
                     unsigned char* color = fc > 0.3f ? textures[val].sample(sx,sy) : textures[0].sample(sx,sy);
-  
+                    
                     texture.pixelBuffer[yOffset + xOffset]     = color[0];
                     texture.pixelBuffer[yOffset + xOffset + 1] = color[1];
                     texture.pixelBuffer[yOffset + xOffset + 2] = color[2];

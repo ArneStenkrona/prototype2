@@ -10,7 +10,7 @@ Scene::Scene(AssetManager &assetManager)
     resetTransforms();
 
     //uint32_t default_index = ModelManager::DEFAULT_MODEL;
-    uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
+    uint32_t monkey_index = _assetManager.getModelManager().getModelID("TREE");
     uint32_t plane_index = _assetManager.getModelManager().getModelID("PLANE");
 
     _modelEntities.modelIDs[0] = plane_index;

@@ -97,6 +97,7 @@ struct Material {
 struct Mesh {
     size_t startIndex;
     size_t numIndices;
+    char _name[512];
     Texture _texture;
 };
 
