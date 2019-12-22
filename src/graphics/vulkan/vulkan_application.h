@@ -75,7 +75,9 @@ public:
     void initWindow();
     void initVulkan();
     void update(const prt::vector<glm::mat4>& modelMatrices, 
-                glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition,
+                const glm::mat4& viewMatrix, 
+                const glm::mat4& projectionMatrix, 
+                const glm::vec3 viewPosition,
                 float deltaTime);
     void cleanup();
 
@@ -91,7 +93,7 @@ private:
     GLFWwindow* _window;
     int width, height;
 
-    ImGuiApplication _imGuiApplication;
+    //ImGuiApplication _imGuiApplication;
     
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -144,6 +146,8 @@ private:
     struct RenderJob {
         uint32_t _modelMatrixIdx;
         uint32_t _imgIdx;
+        uint32_t _firstIndex;
+        uint32_t _indexCount;
     };
     prt::vector<RenderJob> _renderJobs;
 
@@ -244,7 +248,8 @@ private:
     
     void createIndexBuffer(const prt::vector<Model>& models);
 
-    void createIndirectCommandBuffer(const prt::vector<Model>& models);
+    // void createIndirectCommandBuffer(const prt::vector<Model>& models);
+    void createDrawCommands(VkCommandBuffer& commandBuffer);
     
     void createUniformBuffers();
     
@@ -272,11 +277,16 @@ private:
 
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, 
-                             glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
+    void updateUniformBuffer(uint32_t currentImage, 
+                             const prt::vector<glm::mat4>& modelMatrices, 
+                             const glm::mat4& viewMatrix, 
+                             const glm::mat4& projectionMatrix, 
+                             glm::vec3 viewPosition);
     
-    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, 
-                   glm::mat4& projectionMatrix, glm::vec3 viewPosition);
+    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
+                   const glm::mat4& viewMatrix, 
+                   const glm::mat4& projectionMatrix, 
+                   glm::vec3 viewPosition);
     
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     

@@ -41,8 +41,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-VulkanApplication::VulkanApplication(Input& input)
-    : _imGuiApplication(physicalDevice, device, input) {
+VulkanApplication::VulkanApplication(Input& /*input*/)
+    /*: _imGuiApplication(physicalDevice, device, input)*/ {
     initWindow();
     initVulkan();
 }   
@@ -75,32 +75,27 @@ void VulkanApplication::initVulkan() {
     createGraphicsPipeline();
     createCommandPool();
 
-    _imGuiApplication.init(float(WIDTH), float(HEIGHT));
-    _imGuiApplication.initResources(renderPass, commandPool, 
-                                    graphicsQueue, msaaSamples);
+    // _imGuiApplication.init(float(WIDTH), float(HEIGHT));
+    // _imGuiApplication.initResources(renderPass, commandPool, 
+    //                                 graphicsQueue, msaaSamples);
 
     createColorResources();
     createDepthResources();
     createFramebuffers();
-    //createTextureImage();
-    //createTextureImageView();
-    //createTextureSampler();
     createSampler();
-    //createVertexBuffer();
-    //createIndexBuffer();
     createUniformBuffers();
     createDescriptorPool();
-    //createDescriptorSets();
-    //createCommandBuffers();
     createSyncObjects();
 }
     
 void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices, 
-                               glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition,
-                               float deltaTime) {
+                               const glm::mat4& viewMatrix, 
+                               const glm::mat4& projectionMatrix, 
+                               const glm::vec3 viewPosition,
+                               float /*deltaTime*/) {
         glfwPollEvents();
         
-        _imGuiApplication.updateInput(float(width), float(height), deltaTime);
+        //_imGuiApplication.updateInput(float(width), float(height), deltaTime);
         drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition);    
 }
     
@@ -141,7 +136,7 @@ void VulkanApplication::cleanupSwapChain() {
     
 void VulkanApplication::cleanup() {
     cleanupSwapChain();
-    _imGuiApplication.cleanup();
+    //_imGuiApplication.cleanup();
     for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; i++) {
         vkDestroyImageView(device, textureImageView[i], nullptr);
         vkDestroyImage(device, textureImage[i], nullptr);
@@ -192,7 +187,7 @@ void VulkanApplication::recreateSwapChain() {
 
     vkDeviceWaitIdle(device);
  
-    _imGuiApplication.cleanupSwapchain();
+    //_imGuiApplication.cleanupSwapchain();
 
     cleanupSwapChain();
 
@@ -207,9 +202,9 @@ void VulkanApplication::recreateSwapChain() {
     createDescriptorPool();
     createDescriptorSets();
 
-    _imGuiApplication.init(float(width), float(height));
-    _imGuiApplication.initResources(renderPass, commandPool,
-                                    graphicsQueue, msaaSamples);
+    // _imGuiApplication.init(float(width), float(height));
+    // _imGuiApplication.initResources(renderPass, commandPool,
+    //                                 graphicsQueue, msaaSamples);
 
     createCommandBuffers();
 }
@@ -1037,13 +1032,15 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32
 
 void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices) {
     loadModels(models);
-    createIndirectCommandBuffer(models);
     recreateSwapChain();
 
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
+    prt::vector<uint32_t> indexOffsets = { 0 };
     imgIdxOffsets.resize(models.size());
+    indexOffsets.resize(models.size());
     for (size_t i = 1; i < models.size(); i++) {
         imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1]._meshes.size();
+        indexOffsets[i] = indexOffsets[i-1] + models[i-1]._indexBuffer.size();
     }
 
     for (size_t i = 0; i < modelIndices.size(); i++) {
@@ -1052,6 +1049,8 @@ void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt
             RenderJob renderJob;
             renderJob._modelMatrixIdx = i;
             renderJob._imgIdx = imgIdxOffsets[modelIndices[i]] + j;
+            renderJob._firstIndex = indexOffsets[modelIndices[i]] + model._meshes[j].startIndex;
+            renderJob._indexCount = model._meshes[j].numIndices;
             _renderJobs.push_back(renderJob);
         }
     }
@@ -1108,28 +1107,22 @@ void VulkanApplication::createIndexBuffer(const prt::vector<Model>& models) {
                        indexBuffer, indexBufferMemory);
 }
 
-void VulkanApplication::createIndirectCommandBuffer(const prt::vector<Model>& models) {
-    prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
-    size_t indexOffset = 0;
-    size_t firstInstance = 0;
-    for (size_t i = 0; i < models.size(); i++) {
-        const Model& model = models[i];
-        for (size_t  j = 0; j < model._meshes.size(); j++) {
-            const Mesh& mesh = model._meshes[j];
-            VkDrawIndexedIndirectCommand indirectCmd{};
-            indirectCmd.instanceCount = 1;
-            indirectCmd.firstInstance = firstInstance++;
-            indirectCmd.firstIndex = indexOffset + mesh.startIndex;
-            indirectCmd.indexCount = mesh.numIndices;
+void VulkanApplication::createDrawCommands(VkCommandBuffer& commandBuffer) {
+    for (size_t i = 0; i < _renderJobs.size(); i++) {
+        vkCmdPushConstants(commandBuffer, pipelineLayout, 
+                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                            0, sizeof(uint32_t), (void *)&_renderJobs[i]._modelMatrixIdx );
+        vkCmdPushConstants(commandBuffer, pipelineLayout, 
+                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                            sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_renderJobs[i]._imgIdx );
 
-            indirectCommands.push_back(indirectCmd);
-        }
-        indexOffset += model._indexBuffer.size();
+        vkCmdDrawIndexed(commandBuffer, 
+                 _renderJobs[i]._indexCount,
+                 1,
+                 _renderJobs[i]._firstIndex,
+                 0,
+                 i);
     }
-
-    createAndMapBuffer(indirectCommands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirectCommands.size(),
-                       VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-                       indirectCommandBuffer, indirectCommandBufferMemory);
 }
 
 void VulkanApplication::createUniformBuffers() {
@@ -1275,11 +1268,6 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-// void VulkanApplication::bindStaticEntities(const prt::vector<uint32_t>& modelIDs) {
-//     _modelIDs = modelIDs;
-//     createCommandBuffers();
-// }
-
 VkCommandBuffer VulkanApplication::beginSingleTimeCommands() {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1354,8 +1342,8 @@ void VulkanApplication::createCommandBuffers() {
 }
 
 void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
-    _imGuiApplication.newFrame(false);
-    _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
+    // _imGuiApplication.newFrame(false);
+    // _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1383,29 +1371,16 @@ void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
     
     vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     
-    if (_renderJobs.size() > 0) {
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
-        
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-        
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
 
-        // Issue indirect commands
-        for (size_t j = 0; j < _renderJobs.size(); j++) {
-            vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-                                0, sizeof(uint32_t), (void *)&_renderJobs[j]._modelMatrixIdx );
-            vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayout, 
-                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-                                sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_renderJobs[j]._imgIdx );
-            vkCmdDrawIndexedIndirect(commandBuffers[imageIndex], indirectCommandBuffer, 
-                                        _renderJobs[j]._imgIdx * sizeof(VkDrawIndexedIndirectCommand), 
-                                        1, sizeof(VkDrawIndexedIndirectCommand));
-        }
-    }
-    _imGuiApplication.drawFrame(commandBuffers[imageIndex]);
+    /* Bind buffers and descriptors */
+    vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
+    vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[imageIndex], 0, nullptr);
+
+    createDrawCommands(commandBuffers[imageIndex]);
+    //_imGuiApplication.drawFrame(commandBuffers[imageIndex]);
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
     
@@ -1435,7 +1410,11 @@ void VulkanApplication::createSyncObjects() {
     }
 }
 
-void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {    
+void VulkanApplication::updateUniformBuffer(uint32_t currentImage, 
+                                            const prt::vector<glm::mat4>& modelMatrices, 
+                                            const glm::mat4& viewMatrix, 
+                                            const glm::mat4& projectionMatrix, 
+                                            glm::vec3 viewPosition) {    
     UniformBufferObject ubo = {};
     for (size_t i = 0; i < modelMatrices.size(); i++) {
         ubo.model[i] = modelMatrices[i];
@@ -1451,12 +1430,14 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage, const prt::ve
     vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
 }
 
-void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition) {
+void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
+                                  const glm::mat4& viewMatrix, 
+                                  const glm::mat4& projectionMatrix, 
+                                  glm::vec3 viewPosition) {
     
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
