@@ -1337,17 +1337,17 @@ void VulkanApplication::createCommandBuffers() {
         assert(false && "failed to allocate command buffers!");
     }
     for (size_t i = 0; i < commandBuffers.size(); i++) {
-        updateCommandBuffers(i);
+        updateCommandBuffer(i);
     }
 }
 
-void VulkanApplication::updateCommandBuffers(size_t imageIndex) {
+void VulkanApplication::updateCommandBuffer(size_t imageIndex) {
     // _imGuiApplication.newFrame(false);
     // _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;//VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     
     if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
         assert(false && "failed to begin recording command buffer!");
@@ -1435,9 +1435,10 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
                                   const glm::mat4& projectionMatrix, 
                                   glm::vec3 viewPosition) {
     
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
@@ -1445,7 +1446,7 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
         assert(false && "failed to acquire swap chain image!");
     }
     
-    updateCommandBuffers(imageIndex);
+    //updateCommandBuffer(imageIndex);
     updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
     
     VkSubmitInfo submitInfo = {};

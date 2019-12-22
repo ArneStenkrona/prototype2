@@ -273,7 +273,7 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     
     void createCommandBuffers();
-    void updateCommandBuffers(size_t imageIndex);
+    void updateCommandBuffer(size_t imageIndex);
 
     void createSyncObjects();
     

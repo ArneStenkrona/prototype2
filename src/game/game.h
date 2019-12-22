@@ -24,9 +24,8 @@ private:
 
     AssetManager _assetManager;
 
-    Scene _scene;
-
     Camera _camera;
+    Scene _scene;
 
     uint32_t _frameRate;
     uint32_t _microsecondsPerFrame;

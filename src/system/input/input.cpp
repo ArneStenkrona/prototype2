@@ -53,7 +53,7 @@ void Input::update() {
     _lastCursorX = x;
     _lastCursorY = y;
     // lock/unlock cursor
-    /*if (glfwGetKey(_window, GLFW_KEY_ESCAPE)) {
+    if (glfwGetKey(_window, GLFW_KEY_ESCAPE)) {
         glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         _dx = 0;
         _dy = 0;
@@ -62,5 +62,5 @@ void Input::update() {
     if (state == GLFW_PRESS)
     {
         glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    }*/
+    }
 }

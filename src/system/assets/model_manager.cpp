@@ -30,7 +30,7 @@ void ModelManager::loadOBJPaths(const char* directory) {
     }
     // Add default
     std::string modelAssetPath = directory;
-    _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT/model.obj");
+    _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT");
     _idToName.insert(nextID, "DEFAULT");
     _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {

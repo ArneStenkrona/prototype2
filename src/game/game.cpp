@@ -13,22 +13,14 @@ Game::Game()
 : _input(),
   _vulkanApp(_input),
   _assetManager(RESOURCE_PATH),
-  _scene(_assetManager),
   _camera(_input),
+  _scene(_assetManager, _input, _camera),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
 
     _input.init(_vulkanApp.getWindow());
 
-    /*prt::vector<Model> models;
-    _assetManager.loadModels(models);
-    _vulkanApp.loadModels(models);
-
-    prt::vector<uint32_t> modelIDs;
-    _scene.getModelIDs(modelIDs);
-    
-    _vulkanApp.bindStaticEntities(modelIDs);*/
     prt::vector<Model> models;
     prt::vector<uint32_t> modelIndices;
     _scene.getEntities(models, modelIndices);
@@ -71,12 +63,13 @@ void Game::run() {
 void Game::update(float deltaTime) {
     _input.update();
     _camera.update(deltaTime);
+    _scene.updatePlayer(deltaTime);
     updateGraphics(deltaTime);
 }
 
 void Game::updateGraphics(float deltaTime) {
     prt::vector<glm::mat4> modelMatrices; 
-    _scene.getTransformMatrixes(modelMatrices);
+    _scene.getTransformMatrices(modelMatrices);
 
     glm::mat4 viewMatrix = _camera.getViewMatrix();
     int w,h = 0;

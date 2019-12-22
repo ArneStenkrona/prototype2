@@ -25,9 +25,13 @@ glm::mat4 Camera::getProjectionMatrix(float width, float height) const
     return glm::perspective(glm::radians(_fieldOfView), width / height, 0.1f, 100.0f);
 }
 
-void Camera::update(float deltaTime)
+void Camera::setTarget(glm::vec3 target) {
+    _position = target - (5.0f * _front);
+}
+
+void Camera::update(float /*deltaTime*/)
 {
-    processKeyboard(deltaTime);
+    //processKeyboard(deltaTime);
     processMouseMovement();
 }
 
