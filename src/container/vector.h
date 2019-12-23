@@ -46,9 +46,11 @@ namespace prt
                 ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator()) 
         : vector(allocator) {
             reserve(ilist.size());
+            size_t sz = 0;
             for (auto it = ilist.begin(); it < ilist.end(); it++) {
-                new (&_data[_size++]) T(*it);
+                new (&_data[sz++]) T(*it);
             }
+            _size = sz;
         }
 
         vector(ContainerAllocator& allocator)
