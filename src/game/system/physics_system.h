@@ -21,9 +21,19 @@ public:
      * 
      * @param intersectionPoint intersection point in ellipsoid space, 
      *                          returned by reference
-     * @param intersectionDistance intersection distance,
+     * @param intersectionDistance intersection time,
      *                             returned by reference
      */
+    bool collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
+                                             glm::vec3& ellipsoidPos,
+                                             glm::vec3& ellipsoidVel,
+                                             const prt::vector<glm::vec3>& triangles,
+                                             const glm::vec3& trianglesPos,
+                                             const glm::vec3& trianglesVel,
+                                             glm::vec3& intersectionPoint,
+                                             float& intersectionTime);
+    
+private:
     bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                    const glm::vec3& ellipsoidPos,
                                    const glm::vec3& ellipsoidVel,
@@ -31,10 +41,14 @@ public:
                                    const glm::vec3& trianglesPos,
                                    const glm::vec3& trianglesVel,
                                    glm::vec3& intersectionPoint,
-                                   float& intersectionDistance);
-    
-    void respondEllipsoidTriangles();
-private:
+                                   float& intersectionTime);
+                                   
+    void respondEllipsoidTriangles(glm::vec3& ellipsoidPos,
+                                   glm::vec3& ellipsoidVel,
+                                   glm::vec3& intersectionPoint,
+                                   const float intersectionTime);
+
+    static constexpr float verySmallDistance = 0.001f;
 };
 
 #endif
