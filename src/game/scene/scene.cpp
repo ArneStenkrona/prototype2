@@ -2,8 +2,13 @@
 
 #include "src/graphics/geometry/parametric_shapes.h"
 
+#include "src/game/system/physics_system.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+
+prt::vector<glm::vec3> tris{};
+PhysicsSystem physicsSystem{};
 
 Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
     :_assetManager(assetManager),
@@ -11,35 +16,46 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
      _camera(camera) {
     resetTransforms();
 
-    uint32_t tree_index = _assetManager.getModelManager().getModelID("TREE");
+    //uint32_t tree_index = _assetManager.getModelManager().getModelID("TREE");
+    uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
     uint32_t plane_index = _assetManager.getModelManager().getModelID("PLANE");
 
 
     for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
-        _modelEntities.modelIDs[i] = tree_index;
+        _modelEntities.modelIDs[i] = monkey_index;
         _modelEntities.positions[i] = { 10.0f * i, 0.0f, 0.0f };
         _modelEntities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
         _modelEntities.scales[i] = glm::vec3{1.0f,1.0f,1.0f};
-        _modelEntities.numEntities++;
     }
+        _modelEntities.numEntities = MAXIMUM_MODEL_ENTITIES;
 
     _modelEntities.modelIDs[1] = plane_index;
     _modelEntities.positions[1] = { 0, -10.0f, 0.0f };
     _modelEntities.scales[1] = { 1.0f, 1.0f, 1.0f };
-    _modelEntities.numEntities++;
 
     initPlayer();
+
+    // temp collision stuff
+    prt::vector<uint32_t> modelIDs = { monkey_index };
+    prt::vector<uint32_t> modelIndices{};
+    prt::vector<Model> models;
+    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
+    Model& model = models[0];
+    tris.resize(model._indexBuffer.size());
+    for (size_t i = 0; i < model._indexBuffer.size(); i++) {
+        tris[i] = model._vertexBuffer[model._indexBuffer[i]].pos;
+    }
 }
 
 void Scene::initPlayer() {
-    uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("SPHERE");
 
     _player.entityID = 0;
     _player.acceleration = 1.0f;
     _player.friction = 0.9f;
     _player.velocity = {0.0f, 0.0f, 0.0f};
 
-    _modelEntities.modelIDs[_player.entityID] = monkey_index;
+    _modelEntities.modelIDs[_player.entityID] = sphere_index;
 }
 
 void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
@@ -131,11 +147,31 @@ void Scene::updatePlayer(float deltaTime) {
     glm::vec3& vel = _player.velocity;
     if (glm::length(dir) > eps) {
         vel += glm::normalize(dir) * acc;
-        _modelEntities.rotations[_player.entityID] = 
-            safeQuatLookAt({0.0f,0.0f,0.0f}, -dir, 
-                           glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+            
     }
+    glm::vec3 lookDir = glm::normalize(glm::vec3{-dir.x, 0.0f, -dir.z});
+    if (glm::length(lookDir) > eps) { 
+        _modelEntities.rotations[_player.entityID] = 
+                            safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
+                             glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+    }
+
     vel *= _player.friction;
     pos += vel;
     _camera.setTarget(pos);
+
+    // temp collision stuff
+    glm::vec3 ellipsoid = { 1.0f, 1.0f, 1.0f };
+    glm::vec3 intersectionPoint;
+    float intersectionDistance;
+    bool collision = physicsSystem.collideEllipsoidTriangles(ellipsoid, pos, vel, 
+                                                             tris, _modelEntities.positions[2],
+                                                             glm::vec3{0.0f,0.0f,0.0f},
+                                                             intersectionPoint,
+                                                             intersectionDistance);
+    if (collision) {
+        std::cout << "COLLISION!" << std::endl;
+    }
+    
+
 }
