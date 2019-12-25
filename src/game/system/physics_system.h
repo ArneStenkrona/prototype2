@@ -10,11 +10,19 @@ class PhysicsSystem {
 public:
 
     /**
-     * @param ellipsoid
-     * @param ellipsoidPos
-     * @param ellipsoidVel
-     * @param triangles 
-     * @param trianglesPos
+     * Checks for collision between an ellipsoid and a triangle mesh.
+     * 
+     * @param ellipsoid axes of the ellipsoid collider
+     * @param ellipsoidPos position of the ellipsoid collider
+     * @param ellipsoidVel velocity of the ellipsoid collider
+     * @param triangles triangles of the collision mesh as a position list
+     * @param trianglesPos position of the collision mesh
+     * @param trianglesVel velocity of the triangle mesh
+     * 
+     * @param intersectionPoint intersection point in ellipsoid space, 
+     *                          returned by reference
+     * @param intersectionDistance intersection distance,
+     *                             returned by reference
      */
     bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                    const glm::vec3& ellipsoidPos,
@@ -24,6 +32,8 @@ public:
                                    const glm::vec3& trianglesVel,
                                    glm::vec3& intersectionPoint,
                                    float& intersectionDistance);
+    
+    void respondEllipsoidTriangles();
 private:
 };
 

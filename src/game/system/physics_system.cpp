@@ -2,6 +2,8 @@
 
 #include <glm/gtx/norm.hpp>
 
+// thank you Gene for this concise implementation
+// https://stackoverflow.com/a/25516767
 bool checkPointInTriangle(const glm::vec3& point,
                           const glm::vec3& pa, const glm::vec3& pb, const glm::vec3& pc)
 {
@@ -23,38 +25,6 @@ bool checkPointInTriangle(const glm::vec3& point,
     if (glm::dot(nx, n) < 0.0f) return false;
 
     return true;
-}
-
-bool getLowestRoot(float a, float b, float c, float maxR,
-                float& root) {
-    // Check if a solution exists
-    float determinant = b*b - 4.0f*a*c;
-    // If determinant is negative it means no solutions.
-    if (determinant < 0.0f) return false;
-    // calculate the two roots: (if determinant == 0 then
-    // x1==x2 but let’s disregard that slight optimization)
-    float sqrtD = sqrt(determinant);
-    float r1 = (-b - sqrtD) / (2*a);
-    float r2 = (-b + sqrtD) / (2*a);
-    // Sort so x1 <= x2
-    if (r1 > r2) {
-        float temp = r2;
-        r2 = r1;
-        r1 = temp;
-    }
-    // Get lowest root:
-    if (r1 > 0 && r1 < maxR) {
-        root = r1;
-        return true;
-    }
-    // It is possible that we want x2 - this can happen
-    // if x1 < 0
-    if (r2 > 0 && r2 < maxR) {
-    root = r2;
-        return true;
-    }
-    // No (valid) solutions
-    return false;
 }
 /**
  * based on "Improved Collision detection and Response" by
@@ -94,9 +64,9 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& ellipsoid,
         n = glm::normalize(n);
 
         // skip triangle if relative velocity is not towards the triangle
-        // if (glm::dot(glm::normalize(vel), n) > 0.0f) {
-        //     continue;
-        // }
+        if (glm::dot(glm::normalize(vel), n) > 0.0f) {
+            continue;
+        }
 
         // plane constant
         float c = -glm::dot(n, p1);
@@ -140,22 +110,27 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& ellipsoid,
                 continue;
             }
         }
-        /*
+        
         // sweep against vertices and edges
         // vertex;
+        float av = glm::length2(vel);
         for (size_t j = 0; j < 3; j++) {
-            float av = glm::dot(vel, vel);
             float bv = 2.0f * glm::dot(vel, pos - tris[i + j]);
             float cv = glm::length2(tris[i + j] - pos) - 1.0f;
-            float rv;
-            if (getLowestRoot(av, bv, cv, 10000.0f, rv)) {
+
+            float sqrterm = (bv * bv) - (4.0f * av * cv);
+            if (sqrterm >= 0.0f) {
+                float x1 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
+                float x2 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
+                float rv = std::abs(x1) < std::abs(x2) ? x1 : x2;
                 float intDist = rv * glm::length(vel);
-                if (intDist < intersectionDistance) {
+                if (std::abs(rv) <= 1.0f && intDist < intersectionDistance) {
                     intersectionDistance = intDist;
                     intersectionPoint = tris[i + j];
                 }
             }
         }
+        
         // edges
         glm::vec3 edges[3] = { p2 - p1, p3 - p2, p1 - p3 };
         glm::vec3 btv[3] = { p1 - pos, p2 - pos, p3 - pos }; // base to vertex
@@ -168,18 +143,26 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& ellipsoid,
                        2.0f * (glm::dot(edges[j], vel) * glm::dot(edges[j], btv[j]));
             float ce = edge2 * (1.0f - glm::length2(btv[j])) + 
                        glm::pow(glm::dot(edges[j], btv[j]), 2.0f);
-            float re;
-            if (getLowestRoot(ae, be, ce, 10000.0f, re)) {
-                float f0 = (glm::dot(edges[j], vel) * re - glm::dot(edges[j], btv[j])) /
-                           glm::length2(edges[j]);
-                float intDist = re * glm::length(vel);
-                if (f0 >= 0.0f && f0 <= 1.0f && intDist < intersectionDistance) {
-                    intersectionDistance = intDist;
-                    intersectionPoint = tris[i + j] + f0 * edges[j];
+
+            float sqrterm = (be * be) - (4.0f * ae * ce);
+            if (sqrterm >= 0.0f) {
+                float x1 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
+                float x2 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
+                float re = std::abs(x1) < std::abs(x2) ? x1 : x2;
+                if (std::abs(re) <= 1.0f) {
+                    float f0 = (glm::dot(edges[j], vel) * re - glm::dot(edges[j], btv[j])) /
+                                glm::length2(edges[j]);
+                    float intDist = re * glm::length(vel);
+                    if (f0 >= 0.0f && f0 <= 1.0f && intDist < intersectionDistance) {
+                        intersectionDistance = intDist;
+                        intersectionPoint = tris[i + j] + f0 * edges[j];
+                    }
                 }
             }
         }
-        */
+        
     }
     return intersectionDistance < std::numeric_limits<float>::infinity();
 }
+
+void PhysicsSystem::respondEllipsoidTriangles() {}
