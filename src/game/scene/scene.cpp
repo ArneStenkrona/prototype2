@@ -162,18 +162,12 @@ void Scene::updatePlayer(float deltaTime) {
     glm::vec3 ellipsoid = { 1.0f, 1.0f, 1.0f };
     glm::vec3 intersectionPoint;
     float intersectionDistance;
-    bool collision = physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
-                                                                       tris, _modelEntities.positions[2],
-                                                                       glm::vec3{0.0f,0.0f,0.0f},
-                                                                       intersectionPoint,
-                                                                       intersectionDistance);
+    physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
+                                                      tris, _modelEntities.positions[2],
+                                                      glm::vec3{0.0f,0.0f,0.0f},
+                                                      intersectionPoint,
+                                                      intersectionDistance);
 
     _camera.setTarget(pos);
     //pos += vel;
-
-    if (collision) {
-        std::cout << "COLLISION!" << std::endl;
-    }
-    
-
 }

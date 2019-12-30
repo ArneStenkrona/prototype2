@@ -1032,8 +1032,6 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, uint32
 
 void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices) {
     loadModels(models);
-    recreateSwapChain();
-
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
     prt::vector<uint32_t> indexOffsets = { 0 };
     imgIdxOffsets.resize(models.size());
@@ -1054,7 +1052,7 @@ void VulkanApplication::bindEntities(const prt::vector<Model>& models, const prt
             _renderJobs.push_back(renderJob);
         }
     }
-    createCommandBuffers();
+    recreateSwapChain();
 }
 
 void VulkanApplication::loadModels(const prt::vector<Model>& models) {
@@ -1337,17 +1335,17 @@ void VulkanApplication::createCommandBuffers() {
         assert(false && "failed to allocate command buffers!");
     }
     for (size_t i = 0; i < commandBuffers.size(); i++) {
-        updateCommandBuffer(i);
+        createCommandBuffer(i);
     }
 }
 
-void VulkanApplication::updateCommandBuffer(size_t imageIndex) {
+void VulkanApplication::createCommandBuffer(size_t imageIndex) {
     // _imGuiApplication.newFrame(false);
     // _imGuiApplication.updateBuffers(inFlightFences.data(), static_cast<uint32_t>(inFlightFences.size()));
     
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;//VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
     
     if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
         assert(false && "failed to begin recording command buffer!");
@@ -1393,6 +1391,8 @@ void VulkanApplication::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    imagesInFlight.resize(swapChainImages.size()
+    , VK_NULL_HANDLE);
     
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1433,8 +1433,7 @@ void VulkanApplication::updateUniformBuffer(uint32_t currentImage,
 void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
                                   const glm::mat4& viewMatrix, 
                                   const glm::mat4& projectionMatrix, 
-                                  glm::vec3 viewPosition) {
-    
+                                  glm::vec3 viewPosition) {    
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     uint32_t imageIndex;
@@ -1445,9 +1444,14 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         assert(false && "failed to acquire swap chain image!");
     }
-    
-    //updateCommandBuffer(imageIndex);
+
+    //createCommandBuffer(imageIndex);
     updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
+    
+    // if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+    //     vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    // }
+    // imagesInFlight[imageIndex] = inFlightFences[currentFrame];
     
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

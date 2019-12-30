@@ -25,7 +25,6 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
 
     static constexpr uint32_t max_iter = 10;
     uint32_t iter = 0;
-    float veryCloseDistance = 0.0001f;
     while (collideEllipsoidTriangles(ellipsoid,
                                      ePos,
                                      eVel,
@@ -34,11 +33,9 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
                                      tVel,
                                      intersectionPoint,
                                      intersectionTime) && iter < max_iter) {
-        if (glm::length(intersectionTime * (eVel - tVel)) < verySmallDistance) break;
         respondEllipsoidTriangles(ePos, eVel,
                                   intersectionPoint, intersectionTime);
-        // remaining velocity is very small
-        if (glm::length(ellipsoidVel) < veryCloseDistance) break;
+
         iter++;
     }   
     //assert(iter < max_iter);
@@ -50,7 +47,7 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
         // convert result back to world space
         ellipsoidPos = { ePos.x * ellipsoid.x, ePos.y * ellipsoid.y, ePos.z * ellipsoid.z };
         ellipsoidVel = { eVel.x * ellipsoid.x, eVel.y * ellipsoid.y, eVel.z * ellipsoid.z };
-        ellipsoidPos += ellipsoidVel;
+        //ellipsoidPos += ellipsoidVel;
         return true;
     }
 }
@@ -144,8 +141,8 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 // collision occurs outside velocity range
                 continue;
             }
-            t0 = glm::clamp(t0, 0.0f, 1.0f);
-            t1 = glm::clamp(t1, 0.0f, 1.0f);
+            t0 = glm::clamp(t0, -1.0f, 1.0f);
+            t1 = glm::clamp(t1, -1.0f, 1.0f);
         }
         
         if (!embeddedInPlane) {
@@ -157,7 +154,6 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 if (t < intersectionTime) {
                     intersectionTime = t;
                     intersectionPoint = pip + trianglesPos;
-                    std::cout << "inside triangle" << std::endl;
                 }
                 // collision inside triangle
                 continue;
@@ -179,7 +175,6 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 if (t >= 0.0f && t <= 1.0f && t < intersectionTime) {
                     intersectionTime = t;
                     intersectionPoint = tris[i + j] + trianglesPos;
-                    std::cout << "vertex" << std::endl;
                 }
             }
         }
@@ -208,7 +203,6 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                     if (f0 >= 0.0f && f0 <= 1.0f && t < intersectionTime) {
                         intersectionTime = t;
                         intersectionPoint = tris[i + j] + f0 * edges[j] + trianglesPos;
-                        std::cout << "edge" << std::endl;
                     }
                 }
             }
@@ -222,20 +216,12 @@ void PhysicsSystem::respondEllipsoidTriangles(glm::vec3& ellipsoidPos,
                                               glm::vec3& ellipsoidVel,
                                               glm::vec3& intersectionPoint,
                                               const float intersectionTime) {
-
-    glm::vec3 dest = ellipsoidPos + ellipsoidVel;
-    glm::vec3 v = ellipsoidVel * intersectionTime;
-    glm::vec3 newPos = ellipsoidPos + v;
-    v = glm::normalize(v);
-    intersectionPoint -= verySmallDistance * v;
-    glm::vec3 slideOrigin = intersectionPoint;
-    glm::vec3 slideNormal = glm::normalize(newPos - intersectionPoint);
-    float slideC = -(slideNormal.x * slideOrigin.x +
-                     slideNormal.y * slideOrigin.y +
-                     slideNormal.z * slideOrigin.z);
-    glm::vec3 newDest = newPos - (glm::dot(dest, slideNormal) + slideC) *  slideNormal;
-    glm::vec3 newVel = newDest - intersectionPoint;
-
-    ellipsoidPos = newPos;
-    ellipsoidVel = newVel;
+    ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
+    glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
+    if (intersectionTime < 0.0f) slideNormal = -slideNormal;
+    ellipsoidPos += verySmallDistance * slideNormal;
+    ellipsoidVel = glm::cross(slideNormal, 
+                              glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal) 
+                              / glm::length(slideNormal)) /
+                              glm::length(slideNormal);
 }

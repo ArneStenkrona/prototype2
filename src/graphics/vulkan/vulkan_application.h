@@ -171,6 +171,7 @@ private:
     prt::vector<VkSemaphore> imageAvailableSemaphores;
     prt::vector<VkSemaphore> renderFinishedSemaphores;
     prt::vector<VkFence> inFlightFences;
+    prt::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
     
     bool framebufferResized = false;
@@ -273,7 +274,7 @@ private:
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     
     void createCommandBuffers();
-    void updateCommandBuffer(size_t imageIndex);
+    void createCommandBuffer(size_t imageIndex);
 
     void createSyncObjects();
     

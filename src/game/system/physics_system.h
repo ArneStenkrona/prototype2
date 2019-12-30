@@ -48,7 +48,7 @@ private:
                                    glm::vec3& intersectionPoint,
                                    const float intersectionTime);
 
-    static constexpr float verySmallDistance = 0.001f;
+    static constexpr float verySmallDistance = 0.005f;
 };
 
 #endif
