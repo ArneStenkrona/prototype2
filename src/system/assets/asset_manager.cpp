@@ -5,5 +5,5 @@
 
 AssetManager::AssetManager(const char* assetDirectory)
     : _assetDirectory(assetDirectory),
-      _modelManager((_assetDirectory + "/models/").c_str()) {
+      _modelManager((_assetDirectory + "models/").c_str()) {
 }

@@ -16,27 +16,27 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
      _camera(camera) {
     resetTransforms();
 
-    //uint32_t tree_index = _assetManager.getModelManager().getModelID("TREE");
-    uint32_t monkey_index = _assetManager.getModelManager().getModelID("MONKEY");
-    uint32_t plane_index = _assetManager.getModelManager().getModelID("PLANE");
+    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("monkey.obj");
+    uint32_t plane_ID = _assetManager.getModelManager().getModelID("plane.obj");
 
 
     for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
-        _modelEntities.modelIDs[i] = monkey_index;
-        _modelEntities.positions[i] = { 10.0f * i, 0.0f, 0.0f };
-        _modelEntities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
-        _modelEntities.scales[i] = glm::vec3{1.0f,1.0f,1.0f};
+        _entities.modelIDs[i] = monkey_ID;
+        _entities.positions[i] = { 10.0f * i, 0.0f, 0.0f };
+        _entities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _entities.scales[i] = glm::vec3{1.0f,1.0f,1.0f};
     }
-        _modelEntities.numEntities = MAXIMUM_MODEL_ENTITIES;
+        _entities.numEntities = MAXIMUM_MODEL_ENTITIES;
 
-    _modelEntities.modelIDs[1] = plane_index;
-    _modelEntities.positions[1] = { 0, -10.0f, 0.0f };
-    _modelEntities.scales[1] = { 1.0f, 1.0f, 1.0f };
+    _entities.modelIDs[MAXIMUM_MODEL_ENTITIES - 1] = plane_ID;
+    _entities.positions[MAXIMUM_MODEL_ENTITIES - 1] = { 0, -10.0f, 0.0f };
+    _entities.scales[MAXIMUM_MODEL_ENTITIES - 1] = { 1.0f, 1.0f, 1.0f };
 
     initPlayer();
+    initSkyBox();
 
     // temp collision stuff
-    prt::vector<uint32_t> modelIDs = { monkey_index };
+    prt::vector<uint32_t> modelIDs = { monkey_ID };
     prt::vector<uint32_t> modelIndices{};
     prt::vector<Model> models;
     _assetManager.loadSceneModels(modelIDs, models, modelIndices);
@@ -48,47 +48,55 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
 }
 
 void Scene::initPlayer() {
-    uint32_t sphere_index = _assetManager.getModelManager().getModelID("SPHERE");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("sphere.obj");
 
-    _player.entityID = 0;
+    _player.entityID = RESERVED_ENTITY_IDS::PLAYER_ID;
     _player.acceleration = 1.0f;
     _player.friction = 0.9f;
     _player.velocity = {0.0f, 0.0f, 0.0f};
 
-    _modelEntities.modelIDs[_player.entityID] = sphere_index;
+    _entities.modelIDs[_player.entityID] = sphere_index;
+}
+
+void Scene::initSkyBox() {
+    _skybox.entityID = RESERVED_ENTITY_IDS::SKYBOX_ID;
+
+    uint32_t skybox_ID = _assetManager.getModelManager().getModelID("default.skybox");
+    _entities.modelIDs[_skybox.entityID] = skybox_ID;
+    _entities.scales[_skybox.entityID] = glm::vec3{100.0f, 100.0f, 100.0f};
 }
 
 void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
     prt::vector<uint32_t> modelIDs;
-    modelIDs.resize( _modelEntities.numEntities);
-    for (size_t i = 0; i <  _modelEntities.numEntities; i++) {
-        modelIDs[i] = _modelEntities.modelIDs[i];
+    modelIDs.resize( _entities.numEntities);
+    for (size_t i = 0; i <  _entities.numEntities; i++) {
+        modelIDs[i] = _entities.modelIDs[i];
     }
     _assetManager.loadSceneModels(modelIDs, models, modelIndices);
 }
 
 void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {
-    modelIDs.resize(_modelEntities.numEntities);
-    for (size_t i = 0; i < _modelEntities.numEntities; i++) {
-        modelIDs[i] = _modelEntities.modelIDs[i];
+    modelIDs.resize(_entities.numEntities);
+    for (size_t i = 0; i < _entities.numEntities; i++) {
+        modelIDs[i] = _entities.modelIDs[i];
     }
 }
 
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) {
-    transformMatrices.resize(_modelEntities.numEntities);
-    for (size_t i = 0; i < _modelEntities.numEntities; i++) {
-        glm::mat4 scale = glm::scale(_modelEntities.scales[i]);
-        glm::mat4 rotate = glm::toMat4(_modelEntities.rotations[i]);
-        glm::mat4 translate = glm::translate(glm::mat4(1.0f), _modelEntities.positions[i]);
+    transformMatrices.resize(_entities.numEntities);
+    for (size_t i = 0; i < _entities.numEntities; i++) {
+        glm::mat4 scale = glm::scale(_entities.scales[i]);
+        glm::mat4 rotate = glm::toMat4(_entities.rotations[i]);
+        glm::mat4 translate = glm::translate(glm::mat4(1.0f), _entities.positions[i]);
         transformMatrices[i] = translate * rotate * scale;
     }
 }
 
 void Scene::resetTransforms() {
     for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
-        _modelEntities.positions[i] = { 0.0f, 0.0f, 0.0f };
-        _modelEntities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
-        _modelEntities.scales[i] = { 1.0f, 1.0f, 1.0f };
+        _entities.positions[i] = { 0.0f, 0.0f, 0.0f };
+        _entities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _entities.scales[i] = { 1.0f, 1.0f, 1.0f };
     }
 }
 
@@ -118,6 +126,11 @@ glm::quat safeQuatLookAt(
     }
 }
 
+void Scene::update(float deltaTime) {
+    updatePlayer(deltaTime);
+    updateSkybox();
+}
+
 void Scene::updatePlayer(float deltaTime) {
     float acc = _player.acceleration * deltaTime;
     glm::vec3 dir = {0.0f,0.0f,0.0f};
@@ -143,7 +156,7 @@ void Scene::updatePlayer(float deltaTime) {
         dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    glm::vec3& pos = _modelEntities.positions[_player.entityID];
+    glm::vec3& pos = _entities.positions[_player.entityID];
     glm::vec3& vel = _player.velocity;
     if (glm::length(dir) > eps) {
         vel += glm::normalize(dir) * acc;
@@ -151,7 +164,7 @@ void Scene::updatePlayer(float deltaTime) {
     }
     glm::vec3 lookDir = glm::normalize(glm::vec3{-dir.x, 0.0f, -dir.z});
     if (glm::length(lookDir) > eps) { 
-        _modelEntities.rotations[_player.entityID] = 
+        _entities.rotations[_player.entityID] = 
                             safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
                              glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
     }
@@ -163,11 +176,15 @@ void Scene::updatePlayer(float deltaTime) {
     glm::vec3 intersectionPoint;
     float intersectionDistance;
     physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
-                                                      tris, _modelEntities.positions[2],
+                                                      tris, _entities.positions[2],
                                                       glm::vec3{0.0f,0.0f,0.0f},
                                                       intersectionPoint,
                                                       intersectionDistance);
 
     _camera.setTarget(pos);
     //pos += vel;
+}
+
+void Scene::updateSkybox() {
+    _entities.positions[_skybox.entityID] = _camera.getPosition();
 }

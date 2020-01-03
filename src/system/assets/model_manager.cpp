@@ -19,10 +19,11 @@ bool is_file_exist(const char *fileName)
 
 ModelManager::ModelManager(const char* modelDirectory)
     : _modelDirectory(modelDirectory) {
-    loadOBJPaths(modelDirectory);
+    addModelPaths((std::string(_modelDirectory) + "obj/").c_str(), ".obj", MODEL_TYPE::OBJ);
+    addModelPaths((std::string(_modelDirectory) + "skybox/").c_str(), ".skybox", MODEL_TYPE::SKYBOX);
 }
 
-void ModelManager::loadOBJPaths(const char* directory) {
+void ModelManager::addModelPaths(const char* directory, const char* postfix, MODEL_TYPE type) {
     struct dirent *entry;
     DIR *dir = opendir(directory);
     if (dir == NULL) {
@@ -30,15 +31,10 @@ void ModelManager::loadOBJPaths(const char* directory) {
     }
     // Add default
     std::string modelAssetPath = directory;
-    _modelPaths.insert("DEFAULT", modelAssetPath + "DEFAULT");
-    _idToName.insert(nextID, "DEFAULT");
-    _modelIDs.insert("DEFAULT", nextID++);
     while ((entry = readdir(dir)) != NULL) {
-        if (strncmp (entry->d_name, "MODEL_", strlen("MODEL_")) == 0) {
-            auto modelDir = std::string(entry->d_name);
-            std::string modelName = modelDir.substr(strlen("MODEL_"));
-            assert((modelName.compare("DEFAULT") != 0));
-            _modelPaths.insert(modelName, modelAssetPath + modelDir);
+        if (entry->d_name[0] != '.') {
+            std::string modelName = std::string(entry->d_name) + postfix;
+            _modelPaths.insert(modelName, { type, std::string(directory) + entry->d_name });
             _idToName.insert(nextID, modelName);
             _modelIDs.insert(modelName, nextID++);
         }
@@ -48,7 +44,7 @@ void ModelManager::loadOBJPaths(const char* directory) {
 }
 
 void ModelManager::getPaths(const prt::vector<uint32_t>& uniqueIDs, 
-              prt::vector<std::string>& modelPaths) {
+              prt::vector<ModelPath>& modelPaths) {
     modelPaths.resize(uniqueIDs.size());
     for (size_t i = 0; i < uniqueIDs.size(); i++) {
         std::string& name = _idToName[uniqueIDs[i]];
@@ -67,16 +63,26 @@ uint32_t ModelManager::getModelID(const char* name) {
     return getModelID(name_str);
 }
 
-void ModelManager::loadModels(const prt::vector<uint32_t>& uniqueIDs, prt::vector<Model>& models) {
-    prt::vector<std::string> modelPaths;
-    getPaths(uniqueIDs, modelPaths);
-    models.resize(uniqueIDs.size());
-    for (uint32_t i = 0; i < modelPaths.size(); i++) {    
-        loadOBJ((modelPaths[i] + "/model.obj").c_str(), models[i]);
+void ModelManager::loadModels(const prt::vector<uint32_t>& IDs, prt::vector<Model>& models) {
+    prt::vector<ModelPath> modelPaths;
+    getPaths(IDs, modelPaths);
+    models.resize(IDs.size());
+    for (uint32_t i = 0; i < modelPaths.size(); i++) {
+        switch (modelPaths[i].type)
+        {
+        case MODEL_TYPE::OBJ:
+            loadOBJ((modelPaths[i].path + "/model.obj").c_str(), models[i]);
 
-        for (size_t mi = 0; mi < models[i]._meshes.size(); mi++) {
-            std::string texPath =  modelPaths[i] + "/" + models[i]._meshes[mi]._name + "_diffuse.png";
-            models[i]._meshes[mi]._texture.load(texPath.c_str());
+            for (size_t mi = 0; mi < models[i]._meshes.size(); mi++) {
+                std::string texPath =  modelPaths[i].path + "/" + models[i]._meshes[mi]._name + "_diffuse.png";
+                models[i]._meshes[mi]._texture.load(texPath.c_str());
+            }
+            break;
+        case MODEL_TYPE::SKYBOX:
+            loadSkybox((modelPaths[i].path).c_str(), models[i]);
+            break;
+        default:
+            break;
         }
     }
 }
@@ -98,7 +104,7 @@ void ModelManager::loadSceneModels(const prt::vector<uint32_t>& modelIDs,
     loadModels(uniqueIDs, models);
 }
 
-// Helper function for counting _meshes and indices in obj file.
+// Helper function for counting meshes and indices in obj file.
 void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     char lineHeader[512];
     int res = fscanf(file, "%s%*[^\n]", lineHeader);
@@ -120,15 +126,15 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
     rewind(file);
 }
 
-void ModelManager::loadOBJ(const char* modelPath, Model& model) {
+void ModelManager::loadOBJ(const char* path, Model& model) {
     prt::vector<Mesh>& meshes = model._meshes;
     prt::vector<Vertex>& vertexBuffer = model._vertexBuffer;
     prt::vector<uint32_t>& indexBuffer = model._indexBuffer;
 
-    FILE* file = fopen(modelPath, "r");
+    FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
-        printf("%s", modelPath);
+        printf("%s", path);
         printf("'!\n");
         assert(false);
         return;
@@ -247,4 +253,16 @@ void ModelManager::loadOBJ(const char* modelPath, Model& model) {
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         vertexBuffer[it->value()] = it->key();
     }
+}
+
+void ModelManager::loadSkybox(const char* path, Model& model) {
+    parametric_shapes::Cuboid cube{ 1.0f, 1.0f, 1.0f };
+    parametric_shapes::createSkybox(model, cube);
+
+    model._meshes[0]._texture.load((std::string(path) + "/up.png").c_str());
+    model._meshes[1]._texture.load((std::string(path) + "/down.png").c_str());
+    model._meshes[2]._texture.load((std::string(path) + "/left.png").c_str());
+    model._meshes[3]._texture.load((std::string(path) + "/right.png").c_str());
+    model._meshes[4]._texture.load((std::string(path) + "/front.png").c_str());
+    model._meshes[5]._texture.load((std::string(path) + "/back.png").c_str());
 }

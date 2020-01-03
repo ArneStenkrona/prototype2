@@ -18,12 +18,13 @@ public:
     Scene(AssetManager &assetManager, Input& input, Camera& camera);
 
     void initPlayer();
+    void initSkyBox();
 
     void getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices);
 
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
 
-    void updatePlayer(float deltaTime);
+    void update(float deltaTime);
     
 private:
     struct {
@@ -32,7 +33,13 @@ private:
         glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
         size_t numEntities = 0;
-    } _modelEntities;
+    } _entities;
+
+    enum RESERVED_ENTITY_IDS {
+        PLAYER_ID,
+        SKYBOX_ID,
+        TOTAL_RESERVED_ENTIIY_IDS
+    };
 
     struct {
         uint32_t entityID;
@@ -41,6 +48,10 @@ private:
         glm::vec3 velocity;
     } _player;
 
+    struct {
+        uint32_t entityID;
+    } _skybox;
+
     AssetManager& _assetManager;
     Input& _input;
     Camera& _camera;
@@ -48,6 +59,8 @@ private:
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
 
+    void updatePlayer(float deltaTime);
+    void updateSkybox();
 };
 
 #endif

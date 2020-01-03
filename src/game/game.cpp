@@ -63,7 +63,7 @@ void Game::run() {
 void Game::update(float deltaTime) {
     _input.update();
     _camera.update(deltaTime);
-    _scene.updatePlayer(deltaTime);
+    _scene.update(deltaTime);
     updateGraphics(deltaTime);
 }
 
