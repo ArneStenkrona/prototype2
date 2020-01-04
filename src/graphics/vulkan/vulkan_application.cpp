@@ -92,11 +92,13 @@ void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices,
                                const glm::mat4& viewMatrix, 
                                const glm::mat4& projectionMatrix, 
                                const glm::vec3 viewPosition,
+                               const glm::mat4& skyProjectionMatrix,
                                float /*deltaTime*/) {
         glfwPollEvents();
         
         //_imGuiApplication.updateInput(float(width), float(height), deltaTime);
-        drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition);    
+        drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition,
+                  skyProjectionMatrix);    
 }
     
 void VulkanApplication::cleanupSwapChain() {
@@ -1326,7 +1328,7 @@ void VulkanApplication::createSkyboxBuffers() {
     prt::vector<glm::vec3> vertices;
 
     vertices.resize(8);
-    float w = 50.0f;
+    float w = 500.0f;
     vertices[7] = glm::vec3{-w, -w, -w};
     vertices[6] = glm::vec3{ w, -w, -w};
     vertices[5] = glm::vec3{-w,  w, -w};
@@ -1746,11 +1748,18 @@ void VulkanApplication::updateUniformBuffers(uint32_t currentImage,
                                              const prt::vector<glm::mat4>& modelMatrices, 
                                              const glm::mat4& viewMatrix, 
                                              const glm::mat4& projectionMatrix, 
-                                             glm::vec3 viewPosition) {
+                                             glm::vec3 viewPosition,
+                                             const glm::mat4& skyProjectionMatrix) {
     // skybox
     SkyboxUBO skyboxUBO = {};
-    skyboxUBO.model = viewMatrix * glm::mat4(1.0f);
-    skyboxUBO.projection = projectionMatrix;
+
+    glm::mat4 skyboxViewMatrix = viewMatrix;
+    skyboxViewMatrix[3][0] = 0.0f;
+    skyboxViewMatrix[3][1] = 0.0f;
+    skyboxViewMatrix[3][2] = 0.0f;
+
+    skyboxUBO.model = skyboxViewMatrix * glm::mat4(1.0f);
+    skyboxUBO.projection = skyProjectionMatrix;
     skyboxUBO.projection[1][1] *= -1;
 
     void* skyboxData;
@@ -1776,7 +1785,8 @@ void VulkanApplication::updateUniformBuffers(uint32_t currentImage,
 void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
                                   const glm::mat4& viewMatrix, 
                                   const glm::mat4& projectionMatrix, 
-                                  glm::vec3 viewPosition) {    
+                                  glm::vec3 viewPosition,
+                                  const glm::mat4& skyProjectionMatrix) {    
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
     uint32_t imageIndex;
@@ -1789,7 +1799,8 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
     }
 
     //createCommandBuffer(imageIndex);
-    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
+    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
+                         skyProjectionMatrix);
     
     // if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
     //     vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());

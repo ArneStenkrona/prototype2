@@ -76,7 +76,9 @@ void Game::updateGraphics(float deltaTime) {
     glm::mat4 viewMatrix = _camera.getViewMatrix();
     int w,h = 0;
     _vulkanApp.getWindowSize(w, h);
-    glm::mat4 projectionMatrix = _camera.getProjectionMatrix(float(w), float(h));
+    glm::mat4 projectionMatrix = _camera.getProjectionMatrix(float(w), float(h), 0.1f, 200.0f);
+    glm::mat4 skyProjectionMatrix = _camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
     glm::vec3 viewPosition = _camera.getPosition();
-    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition, deltaTime);
+    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition, 
+                      skyProjectionMatrix, deltaTime);
 }

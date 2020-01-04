@@ -84,6 +84,7 @@ public:
                 const glm::mat4& viewMatrix, 
                 const glm::mat4& projectionMatrix, 
                 const glm::vec3 viewPosition,
+                const glm::mat4& skyProjectionMatrix,
                 float deltaTime);
     void cleanup();
 
@@ -360,12 +361,14 @@ private:
                               const prt::vector<glm::mat4>& modelMatrices, 
                               const glm::mat4& viewMatrix, 
                               const glm::mat4& projectionMatrix, 
-                              glm::vec3 viewPosition);
+                              glm::vec3 viewPosition,
+                              const glm::mat4& skyProjectionMatrix);
     
     void drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
                    const glm::mat4& viewMatrix, 
                    const glm::mat4& projectionMatrix, 
-                   glm::vec3 viewPosition);
+                   glm::vec3 viewPosition,
+                   const glm::mat4& skyProjectionMatrix);
     
     VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);
