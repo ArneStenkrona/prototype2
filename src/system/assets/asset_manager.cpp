@@ -9,7 +9,7 @@ AssetManager::AssetManager(const char* assetDirectory)
 }
 
 void AssetManager::loadCubeMap(const char* name, prt::array<Texture, 6>& cubeMap) {
-  std::string path = (_assetDirectory + "models/skybox/") + name;
+  std::string path = (_assetDirectory + "textures/skybox/") + name;
   cubeMap[0].load((std::string(path) + "/front.png").c_str());
   cubeMap[1].load((std::string(path) + "/back.png").c_str());
   cubeMap[2].load((std::string(path) + "/up.png").c_str());

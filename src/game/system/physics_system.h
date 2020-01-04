@@ -32,7 +32,7 @@ public:
                                              const glm::vec3& trianglesVel,
                                              glm::vec3& intersectionPoint,
                                              float& intersectionTime);
-    
+        
 private:
     bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                    const glm::vec3& ellipsoidPos,

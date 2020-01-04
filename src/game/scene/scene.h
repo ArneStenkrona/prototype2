@@ -28,6 +28,7 @@ public:
 private:
     struct {
         uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
+        //uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
         glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
         glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
@@ -36,7 +37,6 @@ private:
 
     enum RESERVED_ENTITY_IDS {
         PLAYER_ID,
-        SKYBOX_ID,
         TOTAL_RESERVED_ENTIIY_IDS
     };
 

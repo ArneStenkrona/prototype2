@@ -27,52 +27,23 @@ public:
 
     static constexpr uint32_t UNDEFINED_MODEL = -1;
     static constexpr uint32_t DEFAULT_MODEL = 0;
-    
-    enum MODEL_TYPE {
-        OBJ,
-        SKYBOX,
-        TOTAL_MODEL_TYPES
-    };
-    struct ModelPath {
-        MODEL_TYPE type;
-        std::string path;
-
-        bool operator==(const ModelPath& other) const {
-            return type == other.type && path.compare(other.path) == 0;
-        }
-
-        bool operator!=(const ModelPath& other) const {
-            return !(*this == other);
-        }
-    };
 
 private:
 
-    prt::hash_map<std::string, ModelPath> _modelPaths;
+    prt::hash_map<std::string, std::string> _modelPaths;
     prt::hash_map<std::string, uint32_t> _modelIDs;
     prt::hash_map<uint32_t, std::string> _idToName;
 
     std::string _modelDirectory;
     uint16_t nextID = 0;
 
-    void addModelPaths(const char* directory, const char* postfix, MODEL_TYPE type);
+    void addModelPaths(const char* directory);
     
     void loadOBJPaths(const char* directory);
     void loadOBJ(const char* path, Model& model);
 
-    void loadSkyboxPaths(const char* directory);
-    void loadSkybox(const char* path, Model& model);
-
     void getPaths(const prt::vector<uint32_t>& IDs, 
-                  prt::vector<ModelPath>& modelPaths);
+                  prt::vector<std::string>& modelPaths);
 };
-
-namespace std {
-template<> struct hash<ModelManager::ModelPath> {
-        size_t operator()(ModelManager::ModelPath const& modelPath) const {
-            return hash<std::string>()(modelPath.path);
-        }
-    };
-}
 
 #endif

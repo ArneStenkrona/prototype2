@@ -16,8 +16,8 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
      _camera(camera) {
     resetTransforms();
 
-    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("monkey.obj");
-    uint32_t plane_ID = _assetManager.getModelManager().getModelID("plane.obj");
+    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("monkey");
+    uint32_t plane_ID = _assetManager.getModelManager().getModelID("plane");
 
 
     for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
@@ -47,7 +47,7 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
 }
 
 void Scene::initPlayer() {
-    uint32_t sphere_index = _assetManager.getModelManager().getModelID("sphere.obj");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("sphere");
 
     _player.entityID = RESERVED_ENTITY_IDS::PLAYER_ID;
     _player.acceleration = 1.0f;
