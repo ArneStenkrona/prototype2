@@ -24,7 +24,9 @@ Game::Game()
     prt::vector<Model> models;
     prt::vector<uint32_t> modelIndices;
     _scene.getEntities(models, modelIndices);
-    _vulkanApp.bindEntities(models, modelIndices);
+    prt::array<Texture, 6> skybox;
+    _scene.getSkybox(skybox);
+    _vulkanApp.bindScene(models, modelIndices, skybox);
 }
 
 Game::~Game() {

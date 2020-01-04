@@ -1,9 +1,10 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "src/container/vector.h"
-
 #include "src/graphics/geometry/parametric_shapes.h"
+
+#include "src/container/vector.h"
+#include "src/container/array.h"
 
 #include <vulkan/vulkan.h>
 
@@ -16,8 +17,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
-
-#include <array>
 
 struct Vertex {
     glm::vec3 pos;
@@ -39,8 +38,8 @@ struct Vertex {
     /**
      * @return vulkan attribute description
      */
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
+    static prt::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+        prt::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
         
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;

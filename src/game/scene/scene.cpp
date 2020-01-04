@@ -33,7 +33,6 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
     _entities.scales[MAXIMUM_MODEL_ENTITIES - 1] = { 1.0f, 1.0f, 1.0f };
 
     initPlayer();
-    initSkyBox();
 
     // temp collision stuff
     prt::vector<uint32_t> modelIDs = { monkey_ID };
@@ -58,14 +57,6 @@ void Scene::initPlayer() {
     _entities.modelIDs[_player.entityID] = sphere_index;
 }
 
-void Scene::initSkyBox() {
-    _skybox.entityID = RESERVED_ENTITY_IDS::SKYBOX_ID;
-
-    uint32_t skybox_ID = _assetManager.getModelManager().getModelID("default.skybox");
-    _entities.modelIDs[_skybox.entityID] = skybox_ID;
-    _entities.scales[_skybox.entityID] = glm::vec3{100.0f, 100.0f, 100.0f};
-}
-
 void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
     prt::vector<uint32_t> modelIDs;
     modelIDs.resize( _entities.numEntities);
@@ -74,6 +65,11 @@ void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& model
     }
     _assetManager.loadSceneModels(modelIDs, models, modelIndices);
 }
+
+void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) {
+    _assetManager.loadCubeMap("default", cubeMap);
+}
+
 
 void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {
     modelIDs.resize(_entities.numEntities);
@@ -128,7 +124,6 @@ glm::quat safeQuatLookAt(
 
 void Scene::update(float deltaTime) {
     updatePlayer(deltaTime);
-    updateSkybox();
 }
 
 void Scene::updatePlayer(float deltaTime) {
@@ -183,8 +178,4 @@ void Scene::updatePlayer(float deltaTime) {
 
     _camera.setTarget(pos);
     //pos += vel;
-}
-
-void Scene::updateSkybox() {
-    _entities.positions[_skybox.entityID] = _camera.getPosition();
 }

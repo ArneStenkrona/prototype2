@@ -5,6 +5,8 @@
 
 #include "src/system/assets/model_manager.h"
 
+#include "src/container/array.h"
+
 class AssetManager {
 public:
     AssetManager(const char* assetDirectory);
@@ -16,6 +18,7 @@ public:
                                 prt::vector<uint32_t>& modelIndices) { _modelManager.loadSceneModels(modelIDs,
                                                                                                      models,
                                                                                                      modelIndices);}
+    void loadCubeMap(const char* name, prt::array<Texture, 6>& cubeMap);
 
     std::string getDirectory() const { return _assetDirectory; }
 

@@ -35,14 +35,14 @@ set (FRAME_RATE 60)
 
 # Write to shaders
 # vert
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.vert.in" filedata)
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.vert.in" filedata)
 string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.vert" "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.vert" "${filedata}")
 # frag
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag.in" filedata)
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.frag.in" filedata)
 string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
 string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag" "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
 
 
 # END CONFIG VARIABLES

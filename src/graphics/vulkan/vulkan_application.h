@@ -61,11 +61,17 @@ struct SwapChainSupportDetails {
     prt::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UniformBufferObject {
+struct ModelUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
+};
+
+struct SkyboxUBO {
+		alignas(16) glm::mat4 projection;
+		alignas(16) glm::mat4 model;
+		alignas(4) float lodBias = 0.0f;
 };
 
 class VulkanApplication {
@@ -82,8 +88,8 @@ public:
     void cleanup();
 
 
-    void bindEntities(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
-    void loadModels(const prt::vector<Model>& models);
+    void bindScene(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices,
+                   const prt::array<Texture, 6>& skybox);
 
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = width; h = height; };
@@ -115,10 +121,26 @@ private:
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
     
+    struct {
+        VkDescriptorSetLayout skybox;
+        VkDescriptorSetLayout model;
+    } descriptorSetLayouts;
+
     VkRenderPass renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+    struct {
+        VkPipelineLayout skybox;
+        VkPipelineLayout model;
+    } pipelineLayouts;
+
+    struct {
+        VkPipelineCache skybox;
+        VkPipelineCache model;
+    } pipelineCaches;
+
+    struct {
+        VkPipeline skybox;
+        VkPipeline model;
+    } pipelines;
     
     VkCommandPool commandPool;
     
@@ -130,13 +152,22 @@ private:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
     
-    // Textures
+    // Model textures
     uint32_t mipLevels;
     prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
     prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
     prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
+
+    // Cubemap texture
+    VkImage cubeMapImage;
+    VkDeviceMemory cubeMapImageMemory;
+    VkImageView cubeMapImageView;
+
     // Sampler
-    VkSampler sampler;
+    struct {
+        VkSampler skybox;
+        VkSampler model;
+    } samplers;
 
     // Push constants
     prt::array<uint32_t, 2> pushConstants;
@@ -157,11 +188,25 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
     // Uniform data
-    prt::vector<VkBuffer> uniformBuffers;
-    prt::vector<VkDeviceMemory> uniformBuffersMemory;
+    struct {
+        prt::vector<VkBuffer> skybox;
+        prt::vector<VkDeviceMemory> skyboxMemory;
+
+        prt::vector<VkBuffer> model;
+        prt::vector<VkDeviceMemory> modelMemory;
+    } uniformBuffers;
+    
     // Descriptors
-    VkDescriptorPool descriptorPool;
-    prt::vector<VkDescriptorSet> descriptorSets;
+    struct {
+        VkDescriptorPool skybox;
+        VkDescriptorPool model;
+    } descriptorPools;
+
+    struct {
+        prt::vector<VkDescriptorSet> skybox;
+        prt::vector<VkDescriptorSet> model;
+    } descriptorSets;
+
     // Commands
     prt::vector<VkCommandBuffer> commandBuffers;
     // Contains the indirect drawing commands
@@ -200,9 +245,18 @@ private:
     
     void createRenderPass();
     
-    void createDescriptorSetLayout();
-    
-    void createGraphicsPipeline();
+    void createDescriptorSetLayouts();
+
+    void createPipelineCaches();
+
+    void createGraphicsPipeline(VkVertexInputBindingDescription& bindingDescription,
+                                prt::vector<VkVertexInputAttributeDescription>& attributeDescription,
+                                VkDescriptorSetLayout& VkDescriptorSetLayout,
+                                const std::string& vertShader, const std::string& fragShader,
+                                VkPipeline& pipeline, VkPipelineCache& pipelineCache,
+                                VkPipelineLayout& pipelineLayout);
+
+    void createGraphicsPipelines();
     
     void createFramebuffers();
     
@@ -220,43 +274,60 @@ private:
     bool hasStencilComponent(VkFormat format);
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
+    void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
     
+    void createTextureImageView(VkImageView& imageView, VkImage &image);
+    void createCubeMapImageView(VkImageView& imageView, VkImage &image);
+
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
-                         int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+                         int32_t texWidth, int32_t texHeight, 
+                         uint32_t mipLevels, uint32_t layerCount);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView(VkImageView& texImageView, VkImage &texIm);
     
-    void createSampler();
+    void createSamplers();
     
     VkImageView createImageView(VkImage image, VkFormat format, 
-                                VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+                                VkImageAspectFlags aspectFlags, 
+                                VkImageViewType viewType,
+                                uint32_t mipLevels,
+                                uint32_t layerCount);
     
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, 
+    void createImage(uint32_t width, uint32_t height, 
+                     uint32_t mipLevels, uint32_t arrayLayers,
+                     VkImageCreateFlags flags,
                      VkSampleCountFlagBits numSamples, VkFormat format, 
                      VkImageTiling tiling, VkImageUsageFlags usage, 
                      VkMemoryPropertyFlags properties, VkImage& image, 
                      VkDeviceMemory& imageMemory);
     
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
-                               VkImageLayout newLayout, uint32_t mipLevels);
+    void transitionImageLayout(VkImage image, VkFormat format, 
+                               VkImageLayout oldLayout, VkImageLayout newLayout, 
+                               uint32_t mipLevels, uint32_t layerCount);
     
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, 
+                           uint32_t width, uint32_t height,
+                           uint32_t layerCount);
     
     void createVertexBuffer(const prt::vector<Model>& models);
 
     
     void createIndexBuffer(const prt::vector<Model>& models);
 
-    // void createIndirectCommandBuffer(const prt::vector<Model>& models);
     void createDrawCommands(VkCommandBuffer& commandBuffer);
     
     void createUniformBuffers();
     
-    void createDescriptorPool();
+    void createDescriptorPools();
     
     void createDescriptorSets();
+
+    void loadModels(const prt::vector<Model>& models);
+
+    void loadSkybox(const prt::array<Texture, 6>& skybox);
+
+    void createRenderJobs(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
@@ -289,6 +360,7 @@ private:
                    const glm::mat4& projectionMatrix, 
                    glm::vec3 viewPosition);
     
+    VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const prt::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -309,7 +381,7 @@ private:
     
     bool checkValidationLayerSupport();
     
-    static prt::vector<char> readFile(const std::string& filename);
+    static prt::vector<char> readFile(const char* filename);
     
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, 
                                                         VkDebugUtilsMessageTypeFlagsEXT /*messageType*/, 

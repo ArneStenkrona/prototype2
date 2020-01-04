@@ -17,15 +17,14 @@ class Scene {
 public:
     Scene(AssetManager &assetManager, Input& input, Camera& camera);
 
-    void initPlayer();
-    void initSkyBox();
 
     void getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices);
+    void getSkybox(prt::array<Texture, 6>& cubeMap);
 
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
 
     void update(float deltaTime);
-    
+
 private:
     struct {
         uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
@@ -48,10 +47,6 @@ private:
         glm::vec3 velocity;
     } _player;
 
-    struct {
-        uint32_t entityID;
-    } _skybox;
-
     AssetManager& _assetManager;
     Input& _input;
     Camera& _camera;
@@ -59,8 +54,8 @@ private:
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
 
+    void initPlayer();
     void updatePlayer(float deltaTime);
-    void updateSkybox();
 };
 
 #endif

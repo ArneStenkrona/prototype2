@@ -4,11 +4,11 @@
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
-layout(set = 0, binding = 1) uniform texture2D textures[20];
+layout(set = 0, binding = 1) uniform texture2D textures[@NUMBER_SUPPORTED_TEXTURES@];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 model[100];
+    mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -17,7 +17,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 layout(push_constant) uniform PER_OBJECT
 {
 	layout(offset = 4) int imgIdx;
-}pc;
+} pc;
 
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
