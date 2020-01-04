@@ -163,6 +163,12 @@ void VulkanApplication::cleanup() {
     vkDestroyBuffer(device, indexBuffer, nullptr);
     vkFreeMemory(device, indexBufferMemory, nullptr);
 
+    vkDestroyBuffer(device, skyboxVertexBuffer, nullptr);
+    vkFreeMemory(device, skyboxVertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(device, skyboxIndexBuffer, nullptr);
+    vkFreeMemory(device, skyboxIndexBufferMemory, nullptr);
+
     vkDestroyBuffer(device, indirectCommandBuffer, nullptr);
     vkFreeMemory(device, indirectCommandBufferMemory, nullptr);
 
@@ -697,7 +703,7 @@ void VulkanApplication::createGraphicsPipelines() {
 
     VkVertexInputBindingDescription skyboxBindingDescription{};
     skyboxBindingDescription.binding = 0;
-    skyboxBindingDescription.stride = 3 * sizeof(float);
+    skyboxBindingDescription.stride = sizeof(glm::vec3);
     skyboxBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     
     prt::vector<VkVertexInputAttributeDescription> skyboxAttributeDescriptions{};
@@ -1242,6 +1248,8 @@ void VulkanApplication::loadModels(const prt::vector<Model>& models) {
     createVertexBuffer(models);
     createIndexBuffer(models);
 
+    createSkyboxBuffers();
+
     size_t numTex = 0;
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._meshes.size(); j++) {
@@ -1314,16 +1322,71 @@ void VulkanApplication::createIndexBuffer(const prt::vector<Model>& models) {
                        indexBuffer, indexBufferMemory);
 }
 
-void VulkanApplication::createDrawCommands(VkCommandBuffer& commandBuffer) {
+void VulkanApplication::createSkyboxBuffers() {
+    prt::vector<glm::vec3> vertices;
+
+    vertices.resize(8);
+    float w = 50.0f;
+    vertices[7] = glm::vec3{-w, -w, -w};
+    vertices[6] = glm::vec3{ w, -w, -w};
+    vertices[5] = glm::vec3{-w,  w, -w};
+    vertices[4] = glm::vec3{ w,  w, -w};
+
+    vertices[3] = glm::vec3{-w, -w,  w};
+    vertices[2] = glm::vec3{ w, -w,  w};
+    vertices[1] = glm::vec3{-w,  w,  w};
+    vertices[0] = glm::vec3{ w,  w,  w};
+
+    createAndMapBuffer(vertices.data(), sizeof(glm::vec3) * vertices.size(),
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                       skyboxVertexBuffer, skyboxVertexBufferMemory);    
+
+    prt::vector<uint32_t> indices = { 0, 2, 3,
+                                      3, 1, 0,
+                                      4, 5, 7,
+                                      7, 6, 4,
+                                      0, 1, 5,
+                                      5, 4, 0,
+                                      1, 3, 7,
+                                      7, 5, 1,
+                                      3, 2, 6,
+                                      6, 7, 3,
+                                      2, 0, 4,
+                                      4, 6, 2 };
+    
+    createAndMapBuffer(indices.data(), sizeof(uint32_t) * indices.size(),
+                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                    skyboxIndexBuffer, skyboxIndexBufferMemory);   
+}
+
+void VulkanApplication::createDrawCommands(size_t imageIndex) {
+
+    VkBuffer vertexBuffers[] = { skyboxVertexBuffer, vertexBuffer};
+    VkDeviceSize offsets[] = { 0, 0 };
+    // skybox
+    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.skybox);
+    vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
+    vkCmdBindIndexBuffer(commandBuffers[imageIndex], skyboxIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            pipelineLayouts.skybox, 0, 1, &descriptorSets.skybox[imageIndex], 0, nullptr);
+    vkCmdDrawIndexed(commandBuffers[imageIndex],
+                     36, 1, 0, 0, 0);
+    // model
+    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.model);
+    vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[1], &offsets[1]);
+    vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            pipelineLayouts.model, 0, 1, &descriptorSets.model[imageIndex], 0, nullptr);
+
     for (size_t i = 0; i < _renderJobs.size(); i++) {
-        vkCmdPushConstants(commandBuffer, pipelineLayouts.model, 
+        vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayouts.model, 
                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
                             0, sizeof(uint32_t), (void *)&_renderJobs[i]._modelMatrixIdx );
-        vkCmdPushConstants(commandBuffer, pipelineLayouts.model, 
+        vkCmdPushConstants(commandBuffers[imageIndex], pipelineLayouts.model, 
                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
                             sizeof(uint32_t)/*offset*/, sizeof(uint32_t), (void *)&_renderJobs[i]._imgIdx );
 
-        vkCmdDrawIndexed(commandBuffer, 
+        vkCmdDrawIndexed(commandBuffers[imageIndex], 
                  _renderJobs[i]._indexCount,
                  1,
                  _renderJobs[i]._firstIndex,
@@ -1646,17 +1709,7 @@ void VulkanApplication::createCommandBuffer(size_t imageIndex) {
     
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     
-    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.model);
-    
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-
-    /* Bind buffers and descriptors */
-    vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &vertexBuffers[0], &offsets[0]);
-    vkCmdBindIndexBuffer(commandBuffers[imageIndex], indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.model, 0, 1, &descriptorSets.model[imageIndex], 0, nullptr);
-
-    createDrawCommands(commandBuffers[imageIndex]);
+    createDrawCommands(imageIndex);
     //_imGuiApplication.drawFrame(commandBuffers[imageIndex]);
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
@@ -1689,23 +1742,34 @@ void VulkanApplication::createSyncObjects() {
     }
 }
 
-void VulkanApplication::updateUniformBuffer(uint32_t currentImage, 
-                                            const prt::vector<glm::mat4>& modelMatrices, 
-                                            const glm::mat4& viewMatrix, 
-                                            const glm::mat4& projectionMatrix, 
-                                            glm::vec3 viewPosition) {    
-    ModelUBO ubo = {};
+void VulkanApplication::updateUniformBuffers(uint32_t currentImage, 
+                                             const prt::vector<glm::mat4>& modelMatrices, 
+                                             const glm::mat4& viewMatrix, 
+                                             const glm::mat4& projectionMatrix, 
+                                             glm::vec3 viewPosition) {
+    // skybox
+    SkyboxUBO skyboxUBO = {};
+    skyboxUBO.model = viewMatrix * glm::mat4(1.0f);
+    skyboxUBO.projection = projectionMatrix;
+    skyboxUBO.projection[1][1] *= -1;
+
+    void* skyboxData;
+    vkMapMemory(device, uniformBuffers.skyboxMemory[currentImage], 0, sizeof(skyboxUBO), 0, &skyboxData);
+    memcpy(skyboxData, &skyboxUBO, sizeof(skyboxUBO));
+    vkUnmapMemory(device, uniformBuffers.skyboxMemory[currentImage]);                       
+    // model                                           
+    ModelUBO modelUBO = {};
     for (size_t i = 0; i < modelMatrices.size(); i++) {
-        ubo.model[i] = modelMatrices[i];
+        modelUBO.model[i] = modelMatrices[i];
     }
-    ubo.view = viewMatrix;
-    ubo.proj = projectionMatrix;
-    ubo.proj[1][1] *= -1;
-    ubo.viewPosition = viewPosition;
+    modelUBO.view = viewMatrix;
+    modelUBO.proj = projectionMatrix;
+    modelUBO.proj[1][1] *= -1;
+    modelUBO.viewPosition = viewPosition;
     
-    void* data;
-    vkMapMemory(device, uniformBuffers.modelMemory[currentImage], 0, sizeof(ubo), 0, &data);
-    memcpy(data, &ubo, sizeof(ubo));
+    void* modelData;
+    vkMapMemory(device, uniformBuffers.modelMemory[currentImage], 0, sizeof(modelUBO), 0, &modelData);
+    memcpy(modelData, &modelUBO, sizeof(modelUBO));
     vkUnmapMemory(device, uniformBuffers.modelMemory[currentImage]);
 }
 
@@ -1725,7 +1789,7 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
     }
 
     //createCommandBuffer(imageIndex);
-    updateUniformBuffer(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
+    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition);
     
     // if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
     //     vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());

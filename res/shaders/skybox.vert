@@ -9,7 +9,7 @@ layout (binding = 0) uniform UBO
 	mat4 model;
 } ubo;
 
-layout (location = 0) out vec3 outUVW;
+layout (location = 0) out vec3 TexCoords;
 
 out gl_PerVertex 
 {
@@ -18,7 +18,7 @@ out gl_PerVertex
 
 void main() 
 {
-	outUVW = inPos;
-	outUVW.x *= -1.0;
+	TexCoords = inPos;
+	TexCoords.x *= -1.0;
 	gl_Position = ubo.projection * ubo.model * vec4(inPos.xyz, 1.0);
 }

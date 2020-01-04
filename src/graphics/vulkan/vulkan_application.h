@@ -71,7 +71,7 @@ struct ModelUBO {
 struct SkyboxUBO {
 		alignas(16) glm::mat4 projection;
 		alignas(16) glm::mat4 model;
-		alignas(4) float lodBias = 0.0f;
+		//alignas(4) float lodBias = 0.0f;
 };
 
 class VulkanApplication {
@@ -187,6 +187,12 @@ private:
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+
+    // Skybox data
+    VkBuffer skyboxVertexBuffer;
+    VkDeviceMemory skyboxVertexBufferMemory;
+    VkBuffer skyboxIndexBuffer;
+    VkDeviceMemory skyboxIndexBufferMemory;
     // Uniform data
     struct {
         prt::vector<VkBuffer> skybox;
@@ -311,11 +317,12 @@ private:
                            uint32_t layerCount);
     
     void createVertexBuffer(const prt::vector<Model>& models);
-
     
     void createIndexBuffer(const prt::vector<Model>& models);
 
-    void createDrawCommands(VkCommandBuffer& commandBuffer);
+    void createSkyboxBuffers();
+
+    void createDrawCommands(size_t imageIndex);
     
     void createUniformBuffers();
     
@@ -349,11 +356,11 @@ private:
 
     void createSyncObjects();
     
-    void updateUniformBuffer(uint32_t currentImage, 
-                             const prt::vector<glm::mat4>& modelMatrices, 
-                             const glm::mat4& viewMatrix, 
-                             const glm::mat4& projectionMatrix, 
-                             glm::vec3 viewPosition);
+    void updateUniformBuffers(uint32_t currentImage, 
+                              const prt::vector<glm::mat4>& modelMatrices, 
+                              const glm::mat4& viewMatrix, 
+                              const glm::mat4& projectionMatrix, 
+                              glm::vec3 viewPosition);
     
     void drawFrame(const prt::vector<glm::mat4>& modelMatrices, 
                    const glm::mat4& viewMatrix, 
