@@ -118,6 +118,9 @@ void VulkanApplication::cleanupSwapChain() {
     }
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+
+    vkDestroyPipelineCache(device, pipelineCaches.skybox, nullptr);
+    vkDestroyPipelineCache(device, pipelineCaches.model, nullptr);
  
     vkDestroyPipeline(device, pipelines.skybox, nullptr);
     vkDestroyPipeline(device, pipelines.model, nullptr);
@@ -180,9 +183,6 @@ void VulkanApplication::cleanup() {
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
     }
-
-    vkDestroyPipelineCache(device, pipelineCaches.skybox, nullptr);
-    vkDestroyPipelineCache(device, pipelineCaches.model, nullptr);
  
     vkDestroyCommandPool(device, commandPool, nullptr);
  
@@ -1788,25 +1788,25 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
                                   const glm::mat4& projectionMatrix, 
                                   glm::vec3 viewPosition,
                                   const glm::mat4& skyProjectionMatrix) {    
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, 
+                                            imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
+                    skyProjectionMatrix);
+
+    if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
+        vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+    }
+    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         assert(false && "failed to acquire swap chain image!");
     }
-
-    //createCommandBuffer(imageIndex);
-    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
-                         skyProjectionMatrix);
-    
-    // if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
-    //     vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    // }
-    // imagesInFlight[imageIndex] = inFlightFences[currentFrame];
     
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1898,7 +1898,7 @@ VkPresentModeKHR VulkanApplication::chooseSwapPresentMode(const prt::vector<VkPr
 }
 
 VkExtent2D VulkanApplication::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     } else {
         int width, height;
