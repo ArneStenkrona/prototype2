@@ -4,9 +4,6 @@
 
 #include "src/game/system/physics_system.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
-
 prt::vector<glm::vec3> tris{};
 PhysicsSystem physicsSystem{};
 
@@ -16,21 +13,21 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
      _camera(camera) {
     resetTransforms();
 
-    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("monkey");
+    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("tree");
     uint32_t plane_ID = _assetManager.getModelManager().getModelID("plane");
 
 
-    for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
-        _entities.modelIDs[i] = monkey_ID;
-        _entities.positions[i] = { 10.0f * i, 0.0f, 0.0f };
-        _entities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
-        _entities.scales[i] = glm::vec3{1.0f,1.0f,1.0f};
+    for (size_t i = 0; i < _staticEntities.maxSize; i++) {
+        _staticEntities.modelIDs[i] = monkey_ID;
+        _staticEntities.transforms[i].position = { 10.0f * i, 0.0f, 0.0f };
+        _staticEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _staticEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
-        _entities.numEntities = MAXIMUM_MODEL_ENTITIES;
+    _staticEntities.size = _staticEntities.maxSize;
 
-    _entities.modelIDs[MAXIMUM_MODEL_ENTITIES - 1] = plane_ID;
-    _entities.positions[MAXIMUM_MODEL_ENTITIES - 1] = { 0, -10.0f, 0.0f };
-    _entities.scales[MAXIMUM_MODEL_ENTITIES - 1] = { 1.0f, 1.0f, 1.0f };
+    _staticEntities.modelIDs[_staticEntities.maxSize - 1] = plane_ID;
+    _staticEntities.transforms[_staticEntities.maxSize - 1].position = { 0, -10.0f, 0.0f };
+    _staticEntities.transforms[_staticEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
 
     initPlayer();
 
@@ -49,20 +46,18 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
 void Scene::initPlayer() {
     uint32_t sphere_index = _assetManager.getModelManager().getModelID("sphere");
 
-    _player.entityID = RESERVED_ENTITY_IDS::PLAYER_ID;
-    _player.acceleration = 1.0f;
-    _player.friction = 0.9f;
-    _player.velocity = {0.0f, 0.0f, 0.0f};
+    //_playerEntity.entityID = RESERVED_ENTITY_IDS::PLAYER_ID;
+    _playerEntity.modelID = sphere_index;
+    _playerEntity.acceleration = 1.0f;
+    _playerEntity.friction = 0.9f;
+    _playerEntity.velocity = {0.0f, 0.0f, 0.0f};
 
-    _entities.modelIDs[_player.entityID] = sphere_index;
 }
 
 void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
     prt::vector<uint32_t> modelIDs;
-    modelIDs.resize( _entities.numEntities);
-    for (size_t i = 0; i <  _entities.numEntities; i++) {
-        modelIDs[i] = _entities.modelIDs[i];
-    }
+    getModelIDs(modelIDs);
+
     _assetManager.loadSceneModels(modelIDs, models, modelIndices);
 }
 
@@ -72,28 +67,42 @@ void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) {
 
 
 void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {
-    modelIDs.resize(_entities.numEntities);
-    for (size_t i = 0; i < _entities.numEntities; i++) {
-        modelIDs[i] = _entities.modelIDs[i];
+    modelIDs.resize(_staticEntities.size + 
+                    _staticSolidEntities.size +
+                    1 /* player */);
+    size_t iID = 0;
+    for (size_t i = 0; i <  _staticEntities.size; i++) {
+        modelIDs[iID++] = _staticEntities.modelIDs[i];
     }
+    for (size_t i = 0; i <  _staticSolidEntities.size; i++) {
+        modelIDs[iID++] = _staticSolidEntities.modelIDs[i];
+    }
+    modelIDs[iID++] = _playerEntity.modelID;
 }
 
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) {
-    transformMatrices.resize(_entities.numEntities);
-    for (size_t i = 0; i < _entities.numEntities; i++) {
-        glm::mat4 scale = glm::scale(_entities.scales[i]);
-        glm::mat4 rotate = glm::toMat4(_entities.rotations[i]);
-        glm::mat4 translate = glm::translate(glm::mat4(1.0f), _entities.positions[i]);
-        transformMatrices[i] = translate * rotate * scale;
+    transformMatrices.resize(_staticEntities.size +
+                             _staticSolidEntities.size + 
+                             1 /* player */);
+
+    size_t iMatrix = 0;
+    for (size_t i = 0; i < _staticEntities.size; i++) {
+        transformMatrices[iMatrix++] = _staticEntities.transforms[i].transformMatrix();
     }
+    for (size_t i = 0; i < _staticSolidEntities.size; i++) {
+        transformMatrices[iMatrix++] = _staticSolidEntities.transforms[i].transformMatrix();
+    }
+    transformMatrices[iMatrix++] = _playerEntity.transform.transformMatrix();
 }
 
 void Scene::resetTransforms() {
-    for (size_t i = 0; i < MAXIMUM_MODEL_ENTITIES; i++) {
-        _entities.positions[i] = { 0.0f, 0.0f, 0.0f };
-        _entities.rotations[i] = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
-        _entities.scales[i] = { 1.0f, 1.0f, 1.0f };
+    for (size_t i = 0; i < _staticEntities.size; i++) {
+        _staticEntities.transforms[i] = {};
     }
+    for (size_t i = 0; i < _staticSolidEntities.size; i++) {
+        _staticSolidEntities.transforms[i] = {};
+    }
+    _playerEntity.transform = {};
 }
 
 glm::quat safeQuatLookAt(
@@ -127,7 +136,7 @@ void Scene::update(float deltaTime) {
 }
 
 void Scene::updatePlayer(float deltaTime) {
-    float acc = _player.acceleration * deltaTime;
+    float acc = _playerEntity.acceleration * deltaTime;
     glm::vec3 dir = {0.0f,0.0f,0.0f};
     float eps = 0.0001f;
     if (_input.getKey(GLFW_KEY_W) == GLFW_PRESS) {
@@ -151,31 +160,31 @@ void Scene::updatePlayer(float deltaTime) {
         dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    glm::vec3& pos = _entities.positions[_player.entityID];
-    glm::vec3& vel = _player.velocity;
+    glm::vec3& pos = _playerEntity.transform.position;
+    glm::vec3& vel = _playerEntity.velocity;
     if (glm::length(dir) > eps) {
         vel += glm::normalize(dir) * acc;
             
     }
     glm::vec3 lookDir = glm::normalize(glm::vec3{-dir.x, 0.0f, -dir.z});
     if (glm::length(lookDir) > eps) { 
-        _entities.rotations[_player.entityID] = 
+        _playerEntity.transform.rotation = 
                             safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
-                             glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+                            glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
     }
 
-    vel *= _player.friction;
+    vel *= _playerEntity.friction;
 
     // temp collision stuff
-    glm::vec3 ellipsoid = { 1.0f, 1.0f, 1.0f };
-    glm::vec3 intersectionPoint;
-    float intersectionDistance;
-    physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
-                                                      tris, _entities.positions[2],
-                                                      glm::vec3{0.0f,0.0f,0.0f},
-                                                      intersectionPoint,
-                                                      intersectionDistance);
+    // glm::vec3 ellipsoid = { 1.0f, 1.0f, 1.0f };
+    // glm::vec3 intersectionPoint;
+    // float intersectionDistance;
+    // physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
+    //                                                   tris, _entities.positions[2],
+    //                                                   glm::vec3{0.0f,0.0f,0.0f},
+    //                                                   intersectionPoint,
+    //                                                   intersectionDistance);
 
     _camera.setTarget(pos);
-    //pos += vel;
+    pos += vel;
 }

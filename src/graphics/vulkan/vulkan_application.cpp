@@ -72,6 +72,7 @@ void VulkanApplication::initVulkan() {
     createImageViews();
     createRenderPass();
     createDescriptorSetLayouts();
+    createPipelineCaches();
     createGraphicsPipelines();
     createCommandPool();
 
@@ -216,10 +217,10 @@ void VulkanApplication::recreateSwapChain() {
     createSwapChain();
     createImageViews();
     createRenderPass();
+    createPipelineCaches();
     createGraphicsPipelines();
     createColorResources();
     createDepthResources();
-    createPipelineCaches();
     createFramebuffers();
     createUniformBuffers();
     createDescriptorPools();

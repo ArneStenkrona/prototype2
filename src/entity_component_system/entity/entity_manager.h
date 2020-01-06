@@ -2,7 +2,6 @@
 #define ENTITY_MANAGER_H
 //#include "entity.h"
 #include "src/entity_component_system/component/component_manager.h"
-#include "src/entity_component_system/component/component.h"
 
 #include "src/memory/stack_allocator.h"
 //#include "src/memory/pool_allocator.h"

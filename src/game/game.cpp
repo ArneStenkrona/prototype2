@@ -1,7 +1,6 @@
 #include "game.h"
 
 #include "src/container/vector.h"
-#include "src/entity_component_system/component/component.h"
 #include "src/config/prototype2Config.h"
 
 #include <chrono>

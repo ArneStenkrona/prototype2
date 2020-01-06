@@ -10,7 +10,7 @@
 
 #include "src/graphics/geometry/model.h"
 
-#include <dirent.h>
+#include <fstream>
 
 class ModelManager {
 public:
@@ -29,13 +29,12 @@ public:
     static constexpr uint32_t DEFAULT_MODEL = 0;
 
 private:
-
     prt::hash_map<std::string, std::string> _modelPaths;
     prt::hash_map<std::string, uint32_t> _modelIDs;
     prt::hash_map<uint32_t, std::string> _idToName;
 
     std::string _modelDirectory;
-    uint16_t nextID = 0;
+    uint32_t nextID = 0;
 
     void addModelPaths(const char* directory);
     

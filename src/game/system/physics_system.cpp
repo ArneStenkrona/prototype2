@@ -2,6 +2,24 @@
 
 #include <glm/gtx/norm.hpp>
 
+PhysicsSystem::PhysicsSystem() 
+    : triangleMeshes{}
+{
+
+}
+
+
+void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& colliderModels) {
+
+    for (size_t i = 0; i < colliderModels.size(); i++) {
+        triangleMeshes[i].resize(colliderModels[i]._indexBuffer.size());
+        for (size_t j = 0; j < colliderModels[i]._indexBuffer.size(); j++) {
+            triangleMeshes[i][j] = colliderModels[i]._vertexBuffer[colliderModels[i]._indexBuffer[i]].pos;
+        }
+    }
+}
+
+
 bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                                         glm::vec3& ellipsoidPos,
                                                         glm::vec3& ellipsoidVel,

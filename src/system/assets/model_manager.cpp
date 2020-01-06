@@ -7,7 +7,6 @@
 #include "src/container/hash_map.h"
 
 #include <dirent.h>
-#include <fstream>
 
 #include <string>   
 
@@ -166,13 +165,10 @@ void ModelManager::loadOBJ(const char* path, Model& model) {
     int res = fscanf(file, "%s", lineHeader);
     while (res != EOF) {
         // read the first word of the line
-        if (res == EOF) {
-            break; // break when we've reached end of file
-        }
-
         if (strcmp(lineHeader, "o") == 0) {
             // object name
             fscanf(file, "%s", meshes[meshCount]._name);
+
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);
 
@@ -183,7 +179,6 @@ void ModelManager::loadOBJ(const char* path, Model& model) {
             }
 
             meshCount++;
-
         } else if (strcmp(lineHeader, "v") == 0) {
             // Parse vertex position.
             glm::vec3& pos = vertexBufferTemp[vertexPosCount++].pos;
@@ -235,6 +230,7 @@ void ModelManager::loadOBJ(const char* path, Model& model) {
      
         res = fscanf(file, "%s", lineHeader);
     }
+
     size_t numVertex = uniqueVertices.size();
     vertexBuffer.resize(numVertex);
     
