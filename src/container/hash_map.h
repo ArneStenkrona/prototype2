@@ -21,11 +21,11 @@ namespace prt {
 
         K& key() {
             assert(_present);
-            return *reinterpret_cast<K*>(&_key[0]);
+            return reinterpret_cast<K&>(_key);
         }
         V& value() {
             assert(_present);
-            return *reinterpret_cast<V*>(&_value[0]);
+            return reinterpret_cast<V&>(_value);
         }
         
     private:

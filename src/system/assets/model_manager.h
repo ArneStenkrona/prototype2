@@ -10,17 +10,20 @@
 
 #include "src/graphics/geometry/model.h"
 
-#include <fstream>
-
 class ModelManager {
 public:
     ModelManager(const char* directory);
 
 
-    void loadModels(const prt::vector<uint32_t>& uniqueIDs, prt::vector<Model>& models);
+    void loadModels(const prt::vector<uint32_t>& modelIDs, 
+                    prt::vector<Model>& models,
+                    prt::vector<Model>& colliderModels,
+                    prt::vector<uint32_t>& colliderIDs);
     void loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
                          prt::vector<Model>& models, 
-                         prt::vector<uint32_t>& modelIndices);
+                         prt::vector<uint32_t>& modelIndices,
+                         prt::vector<Model>& colliderModels,
+                         prt::vector<uint32_t>& colliderIDs);
 
     uint32_t getModelID(std::string& name);
     uint32_t getModelID(const char* name);
@@ -39,9 +42,8 @@ private:
     void addModelPaths(const char* directory);
     
     void loadOBJPaths(const char* directory);
-    void loadOBJ(const char* path, Model& model);
 
-    void getPaths(const prt::vector<uint32_t>& IDs, 
+    void getPaths(const prt::vector<uint32_t>& modelIDs, 
                   prt::vector<std::string>& modelPaths);
 };
 

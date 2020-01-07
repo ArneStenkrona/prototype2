@@ -15,9 +15,13 @@ public:
 
     inline void loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
                                 prt::vector<Model>& models, 
-                                prt::vector<uint32_t>& modelIndices) { _modelManager.loadSceneModels(modelIDs,
+                                prt::vector<uint32_t>& modelIndices,
+                                prt::vector<Model>& colliderModels,
+                                prt::vector<uint32_t>& colliderIDs) { _modelManager.loadSceneModels(modelIDs,
                                                                                                      models,
-                                                                                                     modelIndices);}
+                                                                                                     modelIndices,
+                                                                                                     colliderModels,
+                                                                                                     colliderIDs);}
     void loadCubeMap(const char* name, prt::array<Texture, 6>& cubeMap);
 
     std::string getDirectory() const { return _assetDirectory; }

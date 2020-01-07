@@ -13,7 +13,12 @@ class PhysicsSystem {
 public:
     PhysicsSystem();
 
-    void loadTriangleMeshColliders(const prt::vector<Model>& colliderModels);
+    void loadTriangleMeshColliders(const prt::vector<Model>& models,
+                                   const prt::vector<uint32_t>& modelIDs);
+
+    uint32_t getTriangleMeshID(uint32_t modelID) {
+        return modelIDToTriangleMeshIndex[modelID];
+    }
 
     /**
      * Checks for collision between an ellipsoid and a triangle mesh.
@@ -38,17 +43,16 @@ public:
                                              const glm::vec3& trianglesVel,
                                              glm::vec3& intersectionPoint,
                                              float& intersectionTime);
-
-    enum COLLIDER_TYPES : uint16_t {
-        TRIANGLE_MESH,
-        ELLIPSOID,
-        TOTAL_COLLIDER_TYPES
-    };
         
 private:
-    prt::hash_map<std::string, uint16_t> nameToID;
     // colliders
-    prt::vector< prt::vector<glm::vec3> > triangleMeshes;
+    struct TriangleMeshCollider {
+        prt::vector<glm::vec3> triangles;
+        float boundingSphere; 
+    };
+    prt::hash_map<uint32_t, uint32_t> modelIDToTriangleMeshIndex;
+    prt::vector<TriangleMeshCollider> triangleMeshes;
+    prt::vector< glm::vec3 > ellipsoids;
 
     bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                    const glm::vec3& ellipsoidPos,

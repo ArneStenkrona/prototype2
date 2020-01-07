@@ -5,6 +5,7 @@
 #include "src/system/assets/model_manager.h"
 #include "src/system/assets/asset_manager.h"
 #include "src/game/scene/scene.h"
+#include "src/game/system/physics_system.h"
 
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/vulkan/vulkan_application.h"
@@ -24,6 +25,7 @@ private:
     AssetManager _assetManager;
 
     Camera _camera;
+    PhysicsSystem _physicsSystem;
     Scene _scene;
 
     uint32_t _frameRate;

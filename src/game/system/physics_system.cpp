@@ -1,21 +1,30 @@
 #include "physics_system.h"
 
+#include "src/game/scene/scene.h"
+
 #include <glm/gtx/norm.hpp>
+
+#include <dirent.h>
 
 PhysicsSystem::PhysicsSystem() 
     : triangleMeshes{}
 {
-
 }
 
+void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
+                                              const prt::vector<uint32_t>& modelIDs) {
+    triangleMeshes.resize(models.size());
+    for (size_t i = 0; i < models.size(); i++) {
+        const Model& model = models[i];
 
-void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& colliderModels) {
-
-    for (size_t i = 0; i < colliderModels.size(); i++) {
-        triangleMeshes[i].resize(colliderModels[i]._indexBuffer.size());
-        for (size_t j = 0; j < colliderModels[i]._indexBuffer.size(); j++) {
-            triangleMeshes[i][j] = colliderModels[i]._vertexBuffer[colliderModels[i]._indexBuffer[i]].pos;
+        float boundingSphere = 0.0f;
+        triangleMeshes[i].triangles.resize(model._indexBuffer.size());
+        for (size_t j = 0; j < model._indexBuffer.size(); j++) {
+            const glm::vec3& pos = model._vertexBuffer[model._indexBuffer[j]].pos;
+            triangleMeshes[i].triangles[j] = pos;
+            boundingSphere = std::max(boundingSphere, glm::length(pos));
         }
+        modelIDToTriangleMeshIndex.insert(modelIDs[i], i);
     }
 }
 

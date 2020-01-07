@@ -6,6 +6,8 @@
 #include "src/system/assets/asset_manager.h"
 #include "src/graphics/camera/camera.h"
 #include "src/system/input/input.h"
+#include "src/game/system/physics_system.h"
+#include "src/graphics/vulkan/vulkan_application.h"
 
 #include "src/container/vector.h"
 
@@ -30,25 +32,22 @@ struct Transform {
 
 class Scene {
 public:
-    Scene(AssetManager &assetManager, Input& input, Camera& camera);
+    Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
+          Input& input, Camera& camera);
+
+    void load(VulkanApplication& vulkanApplication);
 
 
-    void getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices);
-    void getSkybox(prt::array<Texture, 6>& cubeMap);
+    // void getEntities(prt::vector<Model>& models, 
+    //                  prt::vector<uint32_t>& modelIndices,
+    //                  prt::vector<Model>& colliderModels,
+    //                  prt::vector<uint32_t>& colliderIDs);
 
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
 
     void update(float deltaTime);
 
 private:
-    // struct {
-    //     uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
-    //     glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
-    //     glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
-    //     glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
-    //     size_t numEntities = 0;
-    // } _entities;
-
     template<size_t N>
     struct StaticEntities {
         enum { maxSize = N };
@@ -79,24 +78,17 @@ private:
         uint32_t ellipsoidColliderID;
     } _playerEntity;
 
-    // enum RESERVED_ENTITY_IDS {
-    //     PLAYER_ID,
-    //     TOTAL_RESERVED_ENTIIY_IDS
-    // };
-
-    // struct {
-    //     uint32_t entityID;
-    //     float acceleration;
-    //     float friction;
-    //     glm::vec3 velocity;
-    // } _player;
-
     AssetManager& _assetManager;
+    PhysicsSystem& _physicsSystem;
     Input& _input;
     Camera& _camera;
     
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
+
+    void resolveColliderIDs();
+
+    void getSkybox(prt::array<Texture, 6>& cubeMap);
 
     void initPlayer();
     void updatePlayer(float deltaTime);

@@ -7,18 +7,20 @@
 prt::vector<glm::vec3> tris{};
 PhysicsSystem physicsSystem{};
 
-Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
+Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem, 
+             Input& input, Camera& camera)
     :_assetManager(assetManager),
+     _physicsSystem(physicsSystem),
      _input(input),
      _camera(camera) {
     resetTransforms();
 
-    uint32_t monkey_ID = _assetManager.getModelManager().getModelID("tree");
-    uint32_t plane_ID = _assetManager.getModelManager().getModelID("plane");
+    uint32_t tree_ID = _assetManager.getModelManager().getModelID("tree");
+    uint32_t plane_ID = _assetManager.getModelManager().getModelID("little_place");
 
 
     for (size_t i = 0; i < _staticEntities.maxSize; i++) {
-        _staticEntities.modelIDs[i] = monkey_ID;
+        _staticEntities.modelIDs[i] = tree_ID;
         _staticEntities.transforms[i].position = { 10.0f * i, 0.0f, 0.0f };
         _staticEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
         _staticEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
@@ -29,18 +31,26 @@ Scene::Scene(AssetManager &assetManager, Input& input, Camera& camera)
     _staticEntities.transforms[_staticEntities.maxSize - 1].position = { 0, -10.0f, 0.0f };
     _staticEntities.transforms[_staticEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
 
+    uint32_t colliderMonkey_ID = _assetManager.getModelManager().getModelID("collider_monkey");
+    for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
+        _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
+        _staticSolidEntities.transforms[i].position = { 10.0f * i, 5.0f, 0.0f };
+        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
+    }
+
     initPlayer();
 
     // temp collision stuff
-    prt::vector<uint32_t> modelIDs = { monkey_ID };
-    prt::vector<uint32_t> modelIndices{};
-    prt::vector<Model> models;
-    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
-    Model& model = models[0];
-    tris.resize(model._indexBuffer.size());
-    for (size_t i = 0; i < model._indexBuffer.size(); i++) {
-        tris[i] = model._vertexBuffer[model._indexBuffer[i]].pos;
-    }
+    // prt::vector<uint32_t> modelIDs = { monkey_ID };
+    // prt::vector<uint32_t> modelIndices{};
+    // prt::vector<Model> models;
+    // _assetManager.loadSceneModels(modelIDs, models, modelIndices);
+    // Model& model = models[0];
+    // tris.resize(model._indexBuffer.size());
+    // for (size_t i = 0; i < model._indexBuffer.size(); i++) {
+    //     tris[i] = model._vertexBuffer[model._indexBuffer[i]].pos;
+    // }
 }
 
 void Scene::initPlayer() {
@@ -54,12 +64,38 @@ void Scene::initPlayer() {
 
 }
 
-void Scene::getEntities(prt::vector<Model>& models, prt::vector<uint32_t>& modelIndices) {
+void Scene::load(VulkanApplication& vulkanApplication) {
     prt::vector<uint32_t> modelIDs;
     getModelIDs(modelIDs);
 
-    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
+    prt::vector<Model> models;
+    prt::vector<uint32_t> modelIndices;
+
+    prt::vector<Model> colliderModels;
+    prt::vector<uint32_t> colliderIDs;
+
+
+    _assetManager.loadSceneModels(modelIDs, models, modelIndices,
+                                  colliderModels, colliderIDs);
+
+    _physicsSystem.loadTriangleMeshColliders(colliderModels, colliderIDs);
+
+    prt::array<Texture, 6> skybox;
+    getSkybox(skybox);
+    vulkanApplication.bindScene(models, modelIndices, skybox);
 }
+
+
+// void Scene::getEntities(prt::vector<Model>& models, 
+//                         prt::vector<uint32_t>& modelIndices,
+//                         prt::vector<Model>& colliderModels,
+//                         prt::vector<uint32_t>& colliderIDs) {
+//     prt::vector<uint32_t> modelIDs;
+//     getModelIDs(modelIDs);
+
+//     _assetManager.loadSceneModels(modelIDs, models, modelIndices,
+//                                   colliderModels, colliderIDs);
+// }
 
 void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) {
     _assetManager.loadCubeMap("default", cubeMap);
@@ -78,6 +114,13 @@ void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {
         modelIDs[iID++] = _staticSolidEntities.modelIDs[i];
     }
     modelIDs[iID++] = _playerEntity.modelID;
+}
+
+void Scene::resolveColliderIDs() {
+    for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
+        uint32_t mID = _staticSolidEntities.modelIDs[i];
+        _staticSolidEntities.triangleMeshColliderIDs[i] = _physicsSystem.getTriangleMeshID(mID);
+    }
 }
 
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) {

@@ -106,6 +106,8 @@ struct Model {
     prt::vector<Mesh> _meshes;
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
+
+    void loadOBJ(const char* path);
 };
 
 #endif

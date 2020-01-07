@@ -13,19 +13,13 @@ Game::Game()
   _vulkanApp(_input),
   _assetManager(RESOURCE_PATH),
   _camera(_input),
-  _scene(_assetManager, _input, _camera),
+  _scene(_assetManager, _physicsSystem, _input, _camera),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0) {
 
     _input.init(_vulkanApp.getWindow());
-
-    prt::vector<Model> models;
-    prt::vector<uint32_t> modelIndices;
-    _scene.getEntities(models, modelIndices);
-    prt::array<Texture, 6> skybox;
-    _scene.getSkybox(skybox);
-    _vulkanApp.bindScene(models, modelIndices, skybox);
+    _scene.load(_vulkanApp);
 }
 
 Game::~Game() {
