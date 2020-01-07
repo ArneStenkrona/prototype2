@@ -3,12 +3,43 @@
 #include "src/game/scene/scene.h"
 
 #include <glm/gtx/norm.hpp>
+#include <glm/gtx/component_wise.hpp>
 
 #include <dirent.h>
 
 PhysicsSystem::PhysicsSystem() 
     : triangleMeshes{}
 {
+}
+
+void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
+                                               Transform* ellipsoidPositions,
+                                               glm::vec3* ellipsoidVelocities,
+                                               const size_t nEllipsoids,
+                                               const uint32_t* triangleMeshIDs,
+                                               const Transform* trianglePositions,
+                                               const size_t nTriangles){
+    // this is currently O(m*n), which is pretty bad.
+    // Spatial partitioning will be necessary for bigger scenes
+    for (size_t i = 0; i < nEllipsoids; i++) {
+        bool collide = false;
+        glm::vec3& ePos = ellipsoidPositions[i].position;
+        const glm::vec3& eCol = ellipsoids[ellipsoidIDs[i]];
+        glm::vec3& eVel = ellipsoidVelocities[i];
+        
+        for (size_t j = 0; j < nTriangles; j++) {
+            const glm::vec3& tPos = trianglePositions[j].position;
+            TriangleMeshCollider& tCol = triangleMeshes[triangleMeshIDs[j]];
+            glm::vec3 intersectionPoint;
+            float intersectionTime;
+            collide = collide || collideAndRespondEllipsoidTriangles(eCol, ePos, eVel,
+                                                tCol.triangles, tPos, {0.0f,0.0f,0.0f},
+                                                intersectionPoint, intersectionTime);
+        }
+        if (!collide) {
+            ePos += eVel;
+        }
+    }                                         
 }
 
 void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
@@ -26,6 +57,12 @@ void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
         }
         modelIDToTriangleMeshIndex.insert(modelIDs[i], i);
     }
+}
+
+uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
+    uint32_t id = ellipsoids.size();
+    ellipsoids.push_back(ellipsoid);
+    return id;
 }
 
 
@@ -50,7 +87,7 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
     glm::vec3 tPos = { cbm.x * trianglesPos.x, cbm.y * trianglesPos.y, cbm.z * trianglesPos.z };
     glm::vec3 tVel = { cbm.x * trianglesVel.x, cbm.y * trianglesVel.y, cbm.z * trianglesVel.z };
 
-    static constexpr uint32_t max_iter = 10;
+    static constexpr uint32_t max_iter = 5;
     uint32_t iter = 0;
     while (collideEllipsoidTriangles(ellipsoid,
                                      ePos,
@@ -67,14 +104,12 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
     }   
     //assert(iter < max_iter);
     if (iter == 0) {
-        // no collision, apply velocity as normal
-        ellipsoidPos += ellipsoidVel;
+        // no collision
         return false;
     } else {
         // convert result back to world space
         ellipsoidPos = { ePos.x * ellipsoid.x, ePos.y * ellipsoid.y, ePos.z * ellipsoid.z };
         ellipsoidVel = { eVel.x * ellipsoid.x, eVel.y * ellipsoid.y, eVel.z * ellipsoid.z };
-        //ellipsoidPos += ellipsoidVel;
         return true;
     }
 }

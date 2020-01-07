@@ -38,6 +38,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
         _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
         _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
+    _staticSolidEntities.size = _staticSolidEntities.maxSize;
 
     initPlayer();
 
@@ -56,11 +57,11 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
 void Scene::initPlayer() {
     uint32_t sphere_index = _assetManager.getModelManager().getModelID("sphere");
 
-    //_playerEntity.entityID = RESERVED_ENTITY_IDS::PLAYER_ID;
     _playerEntity.modelID = sphere_index;
     _playerEntity.acceleration = 1.0f;
     _playerEntity.friction = 0.9f;
     _playerEntity.velocity = {0.0f, 0.0f, 0.0f};
+    _playerEntity.ellipsoidColliderID = _physicsSystem.addEllipsoidCollider(_playerEntity.transform.scale);
 
 }
 
@@ -79,6 +80,7 @@ void Scene::load(VulkanApplication& vulkanApplication) {
                                   colliderModels, colliderIDs);
 
     _physicsSystem.loadTriangleMeshColliders(colliderModels, colliderIDs);
+    resolveColliderIDs();
 
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
@@ -176,6 +178,7 @@ glm::quat safeQuatLookAt(
 
 void Scene::update(float deltaTime) {
     updatePlayer(deltaTime);
+    updatePhysics(deltaTime);
 }
 
 void Scene::updatePlayer(float deltaTime) {
@@ -229,5 +232,19 @@ void Scene::updatePlayer(float deltaTime) {
     //                                                   intersectionDistance);
 
     _camera.setTarget(pos);
-    pos += vel;
+    //pos += vel;
+}
+
+void Scene::updatePhysics(float /*deltaTime*/) {
+    _physicsSystem.resolveEllipsoidsTriangles(&_playerEntity.ellipsoidColliderID,
+                                              &_playerEntity.transform,
+                                              &_playerEntity.velocity,
+                                              1,
+                                              _staticSolidEntities.triangleMeshColliderIDs,
+                                              _staticSolidEntities.transforms,
+                                              _staticSolidEntities.size);
+}
+
+void Scene::updateCamera() {
+    _camera.setTarget(_playerEntity.transform.position);
 }
