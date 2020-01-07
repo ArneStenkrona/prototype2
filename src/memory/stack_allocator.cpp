@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <cassert>
+#define _unused(x) ((void)(x))
 
 StackAllocator::StackAllocator(void* memoryPointer, size_t  memorySizeBytes)
 :  Allocator(memoryPointer, memorySizeBytes), _stackMarker(0) {
@@ -13,7 +14,8 @@ void* StackAllocator::allocate(size_t sizeBytes, size_t alignment) {
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
 
     // Determine total amount of memory to allocate.
-    // size_t expandSize_bytes = sizeBytes + alignment;
+    size_t expandSize_bytes = sizeBytes + alignment;
+    _unused(expandSize_bytes);
 
     // Assert that the stack can allocate the block
     assert(_stackMarker + expandSize_bytes <= _memorySizeBytes);

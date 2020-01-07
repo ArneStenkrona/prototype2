@@ -5,6 +5,7 @@
 #include "src/container/hash_set.h"
 
 #include <fstream>
+#define _unused(x) ((void)(x))
 
 LevelMap::LevelMap(const char* path) {
     std::string levelDataPath = std::string(path) + "level.lvl";
@@ -26,7 +27,8 @@ void LevelMap::loadLevelData(const char* filePath) {
     // Parse the contents.
     char lineHeader[512];
     char* res = fgets(lineHeader, 512, file);
-    // size_t rowLength = string_util::splitString(std::string(lineHeader), ',').size();
+    size_t rowLength = string_util::splitString(std::string(lineHeader), ',').size();
+    _unused(rowLength);
     while (res != NULL) {
         prt::vector<std::string> split = string_util::splitString(std::string(lineHeader), ',');
 
