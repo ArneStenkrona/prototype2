@@ -36,9 +36,7 @@ void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
                                                 tCol.triangles, tPos, {0.0f,0.0f,0.0f},
                                                 intersectionPoint, intersectionTime);
         }
-        if (!collide) {
-            ePos += eVel;
-        }
+        ePos += eVel;
     }                                         
 }
 
@@ -281,7 +279,7 @@ void PhysicsSystem::respondEllipsoidTriangles(glm::vec3& ellipsoidPos,
     ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
     glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
     if (intersectionTime < 0.0f) slideNormal = -slideNormal;
-    ellipsoidPos += verySmallDistance * slideNormal;
+    //ellipsoidPos += verySmallDistance * slideNormal;
     ellipsoidVel = glm::cross(slideNormal, 
                               glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal) 
                               / glm::length(slideNormal)) /

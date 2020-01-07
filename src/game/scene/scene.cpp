@@ -27,10 +27,6 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     }
     _staticEntities.size = _staticEntities.maxSize;
 
-    _staticEntities.modelIDs[_staticEntities.maxSize - 1] = plane_ID;
-    _staticEntities.transforms[_staticEntities.maxSize - 1].position = { 0, -10.0f, 0.0f };
-    _staticEntities.transforms[_staticEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
-
     uint32_t colliderMonkey_ID = _assetManager.getModelManager().getModelID("collider_monkey");
     for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
         _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
@@ -39,6 +35,10 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
         _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
     _staticSolidEntities.size = _staticSolidEntities.maxSize;
+
+    _staticSolidEntities.modelIDs[_staticSolidEntities.maxSize - 1] = plane_ID;
+    _staticSolidEntities.transforms[_staticSolidEntities.maxSize - 1].position = { 0, -10.0f, 0.0f };
+    _staticSolidEntities.transforms[_staticSolidEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
 
     initPlayer();
 
@@ -179,6 +179,7 @@ glm::quat safeQuatLookAt(
 void Scene::update(float deltaTime) {
     updatePlayer(deltaTime);
     updatePhysics(deltaTime);
+    updateCamera();
 }
 
 void Scene::updatePlayer(float deltaTime) {
@@ -206,7 +207,6 @@ void Scene::updatePlayer(float deltaTime) {
         dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    glm::vec3& pos = _playerEntity.transform.position;
     glm::vec3& vel = _playerEntity.velocity;
     if (glm::length(dir) > eps) {
         vel += glm::normalize(dir) * acc;
@@ -220,19 +220,6 @@ void Scene::updatePlayer(float deltaTime) {
     }
 
     vel *= _playerEntity.friction;
-
-    // temp collision stuff
-    // glm::vec3 ellipsoid = { 1.0f, 1.0f, 1.0f };
-    // glm::vec3 intersectionPoint;
-    // float intersectionDistance;
-    // physicsSystem.collideAndRespondEllipsoidTriangles(ellipsoid, pos, vel, 
-    //                                                   tris, _entities.positions[2],
-    //                                                   glm::vec3{0.0f,0.0f,0.0f},
-    //                                                   intersectionPoint,
-    //                                                   intersectionDistance);
-
-    _camera.setTarget(pos);
-    //pos += vel;
 }
 
 void Scene::updatePhysics(float /*deltaTime*/) {
