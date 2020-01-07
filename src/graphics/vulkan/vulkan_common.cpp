@@ -57,4 +57,5 @@ uint32_t vulkan_common::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t
     }
     
     assert(false && "failed to find suitable memory type!");
+    return 0;
 }

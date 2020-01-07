@@ -26,7 +26,7 @@ void LevelMap::loadLevelData(const char* filePath) {
     // Parse the contents.
     char lineHeader[512];
     char* res = fgets(lineHeader, 512, file);
-    size_t rowLength = string_util::splitString(std::string(lineHeader), ',').size();
+    // size_t rowLength = string_util::splitString(std::string(lineHeader), ',').size();
     while (res != NULL) {
         prt::vector<std::string> split = string_util::splitString(std::string(lineHeader), ',');
 

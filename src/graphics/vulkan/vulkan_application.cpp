@@ -817,6 +817,7 @@ VkFormat VulkanApplication::findSupportedFormat(const prt::vector<VkFormat>& can
     }
     
     assert(false && "failed to find supported format!");
+    return VK_FORMAT_UNDEFINED;
 }
 
 VkFormat VulkanApplication::findDepthFormat() {
@@ -1156,8 +1157,8 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = layerCount;
     
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
+    VkPipelineStageFlags sourceStage = 0;
+    VkPipelineStageFlags destinationStage = 0;
     
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
         barrier.srcAccessMask = 0;
@@ -1665,6 +1666,7 @@ uint32_t VulkanApplication::findMemoryType(uint32_t typeFilter, VkMemoryProperty
     }
     
     assert(false && "failed to find suitable memory type!");
+    return 0;
 }
 
 void VulkanApplication::createCommandBuffers() {

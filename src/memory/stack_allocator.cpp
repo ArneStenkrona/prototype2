@@ -13,7 +13,7 @@ void* StackAllocator::allocate(size_t sizeBytes, size_t alignment) {
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
 
     // Determine total amount of memory to allocate.
-    size_t expandSize_bytes = sizeBytes + alignment;
+    // size_t expandSize_bytes = sizeBytes + alignment;
 
     // Assert that the stack can allocate the block
     assert(_stackMarker + expandSize_bytes <= _memorySizeBytes);
