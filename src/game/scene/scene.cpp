@@ -13,7 +13,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
      _physicsSystem(physicsSystem),
      _input(input),
      _camera(camera),
-     _gravityConstant(1.0f) {
+     _gravityConstant({0.0f,-1.0f,0.0f}) {
     resetTransforms();
 
     uint32_t tree_ID = _assetManager.getModelManager().getModelID("tree");
@@ -32,8 +32,8 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
         _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
         _staticSolidEntities.transforms[i].position = { 10.0f * i, 5.0f, 0.0f };
-        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.30f, 0.0f, 0.0f});
-        _staticSolidEntities.transforms[i].scale = glm::vec3{2.0f,1.0f,1.0f};
+        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
     _staticSolidEntities.size = _staticSolidEntities.maxSize;
 
@@ -185,6 +185,10 @@ void Scene::updatePlayer(float deltaTime) {
         dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
+    if (_input.getKey(GLFW_KEY_G) == GLFW_PRESS) {
+        _applyGravity = !_applyGravity;
+    }
+
     glm::vec3& vel = _playerEntity.velocity;
     if (glm::length(dir) > eps) {
         vel += glm::normalize(dir) * acc;
@@ -198,7 +202,11 @@ void Scene::updatePlayer(float deltaTime) {
     }
 
     vel *= _playerEntity.friction;
-    _playerEntity.gravityVelocity += _gravityConstant * deltaTime;
+    if (_applyGravity) {
+        _playerEntity.gravityVelocity += _gravityConstant * deltaTime;
+    } else {
+        _playerEntity.gravityVelocity = {0.0f,0.0f,0.0f};
+    }
 }
 
 void Scene::updatePhysics(float /*deltaTime*/) {
@@ -209,6 +217,16 @@ void Scene::updatePhysics(float /*deltaTime*/) {
                                               _staticSolidEntities.triangleMeshColliderIDs,
                                               _staticSolidEntities.transforms,
                                               _staticSolidEntities.size);
+
+    if (_applyGravity) {
+        _physicsSystem.resolveEllipsoidsTriangles(&_playerEntity.ellipsoidColliderID,
+                                                &_playerEntity.transform,
+                                                &_playerEntity.gravityVelocity,
+                                                1,
+                                                _staticSolidEntities.triangleMeshColliderIDs,
+                                                _staticSolidEntities.transforms,
+                                                _staticSolidEntities.size);   
+    }
 }
 
 void Scene::updateCamera() {

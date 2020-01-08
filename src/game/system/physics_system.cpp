@@ -126,8 +126,6 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
         return false;
     } else {
         // convert result back to world space
-        //ellipsoidPos = { ePos.x * ellipsoid.x, ePos.y * ellipsoid.y, ePos.z * ellipsoid.z };
-        //ellipsoidVel = { eVel.x * ellipsoid.x, eVel.y * ellipsoid.y, eVel.z * ellipsoid.z };
         ellipsoidTransform.position = glm::vec3(relativeInvTMat * glm::vec4(ePos, 1.0f));
         ellipsoidVel = glm::vec3(relativeInvTMat * glm::vec4(eVel, 0.0f));
         return true;
@@ -223,8 +221,12 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 // collision occurs outside velocity range
                 continue;
             }
-            t0 = glm::clamp(t0, -1.0f, 1.0f);
-            t1 = glm::clamp(t1, -1.0f, 1.0f);
+            // by clamping with -0.1f we can correct
+            // for some errors where collider was
+            // erroneously pushed inside triangle mesh
+            // the previous frame
+            t0 = glm::clamp(t0, -0.1f, 1.0f);
+            t1 = glm::clamp(t1, -0.1f, 1.0f);
         }
         
         if (!embeddedInPlane) {
@@ -300,10 +302,9 @@ void PhysicsSystem::respondEllipsoidTriangles(glm::vec3& ellipsoidPos,
                                               const float intersectionTime) {
     ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
     glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
+
     if (intersectionTime < 0.0f) slideNormal = -slideNormal;
-    //ellipsoidPos += verySmallDistance * slideNormal;
+    ellipsoidPos += verySmallDistance * slideNormal;
     ellipsoidVel = glm::cross(slideNormal, 
-                              glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal) 
-                              / glm::length(slideNormal)) /
-                              glm::length(slideNormal);
+                              glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal));
 }
