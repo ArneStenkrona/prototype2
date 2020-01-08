@@ -22,12 +22,6 @@ public:
 
     void load(VulkanApplication& vulkanApplication);
 
-
-    // void getEntities(prt::vector<Model>& models, 
-    //                  prt::vector<uint32_t>& modelIndices,
-    //                  prt::vector<Model>& colliderModels,
-    //                  prt::vector<uint32_t>& colliderIDs);
-
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
 
     void update(float deltaTime);
@@ -60,6 +54,7 @@ private:
         glm::vec3 velocity;
         float acceleration;
         float friction;
+        glm::vec3 gravityVelocity;
         uint32_t ellipsoidColliderID;
     } _playerEntity;
 
@@ -67,6 +62,8 @@ private:
     PhysicsSystem& _physicsSystem;
     Input& _input;
     Camera& _camera;
+
+    float _gravityConstant;
     
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);

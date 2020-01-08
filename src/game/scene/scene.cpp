@@ -12,7 +12,8 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     :_assetManager(assetManager),
      _physicsSystem(physicsSystem),
      _input(input),
-     _camera(camera) {
+     _camera(camera),
+     _gravityConstant(1.0f) {
     resetTransforms();
 
     uint32_t tree_ID = _assetManager.getModelManager().getModelID("tree");
@@ -31,8 +32,8 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
         _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
         _staticSolidEntities.transforms[i].position = { 10.0f * i, 5.0f, 0.0f };
-        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
-        _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
+        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.30f, 0.0f, 0.0f});
+        _staticSolidEntities.transforms[i].scale = glm::vec3{2.0f,1.0f,1.0f};
     }
     _staticSolidEntities.size = _staticSolidEntities.maxSize;
 
@@ -41,17 +42,6 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     _staticSolidEntities.transforms[_staticSolidEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
 
     initPlayer();
-
-    // temp collision stuff
-    // prt::vector<uint32_t> modelIDs = { monkey_ID };
-    // prt::vector<uint32_t> modelIndices{};
-    // prt::vector<Model> models;
-    // _assetManager.loadSceneModels(modelIDs, models, modelIndices);
-    // Model& model = models[0];
-    // tris.resize(model._indexBuffer.size());
-    // for (size_t i = 0; i < model._indexBuffer.size(); i++) {
-    //     tris[i] = model._vertexBuffer[model._indexBuffer[i]].pos;
-    // }
 }
 
 void Scene::initPlayer() {
@@ -61,7 +51,7 @@ void Scene::initPlayer() {
     _playerEntity.acceleration = 1.0f;
     _playerEntity.friction = 0.9f;
     _playerEntity.velocity = {0.0f, 0.0f, 0.0f};
-    _playerEntity.ellipsoidColliderID = _physicsSystem.addEllipsoidCollider(_playerEntity.transform.scale);
+    _playerEntity.ellipsoidColliderID = _physicsSystem.addEllipsoidCollider({1.0f, 1.0f, 1.0f});
 
 }
 
@@ -86,18 +76,6 @@ void Scene::load(VulkanApplication& vulkanApplication) {
     getSkybox(skybox);
     vulkanApplication.bindScene(models, modelIndices, skybox);
 }
-
-
-// void Scene::getEntities(prt::vector<Model>& models, 
-//                         prt::vector<uint32_t>& modelIndices,
-//                         prt::vector<Model>& colliderModels,
-//                         prt::vector<uint32_t>& colliderIDs) {
-//     prt::vector<uint32_t> modelIDs;
-//     getModelIDs(modelIDs);
-
-//     _assetManager.loadSceneModels(modelIDs, models, modelIndices,
-//                                   colliderModels, colliderIDs);
-// }
 
 void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) {
     _assetManager.loadCubeMap("default", cubeMap);
@@ -220,6 +198,7 @@ void Scene::updatePlayer(float deltaTime) {
     }
 
     vel *= _playerEntity.friction;
+    _playerEntity.gravityVelocity += _gravityConstant * deltaTime;
 }
 
 void Scene::updatePhysics(float /*deltaTime*/) {

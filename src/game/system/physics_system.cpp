@@ -13,30 +13,30 @@ PhysicsSystem::PhysicsSystem()
 }
 
 void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
-                                               Transform* ellipsoidPositions,
+                                               Transform* ellipsoidTransforms,
                                                glm::vec3* ellipsoidVelocities,
                                                const size_t nEllipsoids,
                                                const uint32_t* triangleMeshIDs,
-                                               const Transform* trianglePositions,
+                                               const Transform* triangleTransforms,
                                                const size_t nTriangles){
     // this is currently O(m*n), which is pretty bad.
     // Spatial partitioning will be necessary for bigger scenes
     for (size_t i = 0; i < nEllipsoids; i++) {
-        bool collide = false;
-        glm::vec3& ePos = ellipsoidPositions[i].position;
+        Transform& eT = ellipsoidTransforms[i];
         const glm::vec3& eCol = ellipsoids[ellipsoidIDs[i]];
         glm::vec3& eVel = ellipsoidVelocities[i];
         
         for (size_t j = 0; j < nTriangles; j++) {
-            const glm::vec3& tPos = trianglePositions[j].position;
+            const Transform& tT = triangleTransforms[j];
             TriangleMeshCollider& tCol = triangleMeshes[triangleMeshIDs[j]];
             glm::vec3 intersectionPoint;
             float intersectionTime;
-            collide = collide || collideAndRespondEllipsoidTriangles(eCol, ePos, eVel,
-                                                tCol.triangles, tPos, {0.0f,0.0f,0.0f},
+
+            collideAndRespondEllipsoidTriangles(eCol, eT, eVel,
+                                                tCol.triangles, tT, {0.0f,0.0f,0.0f},
                                                 intersectionPoint, intersectionTime);
         }
-        ePos += eVel;
+        eT.position += eVel;
     }                                         
 }
 
@@ -65,24 +65,44 @@ uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
 
 
 bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
-                                                        glm::vec3& ellipsoidPos,
+                                                        Transform& ellipsoidTransform,
                                                         glm::vec3& ellipsoidVel,
                                                         const prt::vector<glm::vec3>& triangles,
-                                                        const glm::vec3& trianglesPos,
+                                                        const Transform& triangleTransform,
                                                         const glm::vec3& trianglesVel,
                                                         glm::vec3& intersectionPoint,
                                                         float& intersectionTime) {
     prt::vector<glm::vec3> tris = triangles;
     // convert to eSpace
-    // change of basis matrix, though simplified as a vector
-    glm::vec3 cbm = { 1.0f / ellipsoid.x, 1.0f / ellipsoid.y, 1.0f / ellipsoid.z };
+    // TODO: make different scales for ellipsoid work
+    glm::mat4 tInvTranslation = glm::translate(-triangleTransform.position);
+    glm::mat4 tTranslation = glm::translate(triangleTransform.position);
+    glm::mat4 tInvRotation = glm::toMat4(glm::inverse(triangleTransform.rotation));
+    glm::mat4 tRotation = glm::toMat4(triangleTransform.rotation);
+    glm::mat4 tInvScale = glm::scale(glm::vec3{1.0f / triangleTransform.scale.x,
+                                               1.0f / triangleTransform.scale.y,
+                                               1.0f / triangleTransform.scale.z});
+    glm::mat4 tScale = glm::scale(triangleTransform.scale);
+
+    glm::mat4 relativeTMat = /*eInvScale * */tTranslation * tInvScale * tInvRotation * tInvTranslation;
+    glm::mat4 relativeInvTMat = tTranslation * tRotation * tScale * tInvTranslation /** eScale*/;
+    glm::vec4 ePosition = glm::vec4(ellipsoidTransform.position, 1.0f);
+    ePosition = relativeTMat * ePosition;
+    glm::vec4 eVelocity = glm::vec4(ellipsoidVel, 0.0f);
+    eVelocity = relativeTMat * eVelocity;
+
+    glm::vec3 cbm = glm::vec3{ triangleTransform.scale.x * (1.0f / ellipsoid.x),
+                               triangleTransform.scale.y * (1.0f / ellipsoid.y), 
+                               triangleTransform.scale.z * (1.0f / ellipsoid.z) };
+    
     for (size_t i = 0; i < tris.size(); i++) {
         tris[i] = { cbm.x * tris[i].x, cbm.y * tris[i].y, cbm.z * tris[i].z };
     }
-    glm::vec3 ePos = { cbm.x * ellipsoidPos.x, cbm.y * ellipsoidPos.y, cbm.z * ellipsoidPos.z };
-    glm::vec3 eVel = { cbm.x * ellipsoidVel.x, cbm.y * ellipsoidVel.y, cbm.z * ellipsoidVel.z };
-    
-    glm::vec3 tPos = { cbm.x * trianglesPos.x, cbm.y * trianglesPos.y, cbm.z * trianglesPos.z };
+
+    glm::vec3 ePos = glm::vec3(ePosition);
+    glm::vec3 eVel = glm::vec3(eVelocity);
+
+    glm::vec3 tPos = { cbm.x * triangleTransform.position.x, cbm.y * triangleTransform.position.y, cbm.z * triangleTransform.position.z };
     glm::vec3 tVel = { cbm.x * trianglesVel.x, cbm.y * trianglesVel.y, cbm.z * trianglesVel.z };
 
     static constexpr uint32_t max_iter = 5;
@@ -106,8 +126,10 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
         return false;
     } else {
         // convert result back to world space
-        ellipsoidPos = { ePos.x * ellipsoid.x, ePos.y * ellipsoid.y, ePos.z * ellipsoid.z };
-        ellipsoidVel = { eVel.x * ellipsoid.x, eVel.y * ellipsoid.y, eVel.z * ellipsoid.z };
+        //ellipsoidPos = { ePos.x * ellipsoid.x, ePos.y * ellipsoid.y, ePos.z * ellipsoid.z };
+        //ellipsoidVel = { eVel.x * ellipsoid.x, eVel.y * ellipsoid.y, eVel.z * ellipsoid.z };
+        ellipsoidTransform.position = glm::vec3(relativeInvTMat * glm::vec4(ePos, 1.0f));
+        ellipsoidVel = glm::vec3(relativeInvTMat * glm::vec4(eVel, 0.0f));
         return true;
     }
 }
@@ -180,7 +202,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
         bool embeddedInPlane = false;
         // check distance to plane and set t0,t1
         if (ndotv == 0.0f) {
-            if (std::abs(sigDist) >= 1.0f) {
+            if (std::abs(sigDist) > 1.0f) {
                 continue;
             } else {
                 // sphere is embedded in plane

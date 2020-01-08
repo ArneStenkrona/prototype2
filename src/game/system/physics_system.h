@@ -62,10 +62,10 @@ public:
      *                             returned by reference
      */
     bool collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
-                                             glm::vec3& ellipsoidPos,
+                                             Transform& ellipsoidTransform,
                                              glm::vec3& ellipsoidVel,
                                              const prt::vector<glm::vec3>& triangles,
-                                             const glm::vec3& trianglesPos,
+                                             const Transform& triangleTransform,
                                              const glm::vec3& trianglesVel,
                                              glm::vec3& intersectionPoint,
                                              float& intersectionTime);
