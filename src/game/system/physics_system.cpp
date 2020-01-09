@@ -15,7 +15,8 @@ PhysicsSystem::PhysicsSystem()
 void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
                                                Transform* ellipsoidTransforms,
                                                glm::vec3* ellipsoidVelocities,
-                                               bool* isGrounded,
+                                               bool* ellipsoidsAreGrounded,
+                                               glm::vec3* ellipsoidGroundNormals,
                                                const size_t nEllipsoids,
                                                const uint32_t* triangleMeshIDs,
                                                const Transform* triangleTransforms,
@@ -26,7 +27,8 @@ void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
         Transform& eT = ellipsoidTransforms[i];
         const glm::vec3& eCol = ellipsoids[ellipsoidIDs[i]];
         glm::vec3& eVel = ellipsoidVelocities[i];
-        bool& eGround = isGrounded[i];
+        bool& eIsGround = ellipsoidsAreGrounded[i];
+        glm::vec3& eGroundN = ellipsoidGroundNormals[i];
         
         for (size_t j = 0; j < nTriangles; j++) {
             const Transform& tT = triangleTransforms[j];
@@ -34,7 +36,7 @@ void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
             glm::vec3 intersectionPoint;
             float intersectionTime;
 
-            collideAndRespondEllipsoidTriangles(eCol, eT, eVel, eGround,
+            collideAndRespondEllipsoidTriangles(eCol, eT, eVel, eIsGround, eGroundN,
                                                 tCol.triangles, tT, {0.0f,0.0f,0.0f},
                                                 intersectionPoint, intersectionTime);
         }
@@ -70,6 +72,7 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
                                                         Transform& ellipsoidTransform,
                                                         glm::vec3& ellipsoidVel,
                                                         bool& ellipsoidIsGrounded,
+                                                        glm::vec3& ellipsoidGroundNormal,
                                                         const prt::vector<glm::vec3>& triangles,
                                                         const Transform& triangleTransform,
                                                         const glm::vec3& trianglesVel,
@@ -109,12 +112,14 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
     glm::vec3 tVel = { cbm.x * trianglesVel.x, cbm.y * trianglesVel.y, cbm.z * trianglesVel.z };
 
     ellipsoidIsGrounded = false;
+    ellipsoidGroundNormal = glm::vec3{0.0f,-1.0f,0.0f};
+    glm::vec3 eGroundN;
 
     static constexpr uint32_t max_iter = 5;
     uint32_t iter = 0;
     bool eGround = false;
     while (iter < max_iter && 
-           collideEllipsoidTriangles(ellipsoid, ePos, eVel, eGround,
+           collideEllipsoidTriangles(ellipsoid, ePos, eVel, eGround, eGroundN,
                                      tris, tPos, tVel,
                                      intersectionPoint, intersectionTime)) {
         
@@ -122,6 +127,9 @@ bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipso
                                   intersectionPoint, intersectionTime);
         ellipsoidIsGrounded = ellipsoidIsGrounded || eGround;
         eGround = false;
+        ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
+                                glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
+                                eGroundN : ellipsoidGroundNormal;
         iter++;
     };
     //assert(iter < max_iter);
@@ -169,6 +177,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                                               const glm::vec3& ellipsoidPos,
                                               const glm::vec3& ellipsoidVel,
                                               bool& isGrounded,
+                                              glm::vec3& ellipsoidGroundNormal,
                                               const prt::vector<glm::vec3>& triangles,
                                               const glm::vec3& trianglesPos,
                                               const glm::vec3& trianglesVel,
@@ -180,14 +189,14 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
 
     // results of the collision test
     intersectionTime = std::numeric_limits<float>::infinity();
-    glm::vec3 n;
+    glm::vec3 normal;
     for (size_t i = 0; i < tris.size(); i+=3) {
         // find the triangle plane
         const glm::vec3& p1 = tris[i];
         const glm::vec3& p2 = tris[i+1];
         const glm::vec3& p3 = tris[i+2];
         // plane normal
-        n = glm::cross((p2-p1),(p3-p1));
+        glm::vec3 n = glm::cross((p2-p1),(p3-p1));
         n = glm::normalize(n);
 
         // skip triangle if relative velocity is not towards the triangle
@@ -243,6 +252,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 if (t < intersectionTime) {
                     intersectionTime = t;
                     intersectionPoint = pip + trianglesPos;
+                    normal = n;
                 }
                 // collision inside triangle
                 continue;
@@ -264,6 +274,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                 if (t >= 0.0f && t <= 1.0f && t < intersectionTime) {
                     intersectionTime = t;
                     intersectionPoint = tris[i + j] + trianglesPos;
+                    normal = n;
                 }
             }
         }
@@ -292,6 +303,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
                     if (f0 >= 0.0f && f0 <= 1.0f && t < intersectionTime) {
                         intersectionTime = t;
                         intersectionPoint = tris[i + j] + f0 * edges[j] + trianglesPos;
+                        normal = n;
                     }
                 }
             }
@@ -299,8 +311,10 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
         
     }
     // isGrounded if slope is less than approx 45 degrees
-    isGrounded = glm::dot(n, glm::vec3{0.0f,1.0f,0.0f}) < 0.72f;
-    return intersectionTime <= 1.0f;
+    bool intersect = intersectionTime <= 1.0f;
+    isGrounded = intersect && glm::dot(normal, glm::vec3{0.0f,1.0f,0.0f}) > 0.72f;
+    ellipsoidGroundNormal = normal;
+    return intersect;
 }
 
 void PhysicsSystem::respondEllipsoidTriangles(glm::vec3& ellipsoidPos,

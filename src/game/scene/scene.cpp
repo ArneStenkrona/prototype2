@@ -162,22 +162,27 @@ void Scene::update(float deltaTime) {
 }
 
 void Scene::updatePlayer(float deltaTime) {
+    // compute movement bases
+    glm::vec3 up = _playerEntity.isGrounded ? _playerEntity.groundNormal : glm::vec3{0.0f, 1.0f, 0.0f};
+    glm::vec3 right = glm::normalize(glm::cross(_camera.getFront(), up));
+    glm::vec3 forward = glm::normalize(glm::cross(up, right));
+
     float acc = _playerEntity.acceleration * deltaTime;
     glm::vec3 dir = {0.0f,0.0f,0.0f};
     float eps = 0.0001f;
     if (_input.getKeyPress(INPUT_KEY::KEY_W)) {
-        glm::vec3 front = _camera.getFront();
-        dir += glm::normalize(glm::vec3{front.x, 0.0f, front.z});
+        // glm::vec3 front = _camera.getFront();
+        dir += forward;//glm::normalize(glm::vec3{front.x, 0.0f, front.z});
     }
     if (_input.getKeyPress(INPUT_KEY::KEY_S)) {
-        glm::vec3 front = _camera.getFront();
-        dir -= glm::normalize(glm::vec3{front.x, 0.0f, front.z});
+        // glm::vec3 front = _camera.getFront();
+        dir -= forward;//glm::normalize(glm::vec3{front.x, 0.0f, front.z});
     }
     if (_input.getKeyPress(INPUT_KEY::KEY_A)) {
-        dir -= glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
+        dir -= right;//glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
     }
     if (_input.getKeyPress(INPUT_KEY::KEY_D)) {
-        dir += glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
+        dir += right;//glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
     }
     if (!_applyGravity && _input.getKeyPress(INPUT_KEY::KEY_SPACE)) {
         dir += glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
@@ -219,6 +224,7 @@ void Scene::updatePhysics(float /*deltaTime*/) {
                                               &_playerEntity.transform,
                                               &_playerEntity.velocity,
                                               &_playerEntity.isGrounded,
+                                              &_playerEntity.groundNormal,
                                               1,
                                               _staticSolidEntities.triangleMeshColliderIDs,
                                               _staticSolidEntities.transforms,
@@ -229,6 +235,7 @@ void Scene::updatePhysics(float /*deltaTime*/) {
                                                 &_playerEntity.transform,
                                                 &_playerEntity.gravityVelocity,
                                                 &_playerEntity.isGrounded,
+                                                &_playerEntity.groundNormal,
                                                 1,
                                                 _staticSolidEntities.triangleMeshColliderIDs,
                                                 _staticSolidEntities.transforms,

@@ -57,6 +57,7 @@ private:
         glm::vec3 gravityVelocity;
         uint32_t ellipsoidColliderID;
         bool isGrounded;
+        glm::vec3 groundNormal;
     } _playerEntity;
 
     AssetManager& _assetManager;
