@@ -56,6 +56,7 @@ private:
         float friction;
         glm::vec3 gravityVelocity;
         uint32_t ellipsoidColliderID;
+        bool isGrounded;
     } _playerEntity;
 
     AssetManager& _assetManager;

@@ -52,6 +52,7 @@ void Scene::initPlayer() {
     _playerEntity.friction = 0.9f;
     _playerEntity.velocity = {0.0f, 0.0f, 0.0f};
     _playerEntity.ellipsoidColliderID = _physicsSystem.addEllipsoidCollider({1.0f, 1.0f, 1.0f});
+    _playerEntity.isGrounded = false;
 
 }
 
@@ -164,29 +165,33 @@ void Scene::updatePlayer(float deltaTime) {
     float acc = _playerEntity.acceleration * deltaTime;
     glm::vec3 dir = {0.0f,0.0f,0.0f};
     float eps = 0.0001f;
-    if (_input.getKey(GLFW_KEY_W) == GLFW_PRESS) {
+    if (_input.getKeyPress(INPUT_KEY::KEY_W)) {
         glm::vec3 front = _camera.getFront();
         dir += glm::normalize(glm::vec3{front.x, 0.0f, front.z});
     }
-    if (_input.getKey(GLFW_KEY_S) == GLFW_PRESS) {
+    if (_input.getKeyPress(INPUT_KEY::KEY_S)) {
         glm::vec3 front = _camera.getFront();
         dir -= glm::normalize(glm::vec3{front.x, 0.0f, front.z});
     }
-    if (_input.getKey(GLFW_KEY_A) == GLFW_PRESS) {
+    if (_input.getKeyPress(INPUT_KEY::KEY_A)) {
         dir -= glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
     }
-    if (_input.getKey(GLFW_KEY_D) == GLFW_PRESS) {
+    if (_input.getKeyPress(INPUT_KEY::KEY_D)) {
         dir += glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
     }
-    if (_input.getKey(GLFW_KEY_SPACE) == GLFW_PRESS) {
+    if (!_applyGravity && _input.getKeyPress(INPUT_KEY::KEY_SPACE)) {
         dir += glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
-    if (_input.getKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+    if (!_applyGravity && _input.getKeyPress(INPUT_KEY::KEY_LEFT_CONTROL)) {
         dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    if (_input.getKey(GLFW_KEY_G) == GLFW_PRESS) {
+    if (_input.getKeyDown(INPUT_KEY::KEY_G)) {
         _applyGravity = !_applyGravity;
+    }
+
+    if (_playerEntity.isGrounded && _input.getKeyDown(INPUT_KEY::KEY_SPACE)) {
+        _playerEntity.gravityVelocity -= 15.0f * _gravityConstant * deltaTime;
     }
 
     glm::vec3& vel = _playerEntity.velocity;
@@ -213,6 +218,7 @@ void Scene::updatePhysics(float /*deltaTime*/) {
     _physicsSystem.resolveEllipsoidsTriangles(&_playerEntity.ellipsoidColliderID,
                                               &_playerEntity.transform,
                                               &_playerEntity.velocity,
+                                              &_playerEntity.isGrounded,
                                               1,
                                               _staticSolidEntities.triangleMeshColliderIDs,
                                               _staticSolidEntities.transforms,
@@ -222,6 +228,7 @@ void Scene::updatePhysics(float /*deltaTime*/) {
         _physicsSystem.resolveEllipsoidsTriangles(&_playerEntity.ellipsoidColliderID,
                                                 &_playerEntity.transform,
                                                 &_playerEntity.gravityVelocity,
+                                                &_playerEntity.isGrounded,
                                                 1,
                                                 _staticSolidEntities.triangleMeshColliderIDs,
                                                 _staticSolidEntities.transforms,

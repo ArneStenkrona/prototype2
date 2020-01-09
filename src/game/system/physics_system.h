@@ -32,6 +32,7 @@ public:
     void resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
                                     Transform* ellipsoidTransforms,
                                     glm::vec3* ellipsoidVelocities,
+                                    bool* isGrounded,
                                     const size_t nEllipsoids,
                                     const uint32_t* triangleMeshIDs,
                                     const Transform* triangleTransforms,
@@ -60,10 +61,12 @@ public:
      *                          returned by reference
      * @param intersectionDistance intersection time,
      *                             returned by reference
+     * @param collisionNormals list of collision normals
      */
     bool collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                              Transform& ellipsoidTransform,
                                              glm::vec3& ellipsoidVel,
+                                             bool& ellipsoidIsGrounded,
                                              const prt::vector<glm::vec3>& triangles,
                                              const Transform& triangleTransform,
                                              const glm::vec3& trianglesVel,
@@ -84,6 +87,7 @@ private:
     bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
                                    const glm::vec3& ellipsoidPos,
                                    const glm::vec3& ellipsoidVel,
+                                   bool& isGrounded,
                                    const prt::vector<glm::vec3>& triangles,
                                    const glm::vec3& trianglesPos,
                                    const glm::vec3& trianglesVel,
