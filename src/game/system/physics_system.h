@@ -37,7 +37,8 @@ public:
                                     const size_t nEllipsoids,
                                     const uint32_t* triangleMeshIDs,
                                     const Transform* triangleTransforms,
-                                    const size_t nTriangles);
+                                    const size_t nTriangles,
+                                    float deltaTime);
 
     void loadTriangleMeshColliders(const prt::vector<Model>& models,
                                    const prt::vector<uint32_t>& modelIDs);

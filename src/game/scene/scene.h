@@ -52,12 +52,14 @@ private:
         uint32_t modelID;
         Transform transform;
         glm::vec3 velocity;
+        glm::vec3 direction;
         float acceleration;
         float friction;
         glm::vec3 gravityVelocity;
         uint32_t ellipsoidColliderID;
         bool isGrounded;
         glm::vec3 groundNormal;
+        bool jump;
     } _playerEntity;
 
     AssetManager& _assetManager;
@@ -66,6 +68,7 @@ private:
     Camera& _camera;
 
     glm::vec3 _gravityConstant;
+    float _gravity;
     bool _applyGravity = false;
     
     void resetTransforms();
@@ -77,6 +80,8 @@ private:
 
     void initPlayer();
     void updatePlayer(float deltaTime);
+    void updatePlayerInput();
+    void updatePlayerPhysics(float deltaTime);
     void updatePhysics(float deltaTime);
     void updateCamera();
 };
