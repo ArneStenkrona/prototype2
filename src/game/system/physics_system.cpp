@@ -202,7 +202,7 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
         n = glm::normalize(n);
 
         // skip triangle if relative velocity is not towards the triangle
-        if (glm::dot(glm::normalize(vel), n) > 0.0f) {
+        if (glm::length(vel) > 0.0f && glm::dot(glm::normalize(vel), n) > 0.0f) {
             continue;
         }
 
@@ -266,57 +266,58 @@ bool PhysicsSystem::collideEllipsoidTriangles(const glm::vec3& /*ellipsoid*/,
         // sweep against vertices and edges
         // vertex;
         float av = glm::length2(vel);
-        for (size_t j = 0; j < 3; j++) {
-            float bv = 2.0f * glm::dot(vel, pos - tris[i + j]);
-            float cv = glm::length2(tris[i + j] - pos) - 1.0f;
+        if (av > 0.0f) {
+            for (size_t j = 0; j < 3; j++) {
+                float bv = 2.0f * glm::dot(vel, pos - tris[i + j]);
+                float cv = glm::length2(tris[i + j] - pos) - 1.0f;
 
-            float sqrterm = (bv * bv) - (4.0f * av * cv);
-            if (sqrterm >= 0.0f) {
-                float x1 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
-                float x2 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
-                float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
-                if (t >= 0.0f && t <= 1.0f && t < intersectionTime) {
-                    intersectionTime = t;
-                    intersectionPoint = tris[i + j] + trianglesPos;
-
-                    glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
-                    normal = glm::normalize(futurePos - intersectionPoint);
-                }
-            }
-        }
-        
-        // edges
-        glm::vec3 edges[3] = { p2 - p1, p3 - p2, p1 - p3 };
-        glm::vec3 btv[3] = { p1 - pos, p2 - pos, p3 - pos }; // base to vertex
-        for (size_t j = 0; j < 3; j++) {
-            float edge2 = glm::length2(edges[j]);
-
-            float ae = edge2 * (-glm::length2(vel)) +
-                       glm::pow(glm::dot(edges[j], vel), 2.0f);
-            float be = edge2 * 2.0f * glm::dot(vel, btv[j]) -
-                       2.0f * (glm::dot(edges[j], vel) * glm::dot(edges[j], btv[j]));
-            float ce = edge2 * (1.0f - glm::length2(btv[j])) + 
-                       glm::pow(glm::dot(edges[j], btv[j]), 2.0f);
-
-            float sqrterm = (be * be) - (4.0f * ae * ce);
-            if (sqrterm >= 0.0f) {
-                float x1 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
-                float x2 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
-                float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
-                if (t >= 0.0f && t <= 1.0f) {
-                    float f0 = (glm::dot(edges[j], vel) * t - glm::dot(edges[j], btv[j])) /
-                                glm::length2(edges[j]);
-                    if (f0 >= 0.0f && f0 <= 1.0f && t < intersectionTime) {
+                float sqrterm = (bv * bv) - (4.0f * av * cv);
+                if (sqrterm >= 0.0f) {
+                    float x1 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
+                    float x2 = (-bv + std::sqrt(sqrterm)) / (2.0f * av);
+                    float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
+                    if (t >= 0.0f && t <= 1.0f && t < intersectionTime) {
                         intersectionTime = t;
-                        intersectionPoint = tris[i + j] + f0 * edges[j] + trianglesPos;
+                        intersectionPoint = tris[i + j] + trianglesPos;
 
                         glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
                         normal = glm::normalize(futurePos - intersectionPoint);
                     }
                 }
             }
-        }
         
+            // edges
+            glm::vec3 edges[3] = { p2 - p1, p3 - p2, p1 - p3 };
+            glm::vec3 btv[3] = { p1 - pos, p2 - pos, p3 - pos }; // base to vertex
+            for (size_t j = 0; j < 3; j++) {
+                float edge2 = glm::length2(edges[j]);
+
+                float ae = edge2 * (-glm::length2(vel)) +
+                        glm::pow(glm::dot(edges[j], vel), 2.0f);
+                float be = edge2 * 2.0f * glm::dot(vel, btv[j]) -
+                        2.0f * (glm::dot(edges[j], vel) * glm::dot(edges[j], btv[j]));
+                float ce = edge2 * (1.0f - glm::length2(btv[j])) + 
+                        glm::pow(glm::dot(edges[j], btv[j]), 2.0f);
+
+                float sqrterm = (be * be) - (4.0f * ae * ce);
+                if (ae != 0.0f && sqrterm >= 0.0f) {
+                    float x1 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
+                    float x2 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
+                    float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
+                    if (t >= 0.0f && t <= 1.0f) {
+                        float f0 = (glm::dot(edges[j], vel) * t - glm::dot(edges[j], btv[j])) /
+                                    glm::length2(edges[j]);
+                        if (f0 >= 0.0f && f0 <= 1.0f && t < intersectionTime) {
+                            intersectionTime = t;
+                            intersectionPoint = tris[i + j] + f0 * edges[j] + trianglesPos;
+
+                            glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
+                            normal = glm::normalize(futurePos - intersectionPoint);
+                        }
+                    }
+                }
+            }
+        }
     }
     // isGrounded if slope is less than approx 45 degrees
     bool intersect = intersectionTime <= 1.0f;

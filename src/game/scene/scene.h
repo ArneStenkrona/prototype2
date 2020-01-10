@@ -69,7 +69,6 @@ private:
 
     glm::vec3 _gravityConstant;
     float _gravity;
-    bool _applyGravity = false;
     
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs);
