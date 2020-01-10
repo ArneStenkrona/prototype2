@@ -24,7 +24,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     for (size_t i = 0; i < _staticEntities.maxSize; i++) {
         _staticEntities.modelIDs[i] = tree_ID;
         _staticEntities.transforms[i].position = { 10.0f * i, 0.0f, 0.0f };
-        _staticEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _staticEntities.transforms[i].rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
         _staticEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
     _staticEntities.size = _staticEntities.maxSize;
@@ -33,7 +33,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
         _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
         _staticSolidEntities.transforms[i].position = { 10.0f * i, 5.0f, 0.0f };
-        _staticSolidEntities.transforms[i].rotation = glm::quat(glm::vec3{0.0f, 0.0f, 0.0f});
+        _staticSolidEntities.transforms[i].rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
         _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
     }
     _staticSolidEntities.size = _staticSolidEntities.maxSize;
@@ -165,71 +165,6 @@ void Scene::update(float deltaTime) {
     updateCamera();
 }
 
-void Scene::updatePlayer(float deltaTime) {
-    // compute movement bases
-    glm::vec3 up = _playerEntity.isGrounded ? _playerEntity.groundNormal : glm::vec3{0.0f, 1.0f, 0.0f};
-    glm::vec3 right = glm::normalize(glm::cross(_camera.getFront(), up));
-    glm::vec3 forward = glm::normalize(glm::cross(up, right));
-
-    float acc = _playerEntity.acceleration * deltaTime;
-    glm::vec3 dir = {0.0f,0.0f,0.0f};
-    float eps = 0.0001f;
-    if (_input.getKeyPress(INPUT_KEY::KEY_W)) {
-        // glm::vec3 front = _camera.getFront();
-        dir += forward;//glm::normalize(glm::vec3{front.x, 0.0f, front.z});
-    }
-    if (_input.getKeyPress(INPUT_KEY::KEY_S)) {
-        // glm::vec3 front = _camera.getFront();
-        dir -= forward;//glm::normalize(glm::vec3{front.x, 0.0f, front.z});
-    }
-    if (_input.getKeyPress(INPUT_KEY::KEY_A)) {
-        dir -= right;//glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
-    }
-    if (_input.getKeyPress(INPUT_KEY::KEY_D)) {
-        dir += right;//glm::normalize(glm::cross(_camera.getFront(), _camera.getUp()));
-    }
-    if (!_applyGravity && _input.getKeyPress(INPUT_KEY::KEY_SPACE)) {
-        dir += glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
-    }
-    if (!_applyGravity && _input.getKeyPress(INPUT_KEY::KEY_LEFT_CONTROL)) {
-        dir -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f));
-    }
-
-    if (_input.getKeyDown(INPUT_KEY::KEY_G)) {
-        _applyGravity = !_applyGravity;
-    }
-
-    if (_playerEntity.isGrounded && _input.getKeyDown(INPUT_KEY::KEY_SPACE)) {
-        _playerEntity.gravityVelocity -= 15.0f * _gravityConstant * deltaTime;
-    }
-
-    glm::vec3& vel = _playerEntity.velocity;
-    if (glm::length(dir) > eps) {
-        vel += glm::normalize(dir) * acc;
-            
-    }
-    glm::vec3 lookDir = glm::normalize(glm::vec3{-dir.x, 0.0f, -dir.z});
-    if (glm::length(lookDir) > eps) { 
-        _playerEntity.transform.rotation = 
-                            safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
-                            glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
-    }
-
-    vel *= _playerEntity.friction;
-    if (_applyGravity) {
-        if (_playerEntity.isGrounded && glm::dot(_playerEntity.groundNormal, glm::vec3{0.0f,1.0f,0.0f}) < 0.72f) {
-            _playerEntity.gravityVelocity += 3.0f * deltaTime * glm::normalize(glm::cross(_playerEntity.groundNormal, 
-                                                            glm::cross(glm::vec3{0.0f,-1.0f,0.0f}, _playerEntity.groundNormal)));
-        } else if (!_playerEntity.isGrounded){
-            _playerEntity.gravityVelocity += _gravityConstant * deltaTime;
-        } else {
-            _playerEntity.gravityVelocity -= _playerEntity.groundNormal * deltaTime;
-        }
-    } else {
-        _playerEntity.gravityVelocity = {0.0f,0.0f,0.0f};
-    }
-}
-
 void Scene::updatePlayerInput() {
     _playerEntity.direction = {0.0f, 0.0f, 0.0f};
     if (_input.getKeyPress(INPUT_KEY::KEY_W)) {
@@ -259,13 +194,7 @@ void Scene::updatePlayerPhysics(float deltaTime) {
     bool& jump = _playerEntity.jump;
     // if player performed any movement input
     if (glm::length(glm::vec3{dir.x, 0.0f, dir.z}) > 0.001f) {
-        // compute movement bases
-        glm::vec3 up = _playerEntity.isGrounded ? _playerEntity.groundNormal : glm::vec3{0.0f, 1.0f, 0.0f};
-        glm::vec3 right = glm::normalize(glm::cross(_camera.getFront(), up));
-        glm::vec3 forward = glm::normalize(glm::cross(up, right));
-        // compute movement direction and look direction
-        glm::vec3 moveDir = glm::normalize(dir.x * forward + dir.z * right);
-
+        // compute look direction
         glm::vec3 cF = _camera.getFront();
         glm::vec3 cR = _camera.getRight();
         glm::vec3 lookDir = glm::normalize(dir.x * glm::vec3(cF.x, 0.0f, cF.z) + dir.z * glm::vec3(cR.x, 0.0f, cR.z));
@@ -273,6 +202,11 @@ void Scene::updatePlayerPhysics(float deltaTime) {
         _playerEntity.transform.rotation = 
                             safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
                             glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+        // compute movement direction
+        glm::vec3 moveNormal = _playerEntity.isGrounded ? _playerEntity.groundNormal : glm::vec3{0.0f, 1.0f, 0.0f};
+
+        glm::vec3 moveDir = glm::normalize(glm::cross(moveNormal, 
+                                glm::cross(lookDir, moveNormal)));
         // add acceleration to velocity
         float acc = _playerEntity.acceleration * deltaTime;
         vel += moveDir * acc;

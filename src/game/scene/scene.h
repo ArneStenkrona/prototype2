@@ -79,7 +79,6 @@ private:
     void getSkybox(prt::array<Texture, 6>& cubeMap);
 
     void initPlayer();
-    void updatePlayer(float deltaTime);
     void updatePlayerInput();
     void updatePlayerPhysics(float deltaTime);
     void updatePhysics(float deltaTime);
