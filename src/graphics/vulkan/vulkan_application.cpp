@@ -1769,10 +1769,11 @@ void VulkanApplication::updateUniformBuffers(uint32_t currentImage,
     vkMapMemory(device, uniformBuffers.skyboxMemory[currentImage], 0, sizeof(skyboxUBO), 0, &skyboxData);
     memcpy(skyboxData, &skyboxUBO, sizeof(skyboxUBO));
     vkUnmapMemory(device, uniformBuffers.skyboxMemory[currentImage]);                       
-    // model                                           
+    // model                         
     ModelUBO modelUBO = {};
     for (size_t i = 0; i < modelMatrices.size(); i++) {
         modelUBO.model[i] = modelMatrices[i];
+        modelUBO.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
     }
     modelUBO.view = viewMatrix;
     modelUBO.proj = projectionMatrix;

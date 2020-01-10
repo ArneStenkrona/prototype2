@@ -9,6 +9,7 @@ layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -35,7 +36,7 @@ void main() {
     vec3 norm = false ? normalize(cross(dFdx(fs_in.fragPos), dFdy(fs_in.fragPos))) : normalize(fs_in.normal);
 
     // Directional lighting
-    vec4 result = CalcDirLight(vec3(1.0, -1.0, 0.0), norm, viewDir);
+    vec4 result = CalcDirLight(vec3(0.0, -1.0, -1.0), norm, viewDir);
     outColor = result;
 }
 
