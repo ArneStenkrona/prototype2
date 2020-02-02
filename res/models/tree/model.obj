@@ -1,6 +1,5 @@
 # Blender v2.81 (sub 16) OBJ File: 'tree.blend'
 # www.blender.org
-mtllib tree.mtl
 o tree
 v -0.300000 0.000000 -0.200000
 v -0.400000 0.000000 -0.400000

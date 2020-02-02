@@ -79,6 +79,8 @@ namespace std {
 struct Texture {
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
+    uint32_t mipLevels;
+
     void load(const char* texturePath);
 
     inline unsigned char* sample(float x, float y) {
@@ -96,7 +98,8 @@ struct Material {
 struct Mesh {
     size_t startIndex;
     size_t numIndices;
-    char _name[512];
+    // char _name[512];
+    char _materialName[512];
     Texture _texture;
 };
 
@@ -106,7 +109,7 @@ struct Model {
     prt::vector<Mesh> _meshes;
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
-
+    // char _materialFilePath[512];
     void loadOBJ(const char* path);
 };
 

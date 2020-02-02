@@ -19,6 +19,7 @@ void Texture::load(const char* texturePath) {
         pixelBuffer[i] = pixels[i];
     }
 
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     stbi_image_free(pixels);
 }
 
@@ -85,15 +86,18 @@ void Model::loadOBJ(const char* path) {
         _meshes[0].numIndices = numIndex;
         _meshes[0].startIndex = 0;
     }
-
     // Parse the contents.
     char lineHeader[512];
+    char mtllib[512];
+    uint32_t assignedMaterials = 0;
     int res = fscanf(file, "%s", lineHeader);
+    size_t lineNumber = 0;
     while (res != EOF) {
+        lineNumber++;
         // read the first word of the line
         if (strcmp(lineHeader, "o") == 0) {
             // object name
-            fscanf(file, "%s", _meshes[meshCount]._name);
+            // fscanf(file, "%s", _meshes[meshCount]._name);
 
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);
@@ -103,8 +107,17 @@ void Model::loadOBJ(const char* path) {
             if (meshCount > 0) {
                 _meshes[meshCount - 1].numIndices = indexCount - _meshes[meshCount - 1].startIndex;   
             }
-
             meshCount++;
+        } else if (strcmp(lineHeader, "mtllib") == 0) {
+            // Parse material file.
+            fscanf(file, "%s", mtllib);
+        } else if (strcmp(lineHeader, "usemtl") == 0) {
+            // Parse mesh material.
+            char currentMtl[512];
+            fscanf(file, "%s", currentMtl);
+            while (assignedMaterials < meshCount) {
+                strcpy(_meshes[assignedMaterials++]._materialName, currentMtl);
+            }
         } else if (strcmp(lineHeader, "v") == 0) {
             // Parse vertex position.
             glm::vec3& pos = vertexBufferTemp[vertexPosCount++].pos;
@@ -128,6 +141,7 @@ void Model::loadOBJ(const char* path) {
                                  &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
             if (matches != 9) {
                 printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+                std::cout << lineNumber << std::endl;
                 assert(false);
                 return;
             }
@@ -156,6 +170,7 @@ void Model::loadOBJ(const char* path) {
      
         res = fscanf(file, "%s", lineHeader);
     }
+    fclose(file);
 
     size_t numVertex = uniqueVertices.size();
     _vertexBuffer.resize(numVertex);
@@ -164,4 +179,53 @@ void Model::loadOBJ(const char* path) {
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         _vertexBuffer[it->value()] = it->key();
     }
-}
+
+    // load materials
+    if (mtllib[0] == '\0') {
+        return;
+    }
+    char mtlPath[512];
+    strcpy(mtlPath, path);
+    char *ptr = strrchr(mtlPath, '/');
+    if (!ptr) {
+        assert(false);
+    }
+    strcpy(++ptr, mtllib);
+
+
+    FILE* materialFile = fopen(mtlPath, "r");
+    if (file == nullptr) {
+        printf("Could not open file '");
+        printf("%s", path);
+        printf("'!\n");
+        assert(false);
+        return;
+    }
+
+    prt::hash_map<std::string, std::string> mtlToTexture;
+
+    res = fscanf(materialFile, "%s", lineHeader);
+    char material[512];
+    while (res != EOF) {
+        if (strcmp(lineHeader, "newmtl") == 0) {
+            // Parse material name.
+            fscanf(file, "%s", material);
+        } else if (strcmp(lineHeader, "map_Kd") == 0) {
+            // Parse texture path.
+            char texture[512];
+            fscanf(file, "%s", texture);
+            mtlToTexture.insert(material, texture);
+        } 
+
+        res = fscanf(materialFile, "%s", lineHeader);
+    }
+    fclose(materialFile);
+
+    for (size_t i = 0; i < _meshes.size(); i++) {
+        char texturePath[512];
+        strcpy(texturePath, path);
+        ptr = strrchr(texturePath, '/');
+        strcpy(++ptr, mtlToTexture[_meshes[i]._materialName].c_str());
+        _meshes[i]._texture.load(texturePath);
+    }
+}   

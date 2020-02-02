@@ -835,7 +835,7 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
 void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, 
                                            const Texture& texture) {
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
+    // mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texture.texWidth, texture.texHeight)))) + 1;
 
     auto pixels = texture.pixelBuffer.data();
  
@@ -851,7 +851,7 @@ void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& te
     vkUnmapMemory(device, stagingBufferMemory);
 
     createImage(texture.texWidth, texture.texHeight, 
-                mipLevels, 1, 0,
+                texture.mipLevels, 1, 0,
                 VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
                 VK_IMAGE_TILING_OPTIMAL, 
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
@@ -859,7 +859,7 @@ void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& te
  
     transitionImageLayout(texImage, VK_FORMAT_R8G8B8A8_UNORM, 
                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-                          mipLevels, 1);
+                          texture.mipLevels, 1);
 
     copyBufferToImage(stagingBuffer, texImage, 
                       static_cast<uint32_t>(texture.texWidth), 
@@ -872,14 +872,14 @@ void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& te
  
     generateMipmaps(texImage, VK_FORMAT_R8G8B8A8_UNORM, 
                     texture.texWidth, texture.texHeight, 
-                    mipLevels, 1);
+                    texture.mipLevels, 1);
 }
 
 void VulkanApplication::createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, 
                                            const prt::array<Texture, 6>& textures) {
     VkDeviceSize layerSize = textures[0].texWidth * textures[0].texHeight * 4;
     VkDeviceSize imageSize = layerSize * textures.size();
-    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textures[0].texWidth, textures[0].texHeight)))) + 1;
+    //mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textures[0].texWidth, textures[0].texHeight)))) + 1;
  
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -896,7 +896,7 @@ void VulkanApplication::createCubeMapImage(VkImage& texImage, VkDeviceMemory& te
     vkUnmapMemory(device, stagingBufferMemory);
 
     createImage(textures[0].texWidth, textures[0].texHeight, 
-                mipLevels, textures.size(), 
+                textures[0].mipLevels, textures.size(), 
                 VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
                 VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
                 VK_IMAGE_TILING_OPTIMAL, 
@@ -905,7 +905,7 @@ void VulkanApplication::createCubeMapImage(VkImage& texImage, VkDeviceMemory& te
  
     transitionImageLayout(texImage, VK_FORMAT_R8G8B8A8_UNORM, 
                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-                          mipLevels, textures.size());
+                          textures[0].mipLevels, textures.size());
 
     copyBufferToImage(stagingBuffer, texImage, 
                       static_cast<uint32_t>(textures[0].texWidth), 
@@ -918,7 +918,7 @@ void VulkanApplication::createCubeMapImage(VkImage& texImage, VkDeviceMemory& te
  
     generateMipmaps(texImage, VK_FORMAT_R8G8B8A8_UNORM, 
                     textures[0].texWidth, textures[0].texHeight, 
-                    mipLevels, textures.size());
+                    textures[0].mipLevels, textures.size());
 }
     
 void VulkanApplication::generateMipmaps(VkImage image, VkFormat imageFormat, 
@@ -1026,14 +1026,14 @@ VkSampleCountFlagBits VulkanApplication::getMaxUsableSampleCount() {
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void VulkanApplication::createTextureImageView(VkImageView& imageView, VkImage &image) {
+void VulkanApplication::createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels) {
     imageView = createImageView(image, VK_FORMAT_R8G8B8A8_UNORM, 
                                 VK_IMAGE_ASPECT_COLOR_BIT, 
                                 VK_IMAGE_VIEW_TYPE_2D,
                                 mipLevels, 1);
 }
 
-void VulkanApplication::createCubeMapImageView(VkImageView& imageView, VkImage &image) {
+void VulkanApplication::createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels) {
     imageView = createImageView(image, VK_FORMAT_R8G8B8A8_UNORM, 
                                 VK_IMAGE_ASPECT_COLOR_BIT, 
                                 VK_IMAGE_VIEW_TYPE_CUBE,
@@ -1045,15 +1045,15 @@ void VulkanApplication::createSamplers() {
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
     samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
-    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerCreateInfo.anisotropyEnable = VK_FALSE;
 	samplerCreateInfo.maxAnisotropy = 0.0f;
 	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
     samplerCreateInfo.minLod = 0.0f;
-    samplerCreateInfo.maxLod = static_cast<float>(mipLevels);
+    samplerCreateInfo.maxLod = static_cast<float>(12/*mipLevels*/);
     samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
     if (vkCreateSampler(device, &samplerCreateInfo, 0, &samplers.skybox) != VK_SUCCESS) {
@@ -1258,20 +1258,20 @@ void VulkanApplication::loadModels(const prt::vector<Model>& models) {
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i]._meshes.size(); j++) {
             createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
-            createTextureImageView(textureImageView[numTex], textureImage[numTex]);
+            createTextureImageView(textureImageView[numTex], textureImage[numTex], models[i]._meshes[j]._texture.mipLevels);
             numTex++;
         }
     }
 
     for (size_t i = numTex; i < NUMBER_SUPPORTED_TEXTURES; i++) {
         createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
-        createTextureImageView(textureImageView[i], textureImage[0]);
+        createTextureImageView(textureImageView[i], textureImage[i], models[0]._meshes.back()._texture.mipLevels);
     }
 }
 
 void VulkanApplication::loadSkybox(const prt::array<Texture, 6>& skybox) {    
     createCubeMapImage(cubeMapImage, cubeMapImageMemory, skybox);
-    createCubeMapImageView(cubeMapImageView, cubeMapImage);
+    createCubeMapImageView(cubeMapImageView, cubeMapImage, skybox[0].mipLevels);
 }
 
 void VulkanApplication::createRenderJobs(const prt::vector<Model>& models, 

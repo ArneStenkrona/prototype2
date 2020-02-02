@@ -155,7 +155,6 @@ private:
     VkImageView depthImageView;
     
     // Model textures
-    uint32_t mipLevels;
     prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
     prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
     prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
@@ -284,8 +283,8 @@ private:
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
     
-    void createTextureImageView(VkImageView& imageView, VkImage &image);
-    void createCubeMapImageView(VkImageView& imageView, VkImage &image);
+    void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
+    void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, 
