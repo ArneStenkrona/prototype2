@@ -734,7 +734,7 @@ void VulkanApplication::createGraphicsPipelines() {
                                                                                   attrib[2] };
     
     std::string modelVertPath = RESOURCE_PATH + std::string("shaders/model.vert.spv");
-    std::string modelFragPath = RESOURCE_PATH + std::string("shaders/model.frag.spv");
+    std::string modelFragPath = RESOURCE_PATH + std::string("shaders/cel.frag.spv");
     createGraphicsPipeline(modelBindingDescription, modelAttributeDescriptions,
                            descriptorSetLayouts.model,
                            modelVertPath, modelFragPath,

@@ -4,12 +4,12 @@
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
-layout(set = 0, binding = 1) uniform texture2D textures[@NUMBER_SUPPORTED_TEXTURES@];
+layout(set = 0, binding = 1) uniform texture2D textures[20];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
-    mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 model[100];
+    mat4 invTransposeModel[100];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -32,7 +32,6 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir);
 
 void main() {
     vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
-    // true=flatshading
     vec3 norm = normalize(fs_in.normal);
 
     // Directional lighting
@@ -41,7 +40,7 @@ void main() {
 }
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
-    vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);//.rgb;
+    vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);
     if (color.a <= 0.1) {
         discard;
     }
@@ -53,8 +52,9 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
     // combine results
-    vec4 ambient = color * 0.05;
+    vec4 ambient = color;
     vec4 diffuse = diff * color;
     vec4 specular = spec * color;
-    return (ambient + diffuse + specular);
+    diffuse = diff > 0.0f ? color : vec4(0,0,0,1);
+    return ((ambient + diffuse) / 2);
 }

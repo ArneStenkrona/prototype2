@@ -32,7 +32,6 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir);
 
 void main() {
     vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
-    // true=flatshading
     vec3 norm = normalize(fs_in.normal);
 
     // Directional lighting
@@ -41,7 +40,7 @@ void main() {
 }
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
-    vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);//.rgb;
+    vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);
     if (color.a <= 0.1) {
         discard;
     }
@@ -53,8 +52,9 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
     // combine results
-    vec4 ambient = color * 0.05;
+    vec4 ambient = color;
     vec4 diffuse = diff * color;
     vec4 specular = spec * color;
-    return (ambient + diffuse + specular);
+    diffuse = diff > 0.0f ? color : vec4(0,0,0,1);
+    return ((ambient + diffuse) / 2);
 }

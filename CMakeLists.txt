@@ -44,6 +44,11 @@ string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}
 string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
 file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
 
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
+
 
 # END CONFIG VARIABLES
 
@@ -129,7 +134,7 @@ get_filename_component(FILE_NAME ${GLSL} NAME)
 set(SPIRV "${PROJECT_BINARY_DIR}/res/shaders/${FILE_NAME}.spv")
 add_custom_command(
 OUTPUT ${SPIRV}
-COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/res/shaders/"
 COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
 DEPENDS ${GLSL})
 list(APPEND SPIRV_BINARY_FILES ${SPIRV})

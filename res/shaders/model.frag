@@ -33,7 +33,7 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir);
 void main() {
     vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
     // true=flatshading
-    vec3 norm = false ? normalize(cross(dFdx(fs_in.fragPos), dFdy(fs_in.fragPos))) : normalize(fs_in.normal);
+    vec3 norm = normalize(fs_in.normal);
 
     // Directional lighting
     vec4 result = CalcDirLight(vec3(0.0, -1.0, -1.0), norm, viewDir);
