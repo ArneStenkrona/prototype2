@@ -7,6 +7,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec3 viewPos;
+    float t;
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT

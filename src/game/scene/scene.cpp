@@ -17,31 +17,6 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
      _gravity(0.0f/*1.0f*/) {
     resetTransforms();
 
-    // uint32_t tree_ID = _assetManager.getModelManager().getModelID("tree/model");
-    // uint32_t plane_ID = _assetManager.getModelManager().getModelID("little_place/model");
-
-
-    // for (size_t i = 0; i < _staticEntities.maxSize; i++) {
-    //     _staticEntities.modelIDs[i] = tree_ID;
-    //     _staticEntities.transforms[i].position = { 10.0f * i, 0.0f, 0.0f };
-    //     _staticEntities.transforms[i].rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
-    //     _staticEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
-    // }
-    // _staticEntities.size = _staticEntities.maxSize;
-
-    // uint32_t colliderMonkey_ID = _assetManager.getModelManager().getModelID("collider_monkey/model");
-    // for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
-    //     _staticSolidEntities.modelIDs[i] = colliderMonkey_ID;
-    //     _staticSolidEntities.transforms[i].position = { 10.0f * i, 5.0f, 0.0f };
-    //     _staticSolidEntities.transforms[i].rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
-    //     _staticSolidEntities.transforms[i].scale = glm::vec3{1.0f,1.0f,1.0f};
-    // }
-    // _staticSolidEntities.size = _staticSolidEntities.maxSize;
-
-    // _staticSolidEntities.modelIDs[_staticSolidEntities.maxSize - 1] = plane_ID;
-    // _staticSolidEntities.transforms[_staticSolidEntities.maxSize - 1].position = { 0, -10.0f, 0.0f };
-    // _staticSolidEntities.transforms[_staticSolidEntities.maxSize - 1].scale = { 1.0f, 1.0f, 1.0f };
-
     uint32_t islandID = _assetManager.getModelManager().getModelID("island/island");
 
     _staticEntities.modelIDs[0] = islandID;

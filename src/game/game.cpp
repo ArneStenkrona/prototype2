@@ -16,7 +16,8 @@ Game::Game()
   _scene(_assetManager, _physicsSystem, _input, _camera),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
-  _currentFrame(0) {
+  _currentFrame(0),
+  _time(0.0f) {
 
     _input.init(_vulkanApp.getWindow());
     _scene.load(_vulkanApp);
@@ -56,13 +57,14 @@ void Game::run() {
 }
 
 void Game::update(float deltaTime) {
+    _time += deltaTime;
     _input.update();
     _camera.update(deltaTime);
     _scene.update(deltaTime);
     updateGraphics(deltaTime);
 }
 
-void Game::updateGraphics(float deltaTime) {
+void Game::updateGraphics(float /*deltaTime*/) {
     prt::vector<glm::mat4> modelMatrices; 
     _scene.getTransformMatrices(modelMatrices);
 
@@ -73,5 +75,5 @@ void Game::updateGraphics(float deltaTime) {
     glm::mat4 skyProjectionMatrix = _camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
     glm::vec3 viewPosition = _camera.getPosition();
     _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition, 
-                      skyProjectionMatrix, deltaTime);
+                      skyProjectionMatrix, _time);
 }

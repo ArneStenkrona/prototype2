@@ -94,12 +94,12 @@ void VulkanApplication::update(const prt::vector<glm::mat4>& modelMatrices,
                                const glm::mat4& projectionMatrix, 
                                const glm::vec3 viewPosition,
                                const glm::mat4& skyProjectionMatrix,
-                               float /*deltaTime*/) {
+                               float time) {
         glfwPollEvents();
         
         //_imGuiApplication.updateInput(float(width), float(height), deltaTime);
         drawFrame(modelMatrices, viewMatrix, projectionMatrix, viewPosition,
-                  skyProjectionMatrix);    
+                  skyProjectionMatrix, time);   
 }
     
 void VulkanApplication::cleanupSwapChain() {
@@ -1752,7 +1752,8 @@ void VulkanApplication::updateUniformBuffers(uint32_t currentImage,
                                              const glm::mat4& viewMatrix, 
                                              const glm::mat4& projectionMatrix, 
                                              glm::vec3 viewPosition,
-                                             const glm::mat4& skyProjectionMatrix) {
+                                             const glm::mat4& skyProjectionMatrix,
+                                             float time) {
     // skybox
     SkyboxUBO skyboxUBO = {};
 
@@ -1779,6 +1780,7 @@ void VulkanApplication::updateUniformBuffers(uint32_t currentImage,
     modelUBO.proj = projectionMatrix;
     modelUBO.proj[1][1] *= -1;
     modelUBO.viewPosition = viewPosition;
+    modelUBO.t = time;
     
     void* modelData;
     vkMapMemory(device, uniformBuffers.modelMemory[currentImage], 0, sizeof(modelUBO), 0, &modelData);
@@ -1790,14 +1792,15 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
                                   const glm::mat4& viewMatrix, 
                                   const glm::mat4& projectionMatrix, 
                                   glm::vec3 viewPosition,
-                                  const glm::mat4& skyProjectionMatrix) {    
+                                  const glm::mat4& skyProjectionMatrix,
+                                  float time) {    
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, 
                                             imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
     updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
-                    skyProjectionMatrix);
+                    skyProjectionMatrix, time);
 
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);

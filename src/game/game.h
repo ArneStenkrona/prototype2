@@ -32,6 +32,7 @@ private:
     uint32_t _microsecondsPerFrame;
 
     uint64_t _currentFrame;
+    float _time;
 
     void update(float deltaTime);
     void updateGraphics(float deltaTime);

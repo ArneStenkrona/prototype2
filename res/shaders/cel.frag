@@ -13,6 +13,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
     vec3 viewPos;
+    float t;
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT
@@ -41,20 +42,24 @@ void main() {
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
     vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);
-    if (color.a <= 0.1) {
+    if (color.a == 0.0) {
         discard;
     }
     vec3 lightDir = normalize(-direction);
     vec3 halfwayDir = normalize(lightDir + viewDir);
     // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
+    float nDotL = dot(normal, lightDir);
+    //float diff = max(nDotL, 0.0);
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
     // combine results
-    vec4 ambient = color;
-    vec4 diffuse = diff * color;
-    vec4 specular = spec * color;
-    diffuse = diff > 0.0f ? color : vec4(0,0,0,1);
-    return ((ambient + diffuse) / 2);
+    // vec4 ambient = color;
+    // vec4 diffuse = diff * color;
+    // vec4 specular = spec * color;
+    float levels = 3.0;
+    //float diffuse = diff > 0.0 ? 1.0 : 0.0;
+    float diffuse = floor( ( (nDotL + 1.0) / 2.0) * levels) / (levels - 1.0);
+    float ambient = 1.0f;
+    return ((ambient + diffuse) / 2) * color;
 }
