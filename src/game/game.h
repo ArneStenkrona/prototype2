@@ -8,7 +8,7 @@
 #include "src/game/system/physics_system.h"
 
 #include "src/graphics/camera/camera.h"
-#include "src/graphics/vulkan/vulkan_application.h"
+#include "src/graphics/vulkan/game_renderer.h"
 #include "src/system/input/input.h"
 
 class Game {
@@ -20,7 +20,7 @@ public:
 
 private:
     Input _input;
-    VulkanApplication _vulkanApp;
+    GameRenderer _gameRenderer;
 
     AssetManager _assetManager;
 
@@ -36,6 +36,8 @@ private:
 
     void update(float deltaTime);
     void updateGraphics(float deltaTime);
+
+    void loadScene();
 };
 
 #endif

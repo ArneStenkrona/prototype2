@@ -1,6 +1,6 @@
 #include "imgui_application.h"
 #include "vulkan_application.h"
-#include "vulkan_common.h"
+#include "vulkan_util.h"
 #include "src/util/io_util.h"
 
 // Options and values to display/toggle from the UI
@@ -126,7 +126,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& com
     VkMemoryAllocateInfo memAllocInfo = {};
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memAllocInfo.allocationSize = memReqs.size;
-    memAllocInfo.memoryTypeIndex = vulkan_common::findMemoryType(_physicalDevice, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    memAllocInfo.memoryTypeIndex = vkutil::findMemoryType(_physicalDevice, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if(vkAllocateMemory(_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
         assert(false && "failed to allocate memory!");
     }
@@ -164,10 +164,10 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& com
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    vulkan_common::createBuffer(_physicalDevice, _device, 
-                                uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                                stagingBuffer, stagingBufferMemory);
+    vkutil::createBuffer(_physicalDevice, _device, 
+                         uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                         stagingBuffer, stagingBufferMemory);
 
     void* data;
     vkMapMemory(_device, stagingBufferMemory, 0, uploadSize, 0, &data);
@@ -488,8 +488,8 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& com
     auto vertShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
     auto fragShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
     
-    VkShaderModule vertShaderModule = vulkan_common::createShaderModule(_device, vertShaderCode);
-    VkShaderModule fragShaderModule = vulkan_common::createShaderModule(_device, fragShaderCode);
+    VkShaderModule vertShaderModule = vkutil::createShaderModule(_device, vertShaderCode);
+    VkShaderModule fragShaderModule = vkutil::createShaderModule(_device, fragShaderCode);
     
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -593,10 +593,10 @@ void ImGuiApplication::updateBuffers(VkFence* pFence, uint32_t nFence)
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create vertex buffer!");
         //}
-        vulkan_common::createBuffer(_physicalDevice, _device, vertexBufferSize,
-                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                    vertexBuffer, vertexBufferMemory);
+        vkutil::createBuffer(_physicalDevice, _device, vertexBufferSize,
+                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                             vertexBuffer, vertexBufferMemory);
         vertexCount = imDrawData->TotalVtxCount;
         //vertexBuffer.unmap();
         //vertexBuffer.map();
@@ -620,10 +620,10 @@ void ImGuiApplication::updateBuffers(VkFence* pFence, uint32_t nFence)
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create index buffer!");
         //}
-        vulkan_common::createBuffer(_physicalDevice, _device, indexBufferSize,
-                                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                    indexBuffer, indexBufferMemory);
+        vkutil::createBuffer(_physicalDevice, _device, indexBufferSize,
+                             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                             indexBuffer, indexBufferMemory);
         indexCount = imDrawData->TotalIdxCount;
         //indexBuffer.map();
         vkMapMemory(_device, indexBufferMemory, 0, VK_WHOLE_SIZE, 0, &indexBufferMapped);

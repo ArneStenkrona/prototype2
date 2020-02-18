@@ -39,34 +39,20 @@ void Scene::initPlayer() {
 
 }
 
-void Scene::load(VulkanApplication& vulkanApplication) {
+void Scene::getModels(prt::vector<Model>& models,
+                prt::vector<uint32_t>& modelIndices) const {
     prt::vector<uint32_t> modelIDs;
     getModelIDs(modelIDs);
 
-    prt::vector<Model> models;
-    prt::vector<uint32_t> modelIndices;
-
-    prt::vector<Model> colliderModels;
-    prt::vector<uint32_t> colliderIDs;
-
-
-    _assetManager.loadSceneModels(modelIDs, models, modelIndices,
-                                  colliderModels, colliderIDs);
-
-    _physicsSystem.loadTriangleMeshColliders(colliderModels, colliderIDs);
-    resolveColliderIDs();
-
-    prt::array<Texture, 6> skybox;
-    getSkybox(skybox);
-    vulkanApplication.bindScene(models, modelIndices, skybox);
+    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
 }
 
-void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) {
+void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) const {
     _assetManager.loadCubeMap("default", cubeMap);
 }
 
 
-void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) {
+void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
     modelIDs.resize(_staticEntities.size + 
                     _staticSolidEntities.size +
                     1 /* player */);

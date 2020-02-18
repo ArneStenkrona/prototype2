@@ -33,8 +33,6 @@ void ModelManager::addModelPaths(const char* directory) {
     std::string modelAssetPath = directory;
     while ((entry = readdir(dir)) != nullptr) {
         if (entry->d_name[0] != '.') {
-            
-            /**/
             if(entry->d_type == DT_DIR) { /* only deal with regular file */
                 char subdirectory[512];
                 strcpy(subdirectory, directory);
@@ -52,11 +50,6 @@ void ModelManager::addModelPaths(const char* directory) {
                     _modelIDs.insert(modelName, nextID++);
                 }
             }
-            /**/
-            // std::string modelName = std::string(entry->d_name);
-            // _modelPaths.insert(modelName, std::string(directory) + entry->d_name);
-            // _idToName.insert(nextID, modelName);
-            // _modelIDs.insert(modelName, nextID++);
         }
     }
 
@@ -87,35 +80,18 @@ uint32_t ModelManager::getModelID(const char* name) {
 }
 
 void ModelManager::loadModels(const prt::vector<uint32_t>& modelIDs, 
-                              prt::vector<Model>& models,
-                              prt::vector<Model>& colliderModels,
-                              prt::vector<uint32_t>& /*colliderIDs*/) {
+                              prt::vector<Model>& models) {
     prt::vector<std::string> modelPaths;
     getPaths(modelIDs, modelPaths);
     models.resize(modelIDs.size());
-    colliderModels.resize(0);
     for (uint32_t i = 0; i < modelPaths.size(); i++) {
-        // models[i].loadOBJ((modelPaths[i] + "/model.obj").c_str());
-
-        // if (is_file_exist((modelPaths[i] + "/collider.obj").c_str())) {
-        //     colliderModels.push_back({});
-        //     colliderModels.back().loadOBJ((modelPaths[i] + "/collider.obj").c_str());
-        //     colliderIDs.push_back(modelIDs[i]);
-        // }
-
-        // for (size_t mi = 0; mi < models[i]._meshes.size(); mi++) {
-        //     std::string texPath =  modelPaths[i] + "/" + models[i]._meshes[mi]._name + "_diffuse.png";
-        //     models[i]._meshes[mi]._texture.load(texPath.c_str());
-        // }
         models[i].loadOBJ(modelPaths[i].c_str());
     }
 }
 
 void ModelManager::loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
                                    prt::vector<Model>& models, 
-                                   prt::vector<uint32_t>& modelIndices,
-                                   prt::vector<Model>& colliderModels,
-                                   prt::vector<uint32_t>& colliderIDs) {
+                                   prt::vector<uint32_t>& modelIndices) {
     modelIndices.resize(modelIDs.size());                                  
     prt::hash_map<uint32_t, uint32_t> idToIndex;
     prt::vector<uint32_t> uniqueIDs;
@@ -127,5 +103,5 @@ void ModelManager::loadSceneModels(const prt::vector<uint32_t>& modelIDs,
         }
         modelIndices[i] = idToIndex[indx];
     }
-    loadModels(uniqueIDs, models, colliderModels, colliderIDs);
+    loadModels(uniqueIDs, models);
 }

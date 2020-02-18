@@ -5,7 +5,7 @@
 
 #include "src/container/vector.h"
 
-namespace vulkan_common {
+namespace vkutil {
     void createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, 
                       VkDeviceSize size,
                       VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,

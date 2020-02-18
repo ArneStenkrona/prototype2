@@ -1236,67 +1236,59 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanApplication::bindScene(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices,
-                                  const prt::array<Texture, 6>& skybox) {
-    loadModels(models);
-    loadSkybox(skybox);
-    createRenderJobs(models, modelIndices);
-    recreateSwapChain();
-}
+// void VulkanApplication::loadModels(const prt::vector<Model>& models) {
+//     assert(!models.empty());
+//     for (size_t i = 0; i < pushConstants.size(); i++) {
+//         pushConstants[i] = i;
+//     }
+//     createVertexBuffer(models);
+//     createIndexBuffer(models);
 
-void VulkanApplication::loadModels(const prt::vector<Model>& models) {
-    assert(!models.empty());
-    for (size_t i = 0; i < pushConstants.size(); i++) {
-        pushConstants[i] = i;
-    }
-    createVertexBuffer(models);
-    createIndexBuffer(models);
+//     createSkyboxBuffers();
 
-    createSkyboxBuffers();
+//     size_t numTex = 0;
+//     for (size_t i = 0; i < models.size(); i++) {
+//         for (size_t j = 0; j < models[i]._meshes.size(); j++) {
+//             createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
+//             createTextureImageView(textureImageView[numTex], textureImage[numTex], models[i]._meshes[j]._texture.mipLevels);
+//             numTex++;
+//         }
+//     }
 
-    size_t numTex = 0;
-    for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i]._meshes.size(); j++) {
-            createTextureImage(textureImage[numTex], textureImageMemory[numTex], models[i]._meshes[j]._texture);
-            createTextureImageView(textureImageView[numTex], textureImage[numTex], models[i]._meshes[j]._texture.mipLevels);
-            numTex++;
-        }
-    }
+//     for (size_t i = numTex; i < NUMBER_SUPPORTED_TEXTURES; i++) {
+//         createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
+//         createTextureImageView(textureImageView[i], textureImage[i], models[0]._meshes.back()._texture.mipLevels);
+//     }
+// }
 
-    for (size_t i = numTex; i < NUMBER_SUPPORTED_TEXTURES; i++) {
-        createTextureImage(textureImage[i], textureImageMemory[i], models[0]._meshes.back()._texture);
-        createTextureImageView(textureImageView[i], textureImage[i], models[0]._meshes.back()._texture.mipLevels);
-    }
-}
+// void VulkanApplication::loadSkybox(const prt::array<Texture, 6>& skybox) {    
+//     createCubeMapImage(cubeMapImage, cubeMapImageMemory, skybox);
+//     createCubeMapImageView(cubeMapImageView, cubeMapImage, skybox[0].mipLevels);
+// }
 
-void VulkanApplication::loadSkybox(const prt::array<Texture, 6>& skybox) {    
-    createCubeMapImage(cubeMapImage, cubeMapImageMemory, skybox);
-    createCubeMapImageView(cubeMapImageView, cubeMapImage, skybox[0].mipLevels);
-}
+// void VulkanApplication::createRenderJobs(const prt::vector<Model>& models, 
+//                                          const prt::vector<uint32_t>& modelIndices) {
+//     prt::vector<uint32_t> imgIdxOffsets = { 0 };
+//     prt::vector<uint32_t> indexOffsets = { 0 };
+//     imgIdxOffsets.resize(models.size());
+//     indexOffsets.resize(models.size());
+//     for (size_t i = 1; i < models.size(); i++) {
+//         imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1]._meshes.size();
+//         indexOffsets[i] = indexOffsets[i-1] + models[i-1]._indexBuffer.size();
+//     }
 
-void VulkanApplication::createRenderJobs(const prt::vector<Model>& models, 
-                                         const prt::vector<uint32_t>& modelIndices) {
-    prt::vector<uint32_t> imgIdxOffsets = { 0 };
-    prt::vector<uint32_t> indexOffsets = { 0 };
-    imgIdxOffsets.resize(models.size());
-    indexOffsets.resize(models.size());
-    for (size_t i = 1; i < models.size(); i++) {
-        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1]._meshes.size();
-        indexOffsets[i] = indexOffsets[i-1] + models[i-1]._indexBuffer.size();
-    }
-
-    for (size_t i = 0; i < modelIndices.size(); i++) {
-        const Model& model = models[modelIndices[i]];
-        for (size_t j = 0; j < model._meshes.size(); j++) {
-            RenderJob renderJob;
-            renderJob._modelMatrixIdx = i;
-            renderJob._imgIdx = imgIdxOffsets[modelIndices[i]] + j;
-            renderJob._firstIndex = indexOffsets[modelIndices[i]] + model._meshes[j].startIndex;
-            renderJob._indexCount = model._meshes[j].numIndices;
-            _renderJobs.push_back(renderJob);
-        }
-    }
-}
+//     for (size_t i = 0; i < modelIndices.size(); i++) {
+//         const Model& model = models[modelIndices[i]];
+//         for (size_t j = 0; j < model._meshes.size(); j++) {
+//             RenderJob renderJob;
+//             renderJob._modelMatrixIdx = i;
+//             renderJob._imgIdx = imgIdxOffsets[modelIndices[i]] + j;
+//             renderJob._firstIndex = indexOffsets[modelIndices[i]] + model._meshes[j].startIndex;
+//             renderJob._indexCount = model._meshes[j].numIndices;
+//             _renderJobs.push_back(renderJob);
+//         }
+//     }
+// }
 
 
 void VulkanApplication::createVertexBuffer(const prt::vector<Model>& models) {
@@ -1799,12 +1791,13 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, 
                                             imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-    updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
-                    skyProjectionMatrix, time);
 
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+        updateUniformBuffers(imageIndex, modelMatrices, viewMatrix, projectionMatrix, viewPosition,
+                             skyProjectionMatrix, time);
     }
+        
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1831,6 +1824,7 @@ void VulkanApplication::drawFrame(const prt::vector<glm::mat4>& modelMatrices,
     submitInfo.pSignalSemaphores = signalSemaphores;
     
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
     
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         assert(false && "failed to submit draw command buffer!");

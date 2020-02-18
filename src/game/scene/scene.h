@@ -7,7 +7,6 @@
 #include "src/graphics/camera/camera.h"
 #include "src/system/input/input.h"
 #include "src/game/system/physics_system.h"
-#include "src/graphics/vulkan/vulkan_application.h"
 
 #include "src/container/vector.h"
 
@@ -20,11 +19,14 @@ public:
     Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
           Input& input, Camera& camera);
 
-    void load(VulkanApplication& vulkanApplication);
-
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
 
     void update(float deltaTime);
+
+    void getModels(prt::vector<Model>& models,
+                   prt::vector<uint32_t>& modelIndices) const;
+    void getSkybox(prt::array<Texture, 6>& cubeMap) const;
+    
 
 private:
     template<size_t N>
@@ -71,11 +73,9 @@ private:
     float _gravity;
     
     void resetTransforms();
-    void getModelIDs(prt::vector<uint32_t>& modelIDs);
+    void getModelIDs(prt::vector<uint32_t>& modelIDs) const;
 
     void resolveColliderIDs();
-
-    void getSkybox(prt::array<Texture, 6>& cubeMap);
 
     void initPlayer();
     void updatePlayerInput();

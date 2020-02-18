@@ -1,8 +1,8 @@
-#include "vulkan_common.h"
+#include "vulkan_util.h"
 
 #include <cassert>
 
-void vulkan_common::createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, 
+void vkutil::createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, 
                                  VkDeviceSize size,
                                  VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
                                  VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
@@ -31,7 +31,7 @@ void vulkan_common::createBuffer(VkPhysicalDevice physicalDevice, VkDevice devic
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
 
-VkShaderModule vulkan_common::createShaderModule(VkDevice device, const prt::vector<char>& code) {
+VkShaderModule vkutil::createShaderModule(VkDevice device, const prt::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
@@ -45,7 +45,7 @@ VkShaderModule vulkan_common::createShaderModule(VkDevice device, const prt::vec
     return shaderModule;
 }
 
-uint32_t vulkan_common::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, 
+uint32_t vkutil::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, 
                                        VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);

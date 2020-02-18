@@ -7,6 +7,8 @@
 
 #include "src/system/input/input.h"
 
+#include "src/game/scene/scene.h"
+
 #include <vulkan/vulkan.h>
 
 #include "src/container/vector.h"
@@ -90,19 +92,49 @@ public:
                 float time);
     void cleanup();
 
-
-    void bindScene(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices,
-                   const prt::array<Texture, 6>& skybox);
-
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = width; h = height; };
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
+protected:
+    // Push constants
+    prt::array<uint32_t, 2> pushConstants;
+
+    struct RenderJob {
+        uint32_t _modelMatrixIdx;
+        uint32_t _imgIdx;
+        uint32_t _firstIndex;
+        uint32_t _indexCount;
+    };
+    prt::vector<RenderJob> _renderJobs;
+
+    // Model textures
+    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
+    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
+    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
+
+    // Cubemap texture
+    VkImage cubeMapImage;
+    VkDeviceMemory cubeMapImageMemory;
+    VkImageView cubeMapImageView;
+
+    void recreateSwapChain();
+
+    void createVertexBuffer(const prt::vector<Model>& models);
+    
+    void createIndexBuffer(const prt::vector<Model>& models);
+
+    void createSkyboxBuffers();
+
+    void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
+    void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
+    
+    void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
+    void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
+
 private:
     GLFWwindow* _window;
     int width, height;
-
-    //ImGuiApplication _imGuiApplication;
     
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -112,8 +144,6 @@ private:
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
     
-    //VkQueue copyQueue;
-
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     
@@ -154,35 +184,12 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
-    
-    // Model textures
-    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
-    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
-    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
-
-    // Cubemap texture
-    VkImage cubeMapImage;
-    VkDeviceMemory cubeMapImageMemory;
-    VkImageView cubeMapImageView;
 
     // Sampler
     struct {
         VkSampler skybox;
         VkSampler model;
     } samplers;
-
-    // Push constants
-    prt::array<uint32_t, 2> pushConstants;
-    // Entities
-    //prt::vector<uint32_t> _modelIDs;
-
-    struct RenderJob {
-        uint32_t _modelMatrixIdx;
-        uint32_t _imgIdx;
-        uint32_t _firstIndex;
-        uint32_t _indexCount;
-    };
-    prt::vector<RenderJob> _renderJobs;
 
     // Models data;
     VkBuffer vertexBuffer;
@@ -232,9 +239,7 @@ private:
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
     
     void cleanupSwapChain();
-    
-    void recreateSwapChain();
-    
+        
     void createInstance();
     
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -280,12 +285,6 @@ private:
     VkFormat findDepthFormat();
     
     bool hasStencilComponent(VkFormat format);
-    
-    void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
-    void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
-    
-    void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
-    void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
                          int32_t texWidth, int32_t texHeight, 
@@ -317,12 +316,6 @@ private:
     void copyBufferToImage(VkBuffer buffer, VkImage image, 
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
-    
-    void createVertexBuffer(const prt::vector<Model>& models);
-    
-    void createIndexBuffer(const prt::vector<Model>& models);
-
-    void createSkyboxBuffers();
 
     void createDrawCommands(size_t imageIndex);
     
@@ -332,11 +325,11 @@ private:
     
     void createDescriptorSets();
 
-    void loadModels(const prt::vector<Model>& models);
+    // void loadModels(const prt::vector<Model>& models);
 
-    void loadSkybox(const prt::array<Texture, 6>& skybox);
+    // void loadSkybox(const prt::array<Texture, 6>& skybox);
 
-    void createRenderJobs(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
+    // void createRenderJobs(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 

@@ -15,15 +15,10 @@ public:
     ModelManager(const char* directory);
 
 
-    void loadModels(const prt::vector<uint32_t>& modelIDs, 
-                    prt::vector<Model>& models,
-                    prt::vector<Model>& colliderModels,
-                    prt::vector<uint32_t>& colliderIDs);
+
     void loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
                          prt::vector<Model>& models, 
-                         prt::vector<uint32_t>& modelIndices,
-                         prt::vector<Model>& colliderModels,
-                         prt::vector<uint32_t>& colliderIDs);
+                         prt::vector<uint32_t>& modelIndices);
 
     uint32_t getModelID(std::string& name);
     uint32_t getModelID(const char* name);
@@ -45,6 +40,9 @@ private:
 
     void getPaths(const prt::vector<uint32_t>& modelIDs, 
                   prt::vector<std::string>& modelPaths);
+
+    void loadModels(const prt::vector<uint32_t>& modelIDs, 
+                    prt::vector<Model>& models);
 };
 
 #endif
