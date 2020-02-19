@@ -6,7 +6,6 @@ GameRenderer::GameRenderer()
 }
 
 GameRenderer::~GameRenderer() {
-    cleanup();
 }
 
 void GameRenderer::createMaterialPipelines() {

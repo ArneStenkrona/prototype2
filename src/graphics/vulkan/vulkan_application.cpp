@@ -44,7 +44,11 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 VulkanApplication::VulkanApplication() {
     initWindow();
     initVulkan();
-}   
+}
+
+VulkanApplication::~VulkanApplication() {
+    cleanup();
+}
 
 void VulkanApplication::initWindow() {
     glfwInit();

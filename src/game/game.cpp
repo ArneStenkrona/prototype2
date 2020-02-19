@@ -28,7 +28,6 @@ void Game::loadScene() {
 }
 
 Game::~Game() {
-    _gameRenderer.cleanup();
 }
 
 void Game::run() {

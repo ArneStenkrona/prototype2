@@ -66,12 +66,13 @@ struct SwapChainSupportDetails {
 class VulkanApplication {
 public:
     VulkanApplication();
+    ~VulkanApplication();
+
+    VulkanApplication & operator=(const VulkanApplication&) = delete;
+    VulkanApplication(const VulkanApplication&) = delete;
 
     void initWindow();
     void initVulkan();
-    
-    void cleanup();
-
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = width; h = height; };
@@ -196,6 +197,8 @@ private:
     size_t currentFrame = 0;
     
     bool framebufferResized = false;
+
+    void cleanup();
     
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
             
