@@ -1,6 +1,8 @@
 #ifndef IMGUI_APPLICATION_H
 #define IMGUI_APPLICATION_H
 
+#include "src/system/input/input.h"
+
 #include <imgui/imgui.h>
 
 #include <vulkan/vulkan.h>
@@ -24,7 +26,8 @@ public:
 		glm::vec2 translate;
 	} pushConstBlock;
 
-	ImGuiApplication(VulkanApplication* vulkanApplication);
+	ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device, 
+					 Input& input);
 	
 	~ImGuiApplication();
 	
@@ -35,15 +38,18 @@ public:
 	void init(float width, float height);
 
 	// Initialize all Vulkan resources used by the ui
-	void initResources(VkRenderPass renderPass, VkQueue copyQueue);
+	void initResources(VkRenderPass renderPass, VkCommandPool& commandPool, 
+					   VkQueue& copyQueue,
+					   VkSampleCountFlagBits msaaSamples);
 
 
 	// Starts a new imGui frame and sets up windows and ui elements
-	void newFrame(/*VulkanExampleBase *example, */bool updateFrameGraph);
+	void newFrame(bool updateFrameGraph);
 
 	// Update vertex and index buffer containing the imGui elements when required
-	void updateBuffers();
+	void updateBuffers(VkFence* pFence, uint32_t nFence);
 
+	void updateInput(float width, float height, float deltaTime);
 
 	// Draw current imGui frame into a command buffer
 	void drawFrame(VkCommandBuffer commandBuffer);
@@ -60,6 +66,7 @@ private:
 	void* indexBufferMapped = nullptr;
 	int32_t vertexCount = 0;
 	int32_t indexCount = 0;
+
 	VkDeviceMemory fontMemory = VK_NULL_HANDLE;
 	VkImage fontImage = VK_NULL_HANDLE;
 	VkImageView fontView = VK_NULL_HANDLE;
@@ -69,9 +76,10 @@ private:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSet descriptorSet;
-	//VulkanExampleBase *example;
-    VulkanApplication *_vulkanApplication;
-	vk::Device *_device;
+	VkPhysicalDevice& _physicalDevice;
+	VkDevice& _device;
+
+	Input& _input;
 };
 
 #endif

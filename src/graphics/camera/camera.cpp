@@ -19,15 +19,19 @@ Camera::Camera(Input& input, float posX, float posY, float posZ, float upX, floa
 {
 }
 
-glm::mat4 Camera::getProjectionMatrix() const
+glm::mat4 Camera::getProjectionMatrix(float width, float height, float near, float far) const
 {
     /* TODO: Get screen dimensions instead of hardcoding 800x600  */
-    return glm::perspective(glm::radians(_fieldOfView), 800.0f / 600.0f, 0.1f, 100.0f);
+    return glm::perspective(glm::radians(_fieldOfView), width / height, near, far);
 }
 
-void Camera::update(float deltaTime)
+void Camera::setTarget(glm::vec3 target) {
+    _position = target - (5.0f * _front);
+}
+
+void Camera::update(float /*deltaTime*/)
 {
-    processKeyboard(deltaTime);
+    //processKeyboard(deltaTime);
     processMouseMovement();
 }
 
@@ -35,20 +39,20 @@ void Camera::processKeyboard(float deltaTime)
 {
     //Movement
     float cameraSpeed = _movementSpeed * deltaTime;
-    if (_input.getKey(GLFW_KEY_W) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_W))
         _position += _front * cameraSpeed;
-    if (_input.getKey(GLFW_KEY_S) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_S))
         _position -= _front * cameraSpeed;
-    if (_input.getKey(GLFW_KEY_A) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_A))
         _position -= glm::normalize(glm::cross(_front, _up)) * cameraSpeed;
-    if (_input.getKey(GLFW_KEY_D) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_D))
         _position += glm::normalize(glm::cross(_front, _up)) * cameraSpeed;
-    if (_input.getKey(GLFW_KEY_SPACE) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_SPACE))
         _position += glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)) * cameraSpeed;
-    if (_input.getKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_LEFT_CONTROL))
         _position -= glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)) * cameraSpeed;
     //Reset field of view
-    if (_input.getKey(GLFW_KEY_R) == GLFW_PRESS)
+    if (_input.getKeyPress(INPUT_KEY::KEY_R))
         _fieldOfView = 45.0f;
 }
 

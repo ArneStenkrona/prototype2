@@ -1,7 +1,6 @@
 #include "game.h"
 
 #include "src/container/vector.h"
-#include "src/entity_component_system/component/component.h"
 #include "src/config/prototype2Config.h"
 
 #include <chrono>
@@ -10,25 +9,25 @@
 #include <iostream>
 
 Game::Game()
-: _vulkanApp(),
-  _input(_vulkanApp.getWindow()),
+: _input(),
+  _gameRenderer(),
   _assetManager(RESOURCE_PATH),
-  //_modelManager((RESOURCE_PATH + std::string("models/")).c_str()),
-  _scene(_assetManager),
   _camera(_input),
+  _scene(_assetManager, _physicsSystem, _input, _camera),
   _frameRate(FRAME_RATE),
   _microsecondsPerFrame(1000000 / _frameRate),
-  _currentFrame(0) {
-    prt::vector<Model> models;
-    _assetManager.loadModels(models);
-    _vulkanApp.loadModels(models);
-    prt::vector<uint32_t> modelIDs;
-    _scene.getModelIDs(modelIDs);
-    _vulkanApp.bindStaticEntities(modelIDs);
+  _currentFrame(0),
+  _time(0.0f) {
+    _input.init(_gameRenderer.getWindow());
+    loadScene();
+}
+
+void Game::loadScene() {
+    _gameRenderer.bindScene(_scene);
+    //_physicsSystem.bindScene(_scene); // TODO: write this method
 }
 
 Game::~Game() {
-    _vulkanApp.cleanup();
 }
 
 void Game::run() {
@@ -40,7 +39,7 @@ void Game::run() {
     uint32_t framesMeasured = 0;
     clock::time_point nextSecond = lastTime + std::chrono::seconds(1);
         
-    while (_vulkanApp.isWindowOpen()) {
+    while (_gameRenderer.isWindowOpen()) {
         deadLine = deadLine + std::chrono::microseconds(_microsecondsPerFrame);
         auto currentTime = clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
@@ -61,17 +60,23 @@ void Game::run() {
 }
 
 void Game::update(float deltaTime) {
+    _time += deltaTime;
     _input.update();
     _camera.update(deltaTime);
-    updateGraphics();
+    _scene.update(deltaTime);
+    updateGraphics(deltaTime);
 }
 
-void Game::updateGraphics() {
+void Game::updateGraphics(float /*deltaTime*/) {
     prt::vector<glm::mat4> modelMatrices; 
-    _scene.getTransformMatrixes(modelMatrices);
+    _scene.getTransformMatrices(modelMatrices);
 
     glm::mat4 viewMatrix = _camera.getViewMatrix();
-    glm::mat4 projectionMatrix = _camera.getProjectionMatrix();
+    int w,h = 0;
+    _gameRenderer.getWindowSize(w, h);
+    glm::mat4 projectionMatrix = _camera.getProjectionMatrix(float(w), float(h), 0.1f, 200.0f);
+    glm::mat4 skyProjectionMatrix = _camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
     glm::vec3 viewPosition = _camera.getPosition();
-    _vulkanApp.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition);
+    _gameRenderer.update(modelMatrices, viewMatrix, projectionMatrix, viewPosition, 
+                         skyProjectionMatrix, _time);
 }

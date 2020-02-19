@@ -3,11 +3,13 @@
 
 #include "src/graphics/geometry/model.h"
 
-#include "imgui_application.h"
+#include "render_pipeline.h"
+
+#include "src/system/input/input.h"
+
+#include "src/game/scene/scene.h"
 
 #include <vulkan/vulkan.h>
-
-#include <vulkan/vulkan.hpp>
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
@@ -26,7 +28,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <algorithm>
 
 #include <cstring>
@@ -62,60 +63,124 @@ struct SwapChainSupportDetails {
     prt::vector<VkPresentModeKHR> presentModes;
 };
 
-struct UniformBufferObject {
-    alignas(16) glm::mat4 model[MAXIMUM_MODEL_ENTITIES];
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec3 viewPosition;
-};
-
 class VulkanApplication {
 public:
     VulkanApplication();
+    ~VulkanApplication();
+
+    VulkanApplication & operator=(const VulkanApplication&) = delete;
+    VulkanApplication(const VulkanApplication&) = delete;
 
     void initWindow();
     void initVulkan();
-    void update(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
-    void cleanup();
+    
+    GLFWwindow* getWindow() const { return _window; }
+    void getWindowSize(int& w, int& h) { w = width; h = height; };
+    
+    bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
+protected:
+    // command data
+    VkCommandPool commandPool;
+    prt::vector<VkCommandBuffer> commandBuffers;
+    
+    // Sampler
+    VkSampler textureSampler;
 
-    void loadModels(prt::vector<Model>& models);
-    void bindStaticEntities(const prt::vector<uint32_t>& modelIDs);
+    struct VertexData {
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
+    };
 
-    GLFWwindow* getWindow() const { return window; }
-    
-    bool isWindowOpen() { return !glfwWindowShouldClose(window); }
-private:
-    GLFWwindow* window;
-
-    ImGuiApplication _imGuiApplication;
-    
-    vk::Instance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
-    
-    vk::PhysicalDevice physicalDevice;
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    vk::Device device;
-    
-    //VkQueue copyQueue;
-
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-    
+    // Swapchain data
     VkSwapchainKHR swapChain;
     prt::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
-    
+
     VkRenderPass renderPass;
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
-    VkPipeline graphicsPipeline;
+
+    struct TextureImages {
+        prt::vector<VkImage> images;
+        prt::vector<VkDeviceMemory> imageMemories;
+        prt::vector<VkImageView> imageViews;
+    };
+    struct DrawCall {
+        uint32_t firstIndex;
+        uint32_t indexCount;
+        typedef prt::array<uint32_t,2> ConstantType;
+        ConstantType pushConstants;
+    };
+    struct MaterialPipeline {
+        TextureImages textureImages;
+
+        // Vertex data
+        VertexData vertexData;
+
+        // Uniform data
+        prt::vector<char> uboData;
+        prt::vector<VkBuffer> uniformBuffers;
+        prt::vector<VkDeviceMemory> uniformBufferMemories;
+
+        // Descriptors
+        prt::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+        VkDescriptorPool descriptorPool;
+        prt::vector<VkDescriptorPoolSize> descriptorPoolSizes;
+        VkDescriptorSetLayout descriptorSetLayout;
+        prt::vector<VkDescriptorSet> descriptorSets;
+        prt::array<VkDescriptorBufferInfo, 3> descriptorBufferInfos;
+        prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
+        prt::array<prt::vector<VkWriteDescriptorSet>, 3> descriptorWrites;
+
+        // Pipeline
+        VkPipeline pipeline;
+        VkPipelineLayout pipelineLayout;
+        VkPipelineCache pipelineCache;
+        VkVertexInputBindingDescription vertexInputBinding;
+        prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+        char vertexShader[512];
+        char fragmentShader[512];
+
+        // Draw calls
+        prt::vector<DrawCall> drawCalls;
+    };
+
+    prt::vector<MaterialPipeline> materialPipelines;
+
+    void update();
+
+    VkDevice& getDevice() { return device; }
     
-    VkCommandPool commandPool;
+    void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
+    void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
     
+    void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
+    void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
+
+    void recreateSwapChain();
+    void cleanupSwapChain();
+
+    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
+                        VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
+    
+private:
+    GLFWwindow* _window;
+    int width, height;
+    
+    VkInstance instance;
+    VkDebugUtilsMessengerEXT debugMessenger;
+    VkSurfaceKHR surface;
+    
+    VkPhysicalDevice physicalDevice;
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkDevice device;
+    
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+        
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
@@ -123,51 +188,20 @@ private:
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
-    
-    // Textures
-    uint32_t mipLevels;
-    prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
-    prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
-    prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
-    // Sampler
-    VkSampler sampler;
 
-    // Push constants
-    prt::array<uint32_t, 2> pushConstants;
-    // Entities
-    prt::vector<uint32_t> _modelIDs;
-    // Models data;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-    // Uniform data
-    prt::vector<VkBuffer> uniformBuffers;
-    prt::vector<VkDeviceMemory> uniformBuffersMemory;
-    // Descriptors
-    VkDescriptorPool descriptorPool;
-    prt::vector<VkDescriptorSet> descriptorSets;
-    // Commands
-    prt::vector<VkCommandBuffer> commandBuffers;
-    // Indirect commands
-    //prt::vector<VkDrawIndexedIndirectCommand> indirectCommands;
-    // Contains the indirect drawing commands
-	VkBuffer indirectCommandBuffer;
-    VkDeviceMemory indirectCommandBufferMemory;
-    // Concurrency
+    // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
     prt::vector<VkSemaphore> renderFinishedSemaphores;
     prt::vector<VkFence> inFlightFences;
+    prt::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
     
     bool framebufferResized = false;
+
+    void cleanup();
     
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
-    
-    void cleanupSwapChain();
-    
-    void recreateSwapChain();
-    
+            
     void createInstance();
     
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -186,13 +220,19 @@ private:
     
     void createRenderPass();
     
-    void createDescriptorSetLayout();
-    
-    void createGraphicsPipeline();
+    void createDescriptorSetLayouts();
+
+    void createPipelineCaches();
+
+    void createGraphicsPipelines();
+    void createGraphicsPipeline(MaterialPipeline& materialPipeline);
     
     void createFramebuffers();
     
     void createCommandPool(); 
+    void createCommandBuffers();
+    void createCommandBuffer(size_t imageIndex);
+    void createDrawCommands(size_t imageIndex);
 
     void createColorResources();
     
@@ -204,42 +244,41 @@ private:
     VkFormat findDepthFormat();
     
     bool hasStencilComponent(VkFormat format);
-    
-    void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
-    
+
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
-                         int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+                         int32_t texWidth, int32_t texHeight, 
+                         uint32_t mipLevels, uint32_t layerCount);
     
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
-    void createTextureImageView(VkImageView& texImageView, VkImage &texIm);
     
-    void createSampler();
+    void createSamplers();
     
     VkImageView createImageView(VkImage image, VkFormat format, 
-                                VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+                                VkImageAspectFlags aspectFlags, 
+                                VkImageViewType viewType,
+                                uint32_t mipLevels,
+                                uint32_t layerCount);
     
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, 
+    void createImage(uint32_t width, uint32_t height, 
+                     uint32_t mipLevels, uint32_t arrayLayers,
+                     VkImageCreateFlags flags,
                      VkSampleCountFlagBits numSamples, VkFormat format, 
                      VkImageTiling tiling, VkImageUsageFlags usage, 
                      VkMemoryPropertyFlags properties, VkImage& image, 
                      VkDeviceMemory& imageMemory);
     
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
-                               VkImageLayout newLayout, uint32_t mipLevels);
+    void transitionImageLayout(VkImage image, VkFormat format, 
+                               VkImageLayout oldLayout, VkImageLayout newLayout, 
+                               uint32_t mipLevels, uint32_t layerCount);
     
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    
-    void createVertexBuffer(prt::vector<Model>& models);
-
-    
-    void createIndexBuffer(prt::vector<Model>& models);
-
-    void createIndirectCommandBuffer(prt::vector<Model>& models);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, 
+                           uint32_t width, uint32_t height,
+                           uint32_t layerCount);
     
     void createUniformBuffers();
     
-    void createDescriptorPool();
+    void createDescriptorPools();
     
     void createDescriptorSets();
     
@@ -247,9 +286,7 @@ private:
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
                       VkDeviceMemory& bufferMemory);
 
-    void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
-                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
-    
+
     VkCommandBuffer beginSingleTimeCommands();
     
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -257,17 +294,14 @@ private:
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-    
-    void createCommandBuffers();
-    
+
     void createSyncObjects();
+
+    void updateUniformBuffers(uint32_t currentImage);
     
-    void updateUniformBuffer(uint32_t currentImage, const prt::vector<glm::mat4>& modelMatrices, 
-                             glm::mat4& viewMatrix, glm::mat4& projectionMatrix, glm::vec3 viewPosition);
+    void drawFrame();
     
-    void drawFrame(const prt::vector<glm::mat4>& modelMatrices, glm::mat4& viewMatrix, 
-                   glm::mat4& projectionMatrix, glm::vec3 viewPosition);
-    
+    VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);
     
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(const prt::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -288,15 +322,13 @@ private:
     
     bool checkValidationLayerSupport();
     
-    static prt::vector<char> readFile(const std::string& filename);
+    static prt::vector<char> readFile(const char* filename);
     
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/, 
                                                         VkDebugUtilsMessageTypeFlagsEXT /*messageType*/, 
                                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
                                                         void* /*pUserData*/);
     
-    friend class VulkanPRTGame;
-    friend class ImGuiApplication;
 };
 
 #endif

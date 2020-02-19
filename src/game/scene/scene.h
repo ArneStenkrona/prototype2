@@ -4,7 +4,9 @@
 #include "src/config/prototype2Config.h"
 
 #include "src/system/assets/asset_manager.h"
-#include "src/graphics/geometry/parametric_shapes.h"
+#include "src/graphics/camera/camera.h"
+#include "src/system/input/input.h"
+#include "src/game/system/physics_system.h"
 
 #include "src/container/vector.h"
 
@@ -12,26 +14,74 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-
 class Scene {
 public:
-    Scene(AssetManager &assetManager);
+    Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
+          Input& input, Camera& camera);
 
-    void getModelIDs(prt::vector<uint32_t>& modelIDs);
-    void getTransformMatrixes(prt::vector<glm::mat4>& transformMatrices);
+    void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
+
+    void update(float deltaTime);
+
+    void getModels(prt::vector<Model>& models,
+                   prt::vector<uint32_t>& modelIndices) const;
+    void getSkybox(prt::array<Texture, 6>& cubeMap) const;
     
+
 private:
-    struct ModelEntities {
-        uint32_t modelIDs[MAXIMUM_MODEL_ENTITIES];
-        glm::vec3 positions[MAXIMUM_MODEL_ENTITIES];
-        glm::quat rotations[MAXIMUM_MODEL_ENTITIES];
-        glm::vec3 scales[MAXIMUM_MODEL_ENTITIES];
-        //size_t num = 0;
-    } _modelEntities;
+    template<size_t N>
+    struct StaticEntities {
+        enum { maxSize = N };
+        size_t size = 0;
 
+        uint32_t modelIDs[N];
+        Transform transforms[N];
+    };
+    StaticEntities<10> _staticEntities;
+
+    template<size_t N>
+    struct StaticSolidEntities {
+        enum { maxSize = N };
+        size_t size = 0;
+
+        uint32_t modelIDs[N];
+        Transform transforms[N];
+        uint32_t triangleMeshColliderIDs[N];
+    };
+    StaticSolidEntities<10> _staticSolidEntities;
+
+    struct {
+        uint32_t modelID;
+        Transform transform;
+        glm::vec3 velocity;
+        glm::vec3 direction;
+        float acceleration;
+        float friction;
+        glm::vec3 gravityVelocity;
+        uint32_t ellipsoidColliderID;
+        bool isGrounded;
+        glm::vec3 groundNormal;
+        bool jump;
+    } _playerEntity;
+
+    AssetManager& _assetManager;
+    PhysicsSystem& _physicsSystem;
+    Input& _input;
+    Camera& _camera;
+
+    glm::vec3 _gravityConstant;
+    float _gravity;
+    
     void resetTransforms();
+    void getModelIDs(prt::vector<uint32_t>& modelIDs) const;
 
-    AssetManager &_assetManager;
+    void resolveColliderIDs();
+
+    void initPlayer();
+    void updatePlayerInput();
+    void updatePlayerPhysics(float deltaTime);
+    void updatePhysics(float deltaTime);
+    void updateCamera();
 };
 
 #endif

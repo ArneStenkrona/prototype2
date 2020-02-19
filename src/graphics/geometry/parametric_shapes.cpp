@@ -346,3 +346,82 @@ void parametric_shapes::createCapsule(prt::vector<Vertex>& vertices, prt::vector
         indices[index++] = (nphi - 1) * ntheta + itheta;
     }
 }
+
+void parametric_shapes::createSkybox(Model& model, Cuboid cuboid) {
+    float w = cuboid.width / 2;
+    float h = cuboid.height / 2;
+    float d = cuboid.depth / 2;
+    auto& vertices = model._vertexBuffer;
+    auto& indices = model._indexBuffer;
+    auto& meshes = model._meshes;
+    vertices.resize(4*6);
+    indices.resize(6*6);
+    meshes.resize(6);
+    // I split each face to get correct normals
+    /* face 1 */
+    vertices[0].pos = glm::vec3{w, h, d};
+    vertices[1].pos = glm::vec3{w, h, -d};
+    vertices[2].pos = glm::vec3{-w, h, -d};
+    vertices[3].pos = glm::vec3{-w, h, d};
+
+    /* face 2 */
+    vertices[7].pos = glm::vec3{w, -h, d};
+    vertices[6].pos = glm::vec3{w, -h, -d};
+    vertices[5].pos = glm::vec3{-w, -h, -d};
+    vertices[4].pos = glm::vec3{-w, -h, d};
+
+    /* face 3 */
+    vertices[11].pos = glm::vec3{w, h, d};
+    vertices[10].pos = glm::vec3{w, h, -d};
+    vertices[9].pos = glm::vec3{w, -h, -d};
+    vertices[8].pos = glm::vec3{w, -h, d};
+
+    /* face 4 */
+    vertices[12].pos = glm::vec3{-w, h, d};
+    vertices[13].pos = glm::vec3{-w, h, -d};
+    vertices[14].pos = glm::vec3{-w, -h, -d};
+    vertices[15].pos = glm::vec3{-w, -h, d};
+
+    /* face 5 */
+    vertices[19].pos = glm::vec3{w, h, d};
+    vertices[18].pos = glm::vec3{w, -h, d};
+    vertices[17].pos = glm::vec3{-w, -h, d};
+    vertices[16].pos = glm::vec3{-w, h, d};
+
+    /* face 6 */
+    vertices[20].pos = glm::vec3{w, h, -d};
+    vertices[21].pos = glm::vec3{w, -h, -d};
+    vertices[22].pos = glm::vec3{-w, -h, -d};
+    vertices[23].pos = glm::vec3{-w, h, -d};
+
+    glm::vec3 normals[6] = { glm::vec3{ 0.0f, -1.0f, 0.0f},
+                             glm::vec3{ 0.0f, 1.0f, 0.0f},
+                             glm::vec3{ -1.0f, 0.0f, 0.0f},
+                             glm::vec3{ 1.0f, 0.0f, 0.0f},
+                             glm::vec3{ 0.0f, 0.0f, -1.0f},
+                             glm::vec3{ 0.0f, 0.0f, 1.0f}};
+
+    uint32_t index = 0;
+    for (uint32_t i = 0; i < 6; i++) {
+        indices[index++] = (i * 4) + 2;
+        indices[index++] = (i * 4) + 1;
+        indices[index++] = (i * 4);
+
+        indices[index++] = (i * 4);
+        indices[index++] = (i * 4) + 3;
+        indices[index++] = (i * 4) + 2;
+
+        vertices[i * 4].normal = normals[i];
+        vertices[i * 4 + 1].normal = normals[i];
+        vertices[i * 4 + 2].normal = normals[i];
+        vertices[i * 4 + 3].normal = normals[i];
+
+        vertices[i * 4].texCoord = glm::vec2(1.0f, 0.0f);
+        vertices[i * 4 + 1].texCoord = glm::vec2(0.0f, 0.0f);
+        vertices[i * 4 + 2].texCoord = glm::vec2(0.0f, 1.0f);
+        vertices[i * 4 + 3].texCoord = glm::vec2(1.0f, 1.0f);
+
+        meshes[i].startIndex = 6 * i;
+        meshes[i].numIndices = 6;
+    }
+}

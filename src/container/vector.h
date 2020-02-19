@@ -46,8 +46,11 @@ namespace prt
                 ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator()) 
         : vector(allocator) {
             reserve(ilist.size());
-            std::copy(ilist.begin(), ilist.end(), _data);
-            _size = ilist.size();
+            size_t sz = 0;
+            for (auto it = ilist.begin(); it < ilist.end(); it++) {
+                new (&_data[sz++]) T(*it);
+            }
+            _size = sz;
         }
 
         vector(ContainerAllocator& allocator)
@@ -172,8 +175,8 @@ namespace prt
 
         inline bool empty() const { return _size == 0; }
 
-        inline T& front() const { return _data[0]; }
-        inline T& back() const { return _data[_size - 1]; }
+        inline T& front() const { assert(!empty()); return _data[0]; }
+        inline T& back() const { assert(!empty()); return _data[_size - 1]; }
 
         inline size_t size() const { return _size; }
         inline size_t capacity() const { return _capacity; }

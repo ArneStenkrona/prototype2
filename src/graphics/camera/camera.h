@@ -17,11 +17,12 @@ public:
     // Constructor with scalar values
     Camera(Input& input, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
+    void setTarget(glm::vec3 target);
     void update(float deltaTime);
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
     inline glm::mat4 getViewMatrix() const { return glm::lookAt(_position, _position + _front, _up); }
-    glm::mat4 getProjectionMatrix() const;
+    glm::mat4 getProjectionMatrix(float width, float height, float near, float far) const;
     
 
     inline glm::vec3 getPosition() const { return _position; }

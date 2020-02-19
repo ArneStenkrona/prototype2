@@ -6,6 +6,7 @@
 #include <cstdint>
 
 struct Vertex;
+struct Model;
 namespace parametric_shapes {
 
 struct Quad {
@@ -50,6 +51,8 @@ void createSphere(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices,
 void createCylinder(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Cylinder cylinder);
 
 void createCapsule(prt::vector<Vertex>& vertices, prt::vector<uint32_t>& indices, Capsule capsule);
+
+void createSkybox(Model& model, Cuboid cuboid);
 };
 
 #endif

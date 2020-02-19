@@ -1,9 +1,10 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "src/container/vector.h"
-
 #include "src/graphics/geometry/parametric_shapes.h"
+
+#include "src/container/vector.h"
+#include "src/container/array.h"
 
 #include <vulkan/vulkan.h>
 
@@ -16,8 +17,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
-
-#include <array>
 
 struct Vertex {
     glm::vec3 pos;
@@ -39,8 +38,8 @@ struct Vertex {
     /**
      * @return vulkan attribute description
      */
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
+    static prt::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+        prt::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
         
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -77,26 +76,41 @@ namespace std {
     };
 }
 
-struct Mesh {
-    size_t startIndex;
-    size_t numIndices;
-};
-
 struct Texture {
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
+    uint32_t mipLevels;
+
+    void load(const char* texturePath);
+
+    inline unsigned char* sample(float x, float y) {
+        int sx = static_cast<int>(float(texWidth - 1) * x + 0.5f);
+        int sy = static_cast<int>(float(texHeight - 1) * y + 0.5f);
+        int si = texChannels * (sy * texWidth + sx);
+        return &pixelBuffer[si];
+    }
 };
 
 struct Material {
     /* TODO: Add members */
 };
 
+struct Mesh {
+    size_t startIndex;
+    size_t numIndices;
+    // char _name[512];
+    char _materialName[512];
+    Texture _texture;
+};
+
+
+
 struct Model {
     prt::vector<Mesh> _meshes;
     prt::vector<Vertex> _vertexBuffer;
     prt::vector<uint32_t> _indexBuffer;
-    //prt::vector<Texture> _meshes; Supposed to be 1 texture per mesh
-    Texture _texture;
+    // char _materialFilePath[512];
+    void loadOBJ(const char* path);
 };
 
 #endif

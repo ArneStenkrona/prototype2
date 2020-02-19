@@ -28,14 +28,27 @@ set (MAXIMUM_MODEL_ENTITIES 10)
 
 # Graphics
 set (NUMBER_SUPPORTED_TEXTURES 20)
+set (NUMBER_SUPPORTED_MODEL_MATRICES 100)
 
 # Game
 set (FRAME_RATE 60)
 
 # Write to shaders
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag.in" filedata)
+# vert
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.vert.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.vert" "${filedata}")
+# frag
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.frag.in" filedata)
 string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/shader.frag" "${filedata}")
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
+
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
+
 
 # END CONFIG VARIABLES
 
@@ -69,12 +82,14 @@ file(GLOB SOURCES
     "src/config/*.cpp"
     "src/memory/*.cpp"
     "src/container/*.cpp"
+    "src/util/*.cpp"
     "src/game/*.cpp"
     "src/game/entities/*.cpp"
+    "src/game/level/*.cpp"
     "src/game/scene/*.cpp"
+    "src/game/system/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
-    "src/entity_component_system/system/*.cpp"
     "src/graphics/vulkan/*.cpp"
     "src/graphics/geometry/*.cpp"
     "src/graphics/camera/*.cpp"
@@ -119,7 +134,7 @@ get_filename_component(FILE_NAME ${GLSL} NAME)
 set(SPIRV "${PROJECT_BINARY_DIR}/res/shaders/${FILE_NAME}.spv")
 add_custom_command(
 OUTPUT ${SPIRV}
-COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/res/shaders/"
 COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
 DEPENDS ${GLSL})
 list(APPEND SPIRV_BINARY_FILES ${SPIRV})
@@ -133,8 +148,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)
@@ -151,8 +166,8 @@ target_link_libraries(prototype2.lib glm)
 # Test project
 add_executable(prototype2_tests ${TESTSOURCES})
 # Set compiler flags
-target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
-target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g)# -fsanitize=undefined)
+target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
 # Link libraries
 target_link_libraries(prototype2_tests Catch2::Catch2)
 target_link_libraries(prototype2_tests prototype2.lib)

@@ -1,6 +1,7 @@
 #include "imgui_application.h"
-
 #include "vulkan_application.h"
+#include "vulkan_util.h"
+#include "src/util/io_util.h"
 
 // Options and values to display/toggle from the UI
 struct UISettings {
@@ -23,8 +24,9 @@ void setImageLayout(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask);
 
-ImGuiApplication::ImGuiApplication(VulkanApplication* vulkanApplication)
-    : _vulkanApplication(vulkanApplication), _device(&vulkanApplication->device)
+ImGuiApplication::ImGuiApplication(VkPhysicalDevice& physicalDevice, VkDevice& device,
+                                   Input& input)
+    : _physicalDevice(physicalDevice), _device(device), _input(input)
       
 {
     ImGui::CreateContext();
@@ -38,46 +40,38 @@ ImGuiApplication::~ImGuiApplication()
 void ImGuiApplication::cleanup() {
     // Release all Vulkan resources required for rendering imGui
     if (vertexBufferMapped != nullptr) {
-        vkUnmapMemory(*_device, vertexBufferMemory);
+        vkUnmapMemory(_device, vertexBufferMemory);
 		vertexBufferMapped = nullptr;
     }
 
     if (vertexBuffer != VK_NULL_HANDLE) {
-        vkDestroyBuffer(*_device, vertexBuffer, nullptr);
-        vkFreeMemory(*_device, vertexBufferMemory, nullptr);
+        vkDestroyBuffer(_device, vertexBuffer, nullptr);
+        vkFreeMemory(_device, vertexBufferMemory, nullptr);
     }
 
     if (indexBufferMapped != nullptr) {
-        vkUnmapMemory(*_device, indexBufferMemory);
+        vkUnmapMemory(_device, indexBufferMemory);
 		indexBufferMapped = nullptr;
     }
 
     if (indexBuffer != VK_NULL_HANDLE) {
-        vkDestroyBuffer(*_device, indexBuffer, nullptr);
-        vkFreeMemory(*_device, indexBufferMemory, nullptr);
+        vkDestroyBuffer(_device, indexBuffer, nullptr);
+        vkFreeMemory(_device, indexBufferMemory, nullptr);
     }
     
-    vkDestroyImage(*_device, fontImage, nullptr);
-    vkDestroyImageView(*_device, fontView, nullptr);
-    vkFreeMemory(*_device, fontMemory, nullptr);
-    vkDestroySampler(*_device, sampler, nullptr);
-    vkDestroyPipelineCache(*_device, pipelineCache, nullptr);
-    vkDestroyPipeline(*_device, pipeline, nullptr);
-    vkDestroyPipelineLayout(*_device, pipelineLayout, nullptr);
-    vkDestroyDescriptorPool(*_device, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*_device, descriptorSetLayout, nullptr);
+    cleanupSwapchain();
 }
 
 void ImGuiApplication::cleanupSwapchain() {
-    vkDestroyImage(*_device, fontImage, nullptr);
-    vkDestroyImageView(*_device, fontView, nullptr);
-    vkFreeMemory(*_device, fontMemory, nullptr);
-    vkDestroySampler(*_device, sampler, nullptr);
-    vkDestroyPipelineCache(*_device, pipelineCache, nullptr);
-    vkDestroyPipeline(*_device, pipeline, nullptr);
-    vkDestroyPipelineLayout(*_device, pipelineLayout, nullptr);
-    vkDestroyDescriptorPool(*_device, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*_device, descriptorSetLayout, nullptr);
+    vkDestroyImage(_device, fontImage, nullptr);
+    vkDestroyImageView(_device, fontView, nullptr);
+    vkFreeMemory(_device, fontMemory, nullptr);
+    vkDestroySampler(_device, sampler, nullptr);
+    vkDestroyPipelineCache(_device, pipelineCache, nullptr);
+    vkDestroyPipeline(_device, pipeline, nullptr);
+    vkDestroyPipelineLayout(_device, pipelineLayout, nullptr);
+    vkDestroyDescriptorPool(_device, descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(_device, descriptorSetLayout, nullptr);
 }
 
 // Initialize styles, keys, etc.
@@ -97,7 +91,9 @@ void ImGuiApplication::init(float width, float height)
 }
 
 // Initialize all Vulkan resources used by the ui
-void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
+void ImGuiApplication::initResources(VkRenderPass renderPass, VkCommandPool& commandPool, 
+                                     VkQueue& copyQueue,
+                                     VkSampleCountFlagBits msaaSamples)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -122,19 +118,19 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    if (vkCreateImage(*_device, &imageInfo, nullptr, &fontImage) != VK_SUCCESS) {
+    if (vkCreateImage(_device, &imageInfo, nullptr, &fontImage) != VK_SUCCESS) {
         assert(false && "failed to create texture image!");
     }
     VkMemoryRequirements memReqs;
-    vkGetImageMemoryRequirements(*_device, fontImage, &memReqs);
+    vkGetImageMemoryRequirements(_device, fontImage, &memReqs);
     VkMemoryAllocateInfo memAllocInfo = {};
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memAllocInfo.allocationSize = memReqs.size;
-    memAllocInfo.memoryTypeIndex = _vulkanApplication->findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if(vkAllocateMemory(*_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
+    memAllocInfo.memoryTypeIndex = vkutil::findMemoryType(_physicalDevice, memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if(vkAllocateMemory(_device, &memAllocInfo, nullptr, &fontMemory) != VK_SUCCESS) {
         assert(false && "failed to allocate memory!");
     }
-    if (vkBindImageMemory(*_device, fontImage, fontMemory, 0) != VK_SUCCESS) {
+    if (vkBindImageMemory(_device, fontImage, fontMemory, 0) != VK_SUCCESS) {
         assert(false && "failed to bind image memory!");
     }
 
@@ -147,7 +143,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.layerCount = 1;
-    if (vkCreateImageView(*_device, &viewInfo, nullptr, &fontView) != VK_SUCCESS) {
+    if (vkCreateImageView(_device, &viewInfo, nullptr, &fontView) != VK_SUCCESS) {
         assert(false && "failed to create texture image view!");
     }
 
@@ -168,14 +164,15 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    _vulkanApplication->createBuffer(uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                                     stagingBuffer, stagingBufferMemory);
-    
+    vkutil::createBuffer(_physicalDevice, _device, 
+                         uploadSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                         stagingBuffer, stagingBufferMemory);
+
     void* data;
-    vkMapMemory(*_device, stagingBufferMemory, 0, uploadSize, 0, &data);
+    vkMapMemory(_device, stagingBufferMemory, 0, uploadSize, 0, &data);
     memcpy(data, fontData, (size_t) uploadSize);
-    vkUnmapMemory(*_device, stagingBufferMemory);
+    vkUnmapMemory(_device, stagingBufferMemory);
 
     
     // Copy buffer data to font image
@@ -183,12 +180,12 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     // Begin command buffer
     VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = _vulkanApplication->commandPool;
+    commandBufferAllocateInfo.commandPool = commandPool;
     commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     commandBufferAllocateInfo.commandBufferCount = 1;
 
     VkCommandBuffer copyCmd;
-    if (vkAllocateCommandBuffers(*_device, &commandBufferAllocateInfo, &copyCmd) != VK_SUCCESS) {
+    if (vkAllocateCommandBuffers(_device, &commandBufferAllocateInfo, &copyCmd) != VK_SUCCESS) {
         assert(false && "failed to create command buffer!");
     }
     VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
@@ -250,7 +247,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = 0;
     VkFence fence;
-    if (vkCreateFence(*_device, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+    if (vkCreateFence(_device, &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
         assert(false && "failed to create fence!");
     }
     
@@ -259,17 +256,17 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
         assert(false && "failed to submit fence to queue!");
     }
     // Wait for the fence to signal that command buffer has finished executing
-    if (vkWaitForFences(*_device, 1, &fence, VK_TRUE, 100000000000) != VK_SUCCESS) {
+    if (vkWaitForFences(_device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()) != VK_SUCCESS) {
         assert(false && "failed to wait for fence!");
     }
 
-    vkDestroyFence(*_device, fence, nullptr);
+    vkDestroyFence(_device, fence, nullptr);
 
-    vkFreeCommandBuffers(*_device, _vulkanApplication->commandPool, 1, &copyCmd);
+    vkFreeCommandBuffers(_device, commandPool, 1, &copyCmd);
 
     //stagingBuffer.destroy();
-    vkDestroyBuffer(*_device, stagingBuffer, nullptr);
-    vkFreeMemory(*_device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer(_device, stagingBuffer, nullptr);
+    vkFreeMemory(_device, stagingBufferMemory, nullptr);
 
     // Font texture Sampler
     VkSamplerCreateInfo samplerInfo = {};
@@ -281,7 +278,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    if (vkCreateSampler(*_device, &samplerInfo, nullptr, &sampler)  != VK_SUCCESS) {
+    if (vkCreateSampler(_device, &samplerInfo, nullptr, &sampler)  != VK_SUCCESS) {
         assert(false && "failed to create sampler!");
     }
 
@@ -297,7 +294,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descriptorPoolInfo.pPoolSizes = poolSizes.data();
     descriptorPoolInfo.maxSets = 2;
-    if (vkCreateDescriptorPool(*_device, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
+    if (vkCreateDescriptorPool(_device, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         assert(false && "failed to create descriptor pool!");
     }
 
@@ -315,7 +312,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutCreateInfo.pBindings = setLayoutBindings.data();
     descriptorSetLayoutCreateInfo.bindingCount = setLayoutBindings.size();
-    if (vkCreateDescriptorSetLayout(*_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
         assert(false && "failed to create descriptor set layout!");
     }
 
@@ -325,7 +322,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    if(vkAllocateDescriptorSets(*_device, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
+    if(vkAllocateDescriptorSets(_device, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
         assert(false && "failed to create descriptor sets!");
     }
     VkDescriptorImageInfo fontDescriptor {};
@@ -343,12 +340,12 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     prt::vector<VkWriteDescriptorSet> writeDescriptorSets = {
         writeDescriptorSet
     };
-    vkUpdateDescriptorSets(*_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+    vkUpdateDescriptorSets(_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     
     // Pipeline cache
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-    if (vkCreatePipelineCache(*_device, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS) {
+    if (vkCreatePipelineCache(_device, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS) {
         assert(false && "failed to create pipeline cache!");
     }
 
@@ -364,7 +361,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
     pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
-    if (vkCreatePipelineLayout(*_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         assert(false && "failed to create pipeline layout!");
     }
 
@@ -416,7 +413,7 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     VkPipelineMultisampleStateCreateInfo multisampleState {};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.rasterizationSamples = _vulkanApplication->msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
+    multisampleState.rasterizationSamples = msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
     multisampleState.flags = 0;
 
     prt::vector<VkDynamicState> dynamicStateEnables = {
@@ -488,11 +485,11 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
 
     //shaderStages[0] = example->loadShader(ASSET_PATH "shaders/imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
     //shaderStages[1] = example->loadShader(ASSET_PATH "shaders/imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    auto vertShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
-    auto fragShaderCode = _vulkanApplication->readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
+    auto vertShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
+    auto fragShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
     
-    VkShaderModule vertShaderModule = _vulkanApplication->createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = _vulkanApplication->createShaderModule(fragShaderCode);
+    VkShaderModule vertShaderModule = vkutil::createShaderModule(_device, vertShaderCode);
+    VkShaderModule fragShaderModule = vkutil::createShaderModule(_device, fragShaderCode);
     
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -509,13 +506,16 @@ void ImGuiApplication::initResources(VkRenderPass renderPass, VkQueue copyQueue)
     shaderStages[0] = vertShaderStageInfo;
     shaderStages[1] = fragShaderStageInfo;
     
-    if (vkCreateGraphicsPipelines(*_device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(_device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
         assert(false && "failed to create graphics pipeline!");
     }
+
+    vkDestroyShaderModule(_device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(_device, vertShaderModule, nullptr);
 }
 
 // Starts a new imGui frame and sets up windows and ui elements
-void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrameGraph)
+void ImGuiApplication::newFrame(bool updateFrameGraph)
 {
     ImGui::NewFrame();
 
@@ -562,7 +562,7 @@ void ImGuiApplication::newFrame(/*VulkanExampleBase *example, */bool updateFrame
 }
 
 // Update vertex and index buffer containing the imGui elements when required
-void ImGuiApplication::updateBuffers()
+void ImGuiApplication::updateBuffers(VkFence* pFence, uint32_t nFence)
 {
     ImDrawData* imDrawData = ImGui::GetDrawData();
 
@@ -577,49 +577,56 @@ void ImGuiApplication::updateBuffers()
 
     // Vertex buffer
     if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
+        vkWaitForFences(_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+
         //vertexBuffer.unmap();
 		//vertexBuffer.destroy();
         if (vertexBufferMemory != VK_NULL_HANDLE) {
-            vkUnmapMemory(*_device, vertexBufferMemory);
+            vkUnmapMemory(_device, vertexBufferMemory);
 		    vertexBufferMapped = nullptr;
         }
         if (vertexBuffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(*_device, vertexBuffer, nullptr);
-            vkFreeMemory(*_device, vertexBufferMemory, nullptr);
+            vkDestroyBuffer(_device, vertexBuffer, nullptr);
+            vkFreeMemory(_device, vertexBufferMemory, nullptr);
         }
         //if (_device->createBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &vertexBuffer, vertexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create vertex buffer!");
         //}
-        _vulkanApplication->createBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                         vertexBuffer, vertexBufferMemory);
+        vkutil::createBuffer(_physicalDevice, _device, vertexBufferSize,
+                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                             vertexBuffer, vertexBufferMemory);
         vertexCount = imDrawData->TotalVtxCount;
         //vertexBuffer.unmap();
         //vertexBuffer.map();
-        vkMapMemory(*_device, vertexBufferMemory, 0, VK_WHOLE_SIZE, 0, &vertexBufferMapped);
+        vkMapMemory(_device, vertexBufferMemory, 0, VK_WHOLE_SIZE, 0, &vertexBufferMapped);
     }
 
     // Index buffer
     if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
+        vkWaitForFences(_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
         //indexBuffer.unmap();
         //indexBuffer.destroy();
         if (indexBufferMemory != VK_NULL_HANDLE) {
-            vkUnmapMemory(*_device, indexBufferMemory);
+            vkUnmapMemory(_device, indexBufferMemory);
             indexBufferMapped = nullptr;
         }
         if (indexBuffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(*_device, indexBuffer, nullptr);
-            vkFreeMemory(*_device, indexBufferMemory, nullptr);
+            vkDestroyBuffer(_device, indexBuffer, nullptr);
+            vkFreeMemory(_device, indexBufferMemory, nullptr);
         }
         //if (_device->createBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
         //                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &indexBuffer, indexBufferSize) != VK_SUCCESS) {
         //    assert(false && "failed to create index buffer!");
         //}
-        _vulkanApplication->createBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                         indexBuffer, indexBufferMemory);
+        vkutil::createBuffer(_physicalDevice, _device, indexBufferSize,
+                             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                             indexBuffer, indexBufferMemory);
         indexCount = imDrawData->TotalIdxCount;
         //indexBuffer.map();
-        vkMapMemory(*_device, indexBufferMemory, 0, VK_WHOLE_SIZE, 0, &indexBufferMapped);
+        vkMapMemory(_device, indexBufferMemory, 0, VK_WHOLE_SIZE, 0, &indexBufferMapped);
     }
 
     // Upload data
@@ -642,13 +649,27 @@ void ImGuiApplication::updateBuffers()
     mappedRangeVert.memory = vertexBufferMemory;
     mappedRangeVert.offset = 0;
     mappedRangeVert.size = VK_WHOLE_SIZE;
-    vkFlushMappedMemoryRanges(*_device, 1, &mappedRangeVert);
+    vkFlushMappedMemoryRanges(_device, 1, &mappedRangeVert);
     VkMappedMemoryRange mappedRangeInd = {};
     mappedRangeInd.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     mappedRangeInd.memory = indexBufferMemory;
     mappedRangeInd.offset = 0;
     mappedRangeInd.size = VK_WHOLE_SIZE;
-    vkFlushMappedMemoryRanges(*_device, 1, &mappedRangeInd);
+    vkFlushMappedMemoryRanges(_device, 1, &mappedRangeInd);
+}
+
+void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
+    // Update imGui
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.DisplaySize = ImVec2((float)width, (float)height);
+    io.DeltaTime = deltaTime;
+
+    double mouseX, mouseY;
+    _input.getCursorPos(mouseX, mouseY);
+    io.MousePos = ImVec2(mouseX, mouseY);
+    io.MouseDown[0] = _input.getMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    io.MouseDown[1] = _input.getMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 }
 
 // Draw current imGui frame into a command buffer
