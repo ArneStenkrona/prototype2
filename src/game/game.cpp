@@ -10,7 +10,7 @@
 
 Game::Game()
 : _input(),
-  _gameRenderer(_input),
+  _gameRenderer(),
   _assetManager(RESOURCE_PATH),
   _camera(_input),
   _scene(_assetManager, _physicsSystem, _input, _camera),
@@ -18,7 +18,6 @@ Game::Game()
   _microsecondsPerFrame(1000000 / _frameRate),
   _currentFrame(0),
   _time(0.0f) {
-
     _input.init(_gameRenderer.getWindow());
     loadScene();
 }
