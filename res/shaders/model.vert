@@ -23,12 +23,14 @@ layout(location = 0) out VS_OUT {
     vec3 fragPos;
     vec3 normal;
     vec2 fragTexCoord;
+    vec3 viewDir;
 } vs_out;
 
 void main() {
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0));
     vs_out.normal = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inNormal);
     vs_out.fragTexCoord = inTexCoord;
+    vs_out.viewDir = ubo.viewPos - inPosition;
 
     gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
 }

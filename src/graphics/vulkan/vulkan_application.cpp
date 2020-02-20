@@ -130,6 +130,10 @@ void VulkanApplication::cleanupSwapChain() {
         }
         vkDestroyDescriptorPool(device, materialPipeline.descriptorPool, nullptr);
     }
+
+    for (auto & materialPipeline : materialPipelines) {
+        vkDestroyDescriptorSetLayout(device, materialPipeline.descriptorSetLayout, nullptr);
+    }
 }
     
 void VulkanApplication::cleanup() {
@@ -145,9 +149,9 @@ void VulkanApplication::cleanup() {
 
     vkDestroySampler(device, textureSampler, nullptr);
 
-    for (auto & materialPipeline : materialPipelines) {
-        vkDestroyDescriptorSetLayout(device, materialPipeline.descriptorSetLayout, nullptr);
-    }
+    // for (auto & materialPipeline : materialPipelines) {
+    //     vkDestroyDescriptorSetLayout(device, materialPipeline.descriptorSetLayout, nullptr);
+    // }
 
     for (auto & materialPipeline : materialPipelines) {
         vkDestroyBuffer(device, materialPipeline.vertexData.vertexBuffer, nullptr);
@@ -1434,6 +1438,7 @@ void VulkanApplication::drawFrame() {
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         assert(false && "failed to acquire swap chain image!");
     }
+    // vkResetFences(device, 1, &inFlightFences[currentFrame]);
     
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1452,7 +1457,6 @@ void VulkanApplication::drawFrame() {
     submitInfo.pSignalSemaphores = signalSemaphores;
     
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
     
     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         assert(false && "failed to submit draw command buffer!");

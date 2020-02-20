@@ -35,22 +35,14 @@ public:
 
 private:
     size_t skyboxPipelineIndex;
-    size_t modelPipelineIndex;
+
+    prt::vector<size_t> meshMaterialPipelineIndices;
 
     VkDescriptorImageInfo samplerInfo;
-    // // Model textures
-    // prt::array<VkImage, NUMBER_SUPPORTED_TEXTURES> textureImage;
-    // prt::array<VkDeviceMemory, NUMBER_SUPPORTED_TEXTURES> textureImageMemory;
-    // prt::array<VkImageView, NUMBER_SUPPORTED_TEXTURES> textureImageView;
-
-    // // Cubemap texture
-    // VkImage cubeMapImage;
-    // VkDeviceMemory cubeMapImageMemory;
-    // VkImageView cubeMapImageView;
 
     void createMaterialPipelines();
     void createSkyboxMaterialPipeline();
-    void createModelMaterialPipeline();
+    void createMeshMaterialPipeline(const char* vertexShader, const char* fragmentShader);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
@@ -60,12 +52,6 @@ private:
     void createIndexBuffer(const prt::vector<Model>& models);
 
     void createSkyboxBuffers();
-
-    // void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
-    // void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
-    
-    // void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
-    // void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void loadModels(const prt::vector<Model>& models);
 

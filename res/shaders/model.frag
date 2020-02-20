@@ -7,15 +7,6 @@
 layout(set = 0, binding = 1) uniform texture2D textures[20];
 layout(set = 0, binding = 2) uniform sampler samp;
 
-layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 model[100];
-    mat4 invTransposeModel[100];
-    mat4 view;
-    mat4 proj;
-    vec3 viewPos;
-    float t;
-} ubo;
-
 layout(push_constant) uniform PER_OBJECT
 {
 	layout(offset = 4) int imgIdx;
@@ -25,6 +16,7 @@ layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec3 normal;
     vec2 fragTexCoord;
+    vec3 viewDir;
 } fs_in;
 
 layout(location = 0) out vec4 outColor;
@@ -32,7 +24,7 @@ layout(location = 0) out vec4 outColor;
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir);
 
 void main() {
-    vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
+    vec3 viewDir = normalize(fs_in.viewDir);
     // true=flatshading
     vec3 norm = normalize(fs_in.normal);
 
