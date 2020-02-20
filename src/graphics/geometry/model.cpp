@@ -60,8 +60,8 @@ void Model::loadOBJ(const char* path) {
 
     countAttributes(file, numMesh, numIndex);
     
-    _meshes.resize(numMesh);
-    _indexBuffer.resize(numIndex);
+    meshes.resize(numMesh);
+    indexBuffer.resize(numIndex);
 
     // Currently supports 2^16 vertices
     constexpr size_t VERTEX_BUFFER_SIZE = UINT16_MAX;
@@ -83,8 +83,8 @@ void Model::loadOBJ(const char* path) {
     // An obj-file with a single object may not have
     // an "o" header.
     if (numMesh == 1) {
-        _meshes[0].numIndices = numIndex;
-        _meshes[0].startIndex = 0;
+        meshes[0].numIndices = numIndex;
+        meshes[0].startIndex = 0;
     }
     // Parse the contents.
     char lineHeader[512];
@@ -102,10 +102,10 @@ void Model::loadOBJ(const char* path) {
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);
 
-            _meshes[meshCount].startIndex = indexCount; 
-            _meshes[meshCount].numIndices = numIndex - indexCount;
+            meshes[meshCount].startIndex = indexCount; 
+            meshes[meshCount].numIndices = numIndex - indexCount;
             if (meshCount > 0) {
-                _meshes[meshCount - 1].numIndices = indexCount - _meshes[meshCount - 1].startIndex;   
+                meshes[meshCount - 1].numIndices = indexCount - meshes[meshCount - 1].startIndex;   
             }
             meshCount++;
         } else if (strcmp(lineHeader, "mtllib") == 0) {
@@ -113,10 +113,10 @@ void Model::loadOBJ(const char* path) {
             fscanf(file, "%s", mtllib);
         } else if (strcmp(lineHeader, "usemtl") == 0) {
             // Parse mesh material.
-            char currentMtl[512];
+            char currentMtl[256];
             fscanf(file, "%s", currentMtl);
             while (assignedMaterials < meshCount) {
-                strcpy(_meshes[assignedMaterials++]._materialName, currentMtl);
+                strcpy(meshes[assignedMaterials++].material.name, currentMtl);
             }
         } else if (strcmp(lineHeader, "v") == 0) {
             // Parse vertex position.
@@ -164,7 +164,7 @@ void Model::loadOBJ(const char* path) {
                 if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
-                _indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
+                indexBuffer[indexCount++] = uniqueVertices[vertices[i]];
             }        
         }
      
@@ -173,11 +173,11 @@ void Model::loadOBJ(const char* path) {
     fclose(file);
 
     size_t numVertex = uniqueVertices.size();
-    _vertexBuffer.resize(numVertex);
+    vertexBuffer.resize(numVertex);
     
     indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
-        _vertexBuffer[it->value()] = it->key();
+        vertexBuffer[it->value()] = it->key();
     }
 
     // load materials
@@ -203,6 +203,7 @@ void Model::loadOBJ(const char* path) {
     }
 
     prt::hash_map<std::string, std::string> mtlToTexture;
+    prt::hash_map<std::string, std::string> mtlToFragShader;
 
     res = fscanf(materialFile, "%s", lineHeader);
     char material[512];
@@ -212,20 +213,31 @@ void Model::loadOBJ(const char* path) {
             fscanf(file, "%s", material);
         } else if (strcmp(lineHeader, "map_Kd") == 0) {
             // Parse texture path.
-            char texture[512];
+            char texture[256];
             fscanf(file, "%s", texture);
             mtlToTexture.insert(material, texture);
+        } else if (strcmp(lineHeader, "fragment_shader") == 0) {
+            // Parse mesh material.
+            char fragShader[256];
+            fscanf(file, "%s", fragShader);
+            mtlToFragShader.insert(material, fragShader);
         } 
 
         res = fscanf(materialFile, "%s", lineHeader);
     }
     fclose(materialFile);
 
-    for (size_t i = 0; i < _meshes.size(); i++) {
-        char texturePath[512];
+    for (auto & mesh : meshes) {
+        if (mtlToFragShader.find(mesh.material.name) == mtlToFragShader.end()) {
+            strcpy(mesh.material.fragmentShader, "cel.frag");
+        } else {
+            strcpy(mesh.material.fragmentShader, mtlToFragShader[mesh.material.name].c_str());
+        }
+
+        char texturePath[256];
         strcpy(texturePath, path);
         ptr = strrchr(texturePath, '/');
-        strcpy(++ptr, mtlToTexture[_meshes[i]._materialName].c_str());
-        _meshes[i]._texture.load(texturePath);
+        strcpy(++ptr, mtlToTexture[mesh.material.name].c_str());
+        mesh.texture.load(texturePath);
     }
 }   

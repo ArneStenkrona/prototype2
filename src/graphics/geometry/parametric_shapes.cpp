@@ -351,9 +351,9 @@ void parametric_shapes::createSkybox(Model& model, Cuboid cuboid) {
     float w = cuboid.width / 2;
     float h = cuboid.height / 2;
     float d = cuboid.depth / 2;
-    auto& vertices = model._vertexBuffer;
-    auto& indices = model._indexBuffer;
-    auto& meshes = model._meshes;
+    auto& vertices = model.vertexBuffer;
+    auto& indices = model.indexBuffer;
+    auto& meshes = model.meshes;
     vertices.resize(4*6);
     indices.resize(6*6);
     meshes.resize(6);

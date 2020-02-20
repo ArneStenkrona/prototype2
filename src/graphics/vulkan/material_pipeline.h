@@ -6,19 +6,6 @@
 #include "src/container/vector.h"
 #include "src/container/array.h"
 
-
-struct VertexData {
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-};
-
-struct TextureImages {
-    prt::vector<VkImage> images;
-    prt::vector<VkDeviceMemory> imageMemories;
-    prt::vector<VkImageView> imageViews;
-};
 struct DrawCall {
     uint32_t firstIndex;
     uint32_t indexCount;
@@ -27,15 +14,10 @@ struct DrawCall {
 };
 
 struct MaterialPipeline {
-    TextureImages textureImages;
-
+    //TextureImages textureImages;
     // Vertex data
-    VertexData vertexData;
-
-    // Uniform data
-    prt::vector<char> uboData;
-    prt::vector<VkBuffer> uniformBuffers;
-    prt::vector<VkDeviceMemory> uniformBufferMemories;
+    //VertexData vertexData;
+    size_t assetsIndex;
 
     // Descriptors
     prt::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;

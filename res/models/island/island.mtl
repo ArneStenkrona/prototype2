@@ -76,4 +76,5 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+fragment_shader water_edge.frag
 map_Kd water_edge.png

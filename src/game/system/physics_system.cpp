@@ -53,9 +53,9 @@ void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
         const Model& model = models[i];
 
         float boundingSphere = 0.0f;
-        triangleMeshes[i].triangles.resize(model._indexBuffer.size());
-        for (size_t j = 0; j < model._indexBuffer.size(); j++) {
-            const glm::vec3& pos = model._vertexBuffer[model._indexBuffer[j]].pos;
+        triangleMeshes[i].triangles.resize(model.indexBuffer.size());
+        for (size_t j = 0; j < model.indexBuffer.size(); j++) {
+            const glm::vec3& pos = model.vertexBuffer[model.indexBuffer[j]].pos;
             triangleMeshes[i].triangles[j] = pos;
             boundingSphere = std::max(boundingSphere, glm::length(pos));
         }

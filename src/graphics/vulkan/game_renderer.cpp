@@ -2,25 +2,51 @@
 
 GameRenderer::GameRenderer()
     : VulkanApplication() {
-    createMaterialPipelines();
 }
 
 GameRenderer::~GameRenderer() {
 }
 
-void GameRenderer::createMaterialPipelines() {
-    createSkyboxMaterialPipeline();
+void GameRenderer::createMaterialPipelines(prt::vector<Model> const & models) {
+    size_t assetIndex = assets.size();
+    assets.push_back({});
+    Assets& ass = assets.back();
+    ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+    ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+    ass.uniformBufferData.uboData.resize(sizeof(SkyboxUBO));
+
+    createSkyboxMaterialPipeline(assetIndex);
+
+    // create pipelines for different shaders
+    assetIndex = assets.size();
+    assets.push_back({});
+    ass = assets.back();
+    ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+    ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+    ass.uniformBufferData.uboData.resize(sizeof(ModelUBO));
+
     char vert[256] = RESOURCE_PATH;
     strcat(vert, "shaders/model.vert.spv");
-    char frag[256] = RESOURCE_PATH;
-    strcat(frag, "shaders/cel.frag.spv");
-    createMeshMaterialPipeline(vert, frag);
+    for (auto & model : models) {
+        for (auto & mesh : model.meshes) {
+            if (shaderToIndex.find(mesh.material.fragmentShader) == shaderToIndex.end()) {
+                char frag[256] = RESOURCE_PATH;
+                strcat(frag, "shaders/");
+                strcat(frag, mesh.material.fragmentShader);
+                strcat(frag, ".spv");
+                createMeshMaterialPipeline(assetIndex, vert, frag);
+                shaderToIndex[mesh.material.fragmentShader] = meshMaterialPipelineIndices.back();
+            }
+        }
+    }
 }
 
-void GameRenderer::createSkyboxMaterialPipeline() {
+void GameRenderer::createSkyboxMaterialPipeline(size_t assetIndex) {
     skyboxPipelineIndex = materialPipelines.size();
     materialPipelines.push_back(MaterialPipeline{});
     MaterialPipeline& skyboxPipeline = materialPipelines.back();
+
+    skyboxPipeline.assetsIndex = assetIndex;
 
     // Descriptor set layout
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -47,8 +73,6 @@ void GameRenderer::createSkyboxMaterialPipeline() {
     skyboxPipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     skyboxPipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
     // Descriptor sets
-    skyboxPipeline.uniformBuffers.resize(swapChainImages.size());
-    skyboxPipeline.uniformBufferMemories.resize(swapChainImages.size());
     skyboxPipeline.descriptorSets.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) { 
         // skyboxPipeline.descriptorBufferInfos[i].buffer = skyboxPipeline.uniformBuffers[i];
@@ -98,14 +122,13 @@ void GameRenderer::createSkyboxMaterialPipeline() {
     skyboxPipeline.fragmentShader[0] = '\0';
     strcat(skyboxPipeline.fragmentShader, RESOURCE_PATH);
     strcat(skyboxPipeline.fragmentShader, "shaders/skybox.frag.spv");
-
-    // Resize ubo
-    skyboxPipeline.uboData.resize(sizeof(SkyboxUBO));
 }
-void GameRenderer::createMeshMaterialPipeline(const char* vertexShader, const char* fragmentShader) {
+void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader) {
     meshMaterialPipelineIndices.push_back(materialPipelines.size());
     materialPipelines.push_back(MaterialPipeline{});
     MaterialPipeline& modelPipeline = materialPipelines.back();
+
+    modelPipeline.assetsIndex = assetIndex;
 
     // Descriptor set layout
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -144,8 +167,6 @@ void GameRenderer::createMeshMaterialPipeline(const char* vertexShader, const ch
     modelPipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     // Descriptor sets
-    modelPipeline.uniformBuffers.resize(swapChainImages.size());
-    modelPipeline.uniformBufferMemories.resize(swapChainImages.size());
     modelPipeline.descriptorSets.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         // modelPipeline.descriptorBufferInfos[i].buffer = modelPipeline.uniformBuffers[i];
@@ -205,21 +226,22 @@ void GameRenderer::createMeshMaterialPipeline(const char* vertexShader, const ch
     strcat(modelPipeline.vertexShader, vertexShader);
     modelPipeline.fragmentShader[0] = '\0';
     strcat(modelPipeline.fragmentShader, fragmentShader);
-
-    // Resize ubo
-    modelPipeline.uboData.resize(sizeof(ModelUBO));
 }
 
 void GameRenderer::bindScene(Scene const & scene) {
     prt::vector<Model> models;
     prt::vector<uint32_t> modelIndices;
     scene.getModels(models, modelIndices);
+
+    createMaterialPipelines(models);
     loadModels(models);
 
     prt::array<Texture, 6> skybox;
     scene.getSkybox(skybox);
     loadSkybox(skybox);
+
     createDrawCalls(models, modelIndices);
+
     recreateSwapChain();
 }
 
@@ -245,7 +267,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
                               glm::mat4 const & skyProjectionMatrix,
                               float time) {
     // skybox
-    SkyboxUBO& skyboxUBO = *(new (materialPipelines[skyboxPipelineIndex].uboData.data()) SkyboxUBO{});
+    SkyboxUBO& skyboxUBO = *(new (assets[materialPipelines[skyboxPipelineIndex].assetsIndex].uniformBufferData.uboData.data()) SkyboxUBO{});
 
     glm::mat4 skyboxViewMatrix = viewMatrix;
     skyboxViewMatrix[3][0] = 0.0f;
@@ -257,7 +279,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.projection[1][1] *= -1;
 
     // model                         
-    ModelUBO& modelUBO = *(new (materialPipelines[meshMaterialPipelineIndices[0]].uboData.data()) ModelUBO{});
+    ModelUBO& modelUBO = *(new (assets[materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex].uniformBufferData.uboData.data()) ModelUBO{});
     for (size_t i = 0; i < modelMatrices.size(); i++) {
         modelUBO.model[i] = modelMatrices[i];
         modelUBO.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
@@ -272,47 +294,57 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
 void GameRenderer::loadModels(const prt::vector<Model>& models) {
     assert(!models.empty());
 
+    for (auto & index : meshMaterialPipelineIndices) {
+        materialPipelines[index].assetsIndex = assets.size();
+    }
+    assets.push_back({});
+
     createVertexBuffer(models);
     createIndexBuffer(models);
 
     MaterialPipeline& modelPipeline = materialPipelines[meshMaterialPipelineIndices[0]];
+    Assets& ass = assets[modelPipeline.assetsIndex];
+
     size_t numTex = 0;
-    modelPipeline.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
-    modelPipeline.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
-    modelPipeline.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
+    ass.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
+    ass.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
+    ass.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
     for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i]._meshes.size(); j++) {
-            createTextureImage(modelPipeline.textureImages.images[numTex], 
-                               modelPipeline.textureImages.imageMemories[numTex], 
-                               models[i]._meshes[j]._texture);
-            createTextureImageView(modelPipeline.textureImages.imageViews[numTex], 
-                                   modelPipeline.textureImages.images[numTex], 
-                                   models[i]._meshes[j]._texture.mipLevels);
+        for (size_t j = 0; j < models[i].meshes.size(); j++) {
+            createTextureImage(ass.textureImages.images[numTex], 
+                               ass.textureImages.imageMemories[numTex], 
+                               models[i].meshes[j].texture);
+            createTextureImageView(ass.textureImages.imageViews[numTex], 
+                                   ass.textureImages.images[numTex], 
+                                   models[i].meshes[j].texture.mipLevels);
             numTex++;
         }
     }
 
-    for (size_t i = numTex; i < modelPipeline.textureImages.images.size(); i++) {
-        createTextureImage(modelPipeline.textureImages.images[i], 
-                           modelPipeline.textureImages.imageMemories[i], 
-                           models[0]._meshes.back()._texture);
-        createTextureImageView(modelPipeline.textureImages.imageViews[i], 
-                               modelPipeline.textureImages.images[i], 
-                               models[0]._meshes.back()._texture.mipLevels);
+    for (size_t i = numTex; i < ass.textureImages.images.size(); i++) {
+        createTextureImage(ass.textureImages.images[i], 
+                           ass.textureImages.imageMemories[i], 
+                           models[0].meshes.back().texture);
+        createTextureImageView(ass.textureImages.imageViews[i], 
+                               ass.textureImages.images[i], 
+                               models[0].meshes.back().texture.mipLevels);
     }
 }
 
-void GameRenderer::loadSkybox(const prt::array<Texture, 6>& skybox) {   
+void GameRenderer::loadSkybox(const prt::array<Texture, 6>& skybox) {  
     createSkyboxBuffers();
+
     MaterialPipeline& skyboxPipeline = materialPipelines[skyboxPipelineIndex];
-    skyboxPipeline.textureImages.images.resize(1);
-    skyboxPipeline.textureImages.imageViews.resize(1);
-    skyboxPipeline.textureImages.imageMemories.resize(1);
-    createCubeMapImage(skyboxPipeline.textureImages.images[0], 
-                       skyboxPipeline.textureImages.imageMemories[0], 
+    Assets& ass = assets[skyboxPipeline.assetsIndex];
+
+    ass.textureImages.images.resize(1);
+    ass.textureImages.imageViews.resize(1);
+    ass.textureImages.imageMemories.resize(1);
+    createCubeMapImage(ass.textureImages.images[0], 
+                       ass.textureImages.imageMemories[0], 
                        skybox);
-    createCubeMapImageView(skyboxPipeline.textureImages.imageViews[0], 
-                           skyboxPipeline.textureImages.images[0], 
+    createCubeMapImageView(ass.textureImages.imageViews[0], 
+                           ass.textureImages.images[0], 
                            skybox[0].mipLevels);
 }
 
@@ -333,19 +365,20 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
     imgIdxOffsets.resize(models.size());
     indexOffsets.resize(models.size());
     for (size_t i = 1; i < models.size(); i++) {
-        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1]._meshes.size();
-        indexOffsets[i] = indexOffsets[i-1] + models[i-1]._indexBuffer.size();
+        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
+        indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
     }
 
     for (size_t i = 0; i < modelIndices.size(); i++) {
         const Model& model = models[modelIndices[i]];
-        for (size_t j = 0; j < model._meshes.size(); j++) {
+        for (size_t j = 0; j < model.meshes.size(); j++) {
             DrawCall drawCall;
             drawCall.pushConstants[0] = i;
             drawCall.pushConstants[1] = imgIdxOffsets[modelIndices[i]] + j;
-            drawCall.firstIndex = indexOffsets[modelIndices[i]] + model._meshes[j].startIndex;
-            drawCall.indexCount = model._meshes[j].numIndices;
-            materialPipelines[meshMaterialPipelineIndices[0]].drawCalls.push_back(drawCall);
+            drawCall.firstIndex = indexOffsets[modelIndices[i]] + model.meshes[j].startIndex;
+            drawCall.indexCount = model.meshes[j].numIndices;
+            size_t index = shaderToIndex[model.meshes[j].material.fragmentShader];
+            materialPipelines[index].drawCalls.push_back(drawCall);
         }
     }
 }
@@ -353,30 +386,33 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
 void GameRenderer::createVertexBuffer(const prt::vector<Model>& models) {
     prt::vector<Vertex> allVertices;
     for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i]._vertexBuffer.size(); j++) {
-            allVertices.push_back(models[i]._vertexBuffer[j]);
+        for (size_t j = 0; j < models[i].vertexBuffer.size(); j++) {
+            allVertices.push_back(models[i].vertexBuffer[j]);
         }
     }
+    size_t index = materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex;
+    VertexData& data = assets[index].vertexData;
     createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                       materialPipelines[meshMaterialPipelineIndices[0]].vertexData.vertexBuffer, 
-                       materialPipelines[meshMaterialPipelineIndices[0]].vertexData.vertexBufferMemory);    
+                       data.vertexBuffer, 
+                       data.vertexBufferMemory);    
 }
 
 void GameRenderer::createIndexBuffer(const prt::vector<Model>& models) {
     prt::vector<uint32_t> allIndices;
     size_t vertexOffset = 0;
     for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i]._indexBuffer.size(); j++) {
-            allIndices.push_back(models[i]._indexBuffer[j] + vertexOffset);
+        for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
+            allIndices.push_back(models[i].indexBuffer[j] + vertexOffset);
         }
-        vertexOffset += models[i]._vertexBuffer.size();
+        vertexOffset += models[i].vertexBuffer.size();
     }
-
+    size_t index = materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex;
+    VertexData& data = assets[index].vertexData;
     createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                       materialPipelines[meshMaterialPipelineIndices[0]].vertexData.indexBuffer, 
-                       materialPipelines[meshMaterialPipelineIndices[0]].vertexData.indexBufferMemory);
+                       data.indexBuffer, 
+                       data.indexBufferMemory);
 }
 
 void GameRenderer::createSkyboxBuffers() {
@@ -394,10 +430,12 @@ void GameRenderer::createSkyboxBuffers() {
     vertices[1] = glm::vec3{-w,  w,  w};
     vertices[0] = glm::vec3{ w,  w,  w};
 
+    size_t index = materialPipelines[skyboxPipelineIndex].assetsIndex;
+    VertexData& data = assets[index].vertexData;
     createAndMapBuffer(vertices.data(), sizeof(glm::vec3) * vertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                       materialPipelines[skyboxPipelineIndex].vertexData.vertexBuffer, 
-                       materialPipelines[skyboxPipelineIndex].vertexData.vertexBufferMemory);    
+                       data.vertexBuffer, 
+                       data.vertexBufferMemory);    
 
     prt::vector<uint32_t> indices = { 0, 2, 3,
                                       3, 1, 0,
@@ -414,6 +452,6 @@ void GameRenderer::createSkyboxBuffers() {
     
     createAndMapBuffer(indices.data(), sizeof(uint32_t) * indices.size(),
                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                    materialPipelines[skyboxPipelineIndex].vertexData.indexBuffer, 
-                    materialPipelines[skyboxPipelineIndex].vertexData.indexBufferMemory);   
+                    data.indexBuffer, 
+                    data.indexBufferMemory);   
 }

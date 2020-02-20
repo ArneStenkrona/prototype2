@@ -3,6 +3,8 @@
 
 #include "vulkan_application.h"
 
+#include "src/container/hash_map.h"
+
 struct ModelUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 invTransposeModel[NUMBER_SUPPORTED_MODEL_MATRICES];
@@ -35,14 +37,14 @@ public:
 
 private:
     size_t skyboxPipelineIndex;
-
     prt::vector<size_t> meshMaterialPipelineIndices;
+    prt::hash_map<std::string, size_t> shaderToIndex;
 
     VkDescriptorImageInfo samplerInfo;
 
-    void createMaterialPipelines();
-    void createSkyboxMaterialPipeline();
-    void createMeshMaterialPipeline(const char* vertexShader, const char* fragmentShader);
+    void createMaterialPipelines(prt::vector<Model> const & models);
+    void createSkyboxMaterialPipeline(size_t assetIndex);
+    void createMeshMaterialPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);

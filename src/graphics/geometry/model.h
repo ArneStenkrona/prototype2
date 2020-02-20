@@ -92,24 +92,25 @@ struct Texture {
 };
 
 struct Material {
-    /* TODO: Add members */
+    char name[256];
+    char fragmentShader[256];
 };
 
 struct Mesh {
     size_t startIndex;
     size_t numIndices;
-    // char _name[512];
-    char _materialName[512];
-    Texture _texture;
+    //char materialName[256];
+    Material material; 
+    Texture texture;
 };
 
 
 
 struct Model {
-    prt::vector<Mesh> _meshes;
-    prt::vector<Vertex> _vertexBuffer;
-    prt::vector<uint32_t> _indexBuffer;
-    // char _materialFilePath[512];
+    prt::vector<Mesh> meshes;
+    prt::vector<Vertex> vertexBuffer;
+    prt::vector<uint32_t> indexBuffer;
+    // char materialFilePath[256];
     void loadOBJ(const char* path);
 };
 

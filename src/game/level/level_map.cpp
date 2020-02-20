@@ -94,8 +94,8 @@ void LevelMap::find4Neighbours(LevelIndex lvlIndex, prt::vector<LevelIndex>& nei
 void LevelMap::loadModel(Model& model) {
     uint32_t texRes = 64;
 
-    model._vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
-    model._indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
+    model.vertexBuffer.resize(4 * _levelData.size() * _levelData[0].size());
+    model.indexBuffer.resize(6 * _levelData.size() * _levelData[0].size());
 
     uint32_t vi = 0;
     uint32_t ii = 0;
@@ -123,26 +123,26 @@ void LevelMap::loadModel(Model& model) {
             v4.normal = glm::vec3{ 0.0f, 1.0f, 0.0f };
             v4.texCoord = glm::vec2{ texX0, texY1 };
             
-            model._indexBuffer[ii++] = vi+2;
-            model._indexBuffer[ii++] = vi+1;
-            model._indexBuffer[ii++] = vi;
+            model.indexBuffer[ii++] = vi+2;
+            model.indexBuffer[ii++] = vi+1;
+            model.indexBuffer[ii++] = vi;
 
-            model._indexBuffer[ii++] = vi+3;
-            model._indexBuffer[ii++] = vi+2;
-            model._indexBuffer[ii++] = vi;
+            model.indexBuffer[ii++] = vi+3;
+            model.indexBuffer[ii++] = vi+2;
+            model.indexBuffer[ii++] = vi;
             
-            model._vertexBuffer[vi++] = v1;
-            model._vertexBuffer[vi++] = v2;
-            model._vertexBuffer[vi++] = v3;
-            model._vertexBuffer[vi++] = v4;
+            model.vertexBuffer[vi++] = v1;
+            model.vertexBuffer[vi++] = v2;
+            model.vertexBuffer[vi++] = v3;
+            model.vertexBuffer[vi++] = v4;
         }
     }
 
-    model._meshes.push_back(Mesh());
-    Mesh& mesh = model._meshes.back();
+    model.meshes.push_back(Mesh());
+    Mesh& mesh = model.meshes.back();
     mesh.startIndex = 0;
     mesh.numIndices = ii;
-    createTexture(mesh._texture, texRes);
+    createTexture(mesh.texture, texRes);
 }
 
 void LevelMap::createTexture(Texture& texture, uint32_t resolution) {

@@ -63,6 +63,31 @@ struct SwapChainSupportDetails {
     prt::vector<VkPresentModeKHR> presentModes;
 };
 
+struct VertexData {
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexBufferMemory;
+};
+
+struct TextureImages {
+    prt::vector<VkImage> images;
+    prt::vector<VkDeviceMemory> imageMemories;
+    prt::vector<VkImageView> imageViews;
+};
+
+struct UniformBufferData {
+    prt::vector<char> uboData;
+    prt::vector<VkBuffer> uniformBuffers;
+    prt::vector<VkDeviceMemory> uniformBufferMemories;
+};
+
+struct Assets {
+    VertexData vertexData;
+    TextureImages textureImages;
+    UniformBufferData uniformBufferData;
+};
+
 class VulkanApplication {
 public:
     VulkanApplication();
@@ -97,6 +122,8 @@ protected:
     VkRenderPass renderPass;
 
     prt::vector<MaterialPipeline> materialPipelines;
+
+    prt::vector<Assets> assets;
 
     void update();
 

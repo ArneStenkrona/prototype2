@@ -49,6 +49,11 @@ string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}
 string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
 file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
 
+file(READ "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag.in" filedata)
+string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag" "${filedata}")
+
 
 # END CONFIG VARIABLES
 

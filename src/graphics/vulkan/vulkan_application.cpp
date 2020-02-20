@@ -123,11 +123,14 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    for (auto & materialPipeline : materialPipelines) {
+    for (auto & ass : assets) {
         for (size_t i = 0; i < swapChainImages.size(); i++) {
-            vkDestroyBuffer(device, materialPipeline.uniformBuffers[i], nullptr);
-            vkFreeMemory(device, materialPipeline.uniformBufferMemories[i], nullptr);
+            vkDestroyBuffer(device, ass.uniformBufferData.uniformBuffers[i], nullptr);
+            vkFreeMemory(device, ass.uniformBufferData.uniformBufferMemories[i], nullptr);
         }
+    }
+
+    for (auto & materialPipeline : materialPipelines) {
         vkDestroyDescriptorPool(device, materialPipeline.descriptorPool, nullptr);
     }
 
@@ -139,11 +142,11 @@ void VulkanApplication::cleanupSwapChain() {
 void VulkanApplication::cleanup() {
     cleanupSwapChain();
 
-    for (auto & materialPipeline : materialPipelines) {
-        for (size_t i = 0; i < materialPipeline.textureImages.imageViews.size(); i++) {
-            vkDestroyImageView(device, materialPipeline.textureImages.imageViews[i], nullptr);
-            vkDestroyImage(device, materialPipeline.textureImages.images[i], nullptr);
-            vkFreeMemory(device, materialPipeline.textureImages.imageMemories[i], nullptr);
+    for (auto & ass : assets) {
+        for (size_t i = 0; i < ass.textureImages.imageViews.size(); i++) {
+            vkDestroyImageView(device, ass.textureImages.imageViews[i], nullptr);
+            vkDestroyImage(device, ass.textureImages.images[i], nullptr);
+            vkFreeMemory(device, ass.textureImages.imageMemories[i], nullptr);
         }
     }
 
@@ -153,12 +156,19 @@ void VulkanApplication::cleanup() {
     //     vkDestroyDescriptorSetLayout(device, materialPipeline.descriptorSetLayout, nullptr);
     // }
 
-    for (auto & materialPipeline : materialPipelines) {
-        vkDestroyBuffer(device, materialPipeline.vertexData.vertexBuffer, nullptr);
-        vkFreeMemory(device, materialPipeline.vertexData.vertexBufferMemory, nullptr);
+    // for (auto & materialPipeline : materialPipelines) {
+    //     vkDestroyBuffer(device, materialPipeline.vertexData.vertexBuffer, nullptr);
+    //     vkFreeMemory(device, materialPipeline.vertexData.vertexBufferMemory, nullptr);
 
-        vkDestroyBuffer(device, materialPipeline.vertexData.indexBuffer, nullptr);
-        vkFreeMemory(device, materialPipeline.vertexData.indexBufferMemory, nullptr);
+    //     vkDestroyBuffer(device, materialPipeline.vertexData.indexBuffer, nullptr);
+    //     vkFreeMemory(device, materialPipeline.vertexData.indexBufferMemory, nullptr);
+    // }
+    for (auto & ass : assets) {
+        vkDestroyBuffer(device, ass.vertexData.vertexBuffer, nullptr);
+        vkFreeMemory(device, ass.vertexData.vertexBufferMemory, nullptr);
+
+        vkDestroyBuffer(device, ass.vertexData.indexBuffer, nullptr);
+        vkFreeMemory(device, ass.vertexData.indexBufferMemory, nullptr);
     }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -1129,15 +1139,15 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
 }
 
 void VulkanApplication::createUniformBuffers() {
-    for (auto & materialPipeline : materialPipelines) {
-        materialPipeline.uniformBuffers.resize(swapChainImages.size());
-        materialPipeline.uniformBufferMemories.resize(swapChainImages.size());
+    for (auto & ass : assets) {
+        ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+        ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
         for (size_t i = 0; i < swapChainImages.size(); i++) {
-            createBuffer(materialPipeline.uboData.size(), 
+            createBuffer(ass.uniformBufferData.uboData.size(), 
                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                         materialPipeline.uniformBuffers[i], 
-                         materialPipeline.uniformBufferMemories[i]);
+                         ass.uniformBufferData.uniformBuffers[i], 
+                         ass.uniformBufferData.uniformBufferMemories[i]);
         }
     }
 }
@@ -1173,25 +1183,26 @@ void VulkanApplication::createDescriptorSets() {
     
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
-                bufferInfo.buffer = materialPipeline.uniformBuffers[0];
+                Assets& ass = assets[materialPipeline.assetsIndex];
+                bufferInfo.buffer = ass.uniformBufferData.uniformBuffers[0];
                 bufferInfo.offset = 0;
-                bufferInfo.range = materialPipeline.uboData.size();
+                bufferInfo.range = ass.uniformBufferData.uboData.size();
                 
                 prt::vector<VkDescriptorImageInfo> imageInfos;
-                imageInfos.resize(materialPipeline.textureImages.imageViews.size());
+                imageInfos.resize(ass.textureImages.imageViews.size());
                 for (size_t j = 0; j < imageInfos.size(); j++) {
                     imageInfos[j].sampler = textureSampler;
                     imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfos[j].imageView = materialPipeline.textureImages.imageViews[j];
+                    imageInfos[j].imageView = ass.textureImages.imageViews[j];
                 }
                 for (auto & descriptorWrite : materialPipeline.descriptorWrites[i]) {
                     descriptorWrite.dstSet = materialPipeline.descriptorSets[i];
                 }
-                materialPipeline.descriptorBufferInfos[i].buffer = materialPipeline.uniformBuffers[i];
+                materialPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
                 materialPipeline.descriptorWrites[i][0].pBufferInfo = &materialPipeline.descriptorBufferInfos[i];
                 for (size_t j = 0; j < materialPipeline.descriptorImageInfos.size(); j++) {
                     materialPipeline.descriptorImageInfos[j].sampler = textureSampler;
-                    materialPipeline.descriptorImageInfos[j].imageView = materialPipeline.textureImages.imageViews[j];
+                    materialPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
                 }
                 materialPipeline.descriptorWrites[i][1].pImageInfo = materialPipeline.descriptorImageInfos.data();
 
@@ -1362,8 +1373,11 @@ void VulkanApplication::createDrawCommands(size_t imageIndex) {
     static constexpr VkDeviceSize offset = 0;
     for (auto & materialPipeline : materialPipelines) {
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, materialPipeline.pipeline);
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &materialPipeline.vertexData.vertexBuffer, &offset);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], materialPipeline.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        Assets& ass = assets[materialPipeline.assetsIndex];
+
+        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
+        vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                                 materialPipeline.pipelineLayout, 0, 1, &materialPipeline.descriptorSets[imageIndex], 0, nullptr);
 
@@ -1409,12 +1423,12 @@ void VulkanApplication::createSyncObjects() {
 }
 
 void VulkanApplication::updateUniformBuffers(uint32_t currentImage) {
-    for (auto & materialPipeline : materialPipelines) {
+    for (auto & ass : assets) {
         void* data;
-        size_t size = materialPipeline.uboData.size();
-        vkMapMemory(device, materialPipeline.uniformBufferMemories[currentImage], 0, size, 0, &data);
-        memcpy(data, materialPipeline.uboData.data(), size);
-        vkUnmapMemory(device, materialPipeline.uniformBufferMemories[currentImage]);
+        size_t size = ass.uniformBufferData.uboData.size();
+        vkMapMemory(device, ass.uniformBufferData.uniformBufferMemories[currentImage], 0, size, 0, &data);
+        memcpy(data, ass.uniformBufferData.uboData.data(), size);
+        vkUnmapMemory(device, ass.uniformBufferData.uniformBufferMemories[currentImage]);
     }
 }
 
