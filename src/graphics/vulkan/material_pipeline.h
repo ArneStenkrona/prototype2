@@ -14,9 +14,7 @@ struct DrawCall {
 };
 
 struct MaterialPipeline {
-    //TextureImages textureImages;
-    // Vertex data
-    //VertexData vertexData;
+    // Assets handle
     size_t assetsIndex;
 
     // Descriptors

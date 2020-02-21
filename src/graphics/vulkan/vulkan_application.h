@@ -123,8 +123,6 @@ protected:
 
     prt::vector<MaterialPipeline> materialPipelines;
 
-    prt::vector<Assets> assets;
-
     void update();
 
     VkDevice& getDevice() { return device; }
@@ -141,6 +139,11 @@ protected:
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                         VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
+    size_t pushBackAssets(size_t uboSize);
+
+    inline Assets& getAssets(size_t index) { return assets[index]; } 
+    inline Assets const & getAssets(size_t index) const { return assets[index]; } 
+
 private:
     GLFWwindow* _window;
     int width, height;
@@ -170,6 +173,8 @@ private:
     prt::vector<VkFence> inFlightFences;
     prt::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
+
+    prt::vector<Assets> assets;
     
     bool framebufferResized = false;
 
@@ -251,7 +256,7 @@ private:
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
     
-    void createUniformBuffers();
+    //void createUniformBuffers();
     
     void createDescriptorPools();
     

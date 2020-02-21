@@ -84,7 +84,7 @@ void VulkanApplication::initVulkan() {
     createSamplers();
     createSyncObjects();
 
-    createUniformBuffers();
+    // createUniformBuffers();
     createDescriptorPools();
 }
 
@@ -123,12 +123,12 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    for (auto & ass : assets) {
-        for (size_t i = 0; i < swapChainImages.size(); i++) {
-            vkDestroyBuffer(device, ass.uniformBufferData.uniformBuffers[i], nullptr);
-            vkFreeMemory(device, ass.uniformBufferData.uniformBufferMemories[i], nullptr);
-        }
-    }
+    // for (auto & ass : assets) {
+    //     for (size_t i = 0; i < swapChainImages.size(); i++) {
+    //         vkDestroyBuffer(device, ass.uniformBufferData.uniformBuffers[i], nullptr);
+    //         vkFreeMemory(device, ass.uniformBufferData.uniformBufferMemories[i], nullptr);
+    //     }
+    // }
 
     for (auto & materialPipeline : materialPipelines) {
         vkDestroyDescriptorPool(device, materialPipeline.descriptorPool, nullptr);
@@ -141,6 +141,13 @@ void VulkanApplication::cleanupSwapChain() {
     
 void VulkanApplication::cleanup() {
     cleanupSwapChain();
+
+    for (auto & ass : assets) {
+        for (size_t i = 0; i < swapChainImages.size(); i++) {
+            vkDestroyBuffer(device, ass.uniformBufferData.uniformBuffers[i], nullptr);
+            vkFreeMemory(device, ass.uniformBufferData.uniformBufferMemories[i], nullptr);
+        }
+    }
 
     for (auto & ass : assets) {
         for (size_t i = 0; i < ass.textureImages.imageViews.size(); i++) {
@@ -214,8 +221,9 @@ void VulkanApplication::recreateSwapChain() {
     createColorResources();
     createDepthResources();
     createFramebuffers();
-    createUniformBuffers();
+    // createUniformBuffers();
     createDescriptorPools();
+
     createDescriptorSets();
     createCommandBuffers();
 }
@@ -1138,19 +1146,19 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanApplication::createUniformBuffers() {
-    for (auto & ass : assets) {
-        ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
-        ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
-        for (size_t i = 0; i < swapChainImages.size(); i++) {
-            createBuffer(ass.uniformBufferData.uboData.size(), 
-                         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                         ass.uniformBufferData.uniformBuffers[i], 
-                         ass.uniformBufferData.uniformBufferMemories[i]);
-        }
-    }
-}
+// void VulkanApplication::createUniformBuffers() {
+//     for (auto & ass : assets) {
+//         ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+//         ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+//         for (size_t i = 0; i < swapChainImages.size(); i++) {
+//             createBuffer(ass.uniformBufferData.uboData.size(), 
+//                          VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+//                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+//                          ass.uniformBufferData.uniformBuffers[i], 
+//                          ass.uniformBufferData.uniformBufferMemories[i]);
+//         }
+//     }
+// }
 
 void VulkanApplication::createDescriptorPools() {
     for (auto & materialPipeline : materialPipelines) {
@@ -1198,7 +1206,9 @@ void VulkanApplication::createDescriptorSets() {
                 for (auto & descriptorWrite : materialPipeline.descriptorWrites[i]) {
                     descriptorWrite.dstSet = materialPipeline.descriptorSets[i];
                 }
-                materialPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
+                // materialPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
+                // std::cout << materialPipeline.assetsIndex << ", " << i << std::endl;
+                // assert((ass.uniformBufferData.uniformBuffers[i] != VK_NULL_HANDLE));
                 materialPipeline.descriptorWrites[i][0].pBufferInfo = &materialPipeline.descriptorBufferInfos[i];
                 for (size_t j = 0; j < materialPipeline.descriptorImageInfos.size(); j++) {
                     materialPipeline.descriptorImageInfos[j].sampler = textureSampler;
@@ -1259,6 +1269,27 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
     
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
+}
+
+size_t VulkanApplication::pushBackAssets(size_t uboSize) {
+    size_t index = assets.size();
+    assets.push_back({});
+    Assets& ass = assets.back();
+    ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+    ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+    ass.uniformBufferData.uboData.resize(uboSize);
+
+    ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+    ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        createBuffer(ass.uniformBufferData.uboData.size(), 
+                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                        ass.uniformBufferData.uniformBuffers[i], 
+                        ass.uniformBufferData.uniformBufferMemories[i]);
+    }
+
+    return index;
 }
 
 VkCommandBuffer VulkanApplication::beginSingleTimeCommands() {
