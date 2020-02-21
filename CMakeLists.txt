@@ -34,25 +34,37 @@ set (NUMBER_SUPPORTED_MODEL_MATRICES 100)
 set (FRAME_RATE 60)
 
 # Write to shaders
-# vert
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.vert.in" filedata)
-string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.vert" "${filedata}")
-# frag
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.frag.in" filedata)
-string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
+file(GLOB_RECURSE SHADERS_IN
+"res/shaders/*.in"
+    )
+    
+foreach(SHADER_IN ${SHADERS_IN})
+  file(READ "${SHADER_IN}" filedata)
+  string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+  string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+  string(REPLACE ".in" "" SHADER_OUT "${SHADER_IN}")
+  file(WRITE  "${SHADER_OUT}" "${filedata}")
+endforeach(SHADER_IN)
 
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag.in" filedata)
-string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
+# # vert
+# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.vert.in" filedata)
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.vert" "${filedata}")
+# # frag
+# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.frag.in" filedata)
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
 
-file(READ "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag.in" filedata)
-string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag" "${filedata}")
+# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag.in" filedata)
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
+
+# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag.in" filedata)
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
+# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
+# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag" "${filedata}")
 
 
 # END CONFIG VARIABLES

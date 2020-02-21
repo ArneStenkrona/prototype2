@@ -1725,7 +1725,8 @@ prt::vector<char> VulkanApplication::readFile(const char* filename) {
     std::string filestring = std::string(filename);
     std::ifstream file(filestring, std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
-        assert(false && ("failed to open file: " + filestring).c_str());
+        std::cout << "failed to open file: " + filestring << std::endl;;
+        assert(false);
     }
     
     size_t fileSize = (size_t) file.tellg();

@@ -16,6 +16,7 @@ layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec3 normal;
     vec2 fragTexCoord;
+    float t;
     vec3 viewDir;
 } fs_in;
 
@@ -41,16 +42,12 @@ vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
     vec3 halfwayDir = normalize(lightDir + viewDir);
     // diffuse shading
     float nDotL = dot(normal, lightDir);
-    //float diff = max(nDotL, 0.0);
-    // specular shading
+
     vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-    // combine results
-    // vec4 ambient = color;
-    // vec4 diffuse = diff * color;
-    // vec4 specular = spec * color;
+
     float levels = 3.0;
-    //float diffuse = diff > 0.0 ? 1.0 : 0.0;
+    
     float diffuse = floor( ( (nDotL + 1.0) / 2.0) * levels) / (levels - 1.0);
     float ambient = 1.0f;
     return ((ambient + diffuse) / 2) * color;
