@@ -178,6 +178,8 @@ private:
     
     bool framebufferResized = false;
 
+    static constexpr bool enableMsaa = false;
+
     void cleanup();
     
     static void framebufferResizeCallback(GLFWwindow* window, int /*width*/, int /*height*/);
@@ -199,6 +201,9 @@ private:
     void createImageViews();
     
     void createRenderPass();
+    void createRenderPassMsaa();
+    void createRenderPassNoMsaa();
+
     
     void createDescriptorSetLayouts();
 
