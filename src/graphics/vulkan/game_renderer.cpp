@@ -9,7 +9,6 @@ GameRenderer::~GameRenderer() {
 
 void GameRenderer::createMaterialPipelines(prt::vector<Model> const & models) {
     size_t assetIndex = pushBackAssets(sizeof(SkyboxUBO));
-
     createSkyboxMaterialPipeline(assetIndex);
 
     // create pipelines for different shaders

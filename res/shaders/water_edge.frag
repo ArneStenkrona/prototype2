@@ -4,7 +4,7 @@
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
-layout(set = 0, binding = 1) uniform texture2D textures[20];
+layout(set = 0, binding = 1) uniform texture2D textures[32];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(push_constant) uniform PER_OBJECT
@@ -35,9 +35,8 @@ void main() {
 
 vec4 CalcTexColor(float t, vec2 uv) {
     float mode; 
-    mode = 0.02 * sin(51.324 * uv.x + 1.8945 * t);
-    mode = mode + 0.03 * sin(25.343 * uv.x -  1.7943 * t);
-    mode = mode + 0.04 * sin(t) * sin(uv.x * t + 0.2 * t);
+    mode = 0.02 * sin(51.324 * (uv.x + 0.123 * t));
+    mode += 0.03 * sin(30.271 * (uv.x - 0.141 * t));
 
     float uvy = uv.y + mode - 0.1;
 

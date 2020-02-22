@@ -24,14 +24,16 @@ set (DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES 4)
 set (TOTAL_ENTITIES 16384)
 
 # Entities
-set (MAXIMUM_MODEL_ENTITIES 10)
+set (MAXIMUM_MODEL_ENTITIES 100)
 
 # Graphics
-set (NUMBER_SUPPORTED_TEXTURES 20)
+set (NUMBER_SUPPORTED_TEXTURES 32)
 set (NUMBER_SUPPORTED_MODEL_MATRICES 100)
 
 # Game
 set (FRAME_RATE 60)
+
+# END CONFIG VARIABLES
 
 # Write to shaders
 file(GLOB_RECURSE SHADERS_IN
@@ -45,29 +47,6 @@ foreach(SHADER_IN ${SHADERS_IN})
   string(REPLACE ".in" "" SHADER_OUT "${SHADER_IN}")
   file(WRITE  "${SHADER_OUT}" "${filedata}")
 endforeach(SHADER_IN)
-
-# # vert
-# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.vert.in" filedata)
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.vert" "${filedata}")
-# # frag
-# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/model.frag.in" filedata)
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/model.frag" "${filedata}")
-
-# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag.in" filedata)
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/cel.frag" "${filedata}")
-
-# file(READ "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag.in" filedata)
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@" "${NUMBER_SUPPORTED_TEXTURES}" filedata "${filedata}")
-# string(REGEX REPLACE "@NUMBER_SUPPORTED_MODEL_MATRICES@" "${NUMBER_SUPPORTED_MODEL_MATRICES}" filedata "${filedata}")
-# file(WRITE  "${PROJECT_SOURCE_DIR}/res/shaders/water_edge.frag" "${filedata}")
-
-
-# END CONFIG VARIABLES
 
 # Set paths
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -178,7 +157,6 @@ add_library(prototype2.lib ${SOURCES})
 target_link_libraries(prototype2.lib Vulkan::Vulkan)
 target_link_libraries(prototype2.lib glfw)
 target_link_libraries(prototype2.lib glm)
-#target_link_libraries(prototype2.lib LibXml2)
 
 # Test project
 add_executable(prototype2_tests ${TESTSOURCES})

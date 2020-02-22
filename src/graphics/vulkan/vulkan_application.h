@@ -211,8 +211,8 @@ private:
     
     void createCommandPool(); 
     void createCommandBuffers();
-    void createCommandBuffer(size_t imageIndex);
-    void createDrawCommands(size_t imageIndex);
+    void createCommandBuffer(size_t const imageIndex);
+    void createDrawCommands(size_t const imageIndex);
 
     void createColorResources();
     

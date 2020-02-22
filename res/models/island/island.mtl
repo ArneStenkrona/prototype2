@@ -1,5 +1,5 @@
 # Blender MTL File: 'island.blend'
-# Material Count: 8
+# Material Count: 9
 
 newmtl Grass
 Ns 225.000000
@@ -21,6 +21,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
+fragment_shader waterfall.frag
 map_Kd waterfall.png
 
 newmtl Material.001
@@ -79,6 +80,18 @@ illum 2
 fragment_shader water_edge.frag
 map_Kd water_edge.png
 
+newmtl waterfall_base
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+fragment_shader waterfall_base.frag
+map_Kd water_edge.png
+
 newmtl whirlpool
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
@@ -89,4 +102,4 @@ Ni 1.450000
 d 1.000000
 illum 2
 fragment_shader whirlpool.frag
-map_Kd water_edge.png
+map_Kd whirlpool.png

@@ -35,9 +35,8 @@ void main() {
 
 vec4 CalcTexColor(float t, vec2 uv) {
     float mode; 
-    mode = 0.02 * sin(51.324 * uv.x + 1.8945 * t);
-    mode = mode + 0.03 * sin(25.343 * uv.x -  1.7943 * t);
-    mode = mode + 0.04 * sin(t) * sin(uv.x * t + 0.2 * t);
+    mode = 0.02 * sin(51.324 * (uv.x + 0.123 * t));
+    mode += 0.03 * sin(30.271 * (uv.x - 0.141 * t));
 
     float uvy = uv.y + mode - 0.1;
 
