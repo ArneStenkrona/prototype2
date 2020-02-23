@@ -7,6 +7,24 @@
 
 #include <new>
 
+prt::ALIGNMENT prt::getAlignment(size_t alignment) {
+        switch(alignment) {
+            case 1      : return ALIGNMENT::ALIGN_1_BYTE;
+            case 2      : return ALIGNMENT::ALIGN_2_BYTES;
+            case 4      : return ALIGNMENT::ALIGN_4_BYTES;
+            case 8      : return ALIGNMENT::ALIGN_8_BYTES;
+            case 16     : return ALIGNMENT::ALIGN_16_BYTES;
+            case 32     : return ALIGNMENT::ALIGN_32_BYTES;
+            case 64     : return ALIGNMENT::ALIGN_64_BYTES;
+            case 128    : return ALIGNMENT::ALIGN_128_BYTES;
+            case 256    : return ALIGNMENT::ALIGN_256_BYTES;
+            // case 512    : return ALIGNMENT::ALIGN_512_BYTES;
+            // case 1024   : return ALIGNMENT::ALIGN_1024_BYTES;
+        }
+        assert(false && "Invalid alignment. Alignment must be a power of 2. ");
+        return ALIGNMENT::ALIGN_1_BYTE;
+    }
+
 alignas(prt::ContainerAllocator) static char defaultContainerAllocatorBuffer[sizeof(prt::ContainerAllocator)];
 static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
 
@@ -41,15 +59,16 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
                           _numBlocks(calcNumBlocks(reinterpret_cast<uintptr_t>(memoryPointer),
                                                    memorySizeBytes, blockSize, alignment)),
                           _initialPadding(prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(memoryPointer),
-                                                      alignment)),
+                                                                        alignment)),
                           _numFreeBlocks(_numBlocks) {
     assert(alignment > 0);
     assert(alignment <= blockSize);
-    assert(alignment <= 128);
+    // assert(alignment <= 128);
+    assert(alignment <= 256);
     assert(blockSize % alignment == 0);
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
 
-    uintptr_t memPtr = reinterpret_cast<uintptr_t>(memoryPointer);
+    uintptr_t memPtr = reinterpret_cast<uintptr_t>(memoryPointer) + _initialPadding;
     _blocks = reinterpret_cast<size_t*>(memPtr + memorySizeBytes - (_numBlocks * sizeof(size_t)));
 
     for (unsigned int i = 0; i < _numBlocks; i++) {
@@ -60,7 +79,8 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
 void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
     assert(alignment <= _blockSize);
     assert(alignment >= 1);
-    assert(alignment <= 128);
+    // assert(alignment <= 128);
+    assert(alignment <= 256);
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
     assert((sizeBytes <= _numFreeBlocks * _blockSize));
 
@@ -71,7 +91,7 @@ void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
 
     uintptr_t blockPointer = reinterpret_cast<uintptr_t>(allocate(blocks));
     size_t padding = prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockPointer),
-                                 alignment);
+                                                   alignment);
     void* mem = reinterpret_cast<void*>(blockPointer + padding);
 
     return mem;

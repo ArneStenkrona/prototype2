@@ -12,7 +12,15 @@ namespace prt
     template<class T>
     class vector {
     public:
+        vector(ContainerAllocator& allocator)
+        : _data(nullptr), _alignment(alignof(T)), _size(0), _capacity(0), _allocator(&allocator) {}
+
         vector(): vector(ContainerAllocator::getDefaultContainerAllocator()) {}
+        
+        vector(ALIGNMENT alignment)
+        : vector() {
+            _alignment = size_t(alignment);
+        }
         
         vector(size_t count)
         : vector(ContainerAllocator::getDefaultContainerAllocator()) {
@@ -53,15 +61,13 @@ namespace prt
             _size = sz;
         }
 
-        vector(ContainerAllocator& allocator)
-        : _data(nullptr), _size(0), _capacity(0), _allocator(&allocator) {}
-
         vector(const vector& other)
         : vector(other, *other._allocator) {}
 
         vector(const vector& other, ContainerAllocator& allocator)
         : vector(allocator) {
             if (this != &other) {
+                _alignment = other._alignment;
                 if (other._data != nullptr) {
                     reserve(other._size);
                     for (size_t i = 0; i < other._size; i++) {
@@ -74,6 +80,7 @@ namespace prt
 
         vector& operator=(const vector& other) {
             if (this != &other) {
+                _alignment = other._alignment;
                 clear();
                 _allocator = other._allocator;
                 if (other._data != nullptr) {
@@ -159,7 +166,7 @@ namespace prt
             }
 
             T* newPointer = static_cast<T*>(_allocator->allocate(capacity * sizeof(T),
-                                            alignof(T)));
+                                            _alignment));
 
             if (_data != nullptr) {
                 for (size_t i = 0; i < _size; i++){
@@ -190,6 +197,8 @@ namespace prt
         static constexpr size_t CAPACITY_INCREASE_CONSTANT = 2;
         // Start of vector.
         T* _data;
+        // Alignment
+        size_t _alignment;
         // Number of elements currently in vector
         size_t _size;
         // Buffer size in bytes.

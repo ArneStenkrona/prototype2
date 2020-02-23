@@ -6,6 +6,22 @@
 #include <assert.h>
 
 namespace prt {
+    enum class ALIGNMENT : size_t {
+        ALIGN_1_BYTE      = 1,
+        ALIGN_2_BYTES     = 2,
+        ALIGN_4_BYTES     = 4,
+        ALIGN_8_BYTES     = 8,
+        ALIGN_16_BYTES    = 16,
+        ALIGN_32_BYTES    = 32,
+        ALIGN_64_BYTES    = 64,
+        ALIGN_128_BYTES   = 128,
+        ALIGN_256_BYTES   = 256,
+        // ALIGN_512_BYTES   = 512,
+        // ALIGN_1024_BYTES   = 1024
+    };
+
+    extern ALIGNMENT getAlignment(size_t alignment);
+
     class ContainerAllocator {
     public:
         explicit ContainerAllocator() = delete;

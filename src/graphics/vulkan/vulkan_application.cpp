@@ -1310,10 +1310,23 @@ size_t VulkanApplication::pushBackAssets(size_t uboSize) {
     size_t index = assets.size();
     assets.push_back({});
     Assets& ass = assets.back();
-    ass.uniformBufferData.uboData.resize(uboSize);
     ass.uniformBufferData.mappedMemories.resize(uboSize);
     ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
     ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+
+    // Make sure uboData holds aligned data
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+    size_t minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
+    size_t alignedSize = uboSize;
+    size_t alignment = 1;
+
+	if (minUboAlignment > 0) {
+		alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+        alignment = minUboAlignment;
+	}
+    ass.uniformBufferData.uboData = prt::vector<char>(prt::getAlignment(alignment));
+    ass.uniformBufferData.uboData.resize(alignedSize);
 
     size_t size = ass.uniformBufferData.uboData.size();
     for (size_t i = 0; i < swapChainImages.size(); i++) {
