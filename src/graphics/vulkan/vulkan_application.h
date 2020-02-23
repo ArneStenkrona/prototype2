@@ -78,6 +78,7 @@ struct TextureImages {
 
 struct UniformBufferData {
     prt::vector<char> uboData;
+    prt::vector<void*> mappedMemories;
     prt::vector<VkBuffer> uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBufferMemories;
 };
@@ -260,8 +261,6 @@ private:
     void copyBufferToImage(VkBuffer buffer, VkImage image, 
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
-    
-    //void createUniformBuffers();
     
     void createDescriptorPools();
     

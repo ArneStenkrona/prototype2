@@ -67,8 +67,8 @@ namespace prt
                     for (size_t i = 0; i < other._size; i++) {
                         new (&_data[i]) T(other[i]);
                     }
-                    _size = other._size;
                 }
+                _size = other._size;
             }
         }
 
