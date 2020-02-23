@@ -1230,7 +1230,7 @@ void VulkanApplication::createDescriptorSets() {
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
                 Assets& ass = assets[materialPipeline.assetsIndex];
-                bufferInfo.buffer = ass.uniformBufferData.uniformBuffers[0];
+                bufferInfo.buffer = ass.uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
                 bufferInfo.range = ass.uniformBufferData.uboData.size();
                 
@@ -1451,8 +1451,7 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
 
 void VulkanApplication::createDrawCommands(size_t const imageIndex) {
     static constexpr VkDeviceSize offset = 0;
-    for (size_t i = 0; i < 6; i++) {
-        auto & materialPipeline = materialPipelines[i];
+    for (auto & materialPipeline : materialPipelines) {
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, materialPipeline.pipeline);
 
         Assets& ass = assets[materialPipeline.assetsIndex];
