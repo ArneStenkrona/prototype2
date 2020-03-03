@@ -8,7 +8,7 @@
 #include <dirent.h>
 
 PhysicsSystem::PhysicsSystem() 
-    : triangleMeshes{}
+    : triangleMeshColliders{}
 {
 }
 
@@ -33,7 +33,7 @@ void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
         
         for (size_t j = 0; j < nTriangles; j++) {
             const Transform& tT = triangleTransforms[j];
-            TriangleMeshCollider& tCol = triangleMeshes[triangleMeshIDs[j]];
+            TriangleMeshCollider& tCol = triangleMeshColliders[triangleMeshIDs[j]];
             glm::vec3 intersectionPoint;
             float intersectionTime;
 
@@ -46,28 +46,46 @@ void PhysicsSystem::resolveEllipsoidsTriangles(const uint32_t* ellipsoidIDs,
     }                                         
 }
 
-void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
-                                              const prt::vector<uint32_t>& modelIDs) {
-    triangleMeshes.resize(models.size());
-    for (size_t i = 0; i < models.size(); i++) {
-        const Model& model = models[i];
+// void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
+//                                               const prt::vector<uint32_t>& modelIDs) {
+//     triangleMeshes.resize(models.size());
+//     for (size_t i = 0; i < models.size(); i++) {
+//         const Model& model = models[i];
 
-        float boundingSphere = 0.0f;
-        triangleMeshes[i].triangles.resize(model.indexBuffer.size());
-        for (size_t j = 0; j < model.indexBuffer.size(); j++) {
-            const glm::vec3& pos = model.vertexBuffer[model.indexBuffer[j]].pos;
-            triangleMeshes[i].triangles[j] = pos;
-            boundingSphere = std::max(boundingSphere, glm::length(pos));
-        }
-        modelIDToTriangleMeshIndex.insert(modelIDs[i], i);
-    }
-}
+//         float boundingSphere = 0.0f;
+//         triangleMeshes[i].triangles.resize(model.indexBuffer.size());
+//         for (size_t j = 0; j < model.indexBuffer.size(); j++) {
+//             const glm::vec3& pos = model.vertexBuffer[model.indexBuffer[j]].pos;
+//             triangleMeshes[i].triangles[j] = pos;
+//             boundingSphere = std::max(boundingSphere, glm::length(pos));
+//         }
+//         modelIDToTriangleMeshIndex.insert(modelIDs[i], i);
+//     }
+// }
 
 uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
     uint32_t id = ellipsoids.size();
     ellipsoids.push_back(ellipsoid);
     return id;
 }
+
+uint32_t PhysicsSystem::addTriangleMeshCollider(Model const& model) {
+    float boundingSphere = 0.0f;
+    uint32_t index = triangleMeshColliders.size();
+    triangleMeshColliders.push_back({});
+
+    auto & tCol = triangleMeshColliders.back();
+    
+    tCol.triangles.resize(model.indexBuffer.size());
+    for (size_t j = 0; j < model.indexBuffer.size(); j++) {
+        const glm::vec3& pos = model.vertexBuffer[model.indexBuffer[j]].pos;
+        tCol.triangles[j] = pos;
+        boundingSphere = std::max(boundingSphere, glm::length(pos));
+    }
+    tCol.boundingSphere = boundingSphere;
+    return index;
+}
+
 
 
 bool PhysicsSystem::collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 

@@ -43,11 +43,12 @@ public:
     void loadTriangleMeshColliders(const prt::vector<Model>& models,
                                    const prt::vector<uint32_t>& modelIDs);
 
-    uint32_t getTriangleMeshID(uint32_t modelID) {
-        return modelIDToTriangleMeshIndex[modelID];
-    }
+    // uint32_t getTriangleMeshID(uint32_t modelID) {
+    //     return modelIDToTriangleMeshIndex[modelID];
+    // }
 
-    uint32_t addEllipsoidCollider(const glm::vec3& ellipsoid);
+    uint32_t addEllipsoidCollider(glm::vec3 const& ellipsoid);
+    uint32_t addTriangleMeshCollider(Model const& model);
 
     /**
      * Checks for collision between an ellipsoid and a triangle mesh.
@@ -65,14 +66,14 @@ public:
      *                             returned by reference
      * @param collisionNormals list of collision normals
      */
-    bool collideAndRespondEllipsoidTriangles(const glm::vec3& ellipsoid, 
+    bool collideAndRespondEllipsoidTriangles(glm::vec3 const& ellipsoid, 
                                              Transform& ellipsoidTransform,
                                              glm::vec3& ellipsoidVel,
                                              bool& ellipsoidIsGrounded,
                                              glm::vec3& ellipsoidGroundNormal,
-                                             const prt::vector<glm::vec3>& triangles,
-                                             const Transform& triangleTransform,
-                                             const glm::vec3& trianglesVel,
+                                             prt::vector<glm::vec3> const& triangles,
+                                             Transform const& triangleTransform,
+                                             glm::vec3 const& trianglesVel,
                                              glm::vec3& intersectionPoint,
                                              float& intersectionTime);
         
@@ -82,19 +83,19 @@ private:
         prt::vector<glm::vec3> triangles;
         float boundingSphere; 
     };
-    prt::hash_map<uint32_t, uint32_t> modelIDToTriangleMeshIndex;
-    prt::vector<TriangleMeshCollider> triangleMeshes;
+    // prt::hash_map<uint32_t, uint32_t> modelIDToTriangleMeshIndex;
+    prt::vector<TriangleMeshCollider> triangleMeshColliders;
 
     prt::vector<glm::vec3> ellipsoids;
 
-    bool collideEllipsoidTriangles(const glm::vec3& ellipsoid, 
-                                   const glm::vec3& ellipsoidPos,
-                                   const glm::vec3& ellipsoidVel,
+    bool collideEllipsoidTriangles(glm::vec3 const& ellipsoid, 
+                                   glm::vec3 const& ellipsoidPos,
+                                   glm::vec3 const& ellipsoidVel,
                                    bool& ellipsoidIsGrounded,
                                    glm::vec3& ellipsoidGroundNormal,
-                                   const prt::vector<glm::vec3>& triangles,
-                                   const glm::vec3& trianglesPos,
-                                   const glm::vec3& trianglesVel,
+                                   prt::vector<glm::vec3> const& triangles,
+                                   glm::vec3 const& trianglesPos,
+                                   glm::vec3 const& trianglesVel,
                                    glm::vec3& intersectionPoint,
                                    float& intersectionTime);
                                    

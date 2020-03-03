@@ -14,16 +14,17 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
      _input(input),
      _camera(camera),
      _gravityConstant({0.0f,-1.0f,0.0f}),
-     _gravity(0.0f/*1.0f*/) {
+     _gravity(1.0f) {
     resetTransforms();
 
     uint32_t islandID = _assetManager.getModelManager().getModelID("island/island");
 
-    _staticEntities.modelIDs[0] = islandID;
-    _staticEntities.transforms[0].position = { 0.0f, -20.0f, 0.0f };
-    _staticEntities.size = 1;
+    _staticSolidEntities.modelIDs[0] = islandID;
+    _staticSolidEntities.transforms[0].position = { 0.0f, -20.0f, 0.0f };
+    _staticSolidEntities.size = 1;
 
     initPlayer();
+    resolveColliderIDs();
 }
 
 void Scene::initPlayer() {
@@ -67,9 +68,17 @@ void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
 }
 
 void Scene::resolveColliderIDs() {
-    for (size_t i = 0; i < _staticSolidEntities.maxSize; i++) {
-        uint32_t mID = _staticSolidEntities.modelIDs[i];
-        _staticSolidEntities.triangleMeshColliderIDs[i] = _physicsSystem.getTriangleMeshID(mID);
+    prt::vector<Model> models;
+    prt::vector<uint32_t> modelIDs;
+    modelIDs.resize(_staticSolidEntities.size);
+
+    for (size_t i = 0; i < _staticSolidEntities.size; i++) {
+        modelIDs[i] = _staticSolidEntities.modelIDs[i];
+    }
+    prt::vector<uint32_t> modelIndices;
+    _assetManager.loadSceneModels(modelIDs, models, modelIndices);
+    for (size_t i = 0; i < _staticSolidEntities.size; i++) {
+       _staticSolidEntities.triangleMeshColliderIDs[i] = _physicsSystem.addTriangleMeshCollider(models[i]);
     }
 }
 
@@ -125,7 +134,6 @@ glm::quat safeQuatLookAt(
 }
 
 void Scene::update(float deltaTime) {
-    // updatePlayer(deltaTime);
     updatePlayerInput();
     updatePlayerPhysics(deltaTime);
     updatePhysics(deltaTime);
