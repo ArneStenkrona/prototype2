@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define M_PI 3.1415926535897932384626433832795
+
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
@@ -34,14 +36,21 @@ void main() {
 }
 
 vec4 CalcTexColor(float t, vec2 uv) {
-    float mode; 
-    mode = 0.02 * sin(51.324 * (uv.x + 0.123 * t));
-    mode += 0.03 * sin(30.271 * (uv.x - 0.141 * t));
+    //float mode; 
+    //mode = 0.02 * sin(51.324 * (uv.x + 0.123 * t));
+    //mode += 0.03 * sin(30.271 * (uv.x - 0.141 * t));
 
-    float uvy = uv.y + mode - 0.1;
+    //float uvy = uv.y + mode - 0.1;
 
-    vec2 resUV = vec2(uv.x,  uvy);
-    return texture(sampler2D(textures[pc.imgIdx], samp), resUV);
+    //vec2 resUV = vec2(uv.x,  uvy);
+    
+    //return texture(sampler2D(textures[pc.imgIdx], samp), resUV);
+
+    float f = 0.8;
+    f += 0.02 * sin(18 * M_PI * (uv.x + 0.123 * t));
+    f += 0.03 * sin(10 * M_PI * (uv.x - 0.141 * t));
+
+    return uv.y > f ? vec4(1.0,1.0,1.0,1.0) : vec4(0.102, 0.247, 0.949, 1.0);
 }
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {

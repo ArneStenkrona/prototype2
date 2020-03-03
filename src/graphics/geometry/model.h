@@ -102,6 +102,7 @@ struct Mesh {
     //char materialName[256];
     Material material; 
     Texture texture;
+    char name[256];
 };
 
 

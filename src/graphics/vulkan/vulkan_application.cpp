@@ -739,7 +739,7 @@ void VulkanApplication::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    // poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         assert(false && "failed to create graphics command pool!");
@@ -1151,14 +1151,12 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
         assert(false && "unsupported layout transition!");
     }
     
-    vkCmdPipelineBarrier(
-                         commandBuffer,
+    vkCmdPipelineBarrier(commandBuffer,
                          sourceStage, destinationStage,
                          0,
                          0, nullptr,
                          0, nullptr,
-                         1, &barrier
-                         );
+                         1, &barrier);
     
     endSingleTimeCommands(commandBuffer);
 }
@@ -1234,19 +1232,13 @@ void VulkanApplication::createDescriptorSets() {
                 bufferInfo.offset = 0;
                 bufferInfo.range = ass.uniformBufferData.uboData.size();
                 
-                prt::vector<VkDescriptorImageInfo> imageInfos;
-                imageInfos.resize(ass.textureImages.imageViews.size());
-                for (size_t j = 0; j < imageInfos.size(); j++) {
-                    imageInfos[j].sampler = textureSampler;
-                    imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    imageInfos[j].imageView = ass.textureImages.imageViews[j];
-                }
                 for (auto & descriptorWrite : materialPipeline.descriptorWrites[i]) {
                     descriptorWrite.dstSet = materialPipeline.descriptorSets[i];
                 }
                 materialPipeline.descriptorWrites[i][0].pBufferInfo = &materialPipeline.descriptorBufferInfos[i];
                 for (size_t j = 0; j < materialPipeline.descriptorImageInfos.size(); j++) {
                     materialPipeline.descriptorImageInfos[j].sampler = textureSampler;
+                    materialPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     materialPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
                 }
                 materialPipeline.descriptorWrites[i][1].pImageInfo = materialPipeline.descriptorImageInfos.data();
@@ -1257,7 +1249,7 @@ void VulkanApplication::createDescriptorSets() {
     }
 }
 
-void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void VulkanApplication::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {    
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -1310,23 +1302,10 @@ size_t VulkanApplication::pushBackAssets(size_t uboSize) {
     size_t index = assets.size();
     assets.push_back({});
     Assets& ass = assets.back();
-    ass.uniformBufferData.mappedMemories.resize(uboSize);
+    ass.uniformBufferData.uboData.resize(uboSize);
+    ass.uniformBufferData.mappedMemories.resize(swapChainImages.size());
     ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
     ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
-
-    // Make sure uboData holds aligned data
-    VkPhysicalDeviceProperties physicalDeviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-    size_t minUboAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
-    size_t alignedSize = uboSize;
-    size_t alignment = 1;
-
-	if (minUboAlignment > 0) {
-		alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
-        alignment = minUboAlignment;
-	}
-    ass.uniformBufferData.uboData = prt::vector<char>(prt::getAlignment(alignment));
-    ass.uniformBufferData.uboData.resize(alignedSize);
 
     size_t size = ass.uniformBufferData.uboData.size();
     for (size_t i = 0; i < swapChainImages.size(); i++) {
@@ -1437,7 +1416,7 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
     
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
-    
+
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     
     createDrawCommands(imageIndex);
@@ -1451,13 +1430,19 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
 
 void VulkanApplication::createDrawCommands(size_t const imageIndex) {
     static constexpr VkDeviceSize offset = 0;
-    for (auto & materialPipeline : materialPipelines) {
+    size_t* prevAssetIndex = nullptr;
+    // for (auto & materialPipeline : materialPipelines) {
+    for (size_t i = 1; i < materialPipelines.size(); i++) {
+        if (i == 2) continue;
+        auto & materialPipeline = materialPipelines[i];
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, materialPipeline.pipeline);
 
-        Assets& ass = assets[materialPipeline.assetsIndex];
-
-        vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
-        vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        if (prevAssetIndex == nullptr || *prevAssetIndex != materialPipeline.assetsIndex) {
+            Assets& ass = assets[materialPipeline.assetsIndex];
+            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
+            vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            prevAssetIndex = &materialPipeline.assetsIndex;
+        }
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                                 materialPipeline.pipelineLayout, 0, 1, &materialPipeline.descriptorSets[imageIndex], 0, nullptr);
 
@@ -1483,8 +1468,7 @@ void VulkanApplication::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    imagesInFlight.resize(swapChainImages.size()
-    , VK_NULL_HANDLE);
+    imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
     
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1527,7 +1511,6 @@ void VulkanApplication::drawFrame() {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }     
     updateUniformBuffers(imageIndex);
-
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};

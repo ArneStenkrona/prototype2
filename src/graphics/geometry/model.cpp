@@ -97,7 +97,7 @@ void Model::loadOBJ(const char* path) {
         // read the first word of the line
         if (strcmp(lineHeader, "o") == 0) {
             // object name
-            // fscanf(file, "%s", _meshes[meshCount]._name);
+            fscanf(file, "%s", meshes[meshCount].name);
 
             // Object.
             fscanf(file, "%*[^\n]\n", NULL);

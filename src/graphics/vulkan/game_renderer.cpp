@@ -82,7 +82,7 @@ void GameRenderer::createSkyboxMaterialPipeline(size_t assetIndex) {
         skyboxPipeline.descriptorWrites[i][0].dstArrayElement = 0;
         skyboxPipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         skyboxPipeline.descriptorWrites[i][0].descriptorCount = 1;
-        skyboxPipeline.descriptorWrites[i][0].pBufferInfo = &skyboxPipeline.descriptorBufferInfos[i];
+        // skyboxPipeline.descriptorWrites[i][0].pBufferInfo = &skyboxPipeline.descriptorBufferInfos[i];
 
         skyboxPipeline.descriptorWrites[i][1] = {};
         skyboxPipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -165,11 +165,11 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
         modelPipeline.descriptorBufferInfos[i].range = ass.uniformBufferData.uboData.size();
         
         modelPipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
-        for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
-            // modelPipeline.descriptorImageInfos[j].sampler = textureSampler;
-            modelPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            // modelPipeline.descriptorImageInfos[j].imageView = modelPipeline.textureImages.imageViews[j];
-        }
+        // for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
+        //      modelPipeline.descriptorImageInfos[j].sampler = textureSampler;
+        //      modelPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        //      modelPipeline.descriptorImageInfos[j].imageView = modelPipeline.textureImages.imageViews[j];
+        // }
         
         modelPipeline.descriptorWrites[i].resize(3, VkWriteDescriptorSet{});
         
@@ -179,7 +179,7 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
         modelPipeline.descriptorWrites[i][0].dstArrayElement = 0;
         modelPipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         modelPipeline.descriptorWrites[i][0].descriptorCount = 1;
-        modelPipeline.descriptorWrites[i][0].pBufferInfo = &modelPipeline.descriptorBufferInfos[i];
+        // modelPipeline.descriptorWrites[i][0].pBufferInfo = &modelPipeline.descriptorBufferInfos[i];
 
         modelPipeline.descriptorWrites[i][1] = {};
         modelPipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

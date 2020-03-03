@@ -34,29 +34,19 @@ void main() {
 }
 
 vec4 CalcColor(float t, vec2 uv) {
-    // vec2 c = vec2(0.5, 0.5);
-    // vec2 cuv = uv - c;
-    // float r = length(cuv);
-    // float phi = atan(cuv.x,cuv.y);
+    vec2 c = vec2(0.5, 0.5);
+    vec2 cuv = uv - c;
+    float r = length(cuv);
+    float phi = atan(cuv.x,cuv.y);
 
-    // // f(r,theta)=sin(6 cos r - n theta)
-
-    // float phi1 = phi + 2 * t;
-    // float r1 = r + 0.0007 * sin(50 * phi1) + 0.1 * t;
-    // float phi2 = phi + 2 * (t + 1.1);
-    // float r2 = r + 0.001 * sin(60 * phi2) + 0.1 * (t + 1.1);
-
-    // float f1 = sin(6 * cos(15 * r1) - 2 * (phi1));
-    // float f2 = sin(9.3 * cos(27.2 * r2) - 2 * (phi2));
-    // float f = 0.7 * f1 + 0.3 * f2;
-    float f = 1.0;
+    float f = (1.5 - r) * pow(sin(50 * (r*r - 0.2 * t)),3) / ((1.0 + 10.0 * r));
     
     return vec4(f,f,f,1.0);
 }
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
     vec4 color = CalcColor(fs_in.t, fs_in.fragTexCoord);
-    // color = color.r > 0.1 ? vec4(1.0,1.0,1.0,1.0) : vec4(0.102, 0.247, 0.949, 1.0);
+    color = color.r > 0.2 ? vec4(1.0,1.0,1.0,1.0) : vec4(0.102, 0.247, 0.949, 1.0);
 
     vec3 lightDir = normalize(-direction);
     vec3 halfwayDir = normalize(lightDir + viewDir);
