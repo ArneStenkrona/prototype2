@@ -17,3 +17,33 @@ prt::vector<std::string> string_util::splitString(const std::string& input, char
 
     return vec;
 }
+
+prt::vector<char *> string_util::split(char *input, const char *delimiter) {
+    if (input == nullptr) return prt::vector<char *>();
+
+    prt::vector<char *> split;
+
+    char *str = input;
+    if (strlen(str) > 0) {
+            split.push_back(str);
+    }
+    char *end = strstr(str, delimiter);
+    while (end != nullptr) {
+        *end = '\0';
+        str = end + strlen(delimiter);
+        if (strlen(str) > 0) {
+            split.push_back(str);
+        }
+        end = strstr(str, delimiter);
+    }
+    
+    return split;
+}
+
+void string_util::append(prt::vector<char> & str, const char* app) {
+    if (app == nullptr) return;
+    while (*app != '\0') {
+        str.push_back(*app++);
+    }
+}
+

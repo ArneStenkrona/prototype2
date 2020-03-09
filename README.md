@@ -10,6 +10,7 @@ Prototype 2 is a simple game engine. It is a successor to [Prototype](https://gi
 [Catch2](https://github.com/catchorg/Catch2/)  
 [glfw3 3.3](https://www.glfw.org)  
 [glm](https://glm.g-truc.net/0.9.9/index.html)
+[zlib](https://www.zlib.net)
 
 ## Setting up Vulkan
 * Download [VulkanSDK](https://vulkan.lunarg.com/sdk/home)
