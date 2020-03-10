@@ -8,6 +8,15 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_TYPE Debug)
 
 # CONFIG VARIABLES
+# Endianness
+include (TestBigEndian)
+TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
+if(IS_BIG_ENDIAN)
+set (PRT_BIG_ENDIAN 1)
+else()
+set(PRT_BIG_ENDIAN 0)
+endif()
+
 # Paths
 set(RESOURCE_PATH "\"${PROJECT_BINARY_DIR}/res/\"")
 # Version number

@@ -1,6 +1,5 @@
 #include "fbx_document.h"
 
-#include <fstream>
 #include <cstdio>
 
 #include "zlib.h"
@@ -30,7 +29,6 @@ FBX_Document::FBX_Document(const char* file) {
     }
 
     // Read footer extension
-    //auto dataPos = input.tellg();
     bool validFooterExtension = checkFooter(input, version);
 
     if (!validFooterExtension) {
@@ -83,19 +81,25 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
 
     if (version >= VERSION::V7_5) {
         int64_t intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
+        readScalar<int64_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         endOffset = intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
+        readScalar<int64_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         numProperties = intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
+        readScalar<int64_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         propertyListLen = intbuf;
     } else {
         int32_t intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
+        readScalar<int32_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         endOffset = intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
+        readScalar<int32_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         numProperties = intbuf;
-        input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
+        readScalar<int32_t>(input, intbuf);
+        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         propertyListLen = intbuf;
     }
     char nameLen; 
@@ -118,6 +122,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     node.setName(name);
 
     auto propertyEnd = input.tellg() + propertyListLen;
+    std::cout << numProperties << " | " << name << std::endl;
     // Read properties
     for (int64_t i = 0; i < numProperties; i++) {
         node.properties.push_back(readProperty(input));
@@ -145,11 +150,14 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
 
 FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::TYPE type) {
     int32_t len;
-    input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
+    readScalar<int32_t>(input, len);
+    //input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
     int32_t encoding;
-    input.read(reinterpret_cast<char*>(&encoding), sizeof(int32_t));
+    readScalar<int32_t>(input, encoding);
+    //input.read(reinterpret_cast<char*>(&encoding), sizeof(int32_t));
     int32_t compressedLen;
-    input.read(reinterpret_cast<char*>(&compressedLen), sizeof(int32_t));
+    readScalar<int32_t>(input, compressedLen);
+    //input.read(reinterpret_cast<char*>(&compressedLen), sizeof(int32_t));
     auto endPos = input.tellg() + std::streampos(compressedLen);
 
     Property ret;
@@ -179,7 +187,7 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
         input.read(compressedBuffer.data(), compressedLen);
 
         // decompress
-        prt::vector<char> uncompressedBuffer;
+        prt::vector<char> uncompressedBuffer(Property::PRIMITIVE_ALIGNMENTS[type]);
         uLongf uncompressedLen; 
         auto res = Z_ERRNO;
         size_t bufferFactor = 2;
@@ -203,7 +211,8 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
     if (encoding != 0) {
         input.seekg(endPos - std::streamoff(sizeof(int32_t)));
         int32_t checkSum;
-        input.read(reinterpret_cast<char*>(&checkSum), sizeof(int32_t));
+        readScalar<int32_t>(input, checkSum);
+        //input.read(reinterpret_cast<char*>(&checkSum), sizeof(int32_t));
         /*TODO
         verify checksum
         */
@@ -221,8 +230,10 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
     switch (dataType) {
         case 'Y': {
             property.type = Property::INT16;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(int16_t)));
             property.data.resize(sizeof(int16_t));
-            input.read(property.data.data(), sizeof(int16_t));
+            readScalar<int16_t>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(int16_t));
             return property;
         }
         case 'C': {
@@ -233,26 +244,34 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
         }
         case 'I': {
             property.type = Property::INT32;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(int32_t)));
             property.data.resize(sizeof(int32_t));
-            input.read(property.data.data(), sizeof(int32_t));
+            readScalar<int32_t>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(int32_t));
             return property;
         }
         case 'F': {
             property.type = Property::FLOAT;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(float)));
             property.data.resize(sizeof(float));
-            input.read(property.data.data(), sizeof(float));
+            readScalar<float>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(float));
             return property;
         }
         case 'D': {
             property.type = Property::DOUBLE;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(double)));
             property.data.resize(sizeof(double));
-            input.read(property.data.data(), sizeof(double));
+            readScalar<double>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(double));
             return property;
         }
         case 'L': {
             property.type = Property::INT64;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(int64_t)));
             property.data.resize(sizeof(int64_t));
-            input.read(property.data.data(), sizeof(int64_t));
+            readScalar<int64_t>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(int64_t));
             return property;
         }
         case 'f':
@@ -268,7 +287,8 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
         case 'S': {
             property.type = Property::STRING;
             int32_t len;
-            input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
+            readScalar<int32_t>(input, len);
+            //input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
             prt::vector<char> data;
             data.resize(len);
             if (len > 0) {
@@ -291,8 +311,10 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
         }
         case 'R': {
             property.type = Property::INT32;
+            property.data = prt::vector<char>(prt::getAlignment(alignof(int32_t)));
             property.data.resize(sizeof(int32_t));
-            input.read(property.data.data(), sizeof(int32_t));
+            readScalar<int32_t>(input, property.data.data());
+            //input.read(property.data.data(), sizeof(int32_t));
             return property;
         }
         default: {
@@ -308,7 +330,8 @@ bool FBX_Document::checkFooter(std::ifstream & input, VERSION version) {
     bool correct = allZero(buffer, footerZeroes1);
 
     int32_t readVersion;
-    input.read(reinterpret_cast<char*>(&readVersion), sizeof(int32_t));
+    readScalar<int32_t>(input, readVersion);
+    //input.read(reinterpret_cast<char*>(&readVersion), sizeof(int32_t));
     correct &= (readVersion == int32_t(version));
 
     input.read(buffer, footerZeroes2);

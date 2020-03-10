@@ -2,6 +2,9 @@
 #define PROTOTYPE_2_CONFIG_H
 // This is the config file for prototype2
 
+/* ENDIANNESS */
+#define PRT_BIG_ENDIAN @PRT_BIG_ENDIAN@
+
 /* VERSION */
 #define prototype2_VERSION_MAJOR @prototype2_VERSION_MAJOR@
 #define prototype2_VERSION_MINOR @prototype2_VERSION_MINOR@

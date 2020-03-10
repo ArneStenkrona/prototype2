@@ -9,7 +9,7 @@
 #include "src/container/array.h"
 #include "src/container/vector.h"
 
-#include <string>
+#include <fstream>
 
 class FBX_Document {
 public:
@@ -37,6 +37,18 @@ public:
             TOTAL_NUM_TYPES = 12
         };
         static constexpr size_t PRIMITIVE_SIZES[TOTAL_NUM_TYPES] = {1,2,4,8,4,8,1,4,8,4,8,1};
+        static constexpr size_t PRIMITIVE_ALIGNMENTS[TOTAL_NUM_TYPES] = {alignof(char),
+                                                                         alignof(int16_t),
+                                                                         alignof(int32_t),
+                                                                         alignof(int64_t),
+                                                                         alignof(float),
+                                                                         alignof(double),
+                                                                         alignof(char),
+                                                                         alignof(float),
+                                                                         alignof(double),
+                                                                         alignof(int32_t),
+                                                                         alignof(int64_t),
+                                                                         alignof(char)};
 
         TYPE type = INVALID_TYPE;
         prt::vector<char> data;
@@ -115,6 +127,21 @@ private:
 
     static bool allZero(const char *array, size_t sz);
     static bool checkEqual(const char *a, const char *b, size_t sz);
+
+    template <class T>
+    static void readScalar(std::ifstream & input, T & dest) {
+        readScalar<T>(input, reinterpret_cast<char*>(&dest));
+    }
+    template <class T>
+    static void readScalar(std::ifstream & input, char *dest) {
+    #if PRT_BIG_ENDIAN == 1
+        for (size_t i = sizeof(T) - 1; i <= 0; i++) {
+    #else
+        for (size_t i = 0; i < sizeof(T) - 1; i++) {
+    #endif
+            input.get(dest[i]);
+        }
+    }
 };
 
 #endif
