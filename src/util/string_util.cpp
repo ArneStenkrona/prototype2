@@ -19,7 +19,10 @@ prt::vector<std::string> string_util::splitString(const std::string& input, char
 }
 
 prt::vector<char *> string_util::split(char *input, const char *delimiter) {
-    if (input == nullptr) return prt::vector<char *>();
+    assert(input != nullptr);
+    assert(delimiter != nullptr);
+    assert((strcmp(delimiter, "") == 0) && "Delimiter may not be empty!");
+    //assert((strcmp(input, "") == 0));
 
     prt::vector<char *> split;
 

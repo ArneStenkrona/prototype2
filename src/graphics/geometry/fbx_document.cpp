@@ -14,7 +14,7 @@ FBX_Document::FBX_Document(const char* file) {
     bool validHeader = readHeader(input);
     assert(validHeader && "Invalid FBX Header!");
     // read version
-    input.read(reinterpret_cast<char*>(&version), sizeof(int32_t));
+    readScalar<uint32_t>(input, reinterpret_cast<char*>(&version));
     // Read nodes
     // auto dataPos = input.tellg();
     while(readNode(input, _root.nodes, version));
@@ -122,7 +122,6 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     node.setName(name);
 
     auto propertyEnd = input.tellg() + propertyListLen;
-    std::cout << numProperties << " | " << name << std::endl;
     // Read properties
     for (int64_t i = 0; i < numProperties; i++) {
         node.properties.push_back(readProperty(input));
@@ -288,7 +287,6 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
             property.type = Property::STRING;
             int32_t len;
             readScalar<int32_t>(input, len);
-            //input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
             prt::vector<char> data;
             data.resize(len);
             if (len > 0) {

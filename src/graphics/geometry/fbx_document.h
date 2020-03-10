@@ -8,6 +8,7 @@
 
 #include "src/container/array.h"
 #include "src/container/vector.h"
+#include "src/config/prototype2Config.h"
 
 #include <fstream>
 
@@ -71,10 +72,10 @@ public:
 
 private:
     // Length of the header string
-    static constexpr size_t HEADER_STRING_LENGTH = 24;
+    static constexpr size_t HEADER_STRING_LENGTH = 23;
 
     // Header string, found at the top of all compliant files
-    static constexpr char HEADER_STRING[HEADER_STRING_LENGTH] = "Kaydara FBX Binary  \0\x1a\0";
+    static constexpr char HEADER_STRING[HEADER_STRING_LENGTH] = "Kaydara FBX Binary  \0\x1a";//\0";
     // Size of the footer code
     static constexpr size_t FOOTER_CODE_SIZE = 16;
     static constexpr char BINARY_SEPARATOR[] = "\0\x1";
@@ -93,7 +94,7 @@ private:
     static constexpr size_t footerZeroes2 = 120;
 
     // Version numbers
-    enum class VERSION : int32_t {
+    enum class VERSION : uint32_t {
         V6_0 = 6000,
         V6_1 = 6100,
         V7_0 = 7000,
@@ -135,9 +136,9 @@ private:
     template <class T>
     static void readScalar(std::ifstream & input, char *dest) {
     #if PRT_BIG_ENDIAN == 1
-        for (size_t i = sizeof(T) - 1; i <= 0; i++) {
+        for (size_t i = sizeof(T) - 1; i >= 0; i--) {
     #else
-        for (size_t i = 0; i < sizeof(T) - 1; i++) {
+        for (size_t i = 0; i < sizeof(T); i++) {
     #endif
             input.get(dest[i]);
         }
