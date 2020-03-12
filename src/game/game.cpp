@@ -3,6 +3,8 @@
 #include "src/container/vector.h"
 #include "src/config/prototype2Config.h"
 
+#include "src/graphics/geometry/fbx_document.h"
+
 #include <chrono>
 #include <thread>
 
@@ -20,11 +22,12 @@ Game::Game()
   _time(0.0f) {
     _input.init(_gameRenderer.getWindow());
     loadScene();
+
+    FBX_Document("/Users/arnestenkrona/Documents/repositories/prototype2/res/models/monkey/monkey.fbx");
 }
 
 void Game::loadScene() {
     _gameRenderer.bindScene(_scene);
-    //_physicsSystem.bindScene(_scene); // TODO: write this method
 }
 
 Game::~Game() {

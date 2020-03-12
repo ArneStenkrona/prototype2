@@ -34,10 +34,10 @@ public:
             ARRAY_INT32 = 9,
             ARRAY_INT64 = 10,
             ARRAY_BOOL = 11,
-            INVALID_TYPE,
-            TOTAL_NUM_TYPES = 12
+            RAW = 12,
+            TOTAL_NUM_TYPES = 13
         };
-        static constexpr size_t PRIMITIVE_SIZES[TOTAL_NUM_TYPES] = {1,2,4,8,4,8,1,4,8,4,8,1};
+        static constexpr size_t PRIMITIVE_SIZES[TOTAL_NUM_TYPES] = {1,2,4,8,4,8,1,4,8,4,8,1,4};
         static constexpr size_t PRIMITIVE_ALIGNMENTS[TOTAL_NUM_TYPES] = {alignof(char),
                                                                          alignof(int16_t),
                                                                          alignof(int32_t),
@@ -49,10 +49,11 @@ public:
                                                                          alignof(double),
                                                                          alignof(int32_t),
                                                                          alignof(int64_t),
+                                                                         alignof(char),
                                                                          alignof(char)};
 
-        TYPE type = INVALID_TYPE;
-        prt::vector<char> data;
+        TYPE type = TOTAL_NUM_TYPES;
+        prt::vector<unsigned char> data;
     };
 
     class FBX_Node {
@@ -78,7 +79,7 @@ private:
     static constexpr char HEADER_STRING[HEADER_STRING_LENGTH] = "Kaydara FBX Binary  \0\x1a";//\0";
     // Size of the footer code
     static constexpr size_t FOOTER_CODE_SIZE = 16;
-    static constexpr char BINARY_SEPARATOR[] = "\0\x1";
+    static constexpr unsigned char BINARY_SEPARATOR[] = {0x00, 0x01};
     static constexpr char ASCII_SEPARATOR[] = "::";
 
     // Data used in encryption
@@ -117,31 +118,39 @@ private:
 
     static bool checkFooter(std::ifstream & input, VERSION version);
     
-    void generateFooterCode(char *buffer);
-    static void generateFooterCode(char *buffer,
-	                               int year, int month, int day,
-	                               int hour, int minute, int second, int millisecond);
+    void generateFooterCode(unsigned char *buffer);
+    static void generateFooterCode(unsigned char *buffer,
+	                               int32_t year, int32_t month, int32_t day,
+	                               int32_t hour, int32_t minute, int32_t second, int32_t millisecond);
 
-    static void encrypt(char *a, const char *b);
+    static void encrypt(unsigned char *a, unsigned const char *b);
 
     static int32_t getTimestampVar(FBX_Node const & timestamp, const char *element);
 
-    static bool allZero(const char *array, size_t sz);
-    static bool checkEqual(const char *a, const char *b, size_t sz);
+    static bool allZero(const unsigned char *array, size_t sz);
+    static bool checkEqual(const unsigned char *a, const unsigned char *b, size_t sz);
+
+    static bool findBinarySeparator(char *input, size_t length);
+    static prt::vector<char*> splitWithBinarySeparator(char *input, size_t length);
+
+    static bool decompress(prt::vector<unsigned char> const & compressed, 
+                           prt::vector<unsigned char> & uncompressed, size_t uncompressedSize);
 
     template <class T>
     static void readScalar(std::ifstream & input, T & dest) {
-        readScalar<T>(input, reinterpret_cast<char*>(&dest));
+        readScalar<T>(input, reinterpret_cast<unsigned char*>(&dest));
     }
     template <class T>
-    static void readScalar(std::ifstream & input, char *dest) {
+    static void readScalar(std::ifstream & input, unsigned char *dest) {
     #if PRT_BIG_ENDIAN == 1
-        for (size_t i = sizeof(T) - 1; i >= 0; i--) {
-    #else
-        for (size_t i = 0; i < sizeof(T); i++) {
-    #endif
-            input.get(dest[i]);
+        for (size_t i = sizeof(T); i > 0; --i) {
+            input.get(reinterpret_cast<char &>(dest[i-1]));
         }
+    #else
+        for (size_t i = 0; i < sizeof(T); ++i) {
+            input.get(reinterpret_cast<char &>(dest[i]));
+        }
+    #endif
     }
 };
 

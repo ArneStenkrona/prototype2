@@ -26,7 +26,7 @@ prt::ALIGNMENT prt::getAlignment(size_t alignment) {
     }
 
 alignas(prt::ContainerAllocator) static char defaultContainerAllocatorBuffer[sizeof(prt::ContainerAllocator)];
-static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
+alignas(std::max_align_t)        static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
 
 prt::ContainerAllocator& prt::ContainerAllocator::getDefaultContainerAllocator() {
     static prt::ContainerAllocator* defaultContainerAllocator = 

@@ -14,18 +14,21 @@ FBX_Document::FBX_Document(const char* file) {
     bool validHeader = readHeader(input);
     assert(validHeader && "Invalid FBX Header!");
     // read version
-    readScalar<uint32_t>(input, reinterpret_cast<char*>(&version));
+    readScalar<uint32_t>(input, reinterpret_cast<unsigned char*>(&version));
     // Read nodes
-    // auto dataPos = input.tellg();
     while(readNode(input, _root.nodes, version));
 
-    // Read footer code
-    char footerCode[FOOTER_CODE_SIZE];
-    input.read(footerCode, FOOTER_CODE_SIZE);
-    char validCode[FOOTER_CODE_SIZE];
-    generateFooterCode(validCode);
-    if (strcmp(footerCode, validCode) != 0) {
-        assert(false && "Incorrect footer code!");
+     /* Since the footer of FBX is not entirely known     
+    // Read footer code 
+    unsigned char footerCode[FOOTER_CODE_SIZE];
+    input.read(reinterpret_cast<char*>(footerCode), FOOTER_CODE_SIZE);
+    unsigned char validCode[FOOTER_CODE_SIZE];
+    generateFooterCode(reinterpret_cast<unsigned char*>(validCode));
+
+   
+        it remains unverified
+    if (!checkEqual(footerCode, validCode, FOOTER_CODE_SIZE)) {
+        //assert(false && "Incorrect footer code!");
     }
 
     // Read footer extension
@@ -34,6 +37,7 @@ FBX_Document::FBX_Document(const char* file) {
     if (!validFooterExtension) {
         assert(false && "Invalid footer!");
     }
+    */
 }
 
 const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) const {
@@ -47,10 +51,8 @@ const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) co
 
 const FBX_Document::FBX_Node * FBX_Document::FBX_Node::getRelative(const char* path) const {
     char buffer[256];
-    size_t ind = 0;
-    while (path[ind] != '\0') {
-        buffer[ind] = path[ind];
-    }
+    strcpy(buffer, path);
+
     prt::vector<char*> tokens = string_util::split(buffer, "/");
     const FBX_Node *n = this;
     for (auto & t : tokens) {
@@ -82,24 +84,22 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     if (version >= VERSION::V7_5) {
         int64_t intbuf;
         readScalar<int64_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         endOffset = intbuf;
+
         readScalar<int64_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         numProperties = intbuf;
+
         readScalar<int64_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int64_t));
         propertyListLen = intbuf;
     } else {
         int32_t intbuf;
         readScalar<int32_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         endOffset = intbuf;
+
         readScalar<int32_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         numProperties = intbuf;
+
         readScalar<int32_t>(input, intbuf);
-        //input.read(reinterpret_cast<char *>(&intbuf), sizeof(int32_t));
         propertyListLen = intbuf;
     }
     char nameLen; 
@@ -108,7 +108,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     if (nameLen != 0) {
         input.read(name, nameLen);
     }
-
+    
     if (endOffset == 0) {
         // The end offset should only be 0 in a null node
         if (numProperties != 0 || propertyListLen != 0 || name[0] != '\0') {
@@ -123,12 +123,12 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
 
     auto propertyEnd = input.tellg() + propertyListLen;
     // Read properties
-    for (int64_t i = 0; i < numProperties; i++) {
+    for (int64_t i = 0; i < numProperties; ++i) {
         node.properties.push_back(readProperty(input));
     }
-
     if (input.tellg() != propertyEnd) {
         assert(false && "Too many bytes in property list!");
+        //input.seekg(propertyEnd);
     }
 
     // Read nested nodes
@@ -150,13 +150,10 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
 FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::TYPE type) {
     int32_t len;
     readScalar<int32_t>(input, len);
-    //input.read(reinterpret_cast<char*>(&len), sizeof(int32_t));
     int32_t encoding;
     readScalar<int32_t>(input, encoding);
-    //input.read(reinterpret_cast<char*>(&encoding), sizeof(int32_t));
     int32_t compressedLen;
     readScalar<int32_t>(input, compressedLen);
-    //input.read(reinterpret_cast<char*>(&compressedLen), sizeof(int32_t));
     auto endPos = input.tellg() + std::streampos(compressedLen);
 
     Property ret;
@@ -181,30 +178,17 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
             assert(false && "Invalid compression flags; dictionary not supported!");
         }
         // read compressed data
-        prt::vector<char> compressedBuffer;
+        prt::vector<unsigned char> compressedBuffer;
         compressedBuffer.resize(compressedLen);
-        input.read(compressedBuffer.data(), compressedLen);
-
-        // decompress
-        prt::vector<char> uncompressedBuffer(Property::PRIMITIVE_ALIGNMENTS[type]);
-        uLongf uncompressedLen; 
-        auto res = Z_ERRNO;
-        size_t bufferFactor = 2;
-        while (res != Z_OK) {
-            uncompressedBuffer.resize(bufferFactor*compressedLen);
-
-            res = uncompress(reinterpret_cast<Bytef*>(uncompressedBuffer.data()), &uncompressedLen, 
-                             reinterpret_cast<Bytef*>(compressedBuffer.data()), compressedLen);
-            bufferFactor *= 2;
-            assert(bufferFactor < 16 && "Is buffer really supposed to be this big?");
-        }
-        uncompressedBuffer.resize(uncompressedLen);
+        input.read(reinterpret_cast<char*>(compressedBuffer.data()), compressedLen);
+        prt::vector<unsigned char> uncompressedBuffer(Property::PRIMITIVE_ALIGNMENTS[type]);
+        decompress(compressedBuffer, uncompressedBuffer, len*primSz);
         
         ret.data = uncompressedBuffer;
 
     } else {
         ret.data.resize(len*primSz);
-        input.read(ret.data.data(), len*primSz);
+        input.read(reinterpret_cast<char*>(ret.data.data()), len*primSz);
     }
     
     if (encoding != 0) {
@@ -224,53 +208,47 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
 FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
     char dataType;
     input.get(dataType);
-    
     Property property{};
     switch (dataType) {
         case 'Y': {
             property.type = Property::INT16;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(int16_t)));
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int16_t)));
             property.data.resize(sizeof(int16_t));
             readScalar<int16_t>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(int16_t));
             return property;
         }
         case 'C': {
             property.type = Property::CHAR;
             property.data.resize(sizeof(char));
-            input.read(property.data.data(), sizeof(char));
+            input.read(reinterpret_cast<char*>(property.data.data()), sizeof(char));
             return property;
         }
         case 'I': {
             property.type = Property::INT32;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(int32_t)));
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int32_t)));
             property.data.resize(sizeof(int32_t));
             readScalar<int32_t>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(int32_t));
             return property;
         }
         case 'F': {
             property.type = Property::FLOAT;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(float)));
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(float)));
             property.data.resize(sizeof(float));
             readScalar<float>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(float));
             return property;
         }
         case 'D': {
             property.type = Property::DOUBLE;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(double)));
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(double)));
             property.data.resize(sizeof(double));
             readScalar<double>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(double));
             return property;
         }
         case 'L': {
             property.type = Property::INT64;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(int64_t)));
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int64_t)));
             property.data.resize(sizeof(int64_t));
             readScalar<int64_t>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(int64_t));
             return property;
         }
         case 'f':
@@ -285,34 +263,41 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
             return readArray(input, Property::TYPE::ARRAY_BOOL);
         case 'S': {
             property.type = Property::STRING;
-            int32_t len;
-            readScalar<int32_t>(input, len);
+            property.data.resize(1,'\0');
+            uint32_t len;
+            readScalar<uint32_t>(input, len);
             prt::vector<char> data;
-            data.resize(len);
+            data.resize(len + 1);
             if (len > 0) {
                 input.read(data.data(), len);
             }
             // Convert \0\1 to '::' and reverse the tokens
-            if (strstr(data.data(), BINARY_SEPARATOR) != nullptr) {
-                prt::vector<char*> tokens = string_util::split(data.data(), BINARY_SEPARATOR);
+            if (findBinarySeparator(data.data(), len)) {
+                prt::vector<char*> tokens = splitWithBinarySeparator(data.data(), len);
 
                 bool first = true;
-                for (size_t i = tokens.size(); i != 0; i--) {
+                for (size_t i = tokens.size(); i > 0; --i) {
                     if (!first) {
                         string_util::append(property.data, ASCII_SEPARATOR);
                     }
-                    string_util::append(property.data, tokens[i]);
+                    string_util::append(property.data, tokens[i-1]);
                     first = false;
+                }
+            } else {
+                property.data.resize(data.size());
+                for (size_t i = 0; i < data.size(); i++) {
+                    property.data[i] = reinterpret_cast<char>(data[i]);
                 }
             }
             return property;
         }
         case 'R': {
-            property.type = Property::INT32;
-            property.data = prt::vector<char>(prt::getAlignment(alignof(int32_t)));
-            property.data.resize(sizeof(int32_t));
-            readScalar<int32_t>(input, property.data.data());
-            //input.read(property.data.data(), sizeof(int32_t));
+            property.type = Property::RAW;
+            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(uint32_t)));
+            uint32_t len;
+            readScalar<uint32_t>(input, len);
+            property.data.resize(len);
+            input.read(reinterpret_cast<char*>(property.data.data()), len);
             return property;
         }
         default: {
@@ -323,27 +308,26 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
 }
 
 bool FBX_Document::checkFooter(std::ifstream & input, VERSION version) {
-    char buffer[footerZeroes2];
-    input.read(buffer, footerZeroes1);
+    unsigned char buffer[footerZeroes2];
+    input.read(reinterpret_cast<char*>(buffer), footerZeroes1);
     bool correct = allZero(buffer, footerZeroes1);
 
     int32_t readVersion;
     readScalar<int32_t>(input, readVersion);
-    //input.read(reinterpret_cast<char*>(&readVersion), sizeof(int32_t));
     correct &= (readVersion == int32_t(version));
 
-    input.read(buffer, footerZeroes2);
+    input.read(reinterpret_cast<char*>(buffer), footerZeroes2);
     correct &= allZero(buffer, footerZeroes2);
 
-    input.read(buffer, FOOTER_CODE_SIZE);
-    correct &= checkEqual(buffer, reinterpret_cast<const char*>(EXTENSION), FOOTER_CODE_SIZE);
+    input.read(reinterpret_cast<char*>(buffer), FOOTER_CODE_SIZE);
+    correct &= checkEqual(buffer, EXTENSION, FOOTER_CODE_SIZE);
 
     return correct;
 }
 
-void FBX_Document::generateFooterCode(char *buffer,
-	                                  int year, int month, int day,
-	                                  int hour, int minute, int second, int millisecond) {
+void FBX_Document::generateFooterCode(unsigned char *buffer,
+	                                  int32_t year, int32_t month, int32_t day,
+	                                  int32_t hour, int32_t minute, int32_t second, int32_t millisecond) {
     if(year < 0 || year > 9999)
         assert(false && "Invalid year!");
     if(month < 0 || month > 12)
@@ -358,25 +342,25 @@ void FBX_Document::generateFooterCode(char *buffer,
         assert(false && "Invalid second!");
     if(millisecond < 0 || millisecond >= 1000)
         assert(false && "Invalid millisecond!");
-    char mangledBytes[FOOTER_CODE_SIZE];
-    for (size_t i = 0; i < FOOTER_CODE_SIZE; i++) {
+    unsigned char mangledBytes[FOOTER_CODE_SIZE];
+    for (size_t i = 0; i < FOOTER_CODE_SIZE; ++i) {
         buffer[i] = SOURCE_ID[i];
         mangledBytes[i] = '0';
     }
-    sprintf(&mangledBytes[0],"%02d", second);
-    sprintf(&mangledBytes[2],"%02d", month);
-    sprintf(&mangledBytes[4],"%02d", hour);
-    sprintf(&mangledBytes[6],"%02d", day);
-    sprintf(&mangledBytes[8],"%02d", millisecond/10);
-    sprintf(&mangledBytes[10],"%04d", year);
-    sprintf(&mangledBytes[14],"%02d", minute);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[0]),"%02d", second);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[2]),"%02d", month);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[4]),"%02d", hour);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[6]),"%02d", day);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[8]),"%02d", millisecond/10);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[10]),"%04d", year);
+    sprintf(reinterpret_cast<char*>(&mangledBytes[14]),"%02d", minute);
+
     encrypt(buffer, mangledBytes);
-    encrypt(buffer, reinterpret_cast<const char *>(KEY));
-    encrypt(buffer, mangledBytes);
-                                          
+    encrypt(buffer, KEY);
+    encrypt(buffer, mangledBytes);                                          
 }
 
-void FBX_Document::generateFooterCode(char *buffer) {
+void FBX_Document::generateFooterCode(unsigned char *buffer) {
     static constexpr char timePath[] = "FBXHeaderExtension/CreationTimeStamp";
     const FBX_Node *timestamp =  _root.getRelative(timePath);
     if (timestamp == nullptr) {
@@ -393,11 +377,10 @@ void FBX_Document::generateFooterCode(char *buffer) {
                               getTimestampVar(*timestamp, "Millisecond"));
 }
 
-void FBX_Document::encrypt(char *a, const char *b) {
+void FBX_Document::encrypt(unsigned char *a, const unsigned char *b) {
     char c = 64;
-    for (size_t i = 0; i < FOOTER_CODE_SIZE; i++)
-    {
-        a[i] = (char)(a[i] ^ (char)(c ^ b[i]));
+    for (size_t i = 0; i < FOOTER_CODE_SIZE; ++i) {
+        a[i] = (a[i] ^ (c ^ b[i]));
         c = a[i];
     }
 }
@@ -418,16 +401,64 @@ int32_t FBX_Document::getTimestampVar(FBX_Node const & timestamp, const char *el
     return 0;
 }
 
-bool FBX_Document::allZero(const char  *array, size_t sz) {
+bool FBX_Document::allZero(const unsigned char  *array, size_t sz) {
     for (size_t i = 0; i < sz; i++) {
         if (array[i] != 0) return false;
     }
     return true;
 }
 
-bool FBX_Document::checkEqual(const char *a, const char *b, size_t sz) {
+bool FBX_Document::checkEqual(const unsigned char *a, const unsigned char *b, size_t sz) {
     for (size_t i = 0; i < sz; i++) {
         if (a[i] != b[i]) return false;
     }
     return true;
+}
+
+bool FBX_Document::findBinarySeparator(char *input, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        if (input[i] == '\0') {
+            assert((input[i+1] == reinterpret_cast<const char&>(BINARY_SEPARATOR[1])) && "Invalid binary separator");
+            return true;
+        }
+    }
+    return false;
+}
+
+prt::vector<char*> FBX_Document::splitWithBinarySeparator(char *input, size_t length) {
+    prt::vector<char*> token;
+    if (length == 0) return token;
+    token.push_back(input);
+    for (size_t i = 0; i < length; i++) {
+        if (input[i] == '\0') {
+            assert((input[i+1] == reinterpret_cast<const char&>(BINARY_SEPARATOR[1])) && "Invalid binary separator");
+            i += 2;
+            token.push_back(&input[i]);
+        }
+    }
+    return token;
+}
+
+bool FBX_Document::decompress(prt::vector<unsigned char> const & compressed, 
+                              prt::vector<unsigned char> & uncompressed, size_t uncompressedSize) {
+    // Thanks: https://gist.github.com/arq5x/5315739
+    // zlib struct
+    z_stream infstream;
+    infstream.zalloc = Z_NULL;
+    infstream.zfree = Z_NULL;
+    infstream.opaque = Z_NULL;
+    // setup "compress" as the input and "uncompressed" as the compressed output
+    infstream.avail_in = uInt(compressed.size()); // size of input
+    infstream.next_in = reinterpret_cast<Bytef*>(compressed.data()); // input char array
+
+    uncompressed.resize(uncompressedSize);
+    infstream.avail_out = uInt(uncompressed.size()); // size of output
+    infstream.next_out = reinterpret_cast<Bytef*>(uncompressed.data()); // output char array
+     
+    // the actual DE-compression work.
+    inflateInit(&infstream);
+    inflate(&infstream, Z_NO_FLUSH);
+    auto res = inflateEnd(&infstream);
+    assert((res == Z_OK) && "Could not decompress!");
+    return res == Z_OK;
 }

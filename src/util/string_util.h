@@ -13,22 +13,37 @@ namespace string_util {
 prt::vector<std::string> splitString(const std::string& input, char c);
 
 /**
- * splits c string by delimiter
- * @param input input c string (will be modified by 
+ * splits null terminated string by delimiter
+ * @param input null terminated input string (will be modified by 
  *              inserting null characters into start 
  *              of delimiter occurences)
- * @param delimiter delimiter c string
+ * @param delimiter null terminated delimiter string
  * @return vector containing pointer into split 
  *         locations in original string
  */
 prt::vector<char *> split(char *input, const char *delimiter);
 
 /**
+ * splits null terminated string by binary token
+ * @param input null terminated input string, potentially containing
+ *              bytes with value 0x00 before null termination.
+ *              (will be modified by 
+ *              inserting null characters into start 
+ *              of delimiter occurences)
+ * @param inputLength length of input string
+ * @param binaryToken array of bytes
+ * @param tokenLength length of byte array
+ * @return vector containing pointer into split 
+ *         locations in original string
+ */
+
+/**
  * Appends c string to char vector 
- * @param str char vector
- * @param app string to be appended 
+ * @param str null terminated vector of char
+ * @param app null terminated string to be appended 
  */
 void append(prt::vector<char> & str, const char* app);
+void append(prt::vector<unsigned char> & str, const char* app);
 
 };
 
