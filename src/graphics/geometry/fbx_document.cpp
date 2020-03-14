@@ -16,7 +16,7 @@ FBX_Document::FBX_Document(const char* file) {
     // read version
     readScalar<uint32_t>(input, reinterpret_cast<unsigned char*>(&version));
     // Read nodes
-    while(readNode(input, _root.nodes, version));
+    while(readNode(input, _root.children, version));
 
      /* Since the footer of FBX is not entirely known     
     // Read footer code 
@@ -41,7 +41,7 @@ FBX_Document::FBX_Document(const char* file) {
 }
 
 const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) const {
-    for (auto const & n : nodes) {
+    for (auto const & n : children) {
         if (strcmp(n.getName(), name) == 0) {
            return &n;
         }
@@ -120,7 +120,6 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     nodes.push_back({});
     FBX_Node & node = nodes.back();
     node.setName(name);
-
     auto propertyEnd = input.tellg() + propertyListLen;
     // Read properties
     for (int64_t i = 0; i < numProperties; ++i) {
@@ -138,7 +137,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     }
 
     if (listLen > 0) {
-        while(readNode(input, node.nodes, version));
+        while(readNode(input, node.children, version));
         if (input.tellg() != endOffset) {
             assert(false && "Too many bytes in node!");
         }
@@ -461,4 +460,112 @@ bool FBX_Document::decompress(prt::vector<unsigned char> const & compressed,
     auto res = inflateEnd(&infstream);
     assert((res == Z_OK) && "Could not decompress!");
     return res == Z_OK;
+}
+
+void FBX_Document::FBX_Node::print() const {
+    printRecursive(0);
+}
+
+void FBX_Document::FBX_Node::printRecursive(size_t indent) const {
+    for (size_t i = 0; i < indent; ++i) {
+        std::cout << "    ";
+    }
+    std::cout << _name << " {";
+    for (auto const & property : properties) {
+        property.print();
+    }
+    std::cout << " }" << std::endl;
+    for (auto const & child : children) {
+        child.printRecursive(indent + 1);
+    }
+}
+
+void FBX_Document::Property::print() const {
+    enum TYPE {
+        CHAR = 0,
+        INT16 = 1,
+        INT32 = 2,
+        INT64 = 3,
+        FLOAT = 4,
+        DOUBLE = 5,
+        STRING = 6,
+        ARRAY_FLOAT = 7,
+        ARRAY_DOUBLE = 8,
+        ARRAY_INT32 = 9,
+        ARRAY_INT64 = 10,
+        ARRAY_BOOL = 11,
+        RAW = 12,
+        TOTAL_NUM_TYPES = 13
+    };
+    switch (type) {
+        case TYPE::CHAR:
+            std::cout << " (Char: \'"
+                      << *reinterpret_cast<const char*>(&data[0])
+                      << "\')";
+            break;
+        case TYPE::INT16:
+            std::cout << " (int16: "
+                      << *reinterpret_cast<const int16_t*>(data.data())
+                      << ")";
+            break;
+        case TYPE::INT32:
+            std::cout << " (int32: "
+                      << *reinterpret_cast<const int32_t*>(data.data())
+                      << ")";
+            break;
+        case TYPE::INT64:
+            std::cout << " (int64: "
+                      << *reinterpret_cast<const int64_t*>(data.data())
+                      << ")";
+            break;
+        case TYPE::FLOAT:
+            std::cout << " (float: "
+                      << *reinterpret_cast<const float*>(data.data())
+                      << ")";
+            break;
+        case TYPE::DOUBLE:
+            std::cout << " (double: "
+                      << *reinterpret_cast<const double*>(data.data())
+                      << ")";
+            break;
+        case TYPE::STRING:
+            std::cout << " (string: \""
+                      << reinterpret_cast<const char*>(data.data())
+                      << "\")";
+            break;
+        case TYPE::ARRAY_FLOAT:
+            std::cout << " (float["
+                      << data.size() / sizeof(float)
+                      << "])";
+            break;
+        case TYPE::ARRAY_DOUBLE:
+            std::cout << " (double["
+                      << data.size() / sizeof(double)
+                      << "])";
+            break;
+        case TYPE::ARRAY_INT32:
+            std::cout << " (int32["
+                    << data.size() / sizeof(int32_t)
+                    << "])";
+            break;
+        case TYPE::ARRAY_INT64:
+            std::cout << " (int64["
+                      << data.size() / sizeof(int64_t)
+                      << "])";
+            break;
+        case TYPE::ARRAY_BOOL:
+            std::cout << " (bool["
+                      << data.size()
+                      << "])";
+            break;
+        case TYPE::RAW:
+            std::cout << " (byte["
+                      << data.size()
+                      << "])";
+            break;
+        default:
+            std::cout << "(INVALID TYPE)";
+            break;
+
+    }
 }

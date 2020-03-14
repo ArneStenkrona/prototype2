@@ -11,7 +11,6 @@
 #include "src/config/prototype2Config.h"
 
 #include <fstream>
-
 class FBX_Document {
 public:
     /**
@@ -19,6 +18,9 @@ public:
      * @param: file file path
      */
     FBX_Document(const char* file); 
+    class FBX_Node;
+    FBX_Node const & getRoot() const { return _root; }
+    const FBX_Node * getNode(const char* path) const { return _root.getRelative(path); }
 
     struct Property {
         enum TYPE {
@@ -54,21 +56,36 @@ public:
 
         TYPE type = TOTAL_NUM_TYPES;
         prt::vector<unsigned char> data;
+
+        void print() const;
     };
 
     class FBX_Node {
     public:
-        prt::vector<FBX_Document::Property> properties;
-        prt::vector<FBX_Node> nodes;
-
         inline const char* getName() const { return _name; }
+        const FBX_Node * find(const char* name) const;
+        const FBX_Node * getRelative(const char* path) const;
+
+        FBX_Document::Property const & getProperty(size_t i) const { return properties[i]; }
+        prt::vector<FBX_Document::Property> const & getProperties() const { return properties; }
+
+        FBX_Node const & getChild(size_t i) const { return children[i]; };
+        prt::vector<FBX_Node> const & getChildren() const { return children; };
+
+        void print() const;
+    private:
+        prt::vector<FBX_Document::Property> properties;
+        prt::vector<FBX_Node> children;
+
+        char _name[256];
+
         void setName(const char* name) {
             strcpy(_name, name);
         }
-        const FBX_Node * find(const char* name) const;
-        const FBX_Node * getRelative(const char* path) const;
-    private:
-        char _name[256];
+
+        void printRecursive(size_t indent) const;
+
+        friend class FBX_Document;
     };
 
 private:
