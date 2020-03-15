@@ -142,7 +142,11 @@ void LevelMap::loadModel(Model& model) {
     Mesh& mesh = model.meshes.back();
     mesh.startIndex = 0;
     mesh.numIndices = ii;
-    createTexture(mesh.texture, texRes);
+    mesh.materialIndex = model.materials.size();
+    model.materials.push_back({});
+    auto & mat = model.materials.back();
+    strcpy(mat.fragmentShader, "cel.frag");
+    createTexture(mat.texture, texRes);
 }
 
 void LevelMap::createTexture(Texture& texture, uint32_t resolution) {

@@ -95,14 +95,14 @@ struct Texture {
 struct Material {
     char name[256];
     char fragmentShader[256];
+    Texture texture;
 };
 
 struct Mesh {
     size_t startIndex;
     size_t numIndices;
     //char materialName[256];
-    Material material; 
-    Texture texture;
+    int32_t materialIndex = -1;
     char name[256];
 };
 
@@ -110,6 +110,7 @@ struct Mesh {
 
 struct Model {
     prt::vector<Mesh> meshes;
+    prt::vector<Material> materials;
     prt::vector<Vertex> vertexBuffer;
     prt::vector<uint32_t> indexBuffer;
     // char materialFilePath[256];
@@ -118,6 +119,7 @@ struct Model {
 
 private:
     void parseMeshFBX(FBX_Document::FBX_Node const & node);
+    void parseMaterialFBX(FBX_Document::FBX_Node const & node);
     void parseTextureFBX(FBX_Document::FBX_Node const & node);
 };
 

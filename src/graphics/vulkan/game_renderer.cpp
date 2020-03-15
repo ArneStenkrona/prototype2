@@ -18,13 +18,14 @@ void GameRenderer::createMaterialPipelines(prt::vector<Model> const & models) {
     strcat(vert, "shaders/model.vert.spv");
     for (auto & model : models) {
         for (auto & mesh : model.meshes) {
-            if (shaderToIndex.find(mesh.material.fragmentShader) == shaderToIndex.end()) {
+            auto const & material = model.materials[mesh.materialIndex];
+            if (shaderToIndex.find(material.fragmentShader) == shaderToIndex.end()) {
                 char frag[256] = RESOURCE_PATH;
                 strcat(frag, "shaders/");
-                strcat(frag, mesh.material.fragmentShader);
+                strcat(frag, material.fragmentShader);
                 strcat(frag, ".spv");
                 createMeshMaterialPipeline(assetIndex, vert, frag);
-                shaderToIndex[mesh.material.fragmentShader] = meshMaterialPipelineIndices.back();
+                shaderToIndex[material.fragmentShader] = meshMaterialPipelineIndices.back();
             }
         }
     }
@@ -297,12 +298,13 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     ass.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i].meshes.size(); j++) {
+            auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
             createTextureImage(ass.textureImages.images[numTex], 
                                ass.textureImages.imageMemories[numTex], 
-                               models[i].meshes[j].texture);
+                               material.texture);
             createTextureImageView(ass.textureImages.imageViews[numTex], 
                                    ass.textureImages.images[numTex], 
-                                   models[i].meshes[j].texture.mipLevels);
+                                   material.texture.mipLevels);
             numTex++;
         }
     }
@@ -310,10 +312,10 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     for (size_t i = numTex; i < ass.textureImages.images.size(); i++) {
         createTextureImage(ass.textureImages.images[i], 
                            ass.textureImages.imageMemories[i], 
-                           models[0].meshes.back().texture);
+                           models[0].materials.back().texture);
         createTextureImageView(ass.textureImages.imageViews[i], 
                                ass.textureImages.images[i], 
-                               models[0].meshes.back().texture.mipLevels);
+                               models[0].materials.back().texture.mipLevels);
     }
 }
 
@@ -363,7 +365,8 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
             drawCall.pushConstants[1] = imgIdxOffsets[modelIndices[i]] + j;
             drawCall.firstIndex = indexOffsets[modelIndices[i]] + model.meshes[j].startIndex;
             drawCall.indexCount = model.meshes[j].numIndices;
-            size_t index = shaderToIndex[model.meshes[j].material.fragmentShader];
+            auto const & material = model.materials[model.meshes[j].materialIndex];
+            size_t index = shaderToIndex[material.fragmentShader];
             materialPipelines[index].drawCalls.push_back(drawCall);
         }
     }
