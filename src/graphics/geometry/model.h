@@ -6,6 +6,9 @@
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
+#include "src/container/hash_map.h"
+#include "src/container/hash_set.h"
+
 
 #include <vulkan/vulkan.h>
 
@@ -102,7 +105,7 @@ struct Mesh {
     size_t startIndex;
     size_t numIndices;
     //char materialName[256];
-    int32_t materialIndex = -1;
+    int32_t materialIndex = 0;
     char name[256];
 };
 
@@ -120,7 +123,16 @@ struct Model {
 private:
     void parseMeshFBX(FBX_Document::FBX_Node const & node);
     void parseMaterialFBX(FBX_Document::FBX_Node const & node);
-    void parseTextureFBX(FBX_Document::FBX_Node const & node);
+
+    void connectFBX(FBX_Document::FBX_Node const & node, 
+                    prt::hash_set<int64_t> modelIds,
+                    prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
+                    prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
+                    prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
+                    const char *path);
+
+
+    bool loaded = false;
 };
 
 #endif

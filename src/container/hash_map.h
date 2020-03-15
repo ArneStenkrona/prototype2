@@ -53,6 +53,7 @@ namespace prt {
     class hash_map {
     public:
         class iterator;
+        class const_iterator;
 
         hash_map()
         : hash_map(ContainerAllocator::getDefaultContainerAllocator()) {}
@@ -136,7 +137,21 @@ namespace prt {
 
         inline size_t size() const { return _size; }
         inline bool empty() const { return _size == 0; }
+        
+        const_iterator find(const K& key) const {
+            size_t ind = hashIndex(key);
+            size_t counter = 0;
+            
+            while(_vector[ind]._present && counter < _vector.size()) {
+                if (_vector[ind].key() == key) {
+                    return const_iterator(&_vector[ind], _vector.end());
+                }
 
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                counter++;
+            }
+            return end();
+        }
         iterator find(const K& key) {
             size_t ind = hashIndex(key);
             size_t counter = 0;
@@ -188,6 +203,54 @@ namespace prt {
             hash_map_node<K, V>* _end;    
         };
         
+        class const_iterator {
+        public:        
+            const_iterator(const hash_map_node<K, V>* current, const hash_map_node<K, V>* end)
+            : _current(current), _end(end) {}
+
+            const const_iterator& operator++() {
+                while (_current != _end) {
+                    _current++;
+                    if (_current == _end || _current->_present) {
+                        return *this;
+                    } 
+                }
+                return *this; 
+            }
+
+            const_iterator operator++(int) {
+                iterator result = *this; 
+                ++(*this); 
+                return result;
+            }
+
+            bool operator==(const const_iterator& other) {
+                return _current == other._current;
+            }
+
+            bool operator!=(const const_iterator& other) {
+                return !(*this == other);
+            }
+
+            const hash_map_node<K, V>& operator*() { return *_current; }
+            const hash_map_node<K, V>* operator->() { return _current; }
+        private:
+            const hash_map_node<K, V>* _current;
+            const hash_map_node<K, V>* _end;    
+        };
+
+        const_iterator begin() const {
+            for (size_t i = 0; i < _vector.size(); i++) {
+                if (_vector[i]._present) {
+                    return const_iterator(&_vector[i], _vector.end());
+                }
+            }
+            return end();
+        }
+        const_iterator end() const {
+            return const_iterator(_vector.end(), _vector.end());
+        }
+
         iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
                 if (_vector[i]._present) {

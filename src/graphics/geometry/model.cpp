@@ -1,7 +1,5 @@
 #include "model.h"
 
-#include "src/container/hash_map.h"
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
@@ -46,6 +44,7 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
 }
 
 void Model::loadOBJ(const char* path) {
+    assert(!loaded && "Model is already loaded!");
     FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
@@ -244,6 +243,7 @@ void Model::loadOBJ(const char* path) {
         strcpy(++ptr, mtlToTexture[material.name].c_str());
         material.texture.load(texturePath);
     }
+    loaded = true;
 }   
 
 void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
@@ -368,31 +368,102 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     }
 }
 
-void Model::parseMaterialFBX(FBX_Document::FBX_Node const & /*node*/) {
-
+void Model::parseMaterialFBX(FBX_Document::FBX_Node const & node) {
+    materials.push_back({});
+    Material & material = materials.back();
+    const char *name = reinterpret_cast<const char*>(node.getProperty(1).data.data());
+    strcpy(material.name, name);
+    strcpy(material.fragmentShader, "cel.frag");
 }
 
-void Model::parseTextureFBX(FBX_Document::FBX_Node const & /*node*/) {
-    // const char *filename = reinterpret_cast<const char*>(node.find("RelativeFileName")->getProperty(0).data.data());
+void Model::connectFBX(FBX_Document::FBX_Node const & node, 
+                       prt::hash_set<int64_t> modelIds,
+                       prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
+                       prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
+                       prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
+                       const char *path) {
+    auto const & children = node.getChildren();
+    prt::hash_map<int64_t, int64_t> modelIdToGeometryId;
+    prt::hash_map<int64_t, int64_t> materialIdToModelId;
+    for (auto const & child : children) {
+        int64_t firstId = *reinterpret_cast<int64_t*>(child.getProperty(1).data.data());
+        int64_t secondId = *reinterpret_cast<int64_t*>(child.getProperty(2).data.data());
+        if (modelIds.find(secondId) != modelIds.end()) {
+            modelIdToGeometryId.insert(secondId, firstId);
+        } else if (materialIdToMaterialIndex.find(firstId) != materialIdToMaterialIndex.end()) {
+            materialIdToModelId.insert(firstId, secondId);
+        }
+    }
+
+    for (auto const & child : children) {
+        auto const & properties = child.getProperties();
+        if (properties.size() >= 4) {
+            const char *str = reinterpret_cast<const char*>(properties[3].data.data());
+            if (strcmp(str, "DiffuseColor")) {
+                int64_t texId = *reinterpret_cast<int64_t*>(child.getProperty(1).data.data());
+                int64_t materialId = *reinterpret_cast<int64_t*>(child.getProperty(2).data.data());
+                const char *tex = textureIdToTexturePath.find(texId)->value();
+                size_t materialIndex = materialIdToMaterialIndex.find(materialId)->value();
+                Material & material = materials[materialIndex];
+
+                char texturePath[256];
+                strcpy(texturePath, path);
+                char* ptr = strrchr(texturePath, '/');
+                strcpy(++ptr, tex);
+                material.texture.load(texturePath);
+
+                int64_t modelId = materialIdToModelId.find(materialId)->value();
+                int64_t geometryId = modelIdToGeometryId.find(modelId)->value();
+                size_t meshIndex = geometryIdToMeshIndex.find(geometryId)->value();
+                meshes[meshIndex].materialIndex = materialIndex;
+            }
+        } 
+    }
 }
 
-void Model::loadFBX(const char* path) {
+void Model::loadFBX(const char *path) {
+    assert(!loaded && "Model is already loaded!");
     FBX_Document doc(path);
     auto const & objects = doc.getNode("Objects");
     assert(objects && "FBX file must contain Objects node!");
     auto const & children = objects->getChildren();
 
+    prt::hash_set<int64_t> modelIds;
+    prt::hash_map<int64_t, size_t> geometryIdToMeshIndex;
+    prt::hash_map<int64_t, size_t> materialIdToMaterialIndex;
+    prt::hash_map<int64_t, const char*> textureIdToTexturePath;
     for (auto const & child : children) {
         if (strcmp(child.getName(), "Geometry") == 0) {
             const char *type = reinterpret_cast<const char*>(child.getProperty(2).data.data());
             if (strcmp(type, "Mesh") == 0) {
+                int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+                size_t index = meshes.size();
+                geometryIdToMeshIndex.insert(id, index);
                 parseMeshFBX(child);
-            } else if (strcmp(type, "Material") == 0) {
-                parseMaterialFBX(child);
-            } else if (strcmp(type, "Texture") == 0) {
-                parseTextureFBX(child);
+            } 
+        } else if (strcmp(child.getName(), "Model") == 0) {
+            const char *type = reinterpret_cast<const char*>(child.getProperty(2).data.data());
+            if (strcmp(type, "Mesh") == 0) {
+                int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+                modelIds.insert(id);
             }
+        } else if (strcmp(child.getName(), "Material") == 0) {
+            int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+            size_t index = materials.size();
+            materialIdToMaterialIndex.insert(id, index);
+            parseMaterialFBX(child);
+        } else if (strcmp(child.getName(), "Texture") == 0) {
+            int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+            const char *filename = reinterpret_cast<const char*>(child.find("RelativeFilename")->getProperty(0).data.data());
+            textureIdToTexturePath.insert(id, filename);
+        } else if (strcmp(child.getName(), "Connections") == 0) {
+            connectFBX(child, 
+                       modelIds, 
+                       geometryIdToMeshIndex, 
+                       materialIdToMaterialIndex, 
+                       textureIdToTexturePath,
+                       path);
         }
     }
-    
+    loaded = true;
 }
