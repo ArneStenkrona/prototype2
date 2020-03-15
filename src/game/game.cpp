@@ -23,7 +23,8 @@ Game::Game()
     _input.init(_gameRenderer.getWindow());
     loadScene();
 
-    FBX_Document("/Users/arnestenkrona/Documents/repositories/prototype2/res/models/monkey/monkey.fbx");
+    Model m;
+    m.loadFBX("/Users/arnestenkrona/Documents/repositories/prototype2/res/models/monkey/monkey.fbx");
 }
 
 void Game::loadScene() {

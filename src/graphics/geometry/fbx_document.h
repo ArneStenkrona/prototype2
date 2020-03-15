@@ -57,7 +57,7 @@ public:
         TYPE type = TOTAL_NUM_TYPES;
         prt::vector<unsigned char> data;
 
-        void print() const;
+        void print(std::ostream & out) const;
     };
 
     class FBX_Node {
@@ -72,7 +72,7 @@ public:
         FBX_Node const & getChild(size_t i) const { return children[i]; };
         prt::vector<FBX_Node> const & getChildren() const { return children; };
 
-        void print() const;
+        void print(std::ostream & out) const;
     private:
         prt::vector<FBX_Document::Property> properties;
         prt::vector<FBX_Node> children;
@@ -83,7 +83,7 @@ public:
             strcpy(_name, name);
         }
 
-        void printRecursive(size_t indent) const;
+        void printRecursive(std::ostream & out, size_t indent) const;
 
         friend class FBX_Document;
     };

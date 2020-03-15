@@ -160,7 +160,7 @@ void Model::loadOBJ(const char* path) {
                   vertexBufferTemp[uvIndex[2] - 1].texCoord }
             };
 
-            for (unsigned int i = 0; i < 3; i++) {
+            for (size_t i = 0; i < 3; ++i) {
                 if (uniqueVertices.find(vertices[i]) == uniqueVertices.end()) {
                     uniqueVertices[vertices[i]] = static_cast<uint32_t>(vertexCount++);
                 }
@@ -175,7 +175,6 @@ void Model::loadOBJ(const char* path) {
     size_t numVertex = uniqueVertices.size();
     vertexBuffer.resize(numVertex);
     
-    indexCount = 0;
     for (auto it = uniqueVertices.begin(); it != uniqueVertices.end(); it++) {
         vertexBuffer[it->value()] = it->key();
     }
@@ -241,3 +240,101 @@ void Model::loadOBJ(const char* path) {
         mesh.texture.load(texturePath);
     }
 }   
+
+void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
+    meshes.push_back({});
+    Mesh & mesh = meshes.back();
+    char *name = reinterpret_cast<char*>(node.getProperty(1).data.data());
+    strcpy(mesh.name, name);
+    prt::vector<unsigned char> const & vertices = node.find("Vertices")->getProperty(0).data;
+    prt::vector<unsigned char> const & indices = node.find("PolygonVertexIndex")->getProperty(0).data;
+    prt::vector<unsigned char> const & normals = node.find("LayerElementNormal")->find("Normals")->getProperty(0).data;
+    prt::vector<unsigned char> const & uvs = node.find("LayerElementUV")->find("UV")->getProperty(0).data;
+    prt::vector<unsigned char> const & uvIndices = node.find("LayerElementUV")->find("UVIndex")->getProperty(0).data;
+
+    prt::vector<Vertex> vertexBufferTemp;
+    vertexBufferTemp.resize(indices.size() / sizeof(int32_t));
+    prt::hash_map<Vertex, uint32_t> uniqueVertices;
+
+    double* vert = reinterpret_cast<double*>(vertices.data());
+    size_t vi = 0;
+    for (size_t i = 0; i < vertices.size() / sizeof(double); i += 3) {
+        new (&vertexBufferTemp[vi].pos.x) float(vert[i]);
+        new (&vertexBufferTemp[vi].pos.y) float(vert[i+1]);
+        new (&vertexBufferTemp[vi].pos.z) float(vert[i+2]);
+        ++vi;
+    }
+    double* norm = reinterpret_cast<double*>(normals.data());
+    vi = 0;
+    for (size_t i = 0; i < normals.size() / sizeof(double); i += 3) {
+        new (&vertexBufferTemp[vi].normal.x) float(norm[i]);
+        new (&vertexBufferTemp[vi].normal.y) float(norm[i+1]);
+        new (&vertexBufferTemp[vi].normal.z) float(norm[i+2]);
+        ++vi;
+    }
+    double* texc = reinterpret_cast<double*>(uvs.data());
+    vi = 0;
+    for (size_t i = 0; i < uvs.size() / sizeof(double); i += 2) {
+        new (&vertexBufferTemp[vi].texCoord.x) float(texc[i]);
+        new (&vertexBufferTemp[vi].texCoord.y) float(texc[i+1]);
+        ++vi;
+    }
+
+    size_t indexCount = indexBuffer.size();
+    size_t vertexCount = vertexBuffer.size();
+    indexBuffer.resize(indexBuffer.size() + indices.size() / sizeof(uint32_t));
+    int32_t* ind = reinterpret_cast<int32_t*>(indices.data());
+    int32_t* uvInd = reinterpret_cast<int32_t*>(uvIndices.data());  
+
+    for (size_t i = 0; i < indices.size() / sizeof(int32_t); i += 3) {
+        assert((ind[i+2] < 0) && "Face is not triangular!");
+        uint32_t i0 = uint32_t(ind[i]);
+        uint32_t i1 = uint32_t(ind[i+1]);
+        uint32_t i2 = uint32_t(-ind[i+2] - 1);
+
+        Vertex v[3] =  {
+            { vertexBufferTemp[i0].pos,
+              vertexBufferTemp[i].normal,
+              vertexBufferTemp[uvInd[i0]].texCoord },
+            { vertexBufferTemp[i1].pos,
+              vertexBufferTemp[i+1].normal,
+              vertexBufferTemp[uvInd[i1]].texCoord },
+            { vertexBufferTemp[i2].pos,
+              vertexBufferTemp[i+2].normal,
+              vertexBufferTemp[uvInd[i2]].texCoord },
+        };
+        for (size_t i = 0; i < 3; ++i) {
+            if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
+                uniqueVertices[v[i]] = static_cast<uint32_t>(vertexCount++);
+            }
+            indexBuffer[indexCount++] = uniqueVertices[v[i]];
+        }  
+    }
+    vertexBuffer.resize(vertexCount);
+    for (auto const & entry : uniqueVertices) {
+        vertexBuffer[entry.value()] = entry.key();
+    }
+}
+
+void Model::parseTextureFBX(FBX_Document::FBX_Node const & /*node*/) {
+
+}
+
+void Model::loadFBX(const char* path) {
+    FBX_Document doc(path);
+    auto const & objects = doc.getNode("Objects");
+    assert(objects && "FBX file must contain Objects node!");
+    auto const & children = objects->getChildren();
+
+    for (auto const & child : children) {
+        if (strcmp(child.getName(), "Geometry") == 0) {
+            char *type = reinterpret_cast<char*>(child.getProperty(2).data.data());
+            if (strcmp(type, "Mesh") == 0) {
+                parseMeshFBX(child);
+            } else if (strcmp(type, "Texture") == 0) {
+                parseTextureFBX(child);
+            }
+        }
+    }
+    
+}

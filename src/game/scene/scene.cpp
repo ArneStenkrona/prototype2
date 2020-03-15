@@ -17,7 +17,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
      _gravity(1.0f) {
     resetTransforms();
 
-    uint32_t islandID = _assetManager.getModelManager().getModelID("island/island");
+    uint32_t islandID = _assetManager.getModelManager().getModelID("island/island.obj");
 
     _staticSolidEntities.modelIDs[0] = islandID;
     _staticSolidEntities.transforms[0].position = { 0.0f, -20.0f, 0.0f };
@@ -28,7 +28,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
 }
 
 void Scene::initPlayer() {
-    uint32_t sphere_index = _assetManager.getModelManager().getModelID("monkey/monkey");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("monkey/monkey.obj");
 
     _playerEntity.modelID = sphere_index;
     _playerEntity.acceleration = 1.0f;

@@ -27,6 +27,14 @@ namespace prt {
             assert(_present);
             return reinterpret_cast<V&>(_value);
         }
+        K const & key() const {
+            assert(_present);
+            return reinterpret_cast<K const&>(_key);
+        }
+        V const & value() const {
+            assert(_present);
+            return reinterpret_cast<V const&>(_value);
+        }
         
     private:
         alignas(K) char _key[sizeof(K)];

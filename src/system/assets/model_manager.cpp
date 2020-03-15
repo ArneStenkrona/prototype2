@@ -40,10 +40,10 @@ void ModelManager::addModelPaths(const char* directory) {
                 subdirectories.push_back(subdirectory);
             } else if (entry->d_type == DT_REG) {
                 const char *dot = strrchr(entry->d_name,'.');
-                if (dot && strcmp(dot, ".obj") == 0) {
+                if (dot && (strcmp(dot, ".obj") == 0 || strcmp(dot, ".fbx") == 0)) {
                     std::string path = (std::string(directory)) + "/" + entry->d_name;
-                    // name of model is the relative path from the model directory - ".obj"
-                    size_t nameLength = path.size() - _modelDirectory.size() - 4;
+                   
+                    size_t nameLength = path.size() - _modelDirectory.size();
                     std::string modelName = path.substr(_modelDirectory.size(), nameLength);
                     _modelPaths.insert(modelName, path);
                     _idToName.insert(nextID, modelName);
@@ -85,7 +85,13 @@ void ModelManager::loadModels(const prt::vector<uint32_t>& modelIDs,
     getPaths(modelIDs, modelPaths);
     models.resize(modelIDs.size());
     for (uint32_t i = 0; i < modelPaths.size(); i++) {
-        models[i].loadOBJ(modelPaths[i].c_str());
+        const char *dot = strrchr(modelPaths[i].c_str(),'.');
+        assert(dot && "Model name must end with file extension!");
+        if (strcmp(dot, ".obj") == 0) {
+            models[i].loadOBJ(modelPaths[i].c_str());
+        } else if (strcmp(dot, ".fbx") == 0){
+            models[i].loadFBX(modelPaths[i].c_str());
+        }
     }
 }
 

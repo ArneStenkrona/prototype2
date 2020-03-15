@@ -176,6 +176,7 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
         if ((flg & (1 << 5)) != 0) {
             assert(false && "Invalid compression flags; dictionary not supported!");
         }
+        input.seekg(-2, std::ios_base::cur);
         // read compressed data
         prt::vector<unsigned char> compressedBuffer;
         compressedBuffer.resize(compressedLen);
@@ -184,7 +185,6 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
         decompress(compressedBuffer, uncompressedBuffer, len*primSz);
         
         ret.data = uncompressedBuffer;
-
     } else {
         ret.data.resize(len*primSz);
         input.read(reinterpret_cast<char*>(ret.data.data()), len*primSz);
@@ -451,36 +451,39 @@ bool FBX_Document::decompress(prt::vector<unsigned char> const & compressed,
     infstream.next_in = reinterpret_cast<Bytef*>(compressed.data()); // input char array
 
     uncompressed.resize(uncompressedSize);
+
     infstream.avail_out = uInt(uncompressed.size()); // size of output
     infstream.next_out = reinterpret_cast<Bytef*>(uncompressed.data()); // output char array
      
     // the actual DE-compression work.
-    inflateInit(&infstream);
-    inflate(&infstream, Z_NO_FLUSH);
-    auto res = inflateEnd(&infstream);
-    assert((res == Z_OK) && "Could not decompress!");
-    return res == Z_OK;
+    auto res1 = inflateInit(&infstream);
+    auto res2 = inflate(&infstream, Z_NO_FLUSH);
+    auto res3 = inflateEnd(&infstream);
+
+    bool success = res1 == Z_OK && res2 == Z_STREAM_END && res3 == Z_OK;
+    assert(success && "Could not decompress!");
+    return success;
 }
 
-void FBX_Document::FBX_Node::print() const {
-    printRecursive(0);
+void FBX_Document::FBX_Node::print(std::ostream & out) const {
+    printRecursive(out, 0);
 }
 
-void FBX_Document::FBX_Node::printRecursive(size_t indent) const {
+void FBX_Document::FBX_Node::printRecursive(std::ostream & out, size_t indent) const {
     for (size_t i = 0; i < indent; ++i) {
-        std::cout << "    ";
+        out << "    ";
     }
-    std::cout << _name << " {";
+    out << _name << " {";
     for (auto const & property : properties) {
-        property.print();
+        property.print(out);
     }
-    std::cout << " }" << std::endl;
+    out << " }" << std::endl;
     for (auto const & child : children) {
-        child.printRecursive(indent + 1);
+        child.printRecursive(out, indent + 1);
     }
 }
 
-void FBX_Document::Property::print() const {
+void FBX_Document::Property::print(std::ostream & out) const {
     enum TYPE {
         CHAR = 0,
         INT16 = 1,
@@ -499,72 +502,72 @@ void FBX_Document::Property::print() const {
     };
     switch (type) {
         case TYPE::CHAR:
-            std::cout << " (Char: \'"
+            out << " (Char: \'"
                       << *reinterpret_cast<const char*>(&data[0])
                       << "\')";
             break;
         case TYPE::INT16:
-            std::cout << " (int16: "
+            out << " (int16: "
                       << *reinterpret_cast<const int16_t*>(data.data())
                       << ")";
             break;
         case TYPE::INT32:
-            std::cout << " (int32: "
+            out << " (int32: "
                       << *reinterpret_cast<const int32_t*>(data.data())
                       << ")";
             break;
         case TYPE::INT64:
-            std::cout << " (int64: "
+            out << " (int64: "
                       << *reinterpret_cast<const int64_t*>(data.data())
                       << ")";
             break;
         case TYPE::FLOAT:
-            std::cout << " (float: "
+            out << " (float: "
                       << *reinterpret_cast<const float*>(data.data())
                       << ")";
             break;
         case TYPE::DOUBLE:
-            std::cout << " (double: "
+            out << " (double: "
                       << *reinterpret_cast<const double*>(data.data())
                       << ")";
             break;
         case TYPE::STRING:
-            std::cout << " (string: \""
+            out << " (string: \""
                       << reinterpret_cast<const char*>(data.data())
                       << "\")";
             break;
         case TYPE::ARRAY_FLOAT:
-            std::cout << " (float["
+            out << " (float["
                       << data.size() / sizeof(float)
                       << "])";
             break;
         case TYPE::ARRAY_DOUBLE:
-            std::cout << " (double["
+            out << " (double["
                       << data.size() / sizeof(double)
                       << "])";
             break;
         case TYPE::ARRAY_INT32:
-            std::cout << " (int32["
+            out << " (int32["
                     << data.size() / sizeof(int32_t)
                     << "])";
             break;
         case TYPE::ARRAY_INT64:
-            std::cout << " (int64["
+            out << " (int64["
                       << data.size() / sizeof(int64_t)
                       << "])";
             break;
         case TYPE::ARRAY_BOOL:
-            std::cout << " (bool["
+            out << " (bool["
                       << data.size()
                       << "])";
             break;
         case TYPE::RAW:
-            std::cout << " (byte["
+            out << " (byte["
                       << data.size()
                       << "])";
             break;
         default:
-            std::cout << "(INVALID TYPE)";
+            out << "(INVALID TYPE)";
             break;
 
     }

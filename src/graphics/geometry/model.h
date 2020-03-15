@@ -2,6 +2,7 @@
 #define MODEL_H
 
 #include "src/graphics/geometry/parametric_shapes.h"
+#include "src/graphics/geometry/fbx_document.h"
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
@@ -113,6 +114,11 @@ struct Model {
     prt::vector<uint32_t> indexBuffer;
     // char materialFilePath[256];
     void loadOBJ(const char* path);
+    void loadFBX(const char* path);
+
+private:
+    void parseMeshFBX(FBX_Document::FBX_Node const & node);
+    void parseTextureFBX(FBX_Document::FBX_Node const & node);
 };
 
 #endif
