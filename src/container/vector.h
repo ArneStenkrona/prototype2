@@ -12,17 +12,17 @@ namespace prt
     template<class T>
     class vector {
     public:
-        vector(ContainerAllocator& allocator)
+        explicit vector(ContainerAllocator& allocator)
         : _data(nullptr), _alignment(alignof(T)), _size(0), _capacity(0), _allocator(&allocator) {}
 
         vector(): vector(ContainerAllocator::getDefaultContainerAllocator()) {}
         
-        vector(ALIGNMENT alignment)
+        explicit vector(ALIGNMENT alignment)
         : vector() {
             _alignment = size_t(alignment);
         }
         
-        vector(size_t count)
+        explicit vector(size_t count)
         : vector(ContainerAllocator::getDefaultContainerAllocator()) {
             resize(count);
         }
@@ -119,6 +119,18 @@ namespace prt
             }
 
             new (&_data[_size]) T(t);
+            _size++;
+        }
+
+        template <typename... Args>
+        void emplace_back(Args&&... args) {
+            if (_size >= _capacity) {
+                size_t newCapacity = _capacity * CAPACITY_INCREASE_CONSTANT;
+                newCapacity = newCapacity == 0 ? 1 : newCapacity;
+                reserve(newCapacity);
+            }
+
+            new (&_data[_size]) T(std::forward<Args>(args)...);
             _size++;
         }
 

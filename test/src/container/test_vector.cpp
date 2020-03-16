@@ -77,3 +77,21 @@ TEST_CASE( "vector: Test nested", "[vector]") {
         }
     }
 }
+
+struct TestEmplace {
+    TestEmplace(int32_t x, int32_t y, int32_t z) : _x(x+8), _y(y*y), _z(z-5) {}
+    int32_t _x, _y, _z;
+};
+
+TEST_CASE( "vector: Test vector emplace", "[vector]") {
+    prt::vector<TestEmplace> vec1;
+    for (size_t i = 0; i < 100; i++) {
+        vec1.emplace_back(i, i+1, i+2);
+    }
+    for (size_t i = 0; i < 100; i++) {
+        REQUIRE(vec1[i]._x == i + 8);
+        REQUIRE(vec1[i]._y == (i+1)*(i+1));
+        REQUIRE(vec1[i]._z == i + 2 - 5);
+    }
+    REQUIRE(vec1.size() == 100);
+}

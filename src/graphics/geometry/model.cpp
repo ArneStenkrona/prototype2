@@ -259,13 +259,13 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     prt::vector<unsigned char> const & indices = node.find("PolygonVertexIndex")->getProperty(0).data;
 
     // Retrieve normals
-    const FBX_Document::FBX_Node *layerNormal = node.find("LayerElementNormal");
-    const char *normalMap = reinterpret_cast<char*>(layerNormal->find("MappingInformationType")->getProperty(0).data.data());
+    FBX_Document::FBX_Node const *layerNormal = node.find("LayerElementNormal");
+    char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data.data());
     if (strcmp(normalMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for normal has to be By Polygon Vertex!");
         return;
     }
-    const char *normalRef = reinterpret_cast<char*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data.data());
+    char const *normalRef = reinterpret_cast<char const*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data.data());
     if (strcmp(normalRef, "Direct") != 0) {
         assert(false && "Reference Information Type for normal has to be Direct!");
         return;
@@ -274,12 +274,12 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
 
     // Retrieve uv coordinates
     const FBX_Document::FBX_Node *layerUV = node.find("LayerElementUV");
-    const char *uvMap = reinterpret_cast<char*>(layerUV->find("MappingInformationType")->getProperty(0).data.data());
+    char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data.data());
     if (strcmp(uvMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for UV has to be By Polygon Vertex!");
         return;
     }
-    const char *uvRef = reinterpret_cast<char*>(layerUV->find("ReferenceInformationType")->getProperty(0).data.data());
+    char const *uvRef = reinterpret_cast<char const*>(layerUV->find("ReferenceInformationType")->getProperty(0).data.data());
     if (strcmp(uvRef, "IndexToDirect") != 0) {
         assert(false && "Reference Information Type for UV has to be Index To Direct!");
         return;
@@ -290,12 +290,12 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     // Retrieve material, if any
     const FBX_Document::FBX_Node *layerMat = node.find("LayerElementMaterial");
     if (layerMat != nullptr) {
-        const char *matMap = reinterpret_cast<char*>(layerMat->find("MappingInformationType")->getProperty(0).data.data());
+        char const *matMap = reinterpret_cast<char const*>(layerMat->find("MappingInformationType")->getProperty(0).data.data());
         if (strcmp(matMap, "AllSame") != 0) {
             assert(false && "Mapping Information Type for materials has to be All Same!");
             return;
         }
-        const char *matRef = reinterpret_cast<char*>(layerMat->find("ReferenceInformationType")->getProperty(0).data.data());
+        char const *matRef = reinterpret_cast<char const*>(layerMat->find("ReferenceInformationType")->getProperty(0).data.data());
         if (strcmp(matRef, "IndexToDirect") != 0) {
             assert(false && "Reference Information Type for materials has to be Index To Direct!");
             return;
@@ -308,7 +308,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     vertexBufferTemp.resize(indices.size() / sizeof(int32_t));
     prt::hash_map<Vertex, uint32_t> uniqueVertices;
 
-    double* vert = reinterpret_cast<double*>(vertices.data());
+    double const* vert = reinterpret_cast<double const*>(vertices.data());
     size_t vi = 0;
     for (size_t i = 0; i < vertices.size() / sizeof(double); i += 3) {
         new (&vertexBufferTemp[vi].pos.x) float(vert[i]);
@@ -316,7 +316,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
         new (&vertexBufferTemp[vi].pos.z) float(vert[i+2]);
         ++vi;
     }
-    double* norm = reinterpret_cast<double*>(normals.data());
+    double const* norm = reinterpret_cast<double const*>(normals.data());
     vi = 0;
     for (size_t i = 0; i < normals.size() / sizeof(double); i += 3) {
         new (&vertexBufferTemp[vi].normal.x) float(norm[i]);
@@ -324,7 +324,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
         new (&vertexBufferTemp[vi].normal.z) float(norm[i+2]);
         ++vi;
     }
-    double* texc = reinterpret_cast<double*>(uvs.data());
+    double const* texc = reinterpret_cast<double const*>(uvs.data());
     vi = 0;
     for (size_t i = 0; i < uvs.size() / sizeof(double); i += 2) {
         new (&vertexBufferTemp[vi].texCoord.x) float(texc[i]);
@@ -335,8 +335,8 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     size_t indexCount = indexBuffer.size();
     size_t vertexCount = vertexBuffer.size();
     indexBuffer.resize(indexBuffer.size() + indices.size() / sizeof(uint32_t));
-    int32_t* ind = reinterpret_cast<int32_t*>(indices.data());
-    int32_t* uvInd = reinterpret_cast<int32_t*>(uvIndices.data());  
+    int32_t const* ind = reinterpret_cast<int32_t const*>(indices.data());
+    int32_t const* uvInd = reinterpret_cast<int32_t const*>(uvIndices.data());  
 
     for (size_t i = 0; i < indices.size() / sizeof(int32_t); i += 3) {
         assert((ind[i+2] < 0) && "Face is not triangular!");
@@ -371,7 +371,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
 void Model::parseMaterialFBX(FBX_Document::FBX_Node const & node) {
     materials.push_back({});
     Material & material = materials.back();
-    const char *name = reinterpret_cast<const char*>(node.getProperty(1).data.data());
+    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data.data());
     strcpy(material.name, name);
     strcpy(material.fragmentShader, "cel.frag");
 }
@@ -398,11 +398,11 @@ void Model::connectFBX(FBX_Document::FBX_Node const & node,
     for (auto const & child : children) {
         auto const & properties = child.getProperties();
         if (properties.size() >= 4) {
-            const char *str = reinterpret_cast<const char*>(properties[3].data.data());
+            char const *str = reinterpret_cast<char const*>(properties[3].data.data());
             if (strcmp(str, "DiffuseColor")) {
                 int64_t texId = *reinterpret_cast<int64_t*>(child.getProperty(1).data.data());
                 int64_t materialId = *reinterpret_cast<int64_t*>(child.getProperty(2).data.data());
-                const char *tex = textureIdToTexturePath.find(texId)->value();
+                char const *tex = textureIdToTexturePath.find(texId)->value();
                 size_t materialIndex = materialIdToMaterialIndex.find(materialId)->value();
                 Material & material = materials[materialIndex];
 
@@ -434,7 +434,7 @@ void Model::loadFBX(const char *path) {
     prt::hash_map<int64_t, const char*> textureIdToTexturePath;
     for (auto const & child : children) {
         if (strcmp(child.getName(), "Geometry") == 0) {
-            const char *type = reinterpret_cast<const char*>(child.getProperty(2).data.data());
+            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data.data());
             if (strcmp(type, "Mesh") == 0) {
                 int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
                 size_t index = meshes.size();
@@ -442,7 +442,7 @@ void Model::loadFBX(const char *path) {
                 parseMeshFBX(child);
             } 
         } else if (strcmp(child.getName(), "Model") == 0) {
-            const char *type = reinterpret_cast<const char*>(child.getProperty(2).data.data());
+            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data.data());
             if (strcmp(type, "Mesh") == 0) {
                 int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
                 modelIds.insert(id);
@@ -454,7 +454,7 @@ void Model::loadFBX(const char *path) {
             parseMaterialFBX(child);
         } else if (strcmp(child.getName(), "Texture") == 0) {
             int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
-            const char *filename = reinterpret_cast<const char*>(child.find("RelativeFilename")->getProperty(0).data.data());
+            char const *filename = reinterpret_cast<char const*>(child.find("RelativeFilename")->getProperty(0).data.data());
             textureIdToTexturePath.insert(id, filename);
         } else if (strcmp(child.getName(), "Connections") == 0) {
             connectFBX(child, 
