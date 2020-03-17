@@ -159,9 +159,7 @@ void* prt::ContainerAllocator::allocate(size_t blocks) {
     // Find suitable range of blocks. O(n)
     size_t blockIndex = _firstFreeBlockIndex;
     size_t blocksInARow = 0;
-    size_t it = 0;
     do {
-        ++it;
         if (_blocks[blockIndex] == 0) {
             blocksInARow++;
             blockIndex++;
@@ -181,7 +179,6 @@ void* prt::ContainerAllocator::allocate(size_t blocks) {
                     _firstFreeBlockIndex += _blocks[_firstFreeBlockIndex];
                 } while(_firstFreeBlockIndex < _numBlocks && _blocks[_firstFreeBlockIndex] != 0);
             }
-            std::cout << "it: " << it << std::endl; 
             return blockIndexToPointer(index);
         }
     } while (blockIndex < _numBlocks);
