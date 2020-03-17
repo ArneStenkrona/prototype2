@@ -3,8 +3,6 @@
 #include "src/container/vector.h"
 #include "src/config/prototype2Config.h"
 
-#include "src/graphics/geometry/fbx_document.h"
-
 #include <chrono>
 #include <thread>
 
@@ -22,9 +20,6 @@ Game::Game()
   _time(0.0f) {
     _input.init(_gameRenderer.getWindow());
     loadScene();
-
-    Model m;
-    m.loadFBX("/Users/arnestenkrona/Documents/repositories/prototype2/res/models/monkey/monkey.fbx");
 }
 
 void Game::loadScene() {

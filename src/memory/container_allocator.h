@@ -136,7 +136,10 @@ namespace prt {
         size_t _initialPadding;
         // Number of free blocks
         size_t _numFreeBlocks;
-
+        // Index of the first free block
+        // If this is greater than or equal to
+        // _numBlocks, there are no free blocks
+        size_t _firstFreeBlockIndex;
         /**
          * A block group is a contiguous set of blocks
          * allocated together.

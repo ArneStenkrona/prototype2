@@ -20,7 +20,7 @@ public:
     FBX_Document(const char* file); 
     class FBX_Node;
     FBX_Node const & getRoot() const { return _root; }
-    const FBX_Node * getNode(const char* path) const { return _root.getRelative(path); }
+    FBX_Node const * getNode(const char* path) const { return _root.getRelative(path); }
 
     struct Property {
         enum TYPE {
@@ -63,8 +63,8 @@ public:
     class FBX_Node {
     public:
         inline const char* getName() const { return _name; }
-        const FBX_Node * find(const char* name) const;
-        const FBX_Node * getRelative(const char* path) const;
+        FBX_Node const * find(const char* name) const;
+        FBX_Node const * getRelative(const char* path) const;
 
         FBX_Document::Property const & getProperty(size_t i) const { return properties[i]; }
         prt::vector<FBX_Document::Property> const & getProperties() const { return properties; }

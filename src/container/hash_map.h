@@ -12,12 +12,12 @@ namespace prt {
     public:
         hash_map_node(): _present(false) {}
 
-        //~hash_map_node() {
+        // ~hash_map_node() {
         //    if (_present) {
         //        key().~K();
         //        value().~V();
         //    }
-        //}
+        // }
 
         K& key() {
             assert(_present);
@@ -240,9 +240,9 @@ namespace prt {
         };
 
         const_iterator begin() const {
-            for (size_t i = 0; i < _vector.size(); i++) {
-                if (_vector[i]._present) {
-                    return const_iterator(&_vector[i], _vector.end());
+            for (auto const & node : _vector) {
+                if (node._present) {
+                    return const_iterator(&node, _vector.end());
                 }
             }
             return end();
@@ -252,9 +252,9 @@ namespace prt {
         }
 
         iterator begin() {
-            for (size_t i = 0; i < _vector.size(); i++) {
-                if (_vector[i]._present) {
-                    return iterator(&_vector[i], _vector.end());
+            for (auto & node : _vector) {
+                if (node._present) {
+                    return iterator(&node, _vector.end());
                 }
             }
             return end();
@@ -279,19 +279,19 @@ namespace prt {
             temp.resize(_size);
 
             size_t count = 0;
-            for (auto it = begin(); it != end(); it++) {
-                temp[count++] = *it;
+            for (auto const & node : *this) {
+                temp[count++] = node;
             }
             _vector.clear();
             _vector.resize(capacity);
 
-            for (size_t i = 0; i < temp.size(); i++) {
-                size_t ind = hashIndex(temp[i].key());
+            for (auto const & node : temp) {
+                size_t ind = hashIndex(node.key());
 
                 while (_vector[ind]._present) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
-                _vector[ind] = temp[i];
+                _vector[ind] = node;
             }
         }
     };

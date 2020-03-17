@@ -122,10 +122,11 @@ struct Model {
 
 private:
     void parseMeshFBX(FBX_Document::FBX_Node const & node);
+    glm::mat4 parseModelFBX(FBX_Document::FBX_Node const & node);
     void parseMaterialFBX(FBX_Document::FBX_Node const & node);
 
     void connectFBX(FBX_Document::FBX_Node const & node, 
-                    prt::hash_set<int64_t> modelIds,
+                    prt::hash_map<int64_t, glm::mat4> modelIdToTransform,
                     prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
                     prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
                     prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,

@@ -5,6 +5,10 @@
 
 #include <string.h>
 
+#include <iostream>
+
+#include <algorithm>
+
 #include <new>
 
 prt::ALIGNMENT prt::getAlignment(size_t alignment) {
@@ -60,7 +64,8 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
                                                    memorySizeBytes, blockSize, alignment)),
                           _initialPadding(prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(memoryPointer),
                                                                         alignment)),
-                          _numFreeBlocks(_numBlocks) {
+                          _numFreeBlocks(_numBlocks),
+                          _firstFreeBlockIndex(0) {
     assert(alignment > 0);
     assert(alignment <= blockSize);
     // assert(alignment <= 128);
@@ -103,6 +108,10 @@ void prt::ContainerAllocator::free(void* pointer) {
     _numFreeBlocks += _blocks[blockIndex];
 
     _blocks[blockIndex] = 0;
+
+    if (blockIndex < _firstFreeBlockIndex) {
+        _firstFreeBlockIndex = blockIndex;
+    }
 }
 
 void prt::ContainerAllocator::clear() {
@@ -110,9 +119,10 @@ void prt::ContainerAllocator::clear() {
         _blocks[i] = 0;
     }
     _numFreeBlocks = _numBlocks;
+    _firstFreeBlockIndex = 0;
 }
 
-void* prt::ContainerAllocator::allocate(size_t blocks) {
+/*void* prt::ContainerAllocator::allocate(size_t blocks) {
     assert(blocks > 0);
     assert(blocks <= _numBlocks);
     assert(_numFreeBlocks >= blocks);
@@ -136,6 +146,51 @@ void* prt::ContainerAllocator::allocate(size_t blocks) {
             return blockIndexToPointer(blockIndex - blocks);
         }
     } while (blockIndex < _numBlocks);
+
+    assert(false);
+    return nullptr;
+}*/
+
+void* prt::ContainerAllocator::allocate(size_t blocks) {
+    assert(blocks > 0);
+    assert(blocks <= _numBlocks);
+    assert(_numFreeBlocks >= blocks);
+    assert(_firstFreeBlockIndex < _numBlocks);
+    // Find suitable range of blocks. O(n)
+    size_t blockIndex = _firstFreeBlockIndex;
+    size_t blocksInARow = 0;
+    size_t it = 0;
+    do {
+        ++it;
+        if (_blocks[blockIndex] == 0) {
+            blocksInARow++;
+            blockIndex++;
+        } else {
+            blocksInARow = 0;
+            blockIndex += _blocks[blockIndex];
+        }
+
+        if (blocksInARow == blocks) {
+            size_t index = blockIndex - blocks;
+            _blocks[index] = blocks;
+
+            _numFreeBlocks -= blocks; 
+
+            if (index == _firstFreeBlockIndex) {
+                do {
+                    _firstFreeBlockIndex += _blocks[_firstFreeBlockIndex];
+                } while(_firstFreeBlockIndex < _numBlocks && _blocks[_firstFreeBlockIndex] != 0);
+            }
+            std::cout << "it: " << it << std::endl; 
+            return blockIndexToPointer(index);
+        }
+    } while (blockIndex < _numBlocks);
+
+    for (size_t i = 0; i < _numBlocks; ++i) {
+        if (_blocks[i] == 0) {
+            assert((i >= _firstFreeBlockIndex) && "ERROEREROR!");
+        }
+    }
 
     assert(false);
     return nullptr;
