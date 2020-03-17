@@ -99,7 +99,6 @@ void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
     uintptr_t blockPointer = reinterpret_cast<uintptr_t>(allocate(blocks));
     size_t padding = prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockPointer + sizeof(size_t)),
                                                    alignment);
-
     *reinterpret_cast<size_t*>(blockPointer) = blocks;                                          
     void *mem = reinterpret_cast<void*>(blockPointer + sizeof(size_t) + padding);
     return mem;
@@ -112,14 +111,12 @@ void prt::ContainerAllocator::free(void* pointer) {
     _numFreeBlocks += *reinterpret_cast<size_t*>(mem);
     
     size_t *prev = &_firstFreeBlockIndex;
-    size_t next = _firstFreeBlockIndex;
 
-    while (next <  blockIndex) {
+    while (*prev <  blockIndex) {
         prev = reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[*prev * _blockSize]));
-        next = *prev;
     };
+    *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[blockIndex * _blockSize])) = *prev;
     *prev = blockIndex;
-    *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[blockIndex * _blockSize])) = next;
 }
 
 void prt::ContainerAllocator::clear() {

@@ -77,7 +77,7 @@ struct TextureImages {
 };
 
 struct UniformBufferData {
-    prt::vector<char> uboData;
+    prt::vector<char> uboData{prt::getAlignment(alignof(std::max_align_t))};
     prt::vector<void*> mappedMemories;
     prt::vector<VkBuffer> uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBufferMemories;

@@ -112,6 +112,35 @@ TEST_CASE( "Test variable length allocation", "[container_allocator]") {
     free(mem);
 }
 
+TEST_CASE( "Test alignment", "[container_allocator]" ) {
+    size_t powersOfTwo[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
+        
+    constexpr size_t bytes = 5000;
+
+    constexpr size_t blocksize = 128 + sizeof(size_t);
+    // number of blocks without considering allocator padding
+    constexpr size_t estimatedNumBlocks = bytes / blocksize;
+    
+    void* mem = malloc(bytes);
+
+    for (uint32_t i = 0; i < 8; i++) {
+        size_t alignment = powersOfTwo[i];      
+        
+        prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
+
+        size_t numBlocks = allocator.getNumberOfBlocks();
+
+        // array of array of 4 integers
+        uintptr_t pointers[estimatedNumBlocks];
+        size_t estBlocksPerAlloc = (128 + sizeof(size_t) + alignment + (blocksize - 1)) / blocksize;
+        for (uint32_t j = 0; j < numBlocks / estBlocksPerAlloc; j++) {
+            pointers[j] = reinterpret_cast<uintptr_t>(allocator.allocate(blocksize - sizeof(size_t), alignment));
+            REQUIRE(pointers[j] % alignment == 0);
+        }
+    }
+    free(mem);
+}
+
 TEST_CASE( "Test free memory", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
