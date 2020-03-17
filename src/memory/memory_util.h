@@ -6,12 +6,12 @@
 namespace prt { namespace memory_util {
     /**
      * Given a memory address, calculates the
-     * smallest address greater than the pointer
-     * with requested alignment.
+     * smallest postive value to be added
+     * in order to obtain an aligned address
      * @param memoryPointer address
      * @param alignment alignment
      * 
-     * @return aligned address 
+     * @return padding
      */ 
     size_t calcPadding(uintptr_t memoryPointer, size_t alignment);
 

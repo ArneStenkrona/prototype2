@@ -10,14 +10,13 @@
 TEST_CASE( "Test allocation", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
-    constexpr size_t blocksize = 4 * sizeof(uint32_t);
-    constexpr size_t alignment = sizeof(uint32_t);
+    constexpr size_t blocksize = 4 * sizeof(uint32_t) + sizeof(size_t);
 
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
     
     void* mem = malloc(bytes);
-    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -25,7 +24,7 @@ TEST_CASE( "Test allocation", "[container_allocator]" ) {
     uint32_t* integers[estimatedNumBlocks];
 
     for (uint32_t i = 0; i < numBlocks; i++) {
-        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize - sizeof(size_t), 1));
 
         for (uint32_t j = 0; j < 4; j++){ 
             integers[i][j] = i * i + j * j;
@@ -46,10 +45,9 @@ TEST_CASE( "Test variable length allocation", "[container_allocator]") {
     constexpr size_t bytes = 1000;
 
     constexpr size_t blocksize = 4 * sizeof(uint32_t);
-    constexpr size_t alignment = sizeof(uint32_t);
 
     void* mem = malloc(bytes);
-    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
 
     uint32_t* ints1;
     uint32_t* ints2[2]; // array of 2
@@ -114,51 +112,20 @@ TEST_CASE( "Test variable length allocation", "[container_allocator]") {
     free(mem);
 }
 
-TEST_CASE( "Test alignment", "[container_allocator]" ) {
-    size_t powersOfTwo[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
-        
-    constexpr size_t bytes = 5000;
-
-    constexpr size_t blocksize = 128;
-    // number of blocks without considering allocator padding
-    constexpr size_t estimatedNumBlocks = bytes / blocksize;
-    
-    void* mem = malloc(bytes);
-
-    for (uint32_t i = 0; i < 8; i++) {
-        size_t alignment = powersOfTwo[i];      
-        
-        prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
-
-        size_t numBlocks = allocator.getNumberOfBlocks();
-
-        // array of array of 4 integers
-        uintptr_t pointers[estimatedNumBlocks];
-
-        for (uint32_t j = 0; j < numBlocks; j++) {
-            pointers[j] = reinterpret_cast<uintptr_t>(allocator.allocate(blocksize, 1));
-            REQUIRE(pointers[j] % alignment == 0);
-        }
-    }
-    free(mem);
-}
-
 TEST_CASE( "Test free memory", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
     constexpr size_t blocksize = 4 * sizeof(uint32_t);
-    constexpr size_t alignment = sizeof(uint32_t);
 
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
     void* mem = malloc(bytes);
-    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
     void* blocks[estimatedNumBlocks];
-
     for (uint32_t i = 0; i < numBlocks; i++) {
         blocks[i] = allocator.allocate(1, 1);
     }
@@ -169,6 +136,7 @@ TEST_CASE( "Test free memory", "[container_allocator]" ) {
         allocator.free(blocks[i]);
         REQUIRE(allocator.getNumberOfFreeBlocks() == i + 1);       
     }
+    
     free(mem);
 }
 
@@ -176,13 +144,12 @@ TEST_CASE( "Test clear memory", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
     constexpr size_t blocksize = 4 * sizeof(uint32_t);
-    constexpr size_t alignment = sizeof(uint32_t);
 
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
     void* mem = malloc(bytes);
-    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -204,14 +171,13 @@ TEST_CASE( "Test clear memory", "[container_allocator]" ) {
 TEST_CASE( "Test reuse memory", "[container_allocator]" ) {
     constexpr size_t bytes = 1000;
 
-    constexpr size_t blocksize = 4 * sizeof(uint32_t);
-    constexpr size_t alignment = sizeof(uint32_t);
+    constexpr size_t blocksize = 4 * sizeof(uint32_t) + 2 * sizeof(size_t);
 
     // number of blocks without considering allocator padding
     constexpr size_t estimatedNumBlocks = bytes / blocksize;
 
     void* mem = malloc(bytes);
-    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize, alignment);
+    prt::ContainerAllocator allocator = prt::ContainerAllocator(mem, bytes, blocksize);
 
     size_t numBlocks = allocator.getNumberOfBlocks();
 
@@ -219,7 +185,7 @@ TEST_CASE( "Test reuse memory", "[container_allocator]" ) {
     uint32_t* integers[estimatedNumBlocks];
 
     for (uint32_t i = 0; i < numBlocks; i++) {
-        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize - sizeof(size_t), 1));
 
         for (uint32_t j = 0; j < 4; j++){ 
             integers[i][j] = i * i + j * j;
@@ -235,7 +201,7 @@ TEST_CASE( "Test reuse memory", "[container_allocator]" ) {
     allocator.clear();
 
     for (uint32_t i = 0; i < numBlocks; i++) {
-        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize, 1));
+        integers[i] = static_cast<uint32_t*>(allocator.allocate(blocksize - sizeof(size_t), 1));
 
         for (uint32_t j = 0; j < 4; j++){ 
             integers[i][j] = i * i * i + j * j * j;

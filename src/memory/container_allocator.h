@@ -42,7 +42,7 @@ namespace prt {
          * @param alignment aligment in bytes
          */
         explicit ContainerAllocator(void* memoryPointer, size_t memorySizeBytes,
-                                    size_t blockSize, size_t alignment);
+                                    size_t blockSize/*, size_t alignment*/);
 
         /**
          * Allocates contiguous memory from the allocator
@@ -116,20 +116,14 @@ namespace prt {
             return diff / _blockSize;
         }
 
-        inline size_t pointerToBlockGroupIndex(void* pointer) const {
-            size_t blockIndex = pointerToBlockIndex(pointer);
-            while (_blocks[blockIndex] == 0 && blockIndex > 0) {
-                blockIndex--;
-            }
-            return blockIndex;
-        }
-
         void* _memoryPointer;
+        void* _paddedMemoryPointer;
 
         // Size of block.
         size_t _blockSize;
         // Data alignment.
-        size_t _alignment;
+        // size_t _alignment;
+        static constexpr size_t _alignment = alignof(size_t);
         // Number of blocks.
         size_t _numBlocks;
         // Padding at the start of the memory
@@ -140,26 +134,6 @@ namespace prt {
         // If this is greater than or equal to
         // _numBlocks, there are no free blocks
         size_t _firstFreeBlockIndex;
-        /**
-         * A block group is a contiguous set of blocks
-         * allocated together.
-         * 
-         * _blocks[0] is always the start of a block
-         * group. 
-         * 
-         * If _blocks[i] is the start of a block group
-         * and zero it indicates a free block group
-         * 
-         * If _blocks[i] is the start of a block group
-         * and non-zero it indicates the distance to
-         * the next block group.
-         * e.g. _blocks[i] is 3 indicates that the 
-         * next block group starts at _blocks[i + 3] 
-         * 
-         * If _blocks[i] is not the start of a block
-         * group its value is zero
-         */
-        size_t* _blocks;
     };
 }
 
