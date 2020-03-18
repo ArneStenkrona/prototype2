@@ -5,8 +5,6 @@
 
 #include <string.h>
 
-#include <iostream>
-
 #include <algorithm>
 
 #include <new>
@@ -79,7 +77,7 @@ prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySi
     _paddedMemoryPointer = reinterpret_cast<void*>(memPtr);
 
     for (size_t i = 0; i < _numBlocks; ++i) {
-        *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[i * _blockSize])) = i + 1;
+       nextIndex(i) = i + 1;
     } 
 }
 
@@ -105,25 +103,30 @@ void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
 }
 
 void prt::ContainerAllocator::free(void* pointer) {
-
     size_t blockIndex = pointerToBlockIndex(pointer);
     void *mem = blockIndexToPointer(blockIndex);
-    _numFreeBlocks += *reinterpret_cast<size_t*>(mem);
+    size_t freed = *reinterpret_cast<size_t*>(mem);
+    _numFreeBlocks += freed;
     
-    size_t *prev = &_firstFreeBlockIndex;
-
-    while (*prev <  blockIndex) {
-        prev = reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[*prev * _blockSize]));
-    };
-    *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[blockIndex * _blockSize])) = *prev;
-    *prev = blockIndex;
+    size_t *pCurr = &_firstFreeBlockIndex;
+    while (*pCurr < blockIndex) {
+        pCurr = &nextIndex(*pCurr);
+    }
+    size_t next = *pCurr;
+    *pCurr = blockIndex;
+    while (freed > 1) {
+        nextIndex(blockIndex) = blockIndex + 1;
+        ++blockIndex;
+        --freed;
+    }
+    nextIndex(blockIndex) = next;
 }
 
 void prt::ContainerAllocator::clear() {
     _numFreeBlocks = _numBlocks;
     _firstFreeBlockIndex = 0;
     for (size_t i = 0; i < _numBlocks; ++i) {
-        *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[i * _blockSize])) = i + 1;
+        nextIndex(i) = i + 1;
     } 
 }
 
@@ -133,34 +136,27 @@ void* prt::ContainerAllocator::allocate(size_t blocks) {
     assert(_numFreeBlocks >= blocks);
     assert(_firstFreeBlockIndex < _numBlocks);
     // Find suitable range of blocks. O(n)
-    size_t *blockIndex = &_firstFreeBlockIndex;
-    size_t index = *blockIndex;
+    size_t curr = _firstFreeBlockIndex;
+    size_t index = _firstFreeBlockIndex;
+    size_t *pToIndex = &_firstFreeBlockIndex;
     size_t blocksInARow = 0;
-
-    size_t *prev = &_firstFreeBlockIndex;
-
-    do {
-        // Find the next block index from the linked list stored in free blocks
-        size_t *nextIndex = reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>(_paddedMemoryPointer)[*blockIndex * _blockSize]));
-        if (*nextIndex - *blockIndex == 1) {
-            ++blocksInARow;
-        } else {
-            blocksInARow = 0;
-            prev = blockIndex;
-            index = *nextIndex;
-        }
-        // Update index
-        blockIndex = nextIndex;
-
+    while (curr < _numBlocks) {
+        ++blocksInARow;
+        size_t *pNext = &nextIndex(curr);
         if (blocksInARow == blocks) {
             _numFreeBlocks -= blocks;
+            *pToIndex = *pNext;
 
-            size_t nextFreeIndex = *blockIndex;
-            *prev = nextFreeIndex;
             return blockIndexToPointer(index);
         }
 
-    } while (*blockIndex < _numBlocks);
+        if (*pNext - curr > 1) {
+            blocksInARow = 0;
+            index = *pNext;
+            pToIndex = pNext;
+        }
+        curr = *pNext;
+    }
 
     assert(false);
     return nullptr;

@@ -5,6 +5,8 @@
 
 #include <assert.h>
 
+#include <iostream>
+
 namespace prt {
     enum class ALIGNMENT : size_t {
         ALIGN_1_BYTE      = 1,
@@ -114,6 +116,11 @@ namespace prt {
             uintptr_t diff = ptr - memStart;
             
             return diff / _blockSize;
+        }
+
+        inline size_t & nextIndex(size_t const & index) {
+            return *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>
+                                               (_paddedMemoryPointer)[index * _blockSize]));
         }
 
         void* _memoryPointer;
