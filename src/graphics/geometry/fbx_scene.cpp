@@ -36,7 +36,7 @@ void FBX_Scene::parseMesh(FBX_Document::FBX_Node const & node) {
     // get id
     mesh.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(mesh.id, {FBX_TYPE::MESH, int16_t(meshes.size() -1)});
+    idToIndex.insert(mesh.id, {FBX_TYPE::MESH, int16_t(meshes.size() - 1)});
     // Retrieve name
     char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(mesh.name, name);
@@ -93,7 +93,7 @@ void FBX_Scene::parseModel(FBX_Document::FBX_Node const & node) {
     // get id
     model.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(model.id, {FBX_TYPE::MODEL, int16_t(models.size() -1)});
+    idToIndex.insert(model.id, {FBX_TYPE::MODEL, int16_t(models.size() - 1)});
     // get properties70
     auto const & prop70 = node.find("Properties70")->getChildren();
     for (auto const & prop : prop70) {
@@ -120,7 +120,7 @@ void FBX_Scene::parseMaterial(FBX_Document::FBX_Node const & node) {
     // get id
     material.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(material.id, {FBX_TYPE::MATERIAL, int16_t(materials.size() -1)});
+    idToIndex.insert(material.id, {FBX_TYPE::MATERIAL, int16_t(materials.size() - 1)});
     // get name
     char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(material.name, name);
@@ -132,7 +132,7 @@ void FBX_Scene::parseTexture(FBX_Document::FBX_Node const & node) {
     // get id
     texture.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(texture.id, {FBX_TYPE::TEXTURE, int16_t(textures.size() -1)});
+    idToIndex.insert(texture.id, {FBX_TYPE::TEXTURE, int16_t(textures.size() - 1)});
     // get relative filename
     char const *relativeFilename = reinterpret_cast<char const*>(node.find("RelativeFilename")->getProperty(0).data());
     strcpy(texture.relativeFilename, relativeFilename);
@@ -140,10 +140,10 @@ void FBX_Scene::parseTexture(FBX_Document::FBX_Node const & node) {
 
 void FBX_Scene::parseConnections(FBX_Document::FBX_Node const & node) {
     auto const & children = node.getChildren();
+    connections.reserve(children.size());
     for (auto const & child : children) {
         int64_t firstId = *reinterpret_cast<int64_t const*>(child.getProperty(1).data());
         int64_t secondId = *reinterpret_cast<int64_t const*>(child.getProperty(2).data());
-        connections.insert(firstId, secondId);
-        reverseConnections.insert(secondId, firstId);
+        connections.emplace_back(firstId, secondId);
     }
 }

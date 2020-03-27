@@ -2,7 +2,6 @@
 #define MODEL_H
 
 #include "src/graphics/geometry/parametric_shapes.h"
-#include "src/graphics/geometry/fbx_document.h"
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
@@ -81,11 +80,12 @@ namespace std {
 }
 
 struct Texture {
+    char path[256];
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
     uint32_t mipLevels;
 
-    void load(const char* texturePath);
+    void load();
 
     inline unsigned char* sample(float x, float y) {
         int sx = static_cast<int>(float(texWidth - 1) * x + 0.5f);
@@ -109,8 +109,6 @@ struct Mesh {
     char name[256];
 };
 
-
-
 struct Model {
     prt::vector<Mesh> meshes;
     prt::vector<Material> materials;
@@ -121,19 +119,19 @@ struct Model {
     void loadFBX(const char* path);
 
 private:
-    void parseMeshFBX(FBX_Document::FBX_Node const & node);
-    glm::mat4 parseModelFBX(FBX_Document::FBX_Node const & node);
-    void parseMaterialFBX(FBX_Document::FBX_Node const & node);
+    // void parseMeshFBX(FBX_Document::FBX_Node const & node);
+    // glm::mat4 parseModelFBX(FBX_Document::FBX_Node const & node);
+    // void parseMaterialFBX(FBX_Document::FBX_Node const & node);
 
-    void connectFBX(FBX_Document::FBX_Node const & node, 
-                    prt::hash_map<int64_t, glm::mat4> modelIdToTransform,
-                    prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
-                    prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
-                    prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
-                    const char *path);
+    // void connectFBX(FBX_Document::FBX_Node const & node, 
+    //                 prt::hash_map<int64_t, glm::mat4> modelIdToTransform,
+    //                 prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
+    //                 prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
+    //                 prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
+    //                 const char *path);
 
 
-    bool loaded = false;
+    bool _loaded = false;
 };
 
 #endif

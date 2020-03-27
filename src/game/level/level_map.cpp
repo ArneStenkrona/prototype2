@@ -159,7 +159,8 @@ void LevelMap::createTexture(Texture& texture, uint32_t resolution) {
     prt::vector<Texture> textures;
     textures.resize(_texturePaths.size());
     for (uint32_t i = 0; i < textures.size(); i++) {
-        textures[i].load(_texturePaths[i].c_str());
+        strcpy(textures[i].path, _texturePaths[i].c_str());
+        textures[i].load();
     }
 
     for (size_t row = 0; row < _levelData.size(); row++) {

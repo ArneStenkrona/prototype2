@@ -135,6 +135,18 @@ namespace prt {
             return _vector[ind].value();
         }
 
+        V const & operator [](const K& key) const {
+            if (_size == 0) assert(false);
+
+            size_t ind = hashIndex(key);
+
+            while(_vector[ind]._present && _vector[ind].key() != key) {
+                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            }
+
+            return _vector[ind].value();
+        }
+
         inline size_t size() const { return _size; }
         inline bool empty() const { return _size == 0; }
         

@@ -1,5 +1,7 @@
 #include "model.h"
 
+#include "src/graphics/geometry/fbx_scene.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
@@ -8,8 +10,8 @@
 
 #include <fstream>
 
-void Texture::load(const char* texturePath) {
-    stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+void Texture::load() {
+    stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
@@ -47,7 +49,7 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
 }
 
 void Model::loadOBJ(const char* path) {
-    assert(!loaded && "Model is already loaded!");
+    assert(!_loaded && "Model is already loaded!");
     FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
@@ -239,292 +241,147 @@ void Model::loadOBJ(const char* path) {
             strcpy(material.fragmentShader, mtlToFragShader[material.name].c_str());
         }
 
-        char texturePath[256];
-        strcpy(texturePath, path);
-        ptr = strrchr(texturePath, '/');
+        strcpy(material.texture.path, path);
+        ptr = strrchr(material.texture.path, '/');
         strcpy(++ptr, mtlToTexture[material.name].c_str());
-        material.texture.load(texturePath);
+        material.texture.load();
     }
 
-    loaded = true;
-}   
-
-void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
-    meshes.push_back({});
-    Mesh & mesh = meshes.back();
-
-    // Retrieve name
-    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
-    strcpy(mesh.name, name);
-
-    // Retrieve vertices
-    auto const & vertices = node.find("Vertices")->getProperty(0);
-    auto const & indices = node.find("PolygonVertexIndex")->getProperty(0);
-
-    // Retrieve normals
-    FBX_Document::FBX_Node const *layerNormal = node.find("LayerElementNormal");
-    char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data());
-    if (strcmp(normalMap, "ByPolygonVertex") != 0) {
-        assert(false && "Mapping Information Type for normal has to be By Polygon Vertex!");
-        return;
-    }
-    char const *normalRef = reinterpret_cast<char const*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data());
-    if (strcmp(normalRef, "Direct") != 0) {
-        assert(false && "Reference Information Type for normal has to be Direct!");
-        return;
-    }
-    auto const & normals = layerNormal->find("Normals")->getProperty(0);
-
-    // Retrieve uv coordinates
-    const FBX_Document::FBX_Node *layerUV = node.find("LayerElementUV");
-    char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data());
-    if (strcmp(uvMap, "ByPolygonVertex") != 0) {
-        assert(false && "Mapping Information Type for UV has to be By Polygon Vertex!");
-        return;
-    }
-    char const *uvRef = reinterpret_cast<char const*>(layerUV->find("ReferenceInformationType")->getProperty(0).data());
-    if (strcmp(uvRef, "IndexToDirect") != 0) {
-        assert(false && "Reference Information Type for UV has to be Index To Direct!");
-        return;
-    }
-    auto const & uvs = layerUV->find("UV")->getProperty(0);
-    auto const & uvIndices = layerUV->find("UVIndex")->getProperty(0);
-
-    // Retrieve material, if any
-    const FBX_Document::FBX_Node *layerMat = node.find("LayerElementMaterial");
-    if (layerMat != nullptr) {
-        char const *matMap = reinterpret_cast<char const*>(layerMat->find("MappingInformationType")->getProperty(0).data());
-        if (strcmp(matMap, "AllSame") != 0) {
-            assert(false && "Mapping Information Type for materials has to be All Same!");
-            return;
-        }
-        char const *matRef = reinterpret_cast<char const*>(layerMat->find("ReferenceInformationType")->getProperty(0).data());
-        if (strcmp(matRef, "IndexToDirect") != 0) {
-            assert(false && "Reference Information Type for materials has to be Index To Direct!");
-            return;
-        }
-        auto const & materials = layerMat->find("Materials")->getProperty(0);
-        mesh.materialIndex = *reinterpret_cast<int32_t const*>(materials.data());
-    }
-
-    prt::vector<Vertex> vertexBufferTemp;
-    vertexBufferTemp.resize(indices.bytes() / sizeof(int32_t));
-    prt::hash_map<Vertex, uint32_t> uniqueVertices;
-
-    double const* vert = reinterpret_cast<double const*>(vertices.data());
-    size_t vi = 0;
-    for (size_t i = 0; i < vertices.bytes() / sizeof(double); i += 3) {
-        new (&vertexBufferTemp[vi].pos.x) float(vert[i]);
-        new (&vertexBufferTemp[vi].pos.y) float(vert[i+1]);
-        new (&vertexBufferTemp[vi].pos.z) float(vert[i+2]);
-        ++vi;
-    }
-    double const* norm = reinterpret_cast<double const*>(normals.data());
-    vi = 0;
-    for (size_t i = 0; i < normals.bytes() / sizeof(double); i += 3) {
-        new (&vertexBufferTemp[vi].normal.x) float(norm[i]);
-        new (&vertexBufferTemp[vi].normal.y) float(norm[i+1]);
-        new (&vertexBufferTemp[vi].normal.z) float(norm[i+2]);
-        ++vi;
-    }
-    double const* texc = reinterpret_cast<double const*>(uvs.data());
-    vi = 0;
-    for (size_t i = 0; i < uvs.bytes() / sizeof(double); i += 2) {
-        new (&vertexBufferTemp[vi].texCoord.x) float(texc[i]);
-        new (&vertexBufferTemp[vi].texCoord.y) float(texc[i+1]);
-        ++vi;
-    }
-
-    size_t indexCount = indexBuffer.size();
-    size_t vertexCount = vertexBuffer.size();
-
-    // set mesh index attributes
-    mesh.startIndex = indexCount;
-    mesh.numIndices = indices.bytes() / sizeof(uint32_t);
-
-    indexBuffer.resize(indexBuffer.size() + mesh.numIndices);
-    int32_t const* ind = reinterpret_cast<int32_t const*>(indices.data());
-    int32_t const* uvInd = reinterpret_cast<int32_t const*>(uvIndices.data());  
-
-    for (size_t i = 0; i < mesh.numIndices; i += 3) {
-        assert((ind[i+2] < 0) && "Face is not triangular!");
-        uint32_t i0 = uint32_t(ind[i]);
-        uint32_t i1 = uint32_t(ind[i+1]);
-        uint32_t i2 = uint32_t(-ind[i+2] - 1);
-
-        Vertex v[3] =  {
-            { vertexBufferTemp[i0].pos,
-              vertexBufferTemp[i].normal,
-              vertexBufferTemp[uvInd[i0]].texCoord },
-            { vertexBufferTemp[i1].pos,
-              vertexBufferTemp[i+1].normal,
-              vertexBufferTemp[uvInd[i1]].texCoord },
-            { vertexBufferTemp[i2].pos,
-              vertexBufferTemp[i+2].normal,
-              vertexBufferTemp[uvInd[i2]].texCoord },
-        };
-        for (size_t i = 0; i < 3; ++i) {
-            if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
-                uniqueVertices[v[i]] = static_cast<uint32_t>(vertexCount++);
-            }
-            indexBuffer[indexCount++] = uniqueVertices[v[i]];
-        }  
-    }
-    vertexBuffer.resize(vertexCount);
-    for (auto const & entry : uniqueVertices) {
-        vertexBuffer[entry.value()] = entry.key();
-    }
+    _loaded = true;
 }
-
-void Model::parseMaterialFBX(FBX_Document::FBX_Node const & node) {
-    materials.push_back({});
-    Material & material = materials.back();
-    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
-    strcpy(material.name, name);
-    strcpy(material.fragmentShader, "cel.frag");
-}
-
-void Model::connectFBX(FBX_Document::FBX_Node const & node, 
-                       prt::hash_map<int64_t, glm::mat4> modelIdToTransform,
-                       prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
-                       prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
-                       prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
-                       const char *path) {
-    auto const & children = node.getChildren();
-    prt::hash_map<int64_t, int64_t> modelIdToGeometryId;
-    prt::hash_map<int64_t, int64_t> materialIdToModelId;
-
-    for (auto const & child : children) {
-        int64_t firstId = *reinterpret_cast<int64_t const*>(child.getProperty(1).data());
-        int64_t secondId = *reinterpret_cast<int64_t const*>(child.getProperty(2).data());
-        auto it = geometryIdToMeshIndex.find(firstId);
-        if (modelIdToTransform.find(secondId) != modelIdToTransform.end() &&
-            it != geometryIdToMeshIndex.end()) {
-            modelIdToGeometryId.insert(secondId, firstId);
-
-            // size_t meshIndex = it->value();
-            // Mesh & mesh = meshes[meshIndex];
-            // // transform mesh
-            // // glm::mat4 tform = modelIdToTransform.find(secondId)->value();
-            // // uint32_t min = std::numeric_limits<uint32_t>::max();
-            // // uint32_t max  = 0;
-            // // for (uint32_t i = mesh.startIndex; i < mesh.startIndex + mesh.numIndices; ++i) {
-            // //     min = min > indexBuffer[i] ? indexBuffer[i] : min;
-            // //     max = max < indexBuffer[i] ? indexBuffer[i] : max;
-            // // }
-            // for (uint32_t i = min; i < max; i++) {
-            //     vertexBuffer[i].pos = glm::vec3(tform * glm::vec4(vertexBuffer[i].pos, 1.0f));
-            // }
-        } else if (materialIdToMaterialIndex.find(firstId) != materialIdToMaterialIndex.end() &&
-                   modelIdToTransform.find(secondId) != modelIdToTransform.end()) {
-            materialIdToModelId.insert(firstId, secondId);
-        }
-    }
-
-    for (auto const & child : children) {
-        auto const & properties = child.getProperties();
-        if (properties.size() >= 4) {
-            char const *str = reinterpret_cast<char const*>(properties[3].data());
-            if (strcmp(str, "DiffuseColor") == 0) {
-                int64_t texId = *reinterpret_cast<int64_t const*>(child.getProperty(1).data());
-                int64_t materialId = *reinterpret_cast<int64_t const*>(child.getProperty(2).data());
-                char const *tex = textureIdToTexturePath.find(texId)->value();
-                size_t materialIndex = materialIdToMaterialIndex.find(materialId)->value();
-                Material & material = materials[materialIndex];
-
-                char texturePath[256];
-                strcpy(texturePath, path);
-                char* ptr = strrchr(texturePath, '/');
-                strcpy(++ptr, tex);
-                material.texture.load(texturePath);
-
-                int64_t modelId = materialIdToModelId.find(materialId)->value();
-                int64_t geometryId = modelIdToGeometryId.find(modelId)->value();
-                size_t meshIndex = geometryIdToMeshIndex.find(geometryId)->value();
-
-                Mesh & mesh = meshes[meshIndex];
-                mesh.materialIndex = materialIndex; 
-            }
-        } 
-    }
-}
-
-glm::mat4 Model::parseModelFBX(FBX_Document::FBX_Node const & node) {
-    auto const & prop70 = node.find("Properties70")->getChildren();
-
-    glm::vec3 translation{0.0f,0.0f,0.0f};
-    glm::vec3 rotation{0.0f,0.0f,0.0f};
-    glm::vec3 scale{1.0f,1.0f,1.0f};
-    for (auto const & prop : prop70) {
-        char const *type = reinterpret_cast<char const*>(prop.getProperty(0).data());
-        if (strcmp(type, "Lcl Translation") == 0) {
-            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
-            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
-            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
-            translation = glm::vec3{x, y, z};
-        } else if (strcmp(type, "Lcl Rotation") == 0) {
-            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
-            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
-            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
-            rotation = glm::vec3{x, y, z};
-        } else if (strcmp(type, "Lcl Scaling") == 0) {
-            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
-            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
-            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
-            scale = glm::vec3{x, y, z};
-        }
-    }
-    return glm::translate(translation) * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z) * glm::scale(scale);
-}
-
 
 void Model::loadFBX(const char *path) {
-    assert(!loaded && "Model is already loaded!");
-    FBX_Document doc(path);
-    auto const & objects = doc.getNode("Objects");
-    assert(objects && "FBX file must contain Objects node!");
-    auto const & children = objects->getChildren();
-    // doc.getRoot().print(std::cout);
+    assert(!_loaded && "Model is already loaded!");
 
-    prt::hash_map<int64_t, glm::mat4> modelIdToTransform;
-    prt::hash_map<int64_t, size_t> geometryIdToMeshIndex;
-    prt::hash_map<int64_t, size_t> materialIdToMaterialIndex;
-    prt::hash_map<int64_t, const char*> textureIdToTexturePath;
-    for (auto const & child : children) {
-        if (strcmp(child.getName(), "Geometry") == 0) {
-            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data());
-            if (strcmp(type, "Mesh") == 0) {
-                int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
-                size_t index = meshes.size();
-                geometryIdToMeshIndex.insert(id, index);
-                parseMeshFBX(child);
+    FBX_Scene scene{path};
+
+    auto const & fbx_meshes = scene.getMeshes();
+    // auto const & fbx_models = scene.getModels();
+    auto const & fbx_materials = scene.getMaterials();
+    auto const & fbx_textures = scene.getTextures();
+
+    auto const & connections = scene.getConnections();
+    auto const & idToIndex = scene.getIdToIndex();
+
+    // parse connections
+    prt::hash_map<int64_t, int64_t> meshToModel;
+    prt::hash_map<int64_t, int64_t> modelToMaterial;
+    prt::hash_map<int64_t, int64_t> materialToTexture;
+    prt::hash_map<int64_t, size_t> materialToIndex;
+
+    for (auto const & connection : connections) {
+        auto ti1 = idToIndex.find(connection.first);
+        auto ti2 = idToIndex.find(connection.second);
+        if (ti1 != idToIndex.end() &&
+            ti2 != idToIndex.end()) {
+            if (ti1->value().type == FBX_TYPE::MESH &&
+                ti2->value().type == FBX_TYPE::MODEL) {
+                meshToModel.insert(connection.first, connection.second);
+            } else if (ti1->value().type == FBX_TYPE::MATERIAL &&
+                       ti2->value().type == FBX_TYPE::MODEL) {
+                modelToMaterial.insert(connection.second, connection.first);
+            } else if (ti1->value().type == FBX_TYPE::TEXTURE &&
+                       ti2->value().type == FBX_TYPE::MATERIAL) {
+                materialToTexture.insert(connection.second, connection.first);
             } 
-        } else if (strcmp(child.getName(), "Model") == 0) {
-            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data());
-            if (strcmp(type, "Mesh") == 0) {
-                int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
-                modelIdToTransform.insert(id, parseModelFBX(child));
-            }
-        } else if (strcmp(child.getName(), "Material") == 0) {
-            int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
-            size_t index = materials.size();
-            materialIdToMaterialIndex.insert(id, index);
-            parseMaterialFBX(child);
-        } else if (strcmp(child.getName(), "Texture") == 0) {
-            int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
-            char const *filename = reinterpret_cast<char const*>(child.find("RelativeFilename")->getProperty(0).data());
-            textureIdToTexturePath.insert(id, filename);
-        } 
+        }
     }
 
-    auto const & connections = doc.getNode("Connections");
-    assert(connections && "FBX file must contain Connections node!");
-    connectFBX(*connections, 
-               modelIdToTransform, 
-               geometryIdToMeshIndex, 
-               materialIdToMaterialIndex, 
-               textureIdToTexturePath,
-               path);
+    for (auto & mtm : modelToMaterial) {
+        materialToIndex.insert(mtm.value(), materials.size());
+        materials.push_back({});
+        Material & material = materials.back();
+        strcpy(material.fragmentShader, "cel.frag");
+        auto & fbx_mat = fbx_materials[idToIndex[mtm.value()].index];
+        strcpy(material.name, fbx_mat.name);
 
-    loaded = true;
+        auto fbx_textureId = materialToTexture.find(fbx_mat.id);
+        // load texture
+        strcpy(material.texture.path, path);
+        char *ptr = strrchr(material.texture.path, '/');
+        if (fbx_textureId != materialToTexture.end()) {
+            int16_t fbx_textureIndex = idToIndex[fbx_textureId->value()].index;
+            strcpy(++ptr, fbx_textures[fbx_textureIndex].relativeFilename);
+        } else {
+            strcpy(++ptr, "../../textures/default/default.png");
+        }
+        material.texture.load();
+    }
+
+    for (auto const & fbx_mesh : fbx_meshes) {
+        meshes.push_back({});
+        Mesh & mesh = meshes.back();
+        strcpy(mesh.name, fbx_mesh.name);
+
+        // parse geometry
+        prt::vector<Vertex> vertexBufferTemp;
+        vertexBufferTemp.resize(fbx_mesh.polygonVertexIndex.size());
+        prt::hash_map<Vertex, uint32_t> uniqueVertices;
+
+        size_t vi = 0;
+        for (glm::dvec3 const & vert : fbx_mesh.vertices) {
+            new (&vertexBufferTemp[vi].pos) glm::vec3(vert);
+            ++vi;
+        }
+        vi = 0;
+        for (glm::dvec3 const & norm : fbx_mesh.normals) {
+            new (&vertexBufferTemp[vi].normal) glm::vec3(norm);
+            ++vi;
+        }
+        vi = 0;
+        for (glm::dvec2 texc : fbx_mesh.uv) {
+            new (&vertexBufferTemp[vi].texCoord) glm::vec2(texc);
+            ++vi;
+        }
+
+        size_t indexCount = indexBuffer.size();
+        size_t vertexCount = vertexBuffer.size();
+
+        // set mesh index attributes
+        mesh.startIndex = indexCount;
+        mesh.numIndices = fbx_mesh.polygonVertexIndex.size();
+
+        indexBuffer.resize(indexBuffer.size() + mesh.numIndices);
+        auto const & ind = fbx_mesh.polygonVertexIndex;
+        auto const & uvInd = fbx_mesh.uvIndex;  
+
+        for (size_t i = 0; i < mesh.numIndices; i += 3) {
+            assert((ind[i+2] < 0) && "Face is not triangular!");
+            uint32_t i0 = uint32_t(ind[i]);
+            uint32_t i1 = uint32_t(ind[i+1]);
+            uint32_t i2 = uint32_t(-ind[i+2] - 1);
+
+            Vertex v[3] =  {
+                { vertexBufferTemp[i0].pos,
+                vertexBufferTemp[i].normal,
+                vertexBufferTemp[uvInd[i0]].texCoord },
+                { vertexBufferTemp[i1].pos,
+                vertexBufferTemp[i+1].normal,
+                vertexBufferTemp[uvInd[i1]].texCoord },
+                { vertexBufferTemp[i2].pos,
+                vertexBufferTemp[i+2].normal,
+                vertexBufferTemp[uvInd[i2]].texCoord },
+            };
+            for (size_t i = 0; i < 3; ++i) {
+                if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
+                    uniqueVertices[v[i]] = static_cast<uint32_t>(vertexCount++);
+                }
+                indexBuffer[indexCount++] = uniqueVertices[v[i]];
+            }  
+        }
+        vertexBuffer.resize(vertexCount);
+        for (auto const & entry : uniqueVertices) {
+            vertexBuffer[entry.value()] = entry.key();
+        }
+
+        // parse material
+        materials.push_back({});
+        Material & material = materials.back();
+        strcpy(material.fragmentShader, "cel.frag");
+        
+        int64_t fbx_modelId = meshToModel[fbx_mesh.id];
+        int64_t fbx_materialId = modelToMaterial[fbx_modelId];
+        mesh.materialIndex = materialToIndex[fbx_materialId];
+    }
+    _loaded = true;
 }
