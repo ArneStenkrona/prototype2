@@ -28,7 +28,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
 }
 
 void Scene::initPlayer() {
-    uint32_t sphere_index = _assetManager.getModelManager().getModelID("monkey/monkey.obj");
+    uint32_t sphere_index = _assetManager.getModelManager().getModelID("monkey/monkey.fbx");
 
     _playerEntity.modelID = sphere_index;
     _playerEntity.acceleration = 1.0f;

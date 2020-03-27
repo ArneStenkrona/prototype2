@@ -330,7 +330,7 @@ void Model::loadFBX(const char *path) {
         }
         vi = 0;
         for (glm::dvec2 texc : fbx_mesh.uv) {
-            new (&vertexBufferTemp[vi].texCoord) glm::vec2(texc);
+            new (&vertexBufferTemp[vi].texCoord) glm::vec2(texc.x,-texc.y);
             ++vi;
         }
 
@@ -354,13 +354,13 @@ void Model::loadFBX(const char *path) {
             Vertex v[3] =  {
                 { vertexBufferTemp[i0].pos,
                 vertexBufferTemp[i].normal,
-                vertexBufferTemp[uvInd[i0]].texCoord },
+                vertexBufferTemp[uvInd[i]].texCoord },
                 { vertexBufferTemp[i1].pos,
                 vertexBufferTemp[i+1].normal,
-                vertexBufferTemp[uvInd[i1]].texCoord },
+                vertexBufferTemp[uvInd[i+1]].texCoord },
                 { vertexBufferTemp[i2].pos,
                 vertexBufferTemp[i+2].normal,
-                vertexBufferTemp[uvInd[i2]].texCoord },
+                vertexBufferTemp[uvInd[i+2]].texCoord },
             };
             for (size_t i = 0; i < 3; ++i) {
                 if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
