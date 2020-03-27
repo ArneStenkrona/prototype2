@@ -18,6 +18,9 @@ public:
      * @param: file file path
      */
     FBX_Document(const char* file); 
+    FBX_Document & operator=(const FBX_Document&) = delete;
+    FBX_Document(const FBX_Document&) = delete;
+
     class FBX_Node;
     FBX_Node const & getRoot() const { return _root; }
     FBX_Node const * getNode(const char* path) const { return _root.getRelative(path); }
@@ -55,9 +58,36 @@ public:
                                                                          alignof(char)};
 
         TYPE type = TOTAL_NUM_TYPES;
-        prt::vector<unsigned char> data;
+        unsigned const char *data() const {
+            if (type < ARRAY_FLOAT) {
+                return _data;
+            } else {
+                return _data + sizeof(size_t);
+            }
+        }
+        unsigned char *data() {
+            return const_cast<unsigned char*>(const_cast<Property const *>(this)->data());
+        }
+        size_t bytes() const { 
+            if (type < ARRAY_FLOAT) {
+                return PRIMITIVE_SIZES[type];
+            } else {
+                return *reinterpret_cast<size_t*>(_data) * PRIMITIVE_SIZES[type];
+            }
+        }
+
+        size_t length() const {
+            if (type < ARRAY_FLOAT) {
+                return 1;
+            } else {
+                return *reinterpret_cast<size_t*>(_data);
+            }
+        }
 
         void print(std::ostream & out) const;
+        private:
+        unsigned char *_data;
+        friend class FBX_Document;
     };
 
     class FBX_Node {
@@ -127,11 +157,19 @@ private:
     // Root node
     FBX_Node _root;
 
-    static bool readHeader(std::ifstream & input);
-    static bool readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, VERSION version);
+    prt::vector<unsigned char> _dataStack;
 
-    static Property readArray(std::ifstream & input, Property::TYPE type);
-    static Property readProperty(std::ifstream & input);
+    void initializeStack(std::ifstream & input, VERSION version);
+    bool getNodeDataSize(std::ifstream & input, VERSION version, size_t & size);
+    void getPropertyDataSize(std::ifstream & input, size_t & size);
+    void getArrayDataSize(std::ifstream & input, Property::TYPE type, size_t & size);
+
+    static bool readHeader(std::ifstream & input);
+    static bool readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, 
+                         VERSION version, unsigned char * & stackPointer);
+
+    static Property readArray(std::ifstream & input, Property::TYPE type, unsigned char * & stackPointer);
+    static Property readProperty(std::ifstream & input, unsigned char * & stackPointer);
 
     static bool checkFooter(std::ifstream & input, VERSION version);
     
@@ -150,8 +188,8 @@ private:
     static bool findBinarySeparator(char *input, size_t length);
     static prt::vector<char*> splitWithBinarySeparator(char *input, size_t length);
 
-    static bool decompress(prt::vector<unsigned char> const & compressed, 
-                           prt::vector<unsigned char> & uncompressed, size_t uncompressedSize);
+    static bool decompress(unsigned char *src, size_t compressedSize,
+                           unsigned char *dest, size_t uncompressedSize);
 
     template <class T>
     static void readScalar(std::ifstream & input, T & dest) {

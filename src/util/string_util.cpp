@@ -60,4 +60,3 @@ void string_util::append(prt::vector<unsigned char> & str, const char* app) {
         str.push_back(*app);
     } while(*app != '\0');
 }
-

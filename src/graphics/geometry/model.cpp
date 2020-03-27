@@ -254,66 +254,66 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     Mesh & mesh = meshes.back();
 
     // Retrieve name
-    char *name = reinterpret_cast<char*>(node.getProperty(1).data.data());
+    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(mesh.name, name);
 
     // Retrieve vertices
-    prt::vector<unsigned char> const & vertices = node.find("Vertices")->getProperty(0).data;
-    prt::vector<unsigned char> const & indices = node.find("PolygonVertexIndex")->getProperty(0).data;
+    auto const & vertices = node.find("Vertices")->getProperty(0);
+    auto const & indices = node.find("PolygonVertexIndex")->getProperty(0);
 
     // Retrieve normals
     FBX_Document::FBX_Node const *layerNormal = node.find("LayerElementNormal");
-    char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data.data());
+    char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data());
     if (strcmp(normalMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for normal has to be By Polygon Vertex!");
         return;
     }
-    char const *normalRef = reinterpret_cast<char const*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data.data());
+    char const *normalRef = reinterpret_cast<char const*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data());
     if (strcmp(normalRef, "Direct") != 0) {
         assert(false && "Reference Information Type for normal has to be Direct!");
         return;
     }
-    prt::vector<unsigned char> const & normals = layerNormal->find("Normals")->getProperty(0).data;
+    auto const & normals = layerNormal->find("Normals")->getProperty(0);
 
     // Retrieve uv coordinates
     const FBX_Document::FBX_Node *layerUV = node.find("LayerElementUV");
-    char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data.data());
+    char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data());
     if (strcmp(uvMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for UV has to be By Polygon Vertex!");
         return;
     }
-    char const *uvRef = reinterpret_cast<char const*>(layerUV->find("ReferenceInformationType")->getProperty(0).data.data());
+    char const *uvRef = reinterpret_cast<char const*>(layerUV->find("ReferenceInformationType")->getProperty(0).data());
     if (strcmp(uvRef, "IndexToDirect") != 0) {
         assert(false && "Reference Information Type for UV has to be Index To Direct!");
         return;
     }
-    prt::vector<unsigned char> const & uvs = layerUV->find("UV")->getProperty(0).data;
-    prt::vector<unsigned char> const & uvIndices = layerUV->find("UVIndex")->getProperty(0).data;
+    auto const & uvs = layerUV->find("UV")->getProperty(0);
+    auto const & uvIndices = layerUV->find("UVIndex")->getProperty(0);
 
     // Retrieve material, if any
     const FBX_Document::FBX_Node *layerMat = node.find("LayerElementMaterial");
     if (layerMat != nullptr) {
-        char const *matMap = reinterpret_cast<char const*>(layerMat->find("MappingInformationType")->getProperty(0).data.data());
+        char const *matMap = reinterpret_cast<char const*>(layerMat->find("MappingInformationType")->getProperty(0).data());
         if (strcmp(matMap, "AllSame") != 0) {
             assert(false && "Mapping Information Type for materials has to be All Same!");
             return;
         }
-        char const *matRef = reinterpret_cast<char const*>(layerMat->find("ReferenceInformationType")->getProperty(0).data.data());
+        char const *matRef = reinterpret_cast<char const*>(layerMat->find("ReferenceInformationType")->getProperty(0).data());
         if (strcmp(matRef, "IndexToDirect") != 0) {
             assert(false && "Reference Information Type for materials has to be Index To Direct!");
             return;
         }
-        prt::vector<unsigned char> const & materials = layerMat->find("Materials")->getProperty(0).data;
-        mesh.materialIndex = *reinterpret_cast<int32_t*>(materials.data());
+        auto const & materials = layerMat->find("Materials")->getProperty(0);
+        mesh.materialIndex = *reinterpret_cast<int32_t const*>(materials.data());
     }
 
     prt::vector<Vertex> vertexBufferTemp;
-    vertexBufferTemp.resize(indices.size() / sizeof(int32_t));
+    vertexBufferTemp.resize(indices.bytes() / sizeof(int32_t));
     prt::hash_map<Vertex, uint32_t> uniqueVertices;
 
     double const* vert = reinterpret_cast<double const*>(vertices.data());
     size_t vi = 0;
-    for (size_t i = 0; i < vertices.size() / sizeof(double); i += 3) {
+    for (size_t i = 0; i < vertices.bytes() / sizeof(double); i += 3) {
         new (&vertexBufferTemp[vi].pos.x) float(vert[i]);
         new (&vertexBufferTemp[vi].pos.y) float(vert[i+1]);
         new (&vertexBufferTemp[vi].pos.z) float(vert[i+2]);
@@ -321,7 +321,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     }
     double const* norm = reinterpret_cast<double const*>(normals.data());
     vi = 0;
-    for (size_t i = 0; i < normals.size() / sizeof(double); i += 3) {
+    for (size_t i = 0; i < normals.bytes() / sizeof(double); i += 3) {
         new (&vertexBufferTemp[vi].normal.x) float(norm[i]);
         new (&vertexBufferTemp[vi].normal.y) float(norm[i+1]);
         new (&vertexBufferTemp[vi].normal.z) float(norm[i+2]);
@@ -329,7 +329,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
     }
     double const* texc = reinterpret_cast<double const*>(uvs.data());
     vi = 0;
-    for (size_t i = 0; i < uvs.size() / sizeof(double); i += 2) {
+    for (size_t i = 0; i < uvs.bytes() / sizeof(double); i += 2) {
         new (&vertexBufferTemp[vi].texCoord.x) float(texc[i]);
         new (&vertexBufferTemp[vi].texCoord.y) float(texc[i+1]);
         ++vi;
@@ -340,7 +340,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
 
     // set mesh index attributes
     mesh.startIndex = indexCount;
-    mesh.numIndices = indices.size() / sizeof(uint32_t);
+    mesh.numIndices = indices.bytes() / sizeof(uint32_t);
 
     indexBuffer.resize(indexBuffer.size() + mesh.numIndices);
     int32_t const* ind = reinterpret_cast<int32_t const*>(indices.data());
@@ -379,7 +379,7 @@ void Model::parseMeshFBX(FBX_Document::FBX_Node const & node) {
 void Model::parseMaterialFBX(FBX_Document::FBX_Node const & node) {
     materials.push_back({});
     Material & material = materials.back();
-    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data.data());
+    char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(material.name, name);
     strcpy(material.fragmentShader, "cel.frag");
 }
@@ -395,26 +395,26 @@ void Model::connectFBX(FBX_Document::FBX_Node const & node,
     prt::hash_map<int64_t, int64_t> materialIdToModelId;
 
     for (auto const & child : children) {
-        int64_t firstId = *reinterpret_cast<int64_t*>(child.getProperty(1).data.data());
-        int64_t secondId = *reinterpret_cast<int64_t*>(child.getProperty(2).data.data());
+        int64_t firstId = *reinterpret_cast<int64_t const*>(child.getProperty(1).data());
+        int64_t secondId = *reinterpret_cast<int64_t const*>(child.getProperty(2).data());
         auto it = geometryIdToMeshIndex.find(firstId);
         if (modelIdToTransform.find(secondId) != modelIdToTransform.end() &&
             it != geometryIdToMeshIndex.end()) {
             modelIdToGeometryId.insert(secondId, firstId);
 
-            size_t meshIndex = it->value();
-            Mesh & mesh = meshes[meshIndex];
-            // transform mesh
-            glm::mat4 tform = modelIdToTransform.find(firstId)->value();
-            uint32_t min = std::numeric_limits<uint32_t>::max();
-            uint32_t max  = 0;
-            for (uint32_t i = mesh.startIndex; i < mesh.startIndex + mesh.numIndices; ++i) {
-                min = min > indexBuffer[i] ? indexBuffer[i] : min;
-                max = max < indexBuffer[i] ? indexBuffer[i] : max;
-            }
-            for (uint32_t i = min; i < max; i++) {
-                vertexBuffer[i].pos = glm::vec3(tform * glm::vec4(vertexBuffer[i].pos, 1.0f));
-            }
+            // size_t meshIndex = it->value();
+            // Mesh & mesh = meshes[meshIndex];
+            // // transform mesh
+            // // glm::mat4 tform = modelIdToTransform.find(secondId)->value();
+            // // uint32_t min = std::numeric_limits<uint32_t>::max();
+            // // uint32_t max  = 0;
+            // // for (uint32_t i = mesh.startIndex; i < mesh.startIndex + mesh.numIndices; ++i) {
+            // //     min = min > indexBuffer[i] ? indexBuffer[i] : min;
+            // //     max = max < indexBuffer[i] ? indexBuffer[i] : max;
+            // // }
+            // for (uint32_t i = min; i < max; i++) {
+            //     vertexBuffer[i].pos = glm::vec3(tform * glm::vec4(vertexBuffer[i].pos, 1.0f));
+            // }
         } else if (materialIdToMaterialIndex.find(firstId) != materialIdToMaterialIndex.end() &&
                    modelIdToTransform.find(secondId) != modelIdToTransform.end()) {
             materialIdToModelId.insert(firstId, secondId);
@@ -424,10 +424,10 @@ void Model::connectFBX(FBX_Document::FBX_Node const & node,
     for (auto const & child : children) {
         auto const & properties = child.getProperties();
         if (properties.size() >= 4) {
-            char const *str = reinterpret_cast<char const*>(properties[3].data.data());
+            char const *str = reinterpret_cast<char const*>(properties[3].data());
             if (strcmp(str, "DiffuseColor") == 0) {
-                int64_t texId = *reinterpret_cast<int64_t*>(child.getProperty(1).data.data());
-                int64_t materialId = *reinterpret_cast<int64_t*>(child.getProperty(2).data.data());
+                int64_t texId = *reinterpret_cast<int64_t const*>(child.getProperty(1).data());
+                int64_t materialId = *reinterpret_cast<int64_t const*>(child.getProperty(2).data());
                 char const *tex = textureIdToTexturePath.find(texId)->value();
                 size_t materialIndex = materialIdToMaterialIndex.find(materialId)->value();
                 Material & material = materials[materialIndex];
@@ -456,25 +456,25 @@ glm::mat4 Model::parseModelFBX(FBX_Document::FBX_Node const & node) {
     glm::vec3 rotation{0.0f,0.0f,0.0f};
     glm::vec3 scale{1.0f,1.0f,1.0f};
     for (auto const & prop : prop70) {
-        char const *type = reinterpret_cast<char const*>(prop.getProperty(0).data.data());
+        char const *type = reinterpret_cast<char const*>(prop.getProperty(0).data());
         if (strcmp(type, "Lcl Translation") == 0) {
-            float x = float(*reinterpret_cast<double*>(prop.getProperty(4).data.data()));
-            float y = float(*reinterpret_cast<double*>(prop.getProperty(5).data.data()));
-            float z = float(*reinterpret_cast<double*>(prop.getProperty(6).data.data()));
+            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
+            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
+            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
             translation = glm::vec3{x, y, z};
         } else if (strcmp(type, "Lcl Rotation") == 0) {
-            float x = float(*reinterpret_cast<double*>(prop.getProperty(4).data.data()));
-            float y = float(*reinterpret_cast<double*>(prop.getProperty(5).data.data()));
-            float z = float(*reinterpret_cast<double*>(prop.getProperty(6).data.data()));
+            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
+            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
+            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
             rotation = glm::vec3{x, y, z};
         } else if (strcmp(type, "Lcl Scaling") == 0) {
-            float x = float(*reinterpret_cast<double*>(prop.getProperty(4).data.data()));
-            float y = float(*reinterpret_cast<double*>(prop.getProperty(5).data.data()));
-            float z = float(*reinterpret_cast<double*>(prop.getProperty(6).data.data()));
+            float x = float(*reinterpret_cast<double const*>(prop.getProperty(4).data()));
+            float y = float(*reinterpret_cast<double const*>(prop.getProperty(5).data()));
+            float z = float(*reinterpret_cast<double const*>(prop.getProperty(6).data()));
             scale = glm::vec3{x, y, z};
         }
     }
-    return glm::translate(translation) * glm::scale(scale) * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z);
+    return glm::translate(translation) * glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z) * glm::scale(scale);
 }
 
 
@@ -484,6 +484,7 @@ void Model::loadFBX(const char *path) {
     auto const & objects = doc.getNode("Objects");
     assert(objects && "FBX file must contain Objects node!");
     auto const & children = objects->getChildren();
+    // doc.getRoot().print(std::cout);
 
     prt::hash_map<int64_t, glm::mat4> modelIdToTransform;
     prt::hash_map<int64_t, size_t> geometryIdToMeshIndex;
@@ -491,27 +492,27 @@ void Model::loadFBX(const char *path) {
     prt::hash_map<int64_t, const char*> textureIdToTexturePath;
     for (auto const & child : children) {
         if (strcmp(child.getName(), "Geometry") == 0) {
-            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data.data());
+            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data());
             if (strcmp(type, "Mesh") == 0) {
-                int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+                int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
                 size_t index = meshes.size();
                 geometryIdToMeshIndex.insert(id, index);
                 parseMeshFBX(child);
             } 
         } else if (strcmp(child.getName(), "Model") == 0) {
-            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data.data());
+            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data());
             if (strcmp(type, "Mesh") == 0) {
-                int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+                int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
                 modelIdToTransform.insert(id, parseModelFBX(child));
             }
         } else if (strcmp(child.getName(), "Material") == 0) {
-            int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
+            int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
             size_t index = materials.size();
             materialIdToMaterialIndex.insert(id, index);
             parseMaterialFBX(child);
         } else if (strcmp(child.getName(), "Texture") == 0) {
-            int64_t id = *reinterpret_cast<int64_t*>(child.getProperty(0).data.data());
-            char const *filename = reinterpret_cast<char const*>(child.find("RelativeFilename")->getProperty(0).data.data());
+            int64_t id = *reinterpret_cast<int64_t const*>(child.getProperty(0).data());
+            char const *filename = reinterpret_cast<char const*>(child.find("RelativeFilename")->getProperty(0).data());
             textureIdToTexturePath.insert(id, filename);
         } 
     }

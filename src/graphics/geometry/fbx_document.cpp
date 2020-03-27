@@ -6,17 +6,23 @@
 
 #include "src/util/string_util.h"
 
-FBX_Document::FBX_Document(const char* file) {
+#include "src/memory/memory_util.h"
+
+FBX_Document::FBX_Document(const char* file) 
+    :_dataStack(prt::getAlignment(alignof(std::max_align_t))) {
     std::ifstream input(file, std::ios::binary);
     assert(input && "Cannot open fbx file!");
-
     // Read header
     bool validHeader = readHeader(input);
     assert(validHeader && "Invalid FBX Header!");
     // read version
     readScalar<uint32_t>(input, reinterpret_cast<unsigned char*>(&version));
+    // Initialize the data stack
+    initializeStack(input, version);
+    // Get pointer to head of stack
+    unsigned char *stackPointer = _dataStack.data();
     // Read nodes
-    while(readNode(input, _root.children, version));
+    while(readNode(input, _root.children, version, stackPointer));
 
      /* Since the footer of FBX is not entirely known     
     // Read footer code 
@@ -38,6 +44,176 @@ FBX_Document::FBX_Document(const char* file) {
         assert(false && "Invalid footer!");
     }
     */
+}
+
+void FBX_Document::initializeStack(std::ifstream & input, VERSION version) {
+    auto pos = input.tellg();
+    auto state = input.rdstate();
+
+    size_t size = 0;
+    while(getNodeDataSize(input, version, size));
+
+    _dataStack.resize(size);
+
+    // rewind stream
+    input.setstate(state);
+    input.seekg(pos);
+}
+
+bool FBX_Document::getNodeDataSize(std::ifstream & input, VERSION version, size_t & size) {
+    int64_t endOffset;
+    int64_t numProperties;
+    int64_t propertyListLen;
+
+    if (version >= VERSION::V7_5) {
+        int64_t intbuf;
+        readScalar<int64_t>(input, intbuf);
+        endOffset = intbuf;
+
+        readScalar<int64_t>(input, intbuf);
+        numProperties = intbuf;
+
+        readScalar<int64_t>(input, intbuf);
+        propertyListLen = intbuf;
+    } else {
+        int32_t intbuf;
+        readScalar<int32_t>(input, intbuf);
+        endOffset = intbuf;
+
+        readScalar<int32_t>(input, intbuf);
+        numProperties = intbuf;
+
+        readScalar<int32_t>(input, intbuf);
+        propertyListLen = intbuf;
+    }
+    char nameLen; 
+    input.get(nameLen);
+    char name[256] = "";
+    if (nameLen != 0) {
+        input.read(name, nameLen);
+    }
+    
+    if (endOffset == 0) {
+        // The end offset should only be 0 in a null node
+        if (numProperties != 0 || propertyListLen != 0 || name[0] != '\0') {
+            assert(false && "Invalid node! Expected NULL record.");
+        }
+        return false;
+    }
+
+    auto propertyEnd = input.tellg() + propertyListLen;
+    // Read properties
+    for (int64_t i = 0; i < numProperties; ++i) {
+        getPropertyDataSize(input, size);
+    }
+    if (input.tellg() != propertyEnd) {
+        assert(false && "Too many bytes in property list!");
+        //input.seekg(propertyEnd);
+    }
+
+    // Read nested nodes
+    auto listLen = endOffset - input.tellg();
+    if (endOffset < input.tellg()) {
+        assert(false && "Node has invalid endpoint!");
+    }
+
+    if (listLen > 0) {
+        while(getNodeDataSize(input, version, size));
+        if (input.tellg() != endOffset) {
+            assert(false && "Too many bytes in node!");
+        }
+    }
+    
+    return true;
+}
+
+void FBX_Document::getPropertyDataSize(std::ifstream & input, size_t & size) {
+    char dataType;
+    input.get(dataType);
+    switch (dataType) {
+        case 'Y': {
+            input.seekg(sizeof(int16_t), std::ios_base::seekdir::cur);
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(int16_t));
+            size += padding + sizeof(int16_t);
+            return;
+        }
+        case 'C': {
+            input.seekg(sizeof(char), std::ios_base::seekdir::cur);
+            size += sizeof(char);
+            return; 
+        }
+        case 'I': {
+            input.seekg(sizeof(int32_t), std::ios_base::seekdir::cur);
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(int32_t));
+            size += padding + sizeof(int32_t);
+            return;
+        }
+        case 'F': {
+            input.seekg(sizeof(float), std::ios_base::seekdir::cur);
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(float));
+            size += padding + sizeof(float);
+            return;
+        }
+        case 'D': {
+            input.seekg(sizeof(double), std::ios_base::seekdir::cur);
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(double));
+            size += padding + sizeof(double);
+            return;
+        }
+        case 'L': {
+            input.seekg(sizeof(int64_t), std::ios_base::seekdir::cur);
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(int64_t));
+            size += padding + sizeof(int64_t);
+            return;
+        }
+        case 'f':
+            return getArrayDataSize(input, Property::TYPE::ARRAY_FLOAT, size);
+        case 'd':
+            return getArrayDataSize(input, Property::TYPE::ARRAY_DOUBLE, size);
+        case 'l':
+            return getArrayDataSize(input, Property::TYPE::ARRAY_INT64, size);
+        case 'i':
+            return getArrayDataSize(input, Property::TYPE::ARRAY_INT32, size);
+        case 'b':
+            return getArrayDataSize(input, Property::TYPE::ARRAY_BOOL, size);
+        case 'S': {
+            uint32_t len;
+            readScalar<uint32_t>(input, len);
+            
+            input.seekg(len, std::ios_base::seekdir::cur);
+            size += len + 1;
+            return;
+        }
+        case 'R': {
+            uint32_t len;
+            readScalar<uint32_t>(input, len);
+
+            input.seekg(len, std::ios_base::seekdir::cur);
+            size += sizeof(size_t) + len;
+            return;
+        }
+        default: {
+            assert(false && "Invalid property data type!");
+            return;
+        }
+    }
+}
+
+void FBX_Document::getArrayDataSize(std::ifstream & input, Property::TYPE type, size_t & size) {
+    int32_t len;
+    readScalar<int32_t>(input, len);
+    int32_t encoding;
+    readScalar<int32_t>(input, encoding);
+    int32_t compressedLen;
+    readScalar<int32_t>(input, compressedLen);
+    auto endPos = input.tellg() + std::streampos(compressedLen);
+    input.seekg(endPos);
+
+    size_t primSz = Property::PRIMITIVE_SIZES[type];
+    // size_t primAlign = Property::PRIMITIVE_ALIGNMENTS[type];
+
+    size_t padding = prt::memory_util::calcPadding(uintptr_t(size), alignof(size_t));
+    size += sizeof(size_t) + padding + len*primSz;
 }
 
 const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) const {
@@ -76,7 +252,8 @@ bool FBX_Document::readHeader(std::ifstream & input) {
     return strcmp(buffer, HEADER_STRING) == 0;
 }
 
-bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, VERSION version) {
+bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, 
+                            VERSION version, unsigned char * & stackPointer) {
     int64_t endOffset;
     int64_t numProperties;
     int64_t propertyListLen;
@@ -123,7 +300,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     auto propertyEnd = input.tellg() + propertyListLen;
     // Read properties
     for (int64_t i = 0; i < numProperties; ++i) {
-        node.properties.push_back(readProperty(input));
+        node.properties.push_back(readProperty(input, stackPointer));
     }
     if (input.tellg() != propertyEnd) {
         assert(false && "Too many bytes in property list!");
@@ -137,7 +314,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     }
 
     if (listLen > 0) {
-        while(readNode(input, node.children, version));
+        while(readNode(input, node.children, version, stackPointer));
         if (input.tellg() != endOffset) {
             assert(false && "Too many bytes in node!");
         }
@@ -146,7 +323,8 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     return true;
 }
 
-FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::TYPE type) {
+FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::TYPE type,  
+                                               unsigned char * & stackPointer) {
     int32_t len;
     readScalar<int32_t>(input, len);
     int32_t encoding;
@@ -158,6 +336,13 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
     Property ret;
     ret.type = type;
     size_t primSz = Property::PRIMITIVE_SIZES[type];
+
+    size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), 
+                                                   Property::PRIMITIVE_ALIGNMENTS[type]);
+    stackPointer += padding;
+    ret._data = stackPointer;
+    *reinterpret_cast<size_t*>(ret._data) = size_t(len);
+    stackPointer += sizeof(size_t) + len*primSz;
 
     if (encoding != 0) {
         if (encoding != 1) {
@@ -181,13 +366,9 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
         prt::vector<unsigned char> compressedBuffer;
         compressedBuffer.resize(compressedLen);
         input.read(reinterpret_cast<char*>(compressedBuffer.data()), compressedLen);
-        prt::vector<unsigned char> uncompressedBuffer(Property::PRIMITIVE_ALIGNMENTS[type]);
-        decompress(compressedBuffer, uncompressedBuffer, len*primSz);
-        
-        ret.data = uncompressedBuffer;
+        decompress(compressedBuffer.data(), compressedLen, ret.data(), len*primSz);
     } else {
-        ret.data.resize(len*primSz);
-        input.read(reinterpret_cast<char*>(ret.data.data()), len*primSz);
+        input.read(reinterpret_cast<char*>(ret.data()), len*primSz);
     }
     
     if (encoding != 0) {
@@ -204,67 +385,79 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
     return ret;
 }
 
-FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
+FBX_Document::Property FBX_Document::readProperty(std::ifstream & input, unsigned char * & stackPointer) {
     char dataType;
     input.get(dataType);
     Property property{};
     switch (dataType) {
         case 'Y': {
             property.type = Property::INT16;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int16_t)));
-            property.data.resize(sizeof(int16_t));
-            readScalar<int16_t>(input, property.data.data());
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), alignof(int16_t));
+            stackPointer += padding;
+            property._data = stackPointer;
+            readScalar<int16_t>(input, property._data);
+            stackPointer += sizeof(int16_t);
             return property;
         }
         case 'C': {
             property.type = Property::CHAR;
-            property.data.resize(sizeof(char));
-            input.read(reinterpret_cast<char*>(property.data.data()), sizeof(char));
+            property._data = stackPointer;
+            input.read(reinterpret_cast<char*>(property._data), sizeof(char));
+            stackPointer += sizeof(char);
             return property;
         }
         case 'I': {
             property.type = Property::INT32;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int32_t)));
-            property.data.resize(sizeof(int32_t));
-            readScalar<int32_t>(input, property.data.data());
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), alignof(int32_t));
+            stackPointer += padding;
+            property._data = stackPointer;
+            readScalar<int32_t>(input, property._data);
+            stackPointer += sizeof(int32_t);
             return property;
         }
         case 'F': {
             property.type = Property::FLOAT;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(float)));
-            property.data.resize(sizeof(float));
-            readScalar<float>(input, property.data.data());
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), alignof(float));
+            stackPointer += padding;
+            property._data = stackPointer;
+            readScalar<float>(input, property._data);
+            stackPointer += sizeof(float);
             return property;
         }
         case 'D': {
             property.type = Property::DOUBLE;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(double)));
-            property.data.resize(sizeof(double));
-            readScalar<double>(input, property.data.data());
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), alignof(double));
+            stackPointer += padding;
+            property._data = stackPointer;
+            readScalar<double>(input, property._data);
+            stackPointer += sizeof(double);
             return property;
         }
         case 'L': {
             property.type = Property::INT64;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(int64_t)));
-            property.data.resize(sizeof(int64_t));
-            readScalar<int64_t>(input, property.data.data());
+            size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), alignof(int64_t));
+            stackPointer += padding;
+            property._data = stackPointer;
+            readScalar<int64_t>(input, property._data);
+            stackPointer += sizeof(int64_t);
             return property;
         }
         case 'f':
-            return readArray(input, Property::TYPE::ARRAY_FLOAT);
+            return readArray(input, Property::TYPE::ARRAY_FLOAT, stackPointer);
         case 'd':
-            return readArray(input, Property::TYPE::ARRAY_DOUBLE);
+            return readArray(input, Property::TYPE::ARRAY_DOUBLE, stackPointer);
         case 'l':
-            return readArray(input, Property::TYPE::ARRAY_INT64);
+            return readArray(input, Property::TYPE::ARRAY_INT64, stackPointer);
         case 'i':
-            return readArray(input, Property::TYPE::ARRAY_INT32);
+            return readArray(input, Property::TYPE::ARRAY_INT32, stackPointer);
         case 'b':
-            return readArray(input, Property::TYPE::ARRAY_BOOL);
+            return readArray(input, Property::TYPE::ARRAY_BOOL, stackPointer);
         case 'S': {
             property.type = Property::STRING;
-            property.data.resize(1,'\0');
+            property._data = stackPointer;
             uint32_t len;
             readScalar<uint32_t>(input, len);
+            std::fill(property._data, &property._data[len], '\0');
             prt::vector<char> data;
             data.resize(len + 1);
             if (len > 0) {
@@ -277,26 +470,24 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input) {
                 bool first = true;
                 for (size_t i = tokens.size(); i > 0; --i) {
                     if (!first) {
-                        string_util::append(property.data, ASCII_SEPARATOR);
+                        strcat(reinterpret_cast<char*>(property._data), ASCII_SEPARATOR);
                     }
-                    string_util::append(property.data, tokens[i-1]);
+                    strcat(reinterpret_cast<char*>(property._data), tokens[i-1]);
                     first = false;
                 }
             } else {
-                property.data.resize(data.size());
-                for (size_t i = 0; i < data.size(); i++) {
-                    property.data[i] = reinterpret_cast<char>(data[i]);
-                }
+                std::memcpy(property._data, data.data(), data.size());
+                stackPointer += len + 1;
             }
             return property;
         }
         case 'R': {
-            property.type = Property::RAW;
-            property.data = prt::vector<unsigned char>(prt::getAlignment(alignof(uint32_t)));
             uint32_t len;
             readScalar<uint32_t>(input, len);
-            property.data.resize(len);
-            input.read(reinterpret_cast<char*>(property.data.data()), len);
+            property._data = stackPointer;
+            *reinterpret_cast<size_t*>(property._data) = size_t(len);
+            input.read(reinterpret_cast<char*>(property.data()), len);
+            stackPointer += len;
             return property;
         }
         default: {
@@ -391,7 +582,7 @@ int32_t FBX_Document::getTimestampVar(FBX_Node const & timestamp, const char *el
         Property const & prop = elementNode->properties[0];
         if (prop.type == Property::TYPE::INT32 || prop.type == Property::TYPE::INT64) {
             int32_t ret;
-            std::memcpy(&ret, prop.data.data(), sizeof(int32_t));
+            std::memcpy(&ret, prop._data, sizeof(int32_t));
             return ret;
         }
     }
@@ -438,8 +629,8 @@ prt::vector<char*> FBX_Document::splitWithBinarySeparator(char *input, size_t le
     return token;
 }
 
-bool FBX_Document::decompress(prt::vector<unsigned char> const & compressed, 
-                              prt::vector<unsigned char> & uncompressed, size_t uncompressedSize) {
+bool FBX_Document::decompress(unsigned char *src, size_t compressedSize,
+                              unsigned char *dest, size_t uncompressedSize) {
     // Thanks: https://gist.github.com/arq5x/5315739
     // zlib struct
     z_stream infstream;
@@ -447,13 +638,11 @@ bool FBX_Document::decompress(prt::vector<unsigned char> const & compressed,
     infstream.zfree = Z_NULL;
     infstream.opaque = Z_NULL;
     // setup "compress" as the input and "uncompressed" as the compressed output
-    infstream.avail_in = uInt(compressed.size()); // size of input
-    infstream.next_in = reinterpret_cast<Bytef*>(compressed.data()); // input char array
+    infstream.avail_in = uInt(compressedSize); // size of input
+    infstream.next_in = reinterpret_cast<Bytef*>(src); // input char array
 
-    uncompressed.resize(uncompressedSize);
-
-    infstream.avail_out = uInt(uncompressed.size()); // size of output
-    infstream.next_out = reinterpret_cast<Bytef*>(uncompressed.data()); // output char array
+    infstream.avail_out = uInt(uncompressedSize); // size of output
+    infstream.next_out = reinterpret_cast<Bytef*>(dest); // output char array
      
     // the actual DE-compression work.
     auto res1 = inflateInit(&infstream);
@@ -503,67 +692,67 @@ void FBX_Document::Property::print(std::ostream & out) const {
     switch (type) {
         case TYPE::CHAR:
             out << " (Char: \'"
-                      << *reinterpret_cast<const char*>(&data[0])
+                      << *reinterpret_cast<const char*>(data())
                       << "\')";
             break;
         case TYPE::INT16:
             out << " (int16: "
-                      << *reinterpret_cast<const int16_t*>(data.data())
+                      << *reinterpret_cast<const int16_t*>(data())
                       << ")";
             break;
         case TYPE::INT32:
             out << " (int32: "
-                      << *reinterpret_cast<const int32_t*>(data.data())
+                      << *reinterpret_cast<const int32_t*>(data())
                       << ")";
             break;
         case TYPE::INT64:
             out << " (int64: "
-                      << *reinterpret_cast<const int64_t*>(data.data())
+                      << *reinterpret_cast<const int64_t*>(data())
                       << ")";
             break;
         case TYPE::FLOAT:
             out << " (float: "
-                      << *reinterpret_cast<const float*>(data.data())
+                      << *reinterpret_cast<const float*>(data())
                       << ")";
             break;
         case TYPE::DOUBLE:
             out << " (double: "
-                      << *reinterpret_cast<const double*>(data.data())
+                      << *reinterpret_cast<const double*>(data())
                       << ")";
             break;
         case TYPE::STRING:
             out << " (string: \""
-                      << reinterpret_cast<const char*>(data.data())
+                      << reinterpret_cast<const char*>(data())
                       << "\")";
             break;
         case TYPE::ARRAY_FLOAT:
             out << " (float["
-                      << data.size() / sizeof(float)
+                      << length()
                       << "])";
             break;
         case TYPE::ARRAY_DOUBLE:
             out << " (double["
-                      << data.size() / sizeof(double)
+                      << length()
                       << "])";
             break;
         case TYPE::ARRAY_INT32:
             out << " (int32["
-                    << data.size() / sizeof(int32_t)
+                    << length()
                     << "])";
             break;
         case TYPE::ARRAY_INT64:
             out << " (int64["
-                      << data.size() / sizeof(int64_t)
+                      << length()
                       << "])";
             break;
         case TYPE::ARRAY_BOOL:
             out << " (bool["
-                      << data.size()
+                      << length()
                       << "])";
             break;
         case TYPE::RAW:
             out << " (byte["
-                      << data.size()
+                      << length()
                       << "])";
             break;
         default:
