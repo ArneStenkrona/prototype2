@@ -7,6 +7,7 @@
 
 #include <glm/gtx/transform.hpp> 
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <fstream>
 
@@ -256,7 +257,7 @@ void Model::loadFBX(const char *path) {
     FBX_Scene scene{path};
 
     auto const & fbx_meshes = scene.getMeshes();
-    // auto const & fbx_models = scene.getModels();
+    auto const & fbx_models = scene.getModels();
     auto const & fbx_materials = scene.getMaterials();
     auto const & fbx_textures = scene.getTextures();
 
@@ -313,6 +314,23 @@ void Model::loadFBX(const char *path) {
         Mesh & mesh = meshes.back();
         strcpy(mesh.name, fbx_mesh.name);
 
+        // find model (translation, rotation, scaling)
+        /* TODO: parse hierarchical geometry */
+        int64_t modelId = meshToModel[fbx_mesh.id];
+        auto const & model = fbx_models[idToIndex[modelId].index];
+
+        auto const & transl = model.localTranslation;
+        auto const & rot = glm::radians(model.localRotation);
+        auto const & scale = model.localScaling;
+
+        glm::dmat4 mtransl = glm::translate(0.01 * transl);
+        glm::dmat4 mrot = glm::eulerAngleYXZ(rot.z,rot.x - glm::pi<double>() / 2,rot.y);
+        glm::dmat4 mscale = glm::scale(0.01 * scale);
+
+        glm::dmat4 matrix = mtransl * mrot * mscale;
+        glm::dmat3 invt = glm::dmat3(glm::transpose(glm::inverse(matrix)));
+
+
         // parse geometry
         prt::vector<Vertex> vertexBufferTemp;
         vertexBufferTemp.resize(fbx_mesh.polygonVertexIndex.size());
@@ -320,12 +338,12 @@ void Model::loadFBX(const char *path) {
 
         size_t vi = 0;
         for (glm::dvec3 const & vert : fbx_mesh.vertices) {
-            new (&vertexBufferTemp[vi].pos) glm::vec3(vert);
+            new (&vertexBufferTemp[vi].pos) glm::vec3(matrix * glm::dvec4(vert.x, vert.z, -vert.y, 1.0));
             ++vi;
         }
         vi = 0;
         for (glm::dvec3 const & norm : fbx_mesh.normals) {
-            new (&vertexBufferTemp[vi].normal) glm::vec3(norm);
+            new (&vertexBufferTemp[vi].normal) glm::vec3(invt * glm::dvec3(norm.x, norm.z, -norm.y));
             ++vi;
         }
         vi = 0;
