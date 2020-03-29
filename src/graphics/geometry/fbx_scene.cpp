@@ -1,7 +1,12 @@
 #include "fbx_scene.h"
 
-FBX_Scene::FBX_Scene(char const* path) {
-    FBX_Document doc(path);
+FBX::Scene::Scene(char const* path)
+    : globalSettings{} {
+    FBX::Document doc(path);
+    auto const & globalSettings = doc.getNode("GlobalSettings");
+    assert(globalSettings && "FBX file must contain Global Settings node!");
+    parseGlobalSettings(*globalSettings);
+
     auto const & objects = doc.getNode("Objects");
     assert(objects && "FBX file must contain Objects node!");
     auto const & children = objects->getChildren();
@@ -13,10 +18,7 @@ FBX_Scene::FBX_Scene(char const* path) {
                 parseMesh(child);
             } 
         } else if (strcmp(child.getName(), "Model") == 0) {
-            char const *type = reinterpret_cast<char const*>(child.getProperty(2).data());
-            if (strcmp(type, "Mesh") == 0) {
-                parseModel(child);
-            }
+            parseModel(child);
         } else if (strcmp(child.getName(), "Material") == 0) {
             parseMaterial(child);
         } else if (strcmp(child.getName(), "Texture") == 0) {
@@ -29,14 +31,39 @@ FBX_Scene::FBX_Scene(char const* path) {
     parseConnections(*connections);
 }
 
+void FBX::Scene::parseGlobalSettings(FBX::Document::Node const & node) {
+    auto const & prop70 = node.find("Properties70")->getChildren();
+    for (auto const & prop : prop70) {
+        char const *type = reinterpret_cast<char const*>(prop.getProperty(0).data());
+        if (strcmp(type, "UpAxis") == 0) {
+            globalSettings.upAxis = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "UpAxisSign") == 0) {
+            globalSettings.upAxisSign = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "FrontAxis") == 0) {
+            globalSettings.frontAxis = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "FrontAxisSign") == 0) {
+            globalSettings.frontAxisSign = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "CoordAxis") == 0) {
+            globalSettings.coordAxis = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "CoordAxisSign") == 0) {
+            globalSettings.coordAxisSign = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "OriginalUpAxis") == 0) {
+            globalSettings.originalUpAxis = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "OriginalUpAxisSign") == 0) {
+            globalSettings.originalUpAxisSign = *reinterpret_cast<const int32_t*>(prop.getProperty(4).data());
+        }
+    }
+}
 
-void FBX_Scene::parseMesh(FBX_Document::FBX_Node const & node) {
+
+
+void FBX::Scene::parseMesh(FBX::Document::Node const & node) {
     meshes.push_back({});
-    FBX_Mesh & mesh = meshes.back();
+    Mesh & mesh = meshes.back();
     // get id
     mesh.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(mesh.id, {FBX_TYPE::MESH, int16_t(meshes.size() - 1)});
+    idToIndex.insert(mesh.id, {NODE_TYPE::MESH, int16_t(meshes.size() - 1)});
     // Retrieve name
     char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(mesh.name, name);
@@ -52,7 +79,7 @@ void FBX_Scene::parseMesh(FBX_Document::FBX_Node const & node) {
     memcpy(mesh.polygonVertexIndex.data(), indices.data(), indices.bytes());
 
     // Retrieve normals
-    FBX_Document::FBX_Node const *layerNormal = node.find("LayerElementNormal");
+    Document::Node const *layerNormal = node.find("LayerElementNormal");
     char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data());
     if (strcmp(normalMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for normal has to be By Polygon Vertex!");
@@ -67,7 +94,7 @@ void FBX_Scene::parseMesh(FBX_Document::FBX_Node const & node) {
     mesh.normals.resize(normals.bytes() / sizeof(glm::dvec3));
     std::memcpy(mesh.normals.data(), normals.data(), normals.bytes());
     // Retrieve uv coordinates
-    const FBX_Document::FBX_Node *layerUV = node.find("LayerElementUV");
+    const Document::Node *layerUV = node.find("LayerElementUV");
     char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data());
     if (strcmp(uvMap, "ByPolygonVertex") != 0) {
         assert(false && "Mapping Information Type for UV has to be By Polygon Vertex!");
@@ -87,13 +114,17 @@ void FBX_Scene::parseMesh(FBX_Document::FBX_Node const & node) {
     std::memcpy(mesh.uvIndex.data(), uvIndex.data(), uvIndex.bytes());
 }
 
-void FBX_Scene::parseModel(FBX_Document::FBX_Node const & node) {
+void FBX::Scene::parseModel(FBX::Document::Node const & node) {
     models.push_back({});
-    FBX_Model & model = models.back();
+    FBX::Model & model = models.back();
     // get id
     model.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(model.id, {FBX_TYPE::MODEL, int16_t(models.size() - 1)});
+    idToIndex.insert(model.id, {NODE_TYPE::MODEL, int16_t(models.size() - 1)});
+    // get model type
+    char const *type = reinterpret_cast<char const*>(node.getProperty(2).data());
+    assert(strlen(type) < 32);
+    strcpy(model.type, type);
     // get properties70
     auto const & prop70 = node.find("Properties70")->getChildren();
     for (auto const & prop : prop70) {
@@ -114,31 +145,31 @@ void FBX_Scene::parseModel(FBX_Document::FBX_Node const & node) {
     }
 }
 
-void FBX_Scene::parseMaterial(FBX_Document::FBX_Node const & node) {
+void FBX::Scene::parseMaterial(FBX::Document::Node const & node) {
     materials.push_back({});
-    FBX_Material & material = materials.back();
+    FBX::Material & material = materials.back();
     // get id
     material.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(material.id, {FBX_TYPE::MATERIAL, int16_t(materials.size() - 1)});
+    idToIndex.insert(material.id, {NODE_TYPE::MATERIAL, int16_t(materials.size() - 1)});
     // get name
     char const *name = reinterpret_cast<char const*>(node.getProperty(1).data());
     strcpy(material.name, name);
 }
 
-void FBX_Scene::parseTexture(FBX_Document::FBX_Node const & node) {
+void FBX::Scene::parseTexture(FBX::Document::Node const & node) {
     textures.push_back({});
-    FBX_Texture & texture = textures.back();
+    FBX::Texture & texture = textures.back();
     // get id
     texture.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
-    idToIndex.insert(texture.id, {FBX_TYPE::TEXTURE, int16_t(textures.size() - 1)});
+    idToIndex.insert(texture.id, {NODE_TYPE::TEXTURE, int16_t(textures.size() - 1)});
     // get relative filename
     char const *relativeFilename = reinterpret_cast<char const*>(node.find("RelativeFilename")->getProperty(0).data());
     strcpy(texture.relativeFilename, relativeFilename);
 }
 
-void FBX_Scene::parseConnections(FBX_Document::FBX_Node const & node) {
+void FBX::Scene::parseConnections(FBX::Document::Node const & node) {
     auto const & children = node.getChildren();
     connections.reserve(children.size());
     for (auto const & child : children) {

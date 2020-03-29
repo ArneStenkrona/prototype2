@@ -8,7 +8,7 @@
 
 #include "src/memory/memory_util.h"
 
-FBX_Document::FBX_Document(const char* file) 
+FBX::Document::Document(const char* file) 
     :_dataStack(prt::getAlignment(alignof(std::max_align_t))) {
     std::ifstream input(file, std::ios::binary);
     assert(input && "Cannot open fbx file!");
@@ -46,7 +46,7 @@ FBX_Document::FBX_Document(const char* file)
     */
 }
 
-void FBX_Document::initializeStack(std::ifstream & input, VERSION version) {
+void FBX::Document::initializeStack(std::ifstream & input, VERSION version) {
     auto pos = input.tellg();
     auto state = input.rdstate();
 
@@ -60,7 +60,7 @@ void FBX_Document::initializeStack(std::ifstream & input, VERSION version) {
     input.seekg(pos);
 }
 
-bool FBX_Document::getNodeDataSize(std::ifstream & input, VERSION version, size_t & size) {
+bool FBX::Document::getNodeDataSize(std::ifstream & input, VERSION version, size_t & size) {
     int64_t endOffset;
     int64_t numProperties;
     int64_t propertyListLen;
@@ -127,7 +127,7 @@ bool FBX_Document::getNodeDataSize(std::ifstream & input, VERSION version, size_
     return true;
 }
 
-void FBX_Document::getPropertyDataSize(std::ifstream & input, size_t & size) {
+void FBX::Document::getPropertyDataSize(std::ifstream & input, size_t & size) {
     char dataType;
     input.get(dataType);
     switch (dataType) {
@@ -199,7 +199,7 @@ void FBX_Document::getPropertyDataSize(std::ifstream & input, size_t & size) {
     }
 }
 
-void FBX_Document::getArrayDataSize(std::ifstream & input, Property::TYPE type, size_t & size) {
+void FBX::Document::getArrayDataSize(std::ifstream & input, Property::TYPE type, size_t & size) {
     int32_t len;
     readScalar<int32_t>(input, len);
     int32_t encoding;
@@ -216,7 +216,7 @@ void FBX_Document::getArrayDataSize(std::ifstream & input, Property::TYPE type, 
     size += sizeof(size_t) + padding + len*primSz;
 }
 
-const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) const {
+const FBX::Document::Node * FBX::Document::Node::find(const char* name) const {
     for (auto const & n : children) {
         if (strcmp(n.getName(), name) == 0) {
            return &n;
@@ -225,12 +225,12 @@ const FBX_Document::FBX_Node * FBX_Document::FBX_Node::find(const char* name) co
     return nullptr;
 }
 
-const FBX_Document::FBX_Node * FBX_Document::FBX_Node::getRelative(const char* path) const {
+const FBX::Document::Node * FBX::Document::Node::getRelative(const char* path) const {
     char buffer[256];
     strcpy(buffer, path);
 
     prt::vector<char*> tokens = string_util::split(buffer, "/");
-    const FBX_Node *n = this;
+    const Node *n = this;
     for (auto & t : tokens) {
         if (strcmp(t, "") == 0) {
             continue;
@@ -246,13 +246,13 @@ const FBX_Document::FBX_Node * FBX_Document::FBX_Node::getRelative(const char* p
 }
 
 
-bool FBX_Document::readHeader(std::ifstream & input) {
+bool FBX::Document::readHeader(std::ifstream & input) {
     char buffer[HEADER_STRING_LENGTH];
     input.read(buffer, HEADER_STRING_LENGTH);
     return strcmp(buffer, HEADER_STRING) == 0;
 }
 
-bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, 
+bool FBX::Document::readNode(std::ifstream & input, prt::vector<Node>& nodes, 
                             VERSION version, unsigned char * & stackPointer) {
     int64_t endOffset;
     int64_t numProperties;
@@ -295,7 +295,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     }
 
     nodes.push_back({});
-    FBX_Node & node = nodes.back();
+    Node & node = nodes.back();
     node.setName(name);
     auto propertyEnd = input.tellg() + propertyListLen;
     // Read properties
@@ -323,7 +323,7 @@ bool FBX_Document::readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes,
     return true;
 }
 
-FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::TYPE type,  
+FBX::Document::Property FBX::Document::readArray(std::ifstream & input, Property::TYPE type,  
                                                unsigned char * & stackPointer) {
     int32_t len;
     readScalar<int32_t>(input, len);
@@ -338,10 +338,10 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
     size_t primSz = Property::PRIMITIVE_SIZES[type];
 
     size_t padding = prt::memory_util::calcPadding(uintptr_t(stackPointer), 
-                                                   Property::PRIMITIVE_ALIGNMENTS[type]);
+                                                   alignof(size_t));//Property::PRIMITIVE_ALIGNMENTS[type]);
     stackPointer += padding;
     ret._data = stackPointer;
-    *reinterpret_cast<size_t*>(ret._data) = size_t(len);
+    *reinterpret_cast<size_t*>(ret._data) = int32_t(len);
     stackPointer += sizeof(size_t) + len*primSz;
 
     if (encoding != 0) {
@@ -385,7 +385,7 @@ FBX_Document::Property FBX_Document::readArray(std::ifstream & input, Property::
     return ret;
 }
 
-FBX_Document::Property FBX_Document::readProperty(std::ifstream & input, unsigned char * & stackPointer) {
+FBX::Document::Property FBX::Document::readProperty(std::ifstream & input, unsigned char * & stackPointer) {
     char dataType;
     input.get(dataType);
     Property property{};
@@ -497,7 +497,7 @@ FBX_Document::Property FBX_Document::readProperty(std::ifstream & input, unsigne
     }
 }
 
-bool FBX_Document::checkFooter(std::ifstream & input, VERSION version) {
+bool FBX::Document::checkFooter(std::ifstream & input, VERSION version) {
     unsigned char buffer[footerZeroes2];
     input.read(reinterpret_cast<char*>(buffer), footerZeroes1);
     bool correct = allZero(buffer, footerZeroes1);
@@ -515,7 +515,7 @@ bool FBX_Document::checkFooter(std::ifstream & input, VERSION version) {
     return correct;
 }
 
-void FBX_Document::generateFooterCode(unsigned char *buffer,
+void FBX::Document::generateFooterCode(unsigned char *buffer,
 	                                  int32_t year, int32_t month, int32_t day,
 	                                  int32_t hour, int32_t minute, int32_t second, int32_t millisecond) {
     if(year < 0 || year > 9999)
@@ -550,9 +550,9 @@ void FBX_Document::generateFooterCode(unsigned char *buffer,
     encrypt(buffer, mangledBytes);                                          
 }
 
-void FBX_Document::generateFooterCode(unsigned char *buffer) {
+void FBX::Document::generateFooterCode(unsigned char *buffer) {
     static constexpr char timePath[] = "FBXHeaderExtension/CreationTimeStamp";
-    const FBX_Node *timestamp =  _root.getRelative(timePath);
+    const Node *timestamp =  _root.getRelative(timePath);
     if (timestamp == nullptr) {
         assert(false && "No creation timestamp");
     }
@@ -567,7 +567,7 @@ void FBX_Document::generateFooterCode(unsigned char *buffer) {
                               getTimestampVar(*timestamp, "Millisecond"));
 }
 
-void FBX_Document::encrypt(unsigned char *a, const unsigned char *b) {
+void FBX::Document::encrypt(unsigned char *a, const unsigned char *b) {
     char c = 64;
     for (size_t i = 0; i < FOOTER_CODE_SIZE; ++i) {
         a[i] = (a[i] ^ (c ^ b[i]));
@@ -575,8 +575,8 @@ void FBX_Document::encrypt(unsigned char *a, const unsigned char *b) {
     }
 }
 
-int32_t FBX_Document::getTimestampVar(FBX_Node const & timestamp, const char *element) {
-    const FBX_Node *elementNode = timestamp.find(element);
+int32_t FBX::Document::getTimestampVar(Node const & timestamp, const char *element) {
+    const Node *elementNode = timestamp.find(element);
 
     if (elementNode != nullptr && elementNode->properties.size() > 0) {
         Property const & prop = elementNode->properties[0];
@@ -591,21 +591,21 @@ int32_t FBX_Document::getTimestampVar(FBX_Node const & timestamp, const char *el
     return 0;
 }
 
-bool FBX_Document::allZero(const unsigned char  *array, size_t sz) {
+bool FBX::Document::allZero(const unsigned char  *array, size_t sz) {
     for (size_t i = 0; i < sz; i++) {
         if (array[i] != 0) return false;
     }
     return true;
 }
 
-bool FBX_Document::checkEqual(const unsigned char *a, const unsigned char *b, size_t sz) {
+bool FBX::Document::checkEqual(const unsigned char *a, const unsigned char *b, size_t sz) {
     for (size_t i = 0; i < sz; i++) {
         if (a[i] != b[i]) return false;
     }
     return true;
 }
 
-bool FBX_Document::findBinarySeparator(char *input, size_t length) {
+bool FBX::Document::findBinarySeparator(char *input, size_t length) {
     for (size_t i = 0; i < length; i++) {
         if (input[i] == '\0') {
             assert((input[i+1] == reinterpret_cast<const char&>(BINARY_SEPARATOR[1])) && "Invalid binary separator");
@@ -615,7 +615,7 @@ bool FBX_Document::findBinarySeparator(char *input, size_t length) {
     return false;
 }
 
-prt::vector<char*> FBX_Document::splitWithBinarySeparator(char *input, size_t length) {
+prt::vector<char*> FBX::Document::splitWithBinarySeparator(char *input, size_t length) {
     prt::vector<char*> token;
     if (length == 0) return token;
     token.push_back(input);
@@ -629,7 +629,7 @@ prt::vector<char*> FBX_Document::splitWithBinarySeparator(char *input, size_t le
     return token;
 }
 
-bool FBX_Document::decompress(unsigned char *src, size_t compressedSize,
+bool FBX::Document::decompress(unsigned char *src, size_t compressedSize,
                               unsigned char *dest, size_t uncompressedSize) {
     // Thanks: https://gist.github.com/arq5x/5315739
     // zlib struct
@@ -654,11 +654,11 @@ bool FBX_Document::decompress(unsigned char *src, size_t compressedSize,
     return success;
 }
 
-void FBX_Document::FBX_Node::print(std::ostream & out) const {
+void FBX::Document::Node::print(std::ostream & out) const {
     printRecursive(out, 0);
 }
 
-void FBX_Document::FBX_Node::printRecursive(std::ostream & out, size_t indent) const {
+void FBX::Document::Node::printRecursive(std::ostream & out, size_t indent) const {
     for (size_t i = 0; i < indent; ++i) {
         out << "    ";
     }
@@ -672,7 +672,7 @@ void FBX_Document::FBX_Node::printRecursive(std::ostream & out, size_t indent) c
     }
 }
 
-void FBX_Document::Property::print(std::ostream & out) const {
+void FBX::Document::Property::print(std::ostream & out) const {
     enum TYPE {
         CHAR = 0,
         INT16 = 1,

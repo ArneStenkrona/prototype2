@@ -254,7 +254,7 @@ void Model::loadOBJ(const char* path) {
 void Model::loadFBX(const char *path) {
     assert(!_loaded && "Model is already loaded!");
 
-    FBX_Scene scene{path};
+    FBX::Scene scene{path};
 
     auto const & fbx_meshes = scene.getMeshes();
     auto const & fbx_models = scene.getModels();
@@ -263,6 +263,7 @@ void Model::loadFBX(const char *path) {
 
     auto const & connections = scene.getConnections();
     auto const & idToIndex = scene.getIdToIndex();
+    
 
     // parse connections
     prt::hash_map<int64_t, int64_t> meshToModel;
@@ -275,14 +276,14 @@ void Model::loadFBX(const char *path) {
         auto ti2 = idToIndex.find(connection.second);
         if (ti1 != idToIndex.end() &&
             ti2 != idToIndex.end()) {
-            if (ti1->value().type == FBX_TYPE::MESH &&
-                ti2->value().type == FBX_TYPE::MODEL) {
+            if (ti1->value().type == FBX::NODE_TYPE::MESH &&
+                ti2->value().type == FBX::NODE_TYPE::MODEL) {
                 meshToModel.insert(connection.first, connection.second);
-            } else if (ti1->value().type == FBX_TYPE::MATERIAL &&
-                       ti2->value().type == FBX_TYPE::MODEL) {
+            } else if (ti1->value().type == FBX::NODE_TYPE::MATERIAL &&
+                       ti2->value().type == FBX::NODE_TYPE::MODEL) {
                 modelToMaterial.insert(connection.second, connection.first);
-            } else if (ti1->value().type == FBX_TYPE::TEXTURE &&
-                       ti2->value().type == FBX_TYPE::MATERIAL) {
+            } else if (ti1->value().type == FBX::NODE_TYPE::TEXTURE &&
+                       ti2->value().type == FBX::NODE_TYPE::MATERIAL) {
                 materialToTexture.insert(connection.second, connection.first);
             } 
         }

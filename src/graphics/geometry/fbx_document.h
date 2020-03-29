@@ -11,19 +11,22 @@
 #include "src/config/prototype2Config.h"
 
 #include <fstream>
-class FBX_Document {
+
+namespace FBX {
+
+class Document {
 public:
     /**
      * Reads a binary FBX file from path
      * @param: file file path
      */
-    FBX_Document(const char* file); 
-    FBX_Document & operator=(const FBX_Document&) = delete;
-    FBX_Document(const FBX_Document&) = delete;
+    Document(const char* file); 
+    Document & operator=(const Document&) = delete;
+    Document(const Document&) = delete;
 
-    class FBX_Node;
-    FBX_Node const & getRoot() const { return _root; }
-    FBX_Node const * getNode(const char* path) const { return _root.getRelative(path); }
+    class Node;
+    Node const & getRoot() const { return _root; }
+    Node const * getNode(const char* path) const { return _root.getRelative(path); }
 
     struct Property {
         enum TYPE {
@@ -87,25 +90,25 @@ public:
         void print(std::ostream & out) const;
         private:
         unsigned char *_data;
-        friend class FBX_Document;
+        friend class FBX::Document;
     };
 
-    class FBX_Node {
+    class Node {
     public:
         inline const char* getName() const { return _name; }
-        FBX_Node const * find(const char* name) const;
-        FBX_Node const * getRelative(const char* path) const;
+        Node const * find(const char* name) const;
+        Node const * getRelative(const char* path) const;
 
-        FBX_Document::Property const & getProperty(size_t i) const { return properties[i]; }
-        prt::vector<FBX_Document::Property> const & getProperties() const { return properties; }
+        Document::Property const & getProperty(size_t i) const { return properties[i]; }
+        prt::vector<Document::Property> const & getProperties() const { return properties; }
 
-        FBX_Node const & getChild(size_t i) const { return children[i]; };
-        prt::vector<FBX_Node> const & getChildren() const { return children; };
+        Node const & getChild(size_t i) const { return children[i]; };
+        prt::vector<Node> const & getChildren() const { return children; };
 
         void print(std::ostream & out) const;
     private:
-        prt::vector<FBX_Document::Property> properties;
-        prt::vector<FBX_Node> children;
+        prt::vector<Document::Property> properties;
+        prt::vector<Node> children;
 
         char _name[256];
 
@@ -115,7 +118,7 @@ public:
 
         void printRecursive(std::ostream & out, size_t indent) const;
 
-        friend class FBX_Document;
+        friend class FBX::Document;
     };
 
 private:
@@ -155,7 +158,7 @@ private:
 
     VERSION version;
     // Root node
-    FBX_Node _root;
+    Node _root;
 
     prt::vector<unsigned char> _dataStack;
 
@@ -165,7 +168,7 @@ private:
     void getArrayDataSize(std::ifstream & input, Property::TYPE type, size_t & size);
 
     static bool readHeader(std::ifstream & input);
-    static bool readNode(std::ifstream & input, prt::vector<FBX_Node>& nodes, 
+    static bool readNode(std::ifstream & input, prt::vector<Node>& nodes, 
                          VERSION version, unsigned char * & stackPointer);
 
     static Property readArray(std::ifstream & input, Property::TYPE type, unsigned char * & stackPointer);
@@ -180,7 +183,7 @@ private:
 
     static void encrypt(unsigned char *a, unsigned const char *b);
 
-    static int32_t getTimestampVar(FBX_Node const & timestamp, const char *element);
+    static int32_t getTimestampVar(Node const & timestamp, const char *element);
 
     static bool allZero(const unsigned char *array, size_t sz);
     static bool checkEqual(const unsigned char *a, const unsigned char *b, size_t sz);
@@ -207,6 +210,8 @@ private:
         }
     #endif
     }
+};
+
 };
 
 #endif
