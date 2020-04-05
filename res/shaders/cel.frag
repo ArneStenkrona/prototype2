@@ -18,6 +18,7 @@ layout(location = 0) in VS_OUT {
     vec2 fragTexCoord;
     float t;
     vec3 viewDir;
+    mat3 tbn;
 } fs_in;
 
 layout(location = 0) out vec4 outColor;

@@ -12,6 +12,26 @@ struct ModelUBO {
     alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
     alignas(4) float t = 0;
+    // unsigned char pad12[12];
+};
+
+struct PointLight {
+    alignas(16) glm::vec3 pos;
+    alignas(4)  float a; // quadtratic term
+    alignas(16) glm::vec3 color;
+    alignas(4)  float b; // linear term
+    alignas(4)  float c; // constant term
+};
+
+struct LightUBO {
+    alignas(4) float ambientLight;
+    alignas(4) int32_t noPointLights;
+    alignas(16) PointLight pointLights[4];//[NUMBER_SUPPORTED_POINTLIGHTS];
+};
+
+struct StandardUBO {
+    ModelUBO model;
+    LightUBO light;
 };
 
 struct SkyboxUBO {

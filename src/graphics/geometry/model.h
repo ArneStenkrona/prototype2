@@ -25,6 +25,8 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 texCoord;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
     
     /**
      * @return vulkan binding description
@@ -41,8 +43,8 @@ struct Vertex {
     /**
      * @return vulkan attribute description
      */
-    static prt::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        prt::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
+    static prt::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
+        prt::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
         
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -58,6 +60,16 @@ struct Vertex {
         attributeDescriptions[2].location = 2;
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+        attributeDescriptions[3].binding = 0;
+        attributeDescriptions[3].location = 3;
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = offsetof(Vertex, tangent);
+
+        attributeDescriptions[4].binding = 0;
+        attributeDescriptions[4].location = 4;
+        attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[4].offset = offsetof(Vertex, bitangent);
         
         return attributeDescriptions;
     }
@@ -95,29 +107,31 @@ struct Texture {
     }
 };
 
-// layout(push_constant) uniform PER_OBJECT
-// {
+// layout(push_constant) uniform MATERIAL {
+// 	// layout(offset = 0) int modelMatrixIdx;
 // 	layout(offset = 4) int albedoIndex;
-// 	layout(offset = ?) int normalIndex;
-// 	layout(offset = ?) int specularIndex;
-//     layout(offset = ?) vec3 baseColor;
-//     layout(offset = ?) float baseSpecularity;
-// } pc;
-
-// struct Material {
-//     int32_t albedoMapIndex = -1;
-//     int32_t normalMapIndex = -1;
-//     int32_t specularMapIndex = -1;
-//     glm::vec3 baseColor;
-//     float baseSpecularity;
-// };
+// 	layout(offset = 8) int normalIndex;
+// 	layout(offset = 12) int specularIndex;
+//  layout(offset = 16) vec3 baseColor;
+//  layout(offset = 28) float baseSpecularity;
+// } material;
 
 struct Material {
     char name[256];
     char fragmentShader[256];
     int32_t albedoIndex = -1;
-    // Texture texture;
+    int32_t normalIndex = -1;
+    int32_t specularIndex = -1;
+    glm::vec3 baseColor{1.0f, 1.0f, 1.0f};
+    float baseSpecularity = 0.0f;
 };
+
+// struct Material {
+//     char name[256];
+//     // char fragmentShader[256];
+//     int32_t albedoIndex = -1;
+//     // Texture texture;
+// };
 
 struct Mesh {
     size_t startIndex;
@@ -136,6 +150,7 @@ struct Model {
     void loadFBX(const char* path);
 
 private:
+    void calcTangentSpace();
     bool _loaded = false;
 };
 

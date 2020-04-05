@@ -12,10 +12,10 @@ void GameRenderer::createMaterialPipelines(prt::vector<Model> const & models) {
     createSkyboxMaterialPipeline(assetIndex);
 
     // create pipelines for different shaders
-    assetIndex = pushBackAssets(sizeof(ModelUBO));
+    assetIndex = pushBackAssets(sizeof(StandardUBO));
 
     char vert[256] = RESOURCE_PATH;
-    strcat(vert, "shaders/model.vert.spv");
+    strcat(vert, "shaders/standard.vert.spv");
     for (auto & model : models) {
         for (auto & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
@@ -24,6 +24,7 @@ void GameRenderer::createMaterialPipelines(prt::vector<Model> const & models) {
                 strcat(frag, "shaders/");
                 strcat(frag, material.fragmentShader);
                 strcat(frag, ".spv");
+                // strcat(frag, "shaders/standard.frag.spv");
                 createMeshMaterialPipeline(assetIndex, vert, frag);
                 shaderToIndex[material.fragmentShader] = meshMaterialPipelineIndices.back();
             }
@@ -128,7 +129,7 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;// | VK_SHADER_STAGE_FRAGMENT_BIT;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutBinding textureLayoutBinding = {};
     textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
@@ -209,10 +210,12 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
     // Vertex input
     modelPipeline.vertexInputBinding = Vertex::getBindingDescription();
     auto attrib = Vertex::getAttributeDescriptions();
-    modelPipeline.vertexInputAttributes.resize(3);
-    modelPipeline.vertexInputAttributes[0] = attrib[0];
-    modelPipeline.vertexInputAttributes[1] = attrib[1];
-    modelPipeline.vertexInputAttributes[2] = attrib[2];
+    modelPipeline.vertexInputAttributes.resize(attrib.size());
+    size_t inIndx = 0;
+    for (auto const & att : attrib) {
+        modelPipeline.vertexInputAttributes[inIndx] = att;
+        ++inIndx;
+    }
 
     modelPipeline.vertexShader[0] = '\0';
     strcat(modelPipeline.vertexShader, vertexShader);
@@ -258,7 +261,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
                               glm::vec3 const & viewPosition,
                               glm::mat4 const & skyProjectionMatrix,
                               float time) {
-    // skybox
+    // skybox ubo
     SkyboxUBO& skyboxUBO = *(new (getAssets(materialPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data()) SkyboxUBO{});
 
     glm::mat4 skyboxViewMatrix = viewMatrix;
@@ -270,17 +273,22 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.projection = skyProjectionMatrix;
     skyboxUBO.projection[1][1] *= -1;
 
-    // model                         
-    ModelUBO& modelUBO = *(new (getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data()) ModelUBO{});
+    // standard ubo                     
+    StandardUBO& standardUBO = *(new (getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data()) StandardUBO{});
+    // model
     for (size_t i = 0; i < modelMatrices.size(); i++) {
-        modelUBO.model[i] = modelMatrices[i];
-        modelUBO.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
+        standardUBO.model.model[i] = modelMatrices[i];
+        standardUBO.model.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
     }
-    modelUBO.view = viewMatrix;
-    modelUBO.proj = projectionMatrix;
-    modelUBO.proj[1][1] *= -1;
-    modelUBO.viewPosition = viewPosition;
-    modelUBO.t = time;
+    standardUBO.model.view = viewMatrix;
+    standardUBO.model.proj = projectionMatrix;
+    standardUBO.model.proj[1][1] *= -1;
+    standardUBO.model.viewPosition = viewPosition;
+    standardUBO.model.t = time;
+
+    // lights
+    standardUBO.light.ambientLight = 1.0f;
+    standardUBO.light.noPointLights = 0;
 }
 
 void GameRenderer::loadModels(const prt::vector<Model>& models) {
@@ -361,10 +369,17 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
             DrawCall drawCall;
+            // push constants
             new (&drawCall.pushConstants[0]) int32_t(i);
             new (&drawCall.pushConstants[4]) int32_t(imgIdxOffsets[modelIndices[i]] + material.albedoIndex);
+            new (&drawCall.pushConstants[8]) int32_t(imgIdxOffsets[modelIndices[i]] + material.normalIndex);
+            new (&drawCall.pushConstants[12]) int32_t(imgIdxOffsets[modelIndices[i]] + material.specularIndex);
+            new (&drawCall.pushConstants[12]) glm::vec3(material.baseColor);
+            new (&drawCall.pushConstants[28]) float(material.baseSpecularity);
+            // geometry
             drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
+            // pipeline index
             size_t index = shaderToIndex[material.fragmentShader];
             materialPipelines[index].drawCalls.push_back(drawCall);
         }

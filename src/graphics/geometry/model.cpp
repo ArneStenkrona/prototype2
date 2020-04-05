@@ -157,15 +157,18 @@ void Model::loadOBJ(const char* path) {
             Vertex vertices[3] = {
                 { vertexBufferTemp[vertexIndex[0] - 1].pos,
                   vertexBufferTemp[normalIndex[0] - 1].normal,
-                  vertexBufferTemp[uvIndex[0] - 1].texCoord },
+                  vertexBufferTemp[uvIndex[0] - 1].texCoord,
+                  {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
 
                 { vertexBufferTemp[vertexIndex[1] - 1].pos,
                   vertexBufferTemp[normalIndex[1] - 1].normal,
-                  vertexBufferTemp[uvIndex[1] - 1].texCoord },
+                  vertexBufferTemp[uvIndex[1] - 1].texCoord,
+                  {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
 
                 { vertexBufferTemp[vertexIndex[2] - 1].pos,
                   vertexBufferTemp[normalIndex[2] - 1].normal,
-                  vertexBufferTemp[uvIndex[2] - 1].texCoord }
+                  vertexBufferTemp[uvIndex[2] - 1].texCoord,
+                  {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} }
             };
 
             for (size_t i = 0; i < 3; ++i) {
@@ -228,7 +231,7 @@ void Model::loadOBJ(const char* path) {
             char fragShader[256];
             fscanf(file, "%s", fragShader);
             mtlToFragShader.insert(material, fragShader);
-        } 
+        }
 
         res = fscanf(materialFile, "%s", lineHeader);
     }
@@ -252,6 +255,7 @@ void Model::loadOBJ(const char* path) {
         texture.load();
     }
 
+    calcTangentSpace();
     _loaded = true;
 }
 
@@ -387,13 +391,16 @@ void Model::loadFBX(const char *path) {
             Vertex v[3] =  {
                 { vertexBufferTemp[i0].pos,
                 vertexBufferTemp[i].normal,
-                vertexBufferTemp[uvInd[i]].texCoord },
+                vertexBufferTemp[uvInd[i]].texCoord,
+                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
                 { vertexBufferTemp[i1].pos,
                 vertexBufferTemp[i+1].normal,
-                vertexBufferTemp[uvInd[i+1]].texCoord },
+                vertexBufferTemp[uvInd[i+1]].texCoord,
+                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
                 { vertexBufferTemp[i2].pos,
                 vertexBufferTemp[i+2].normal,
-                vertexBufferTemp[uvInd[i+2]].texCoord },
+                vertexBufferTemp[uvInd[i+2]].texCoord,
+                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} }
             };
             for (size_t i = 0; i < 3; ++i) {
                 if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
@@ -416,5 +423,31 @@ void Model::loadFBX(const char *path) {
         int64_t fbx_materialId = modelToMaterial[fbx_modelId];
         mesh.materialIndex = materialToIndex[fbx_materialId];
     }
+    calcTangentSpace();
     _loaded = true;
+}
+
+void Model::calcTangentSpace() {
+    for (size_t i = 0; i < indexBuffer.size(); i+=3) {
+        auto & v0 = vertexBuffer[indexBuffer[i]];
+        auto & v1 = vertexBuffer[indexBuffer[i+1]];
+        auto & v2 = vertexBuffer[indexBuffer[i+2]];
+
+        glm::vec3 edge1 = v1.pos - v0.pos;
+        glm::vec3 edge2 = v2.pos - v0.pos;
+        glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
+        glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;  
+
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+        v0.tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        v0.tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        v0.tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+        v0.tangent = glm::normalize(v0.tangent);
+
+        v0.bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+        v0.bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+        v0.bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+        v0.bitangent = glm::normalize(v0.bitangent); 
+    }
 }
