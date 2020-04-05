@@ -242,10 +242,14 @@ void Model::loadOBJ(const char* path) {
             strcpy(material.fragmentShader, mtlToFragShader[material.name].c_str());
         }
 
-        strcpy(material.texture.path, path);
-        ptr = strrchr(material.texture.path, '/');
+        material.albedoIndex = textures.size();
+        textures.push_back({});
+        auto & texture = textures.back();
+
+        strcpy(texture.path, path);
+        ptr = strrchr(texture.path, '/');
         strcpy(++ptr, mtlToTexture[material.name].c_str());
-        material.texture.load();
+        texture.load();
     }
 
     _loaded = true;
@@ -265,7 +269,7 @@ void Model::loadFBX(const char *path) {
     auto const & idToIndex = scene.getIdToIndex();
     
 
-    // parse connections
+    // retrieve connections
     prt::hash_map<int64_t, int64_t> meshToModel;
     prt::hash_map<int64_t, int64_t> modelToMaterial;
     prt::hash_map<int64_t, int64_t> materialToTexture;
@@ -289,6 +293,8 @@ void Model::loadFBX(const char *path) {
         }
     }
 
+    prt::hash_map<int64_t, int32_t> fbxIdToTextureIndex;
+    // retrieve materials
     for (auto & mtm : modelToMaterial) {
         materialToIndex.insert(mtm.value(), materials.size());
         materials.push_back({});
@@ -297,17 +303,25 @@ void Model::loadFBX(const char *path) {
         auto & fbx_mat = fbx_materials[idToIndex[mtm.value()].index];
         strcpy(material.name, fbx_mat.name);
 
+
         auto fbx_textureId = materialToTexture.find(fbx_mat.id);
-        // load texture
-        strcpy(material.texture.path, path);
-        char *ptr = strrchr(material.texture.path, '/');
         if (fbx_textureId != materialToTexture.end()) {
-            int16_t fbx_textureIndex = idToIndex[fbx_textureId->value()].index;
-            strcpy(++ptr, fbx_textures[fbx_textureIndex].relativeFilename);
-        } else {
-            strcpy(++ptr, "../../textures/default/default.png");
-        }
-        material.texture.load();
+            int64_t id = fbx_textureId->value();
+            if (fbxIdToTextureIndex.find(id) == fbxIdToTextureIndex.end()) {
+                // get texture index
+                fbxIdToTextureIndex.insert(id, textures.size());
+                textures.push_back({});
+                auto & texture = textures.back();
+
+                // load texture
+                strcpy(texture.path, path);
+                char *ptr = strrchr(texture.path, '/');
+                int16_t fbx_textureIndex = idToIndex[id].index;
+                strcpy(++ptr, fbx_textures[fbx_textureIndex].relativeFilename);
+                texture.load();
+            } 
+            material.albedoIndex = fbxIdToTextureIndex[id];
+        } 
     }
 
     for (auto const & fbx_mesh : fbx_meshes) {
@@ -316,7 +330,7 @@ void Model::loadFBX(const char *path) {
         strcpy(mesh.name, fbx_mesh.name);
 
         // find model (translation, rotation, scaling)
-        /* TODO: parse hierarchical geometry */
+        /* TODO: retrieve hierarchical geometry */
         int64_t modelId = meshToModel[fbx_mesh.id];
         auto const & model = fbx_models[idToIndex[modelId].index];
 
@@ -332,7 +346,7 @@ void Model::loadFBX(const char *path) {
         glm::dmat3 invt = glm::dmat3(glm::transpose(glm::inverse(matrix)));
 
 
-        // parse geometry
+        // retrieve geometry
         prt::vector<Vertex> vertexBufferTemp;
         vertexBufferTemp.resize(fbx_mesh.polygonVertexIndex.size());
         prt::hash_map<Vertex, uint32_t> uniqueVertices;
@@ -393,7 +407,7 @@ void Model::loadFBX(const char *path) {
             vertexBuffer[entry.value()] = entry.key();
         }
 
-        // parse material
+        // retrieve material
         materials.push_back({});
         Material & material = materials.back();
         strcpy(material.fragmentShader, "cel.frag");

@@ -34,7 +34,8 @@ void main() {
 }
 
 vec4 CalcDirLight(vec3 direction, vec3 normal, vec3 viewDir) {
-    vec4 color = texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord);
+    vec4 color = pc.imgIdx > -1 ? texture(sampler2D(textures[pc.imgIdx], samp), fs_in.fragTexCoord)
+                                : vec4(1.0, 0.78, 0.58, 1.0);
     if (color.a == 0.0) {
         discard;
     }

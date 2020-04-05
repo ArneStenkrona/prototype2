@@ -23,7 +23,11 @@ FBX::Scene::Scene(char const* path)
             parseMaterial(child);
         } else if (strcmp(child.getName(), "Texture") == 0) {
             parseTexture(child);
-        } 
+        } else if (strcmp(child.getName(), "AnimationCurveNode") == 0) {
+            parseAnimationCurveNode(child);
+        } else if (strcmp(child.getName(), "AnimationCurve") == 0) {
+            parseAnimationCurve(child);
+        }
     }
 
     auto const & connections = doc.getNode("Connections");
@@ -116,7 +120,7 @@ void FBX::Scene::parseMesh(FBX::Document::Node const & node) {
 
 void FBX::Scene::parseModel(FBX::Document::Node const & node) {
     models.push_back({});
-    FBX::Model & model = models.back();
+    Model & model = models.back();
     // get id
     model.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
@@ -147,7 +151,7 @@ void FBX::Scene::parseModel(FBX::Document::Node const & node) {
 
 void FBX::Scene::parseMaterial(FBX::Document::Node const & node) {
     materials.push_back({});
-    FBX::Material & material = materials.back();
+    Material & material = materials.back();
     // get id
     material.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
@@ -159,7 +163,7 @@ void FBX::Scene::parseMaterial(FBX::Document::Node const & node) {
 
 void FBX::Scene::parseTexture(FBX::Document::Node const & node) {
     textures.push_back({});
-    FBX::Texture & texture = textures.back();
+    Texture & texture = textures.back();
     // get id
     texture.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
     // insertion into search table
@@ -167,6 +171,50 @@ void FBX::Scene::parseTexture(FBX::Document::Node const & node) {
     // get relative filename
     char const *relativeFilename = reinterpret_cast<char const*>(node.find("RelativeFilename")->getProperty(0).data());
     strcpy(texture.relativeFilename, relativeFilename);
+}
+
+void FBX::Scene::parseAnimationCurveNode(FBX::Document::Node const & node) {
+    animationCurveNodes.push_back({});
+    AnimationCurveNode & curveNode = animationCurveNodes.back();
+    // get id
+    curveNode.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
+    // insertion into search table
+    idToIndex.insert(curveNode.id, {NODE_TYPE::ANIMATION_CURVE_NODE, int16_t(animationCurveNodes.size() - 1)});
+    // get properties70
+    auto const & prop70 = node.find("Properties70")->getChildren();
+    for (auto const & prop : prop70) {
+        char const *type = reinterpret_cast<char const*>(prop.getProperty(0).data());
+        if (strcmp(type, "d|X") == 0) {
+            curveNode.dx = *reinterpret_cast<double const*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "d|Y") == 0) {
+            curveNode.dy = *reinterpret_cast<double const*>(prop.getProperty(4).data());
+        } else if (strcmp(type, "d|Z") == 0) {
+            curveNode.dz = *reinterpret_cast<double const*>(prop.getProperty(4).data());
+        }
+    }
+}
+void FBX::Scene::parseAnimationCurve(FBX::Document::Node const & node) {
+    animationCurves.push_back({});
+    AnimationCurve & curve = animationCurves.back();
+    // get id
+    curve.id = *reinterpret_cast<int64_t const*>(node.getProperty(0).data());
+    // insertion into search table
+    idToIndex.insert(curve.id, {NODE_TYPE::ANIMATION_CURVE_NODE, int16_t(animationCurves.size() - 1)});
+    // get properties70
+    for (auto const & child : node.getChildren()) {
+        char const *type = reinterpret_cast<char const*>(child.getProperty(0).data());
+        if (strcmp(type, "Default") == 0) {
+            curve.defaultVal = *reinterpret_cast<double const*>(child.getProperty(4).data());
+        } else if (strcmp(type, "KeyTime") == 0) {
+            int64_t const *ptr = reinterpret_cast<int64_t const*>(child.getProperty(4).data());
+            curve.keyTime[0] = ptr[0];
+            curve.keyTime[1] = ptr[1];
+        } else if (strcmp(type, "KeyValueFloat") == 0) {
+            float const *ptr = reinterpret_cast<float const*>(child.getProperty(4).data());
+            curve.keyValue[0] = ptr[0];
+            curve.keyValue[1] = ptr[1];
+        }
+    }
 }
 
 void FBX::Scene::parseConnections(FBX::Document::Node const & node) {

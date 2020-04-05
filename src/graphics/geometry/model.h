@@ -95,16 +95,33 @@ struct Texture {
     }
 };
 
+// layout(push_constant) uniform PER_OBJECT
+// {
+// 	layout(offset = 4) int albedoIndex;
+// 	layout(offset = ?) int normalIndex;
+// 	layout(offset = ?) int specularIndex;
+//     layout(offset = ?) vec3 baseColor;
+//     layout(offset = ?) float baseSpecularity;
+// } pc;
+
+// struct Material {
+//     int32_t albedoMapIndex = -1;
+//     int32_t normalMapIndex = -1;
+//     int32_t specularMapIndex = -1;
+//     glm::vec3 baseColor;
+//     float baseSpecularity;
+// };
+
 struct Material {
     char name[256];
     char fragmentShader[256];
-    Texture texture;
+    int32_t albedoIndex = -1;
+    // Texture texture;
 };
 
 struct Mesh {
     size_t startIndex;
     size_t numIndices;
-    //char materialName[256];
     int32_t materialIndex = 0;
     char name[256];
 };
@@ -112,25 +129,13 @@ struct Mesh {
 struct Model {
     prt::vector<Mesh> meshes;
     prt::vector<Material> materials;
+    prt::vector<Texture> textures;
     prt::vector<Vertex> vertexBuffer;
     prt::vector<uint32_t> indexBuffer;
-    // char materialFilePath[256];
     void loadOBJ(const char* path);
     void loadFBX(const char* path);
 
 private:
-    // void parseMeshFBX(FBX_Document::FBX_Node const & node);
-    // glm::mat4 parseModelFBX(FBX_Document::FBX_Node const & node);
-    // void parseMaterialFBX(FBX_Document::FBX_Node const & node);
-
-    // void connectFBX(FBX_Document::FBX_Node const & node, 
-    //                 prt::hash_map<int64_t, glm::mat4> modelIdToTransform,
-    //                 prt::hash_map<int64_t, size_t> const & geometryIdToMeshIndex, 
-    //                 prt::hash_map<int64_t, size_t> const & materialIdToMaterialIndex, 
-    //                 prt::hash_map<int64_t, const char *> const & textureIdToTexturePath,
-    //                 const char *path);
-
-
     bool _loaded = false;
 };
 

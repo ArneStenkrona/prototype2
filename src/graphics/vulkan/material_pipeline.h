@@ -9,8 +9,9 @@
 struct DrawCall {
     uint32_t firstIndex;
     uint32_t indexCount;
-    typedef prt::array<uint32_t, 2> ConstantType;
-    ConstantType pushConstants;
+    // typedef prt::array<uint32_t, 2> ConstantType;
+    using PushConstants = prt::array<unsigned char, 32>;
+    PushConstants pushConstants;
 };
 
 struct MaterialPipeline {

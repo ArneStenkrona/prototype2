@@ -4,8 +4,6 @@
 #include "src/container/hash_map.h"
 #include "src/container/vector.h"
 
-#include "src/game/level/level_map.h"
-
 #include "src/graphics/geometry/parametric_shapes.h"
 
 #include "src/graphics/geometry/model.h"

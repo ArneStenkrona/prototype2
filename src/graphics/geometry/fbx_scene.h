@@ -44,29 +44,49 @@ struct Texture {
 };
 
 struct AnimationCurveNode {
+    int64_t id;
     double dx;
     double dy;
     double dz;
 };
 
 struct AnimationCurve {
-    int64_t type;
+    int64_t id;
     double defaultVal;
     int64_t keyTime[2];
-    float kevalueFloat[2];
+    float keyValue[2];
+};
+
+// Pose { (int64: 531894667) (string: "BindPose") (string: "BindPose") }
+//             Type { (string: "BindPose") }
+//             Version { (int32: 100) }
+//             NbPoseNodes { (int32: 41) }
+//             PoseNode { }
+//                 Node { (int64: 140090682) }
+//                 Matrix { (double[16]) }
+//             PoseNode { }
+//                 Node { (int64: 705723536) }
+//                 Matrix { (double[16]) }
+
+struct PoseNode {
+    int64_t id;
+    glm::dmat4 matrix;
 };
 
 enum NODE_TYPE : int16_t {
     MESH,
     MODEL,
     MATERIAL,
-    TEXTURE
+    TEXTURE,
+    ANIMATION_CURVE_NODE,
+    ANIMATION_CURVE
 };
 
 struct TypedIndex {
 NODE_TYPE type;
 int16_t index;
 };
+
 
 class Scene {
 public:
@@ -103,6 +123,8 @@ private:
     void parseModel(FBX::Document::Node const & node);
     void parseMaterial(FBX::Document::Node const & node);
     void parseTexture(FBX::Document::Node const & node);
+    void parseAnimationCurveNode(FBX::Document::Node const & node);
+    void parseAnimationCurve(FBX::Document::Node const & node);
     void parseConnections(FBX::Document::Node const & node);
 
     prt::hash_map<int64_t, TypedIndex> idToIndex;
@@ -111,6 +133,8 @@ private:
     prt::vector<Model> models;
     prt::vector<Material> materials;
     prt::vector<Texture> textures;
+    prt::vector<AnimationCurveNode> animationCurveNodes;
+    prt::vector<AnimationCurve> animationCurves;
 
     GlobalSettings globalSettings;
 

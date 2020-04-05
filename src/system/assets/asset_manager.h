@@ -1,8 +1,6 @@
 #ifndef ASSET_MANAGER_H
 #define ASSET_MANAGER_H
 
-#include "src/game/level/level_map.h"
-
 #include "src/system/assets/model_manager.h"
 
 #include "src/container/array.h"

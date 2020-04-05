@@ -642,7 +642,7 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
 
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = DrawCall::ConstantType::_data_size;
+	pushConstantRange.size = DrawCall::PushConstants::_data_size;
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;

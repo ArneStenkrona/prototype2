@@ -299,12 +299,13 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     for (size_t i = 0; i < models.size(); i++) {
         for (size_t j = 0; j < models[i].meshes.size(); j++) {
             auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
+            auto const & texture = models[i].textures[material.albedoIndex];
             createTextureImage(ass.textureImages.images[numTex], 
                                ass.textureImages.imageMemories[numTex], 
-                               material.texture);
+                               texture);
             createTextureImageView(ass.textureImages.imageViews[numTex], 
                                    ass.textureImages.images[numTex], 
-                                   material.texture.mipLevels);
+                                   texture.mipLevels);
             numTex++;
         }
     }
@@ -312,10 +313,10 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     for (size_t i = numTex; i < ass.textureImages.images.size(); i++) {
         createTextureImage(ass.textureImages.images[i], 
                            ass.textureImages.imageMemories[i], 
-                           models[0].materials.back().texture);
+                           models[0].textures.back());
         createTextureImageView(ass.textureImages.imageViews[i], 
                                ass.textureImages.images[i], 
-                               models[0].materials.back().texture.mipLevels);
+                               models[0].textures.back().mipLevels);
     }
 }
 
@@ -341,8 +342,6 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
     // skybox
     {
         DrawCall drawCall;
-        drawCall.pushConstants[0] = 0;
-        drawCall.pushConstants[1] = 0;
         drawCall.firstIndex = 0;
         drawCall.indexCount = 36;
         materialPipelines[skyboxPipelineIndex].drawCalls.push_back(drawCall);
@@ -359,13 +358,13 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
 
     for (size_t i = 0; i < modelIndices.size(); i++) {
         const Model& model = models[modelIndices[i]];
-        for (size_t j = 0; j < model.meshes.size(); j++) {
+        for (auto const & mesh : model.meshes) {
+            auto const & material = model.materials[mesh.materialIndex];
             DrawCall drawCall;
-            drawCall.pushConstants[0] = i;
-            drawCall.pushConstants[1] = imgIdxOffsets[modelIndices[i]] + j;
-            drawCall.firstIndex = indexOffsets[modelIndices[i]] + model.meshes[j].startIndex;
-            drawCall.indexCount = model.meshes[j].numIndices;
-            auto const & material = model.materials[model.meshes[j].materialIndex];
+            new (&drawCall.pushConstants[0]) int32_t(i);
+            new (&drawCall.pushConstants[4]) int32_t(imgIdxOffsets[modelIndices[i]] + material.albedoIndex);
+            drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
+            drawCall.indexCount = mesh.numIndices;
             size_t index = shaderToIndex[material.fragmentShader];
             materialPipelines[index].drawCalls.push_back(drawCall);
         }
