@@ -237,9 +237,8 @@ const FBX::Document::Node * FBX::Document::Node::getRelative(const char* path) c
         }
         n = n->find(t);
         if (n == nullptr) {
-            assert(false && "TODO: figure out if this should return nullptr or just break");
-            return nullptr;
-            //break;
+            // assert(false && "TODO: figure out if this should return nullptr or crash");
+            break;
         }
     }
     return n;

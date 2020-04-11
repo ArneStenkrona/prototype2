@@ -18,14 +18,24 @@ class Document {
 public:
     /**
      * Reads a binary FBX file from path
-     * @param: file file path
+     * @param file : file path
      */
     Document(const char* file); 
     Document & operator=(const Document&) = delete;
     Document(const Document&) = delete;
 
     class Node;
+    /**
+     * @return the root node of the FBX document
+     */
     Node const & getRoot() const { return _root; }
+    /**
+     * @param path : path to a node within the FBX document,
+     *        eg. "parent/child1/child2"
+     *        note: the method will find the first
+     *        child that matches a name
+     * @return pointer to node or nullptr if none was found
+     */
     Node const * getNode(const char* path) const { return _root.getRelative(path); }
 
     struct Property {
@@ -95,16 +105,48 @@ public:
 
     class Node {
     public:
+        /**
+         * @return name
+         */
         inline const char* getName() const { return _name; }
+        /**
+         * @param name : name of child
+         * @return first child with matching name
+         */
         Node const * find(const char* name) const;
+        /**
+         * @param path : relative path to a node within the FBX document
+         *               eg. "child1/child2/child3"
+         *               note: the method will find the first
+         *               child that matches a name
+         * @return pointer to node or nullptr if none was found
+         */
         Node const * getRelative(const char* path) const;
 
+        /**
+         * @param i : index of property
+         * @return property with index i
+         */
         Document::Property const & getProperty(size_t i) const { return properties[i]; }
+        /**
+         * @return const reference to a vector of all properties
+         */
         prt::vector<Document::Property> const & getProperties() const { return properties; }
 
+        /**
+         * @param i : index of child
+         * @return child with index i 
+         */
         Node const & getChild(size_t i) const { return children[i]; };
+        /**
+         * @return const reference to a vector of all children
+         */
         prt::vector<Node> const & getChildren() const { return children; };
 
+        /**
+         * recursively prints the node and its contents
+         * @param out : output stream
+         */
         void print(std::ostream & out) const;
     private:
         prt::vector<Document::Property> properties;
@@ -201,8 +243,8 @@ private:
     template <class T>
     static void readScalar(std::ifstream & input, unsigned char *dest) {
     #if PRT_BIG_ENDIAN == 1
-        for (size_t i = sizeof(T); i > 0; --i) {
-            input.get(reinterpret_cast<char &>(dest[i-1]));
+        for (size_t i = sizeof(T) - 1; i >= 0; --i) {
+            input.get(reinterpret_cast<char &>(dest[i]));
         }
     #else
         for (size_t i = 0; i < sizeof(T); ++i) {

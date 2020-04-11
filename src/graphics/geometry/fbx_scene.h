@@ -90,13 +90,30 @@ int16_t index;
 
 class Scene {
 public:
+    /**
+     *@param path : path to FBX file 
+     */
     Scene(char const* path);
 
+    /**
+     * @return const reference to a vector of all meshes
+     */
     prt::vector<Mesh> const & getMeshes() { return meshes; }
+    /**
+     * @return const reference to a vector of all models
+     */
     prt::vector<Model> const & getModels() { return models; }
+    /**
+     * @return const reference to a vector of all materials
+     */
     prt::vector<Material> const & getMaterials() { return materials; }
+    /**
+     * @return const reference to a vector of all textures
+     */
     prt::vector<Texture> const & getTextures() { return textures; }
-
+    /**
+     * @return const reference to a vector of all connections
+     */
     prt::vector<std::pair<int64_t, int64_t> > const & getConnections() { return connections; }
 
 
@@ -111,9 +128,15 @@ public:
         int32_t originalUpAxisSign = 1;
         /* TODO: add all global settings */
     };
-
+    /**
+     * @return struct containing global settings
+     */
     GlobalSettings getGlobalSettings() const  { return globalSettings; }
-
+    /**
+     * @return const reference to a hash_map that maps an 
+     *         object ID to its index in the vector that 
+     *         contains the respective object      
+     */
     prt::hash_map<int64_t, TypedIndex> const & getIdToIndex() const { return idToIndex; };    
 
     
