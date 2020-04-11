@@ -3,6 +3,8 @@
 
 #include "vulkan_application.h"
 
+#include "src/graphics/lighting/light.h"
+
 #include "src/container/hash_map.h"
 
 struct ModelUBO {
@@ -15,23 +17,16 @@ struct ModelUBO {
     // unsigned char pad12[12];
 };
 
-struct PointLight {
-    alignas(16) glm::vec3 pos;
-    alignas(4)  float a; // quadtratic term
-    alignas(16) glm::vec3 color;
-    alignas(4)  float b; // linear term
-    alignas(4)  float c; // constant term
-};
-
 struct LightUBO {
     alignas(4) float ambientLight;
     alignas(4) int32_t noPointLights;
+    alignas(16) DirLight sun;
     alignas(16) PointLight pointLights[4];//[NUMBER_SUPPORTED_POINTLIGHTS];
 };
 
 struct StandardUBO {
     ModelUBO model;
-    LightUBO light;
+    LightUBO lighting;
 };
 
 struct SkyboxUBO {
@@ -46,13 +41,28 @@ public:
 
     ~GameRenderer();
 
+    /**
+     * binds a scene to the graphics pipeline
+     * @param scene : scene to bind
+     */
     void bindScene(Scene const & scene);
 
+    /**
+     * updates the scene
+     * @param modelMatrices : model matrices
+     * @param viewMatrix : view matrix
+     * @param projectionMatrix : projection matrix 
+     * @param viewPosition : view position
+     * @param skyProjectionMatrix : projection matrix for skybox
+     * @param sun : sun light
+     * @param time : simulation time in seconds
+     */
     void update(prt::vector<glm::mat4> const & modelMatrices, 
                 glm::mat4 const & viewMatrix, 
                 glm::mat4 const & projectionMatrix, 
                 glm::vec3 const & viewPosition,
                 glm::mat4 const & skyProjectionMatrix,
+                DirLight  const & sun,
                 float time);
 
 private:
@@ -86,6 +96,7 @@ private:
                     glm::mat4 const & projectionMatrix, 
                     glm::vec3 const & viewPosition,
                     glm::mat4 const & skyProjectionMatrix,
+                    DirLight  const & sun,
                     float time);
 };
 

@@ -245,12 +245,14 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           glm::mat4 const & projectionMatrix, 
                           glm::vec3 const & viewPosition,
                           glm::mat4 const & skyProjectionMatrix,
+                          DirLight  const & sun,
                           float time) {      
     updateUBOs(modelMatrices, 
                viewMatrix, 
                projectionMatrix, 
                viewPosition,
                skyProjectionMatrix,
+               sun,
                time);
     VulkanApplication::update();   
 }
@@ -260,9 +262,12 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
                               glm::mat4 const & projectionMatrix, 
                               glm::vec3 const & viewPosition,
                               glm::mat4 const & skyProjectionMatrix,
+                              DirLight  const & sun,
                               float time) {
     // skybox ubo
-    SkyboxUBO& skyboxUBO = *(new (getAssets(materialPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data()) SkyboxUBO{});
+    // SkyboxUBO& skyboxUBO = *(new (getAssets(materialPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data()) SkyboxUBO{});
+    auto skyboxUboData = getAssets(materialPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
+    SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
     glm::mat4 skyboxViewMatrix = viewMatrix;
     skyboxViewMatrix[3][0] = 0.0f;
@@ -274,7 +279,9 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.projection[1][1] *= -1;
 
     // standard ubo                     
-    StandardUBO& standardUBO = *(new (getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data()) StandardUBO{});
+    // StandardUBO& standardUBO = *(new (getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data()) StandardUBO{});
+    auto standardUboData = getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data();
+    StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
     // model
     for (size_t i = 0; i < modelMatrices.size(); i++) {
         standardUBO.model.model[i] = modelMatrices[i];
@@ -287,8 +294,10 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     standardUBO.model.t = time;
 
     // lights
-    standardUBO.light.ambientLight = 1.0f;
-    standardUBO.light.noPointLights = 0;
+    standardUBO.lighting.sun = sun;
+    standardUBO.lighting.ambientLight = 1.0f;
+    standardUBO.lighting.noPointLights = 0;
+
 }
 
 void GameRenderer::loadModels(const prt::vector<Model>& models) {

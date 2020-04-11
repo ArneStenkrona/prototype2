@@ -5,6 +5,7 @@
 
 #include "src/system/assets/asset_manager.h"
 #include "src/graphics/camera/camera.h"
+#include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
 #include "src/game/system/physics_system.h"
 
@@ -26,9 +27,16 @@ public:
     void getModels(prt::vector<Model>& models,
                    prt::vector<uint32_t>& modelIndices) const;
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
-    
 
+    DirLight const & getSun() const { return m_lights.sun; }
+    
 private:
+    // prt::array<PointLight, 10> m_pointLights;
+
+    struct Lights {
+        DirLight sun;
+    } m_lights;
+    
     template<size_t N>
     struct StaticEntities {
         enum { maxSize = N };
@@ -37,18 +45,17 @@ private:
         uint32_t modelIDs[N];
         Transform transforms[N];
     };
-    StaticEntities<10> _staticEntities;
+    StaticEntities<10> m_staticEntities;
 
     template<size_t N>
     struct StaticSolidEntities {
         enum { maxSize = N };
         size_t size = 0;
-
         uint32_t modelIDs[N];
         Transform transforms[N];
         uint32_t triangleMeshColliderIDs[N];
     };
-    StaticSolidEntities<10> _staticSolidEntities;
+    StaticSolidEntities<10> m_staticSolidEntities;
 
     struct {
         uint32_t modelID;
@@ -62,15 +69,15 @@ private:
         bool isGrounded;
         glm::vec3 groundNormal;
         bool jump;
-    } _playerEntity;
+    } m_playerEntity;
 
-    AssetManager& _assetManager;
-    PhysicsSystem& _physicsSystem;
-    Input& _input;
-    Camera& _camera;
+    AssetManager& m_assetManager;
+    PhysicsSystem& m_physicsSystem;
+    Input& m_input;
+    Camera& m_camera;
 
-    glm::vec3 _gravityConstant;
-    float _gravity;
+    glm::vec3 m_gravityConstant;
+    float m_gravity;
     
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t>& modelIDs) const;

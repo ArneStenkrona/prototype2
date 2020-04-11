@@ -1,11 +1,37 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-//layout(location = 0) in vec3 fragNormal;
-//layout(location = 1) in vec2 fragTexCoord;
+struct DirLight {
+    vec3 direction;
+    vec3 color;
+};
+
+struct PointLight {
+    vec3 pos;
+    float a; // quadtratic term
+    vec3 color;
+    float b; // linear term
+    float c; // constant term
+};
+
+layout(set = 0, binding = 0) uniform UniformBufferObject {
+    /* Model */
+    mat4 model[100];
+    mat4 invTransposeModel[100];
+    mat4 view;
+    mat4 proj;
+    vec3 viewPos;
+    float t;
+    /* Lights */
+    float ambientLight;
+    int noPointLights;
+    DirLight sun;
+    PointLight pointLights[4];
+} ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[32];
 layout(set = 0, binding = 2) uniform sampler samp;
+
 
 layout(push_constant) uniform PER_OBJECT
 {
@@ -30,7 +56,7 @@ void main() {
     vec3 norm = normalize(fs_in.normal);
 
     // Directional lighting
-    vec4 result = CalcDirLight(vec3(0.0, -1.0, -1.0), norm, viewDir);
+    vec4 result = CalcDirLight(ubo.sun.direction, norm, viewDir);
     outColor = result;
 }
 

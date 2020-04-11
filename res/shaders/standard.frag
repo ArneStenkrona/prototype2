@@ -1,6 +1,11 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+struct DirLight {
+    vec3 direction;
+    vec3 color;
+};
+
 struct PointLight {
     vec3 pos;
     float a; // quadtratic term
@@ -20,7 +25,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Lights */
     float ambientLight;
     int noPointLights;
-    PointLight pointLights[4];//[@NUMBER_SUPPORTED_POINTLIGHTS@];
+    DirLight sun;
+    PointLight pointLights[4];
 } ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[32];

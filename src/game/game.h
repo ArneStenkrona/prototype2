@@ -19,20 +19,20 @@ public:
     void run();
 
 private:
-    Input _input;
-    GameRenderer _gameRenderer;
+    Input m_input;
+    GameRenderer m_gameRenderer;
 
-    AssetManager _assetManager;
+    AssetManager m_assetManager;
 
-    Camera _camera;
-    PhysicsSystem _physicsSystem;
-    Scene _scene;
+    Camera m_camera;
+    PhysicsSystem m_physicsSystem;
+    Scene m_scene;
 
-    uint32_t _frameRate;
-    uint32_t _microsecondsPerFrame;
+    uint32_t m_frameRate;
+    uint32_t m_microsecondsPerFrame;
 
-    uint64_t _currentFrame;
-    float _time;
+    uint64_t m_currentFrame;
+    float m_time;
 
     void update(float deltaTime);
     void updateGraphics(float deltaTime);
