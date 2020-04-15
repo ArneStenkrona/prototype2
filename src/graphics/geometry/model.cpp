@@ -50,7 +50,7 @@ void countAttributes(FILE* file, size_t& numMesh, size_t& numIndex) {
 }
 
 void Model::loadOBJ(const char* path) {
-    assert(!_loaded && "Model is already loaded!");
+    assert(!m_loaded && "Model is already loaded!");
     FILE* file = fopen(path, "r");
     if (file == nullptr) {
         printf("Could not open file '");
@@ -240,7 +240,7 @@ void Model::loadOBJ(const char* path) {
     for (auto & mesh : meshes) {
         auto & material = materials[mesh.materialIndex];
         if (mtlToFragShader.find(material.name) == mtlToFragShader.end()) {
-            strcpy(material.fragmentShader, "cel.frag");
+            strcpy(material.fragmentShader, "standard.frag");
         } else {
             strcpy(material.fragmentShader, mtlToFragShader[material.name].c_str());
         }
@@ -256,11 +256,11 @@ void Model::loadOBJ(const char* path) {
     }
 
     calcTangentSpace();
-    _loaded = true;
+    m_loaded = true;
 }
 
 void Model::loadFBX(const char *path) {
-    assert(!_loaded && "Model is already loaded!");
+    assert(!m_loaded && "Model is already loaded!");
 
     FBX::Scene scene{path};
 
@@ -303,7 +303,7 @@ void Model::loadFBX(const char *path) {
         materialToIndex.insert(mtm.value(), materials.size());
         materials.push_back({});
         Material & material = materials.back();
-        strcpy(material.fragmentShader, "cel.frag");
+        strcpy(material.fragmentShader, "standard.frag");
         auto & fbx_mat = fbx_materials[idToIndex[mtm.value()].index];
         strcpy(material.name, fbx_mat.name);
 
@@ -366,6 +366,27 @@ void Model::loadFBX(const char *path) {
             ++vi;
         }
         vi = 0;
+        for (glm::dvec3 const & binorm : fbx_mesh.binormals) {
+            new (&vertexBufferTemp[vi].binormal) glm::vec3(invt * glm::dvec3(binorm.x, binorm.z, -binorm.y));
+            ++vi;
+        }
+        vi = 0;
+        for (glm::dvec3 const & tan : fbx_mesh.tangents) {
+            new (&vertexBufferTemp[vi].tangent) glm::vec3(invt * glm::dvec3(tan.x, tan.z, -tan.y));
+            auto & t = vertexBufferTemp[vi].tangent;
+            auto & b = vertexBufferTemp[vi].binormal;
+            auto const & n = vertexBufferTemp[vi].normal;
+            auto const cross = glm::cross(t, b);
+            /* WARNING: The below assumes that only
+             *          only x may be mirrored
+             * */
+            if (glm::dot(cross, n) >= 0.0f) {
+                t.x = -t.x;
+                b.x = -b.x;
+            } 
+            ++vi;
+        }
+        vi = 0;
         for (glm::dvec2 texc : fbx_mesh.uv) {
             new (&vertexBufferTemp[vi].texCoord) glm::vec2(texc.x,-texc.y);
             ++vi;
@@ -392,15 +413,18 @@ void Model::loadFBX(const char *path) {
                 { vertexBufferTemp[i0].pos,
                 vertexBufferTemp[i].normal,
                 vertexBufferTemp[uvInd[i]].texCoord,
-                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
+                vertexBufferTemp[i].tangent,
+                vertexBufferTemp[i].binormal },
                 { vertexBufferTemp[i1].pos,
                 vertexBufferTemp[i+1].normal,
                 vertexBufferTemp[uvInd[i+1]].texCoord,
-                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} },
+                vertexBufferTemp[i+1].tangent,
+                vertexBufferTemp[i+1].binormal },
                 { vertexBufferTemp[i2].pos,
                 vertexBufferTemp[i+2].normal,
                 vertexBufferTemp[uvInd[i+2]].texCoord,
-                {0.0f,0.0f,0.0f}, {0.0f,0.0f,0.0f} }
+                vertexBufferTemp[i+2].tangent,
+                vertexBufferTemp[i+2].binormal }
             };
             for (size_t i = 0; i < 3; ++i) {
                 if (uniqueVertices.find(v[i]) == uniqueVertices.end()) {
@@ -417,14 +441,14 @@ void Model::loadFBX(const char *path) {
         // retrieve material
         materials.push_back({});
         Material & material = materials.back();
-        strcpy(material.fragmentShader, "cel.frag");
+        strcpy(material.fragmentShader, "standard.frag");
         
         int64_t fbx_modelId = meshToModel[fbx_mesh.id];
         int64_t fbx_materialId = modelToMaterial[fbx_modelId];
         mesh.materialIndex = materialToIndex[fbx_materialId];
     }
-    calcTangentSpace();
-    _loaded = true;
+    // calcTangentSpace();
+    m_loaded = true;
 }
 
 void Model::calcTangentSpace() {
@@ -440,14 +464,32 @@ void Model::calcTangentSpace() {
 
         float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-        v0.tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-        v0.tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-        v0.tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-        v0.tangent = glm::normalize(v0.tangent);
+        glm::vec3 tan;
+        glm::vec3 bi;
 
-        v0.bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-        v0.bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-        v0.bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-        v0.bitangent = glm::normalize(v0.bitangent); 
+        tan.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        tan.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        tan.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+        // tan = glm::normalize(tan);
+        v0.tangent += tan; 
+        v1.tangent += tan;
+        v2.tangent += tan;
+
+        bi.x = f * ((-deltaUV2.x * edge1.x) + deltaUV1.x * edge2.x);
+        bi.y = f * ((-deltaUV2.x * edge1.y) + deltaUV1.x * edge2.y);
+        bi.z = f * ((-deltaUV2.x * edge1.z) + deltaUV1.x * edge2.z);
+        // bi = glm::normalize(bi); 
+        v0.binormal += bi; 
+        v1.binormal += bi; 
+        v2.binormal += bi; 
+    }
+    for (auto & vert : vertexBuffer) {
+        vert.tangent = normalize(vert.tangent);
+        vert.tangent = glm::normalize(vert.tangent - (vert.normal * glm::dot(vert.normal, vert.tangent)));
+        glm::vec3 c = glm::cross(vert.normal, vert.tangent);
+        if (glm::dot(c, vert.binormal) < 0) {
+            vert.tangent = -vert.tangent;
+        }
+        vert.binormal = glm::cross(vert.normal, vert.tangent);
     }
 }

@@ -21,7 +21,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-fragment_shader waterfall.frag
 map_Kd waterfall.png
 
 newmtl Material.001
@@ -77,7 +76,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-fragment_shader water_edge.frag
 map_Kd water_edge.png
 
 newmtl waterfall_base
@@ -89,7 +87,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-fragment_shader waterfall_base.frag
 map_Kd water_edge.png
 
 newmtl whirlpool
@@ -101,5 +98,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-fragment_shader whirlpool.frag
 map_Kd whirlpool.png

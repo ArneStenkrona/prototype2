@@ -21,6 +21,8 @@ struct Mesh {
     prt::vector<glm::dvec3> vertices;
     prt::vector<int32_t> polygonVertexIndex;
     prt::vector<glm::dvec3> normals;
+    prt::vector<glm::dvec3> binormals;
+    prt::vector<glm::dvec3> tangents;
     prt::vector<glm::dvec2> uv;
     prt::vector<int32_t> uvIndex;
 };

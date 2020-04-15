@@ -84,9 +84,15 @@ void FBX::Scene::parseMesh(FBX::Document::Node const & node) {
 
     // Retrieve normals
     Document::Node const *layerNormal = node.find("LayerElementNormal");
+    Document::Node const *layerBinormal = node.find("LayerElementBinormal");
+    Document::Node const *layerTangent = node.find("LayerElementTangent");
     char const *normalMap = reinterpret_cast<char const*>(layerNormal->find("MappingInformationType")->getProperty(0).data());
-    if (strcmp(normalMap, "ByPolygonVertex") != 0) {
-        assert(false && "Mapping Information Type for normal has to be By Polygon Vertex!");
+    char const *binormalMap = reinterpret_cast<char const*>(layerBinormal->find("MappingInformationType")->getProperty(0).data());
+    char const *tangentlMap = reinterpret_cast<char const*>(layerTangent->find("MappingInformationType")->getProperty(0).data());
+    if (strcmp(normalMap, "ByPolygonVertex") != 0 ||
+        strcmp(binormalMap, "ByPolygonVertex") != 0 ||
+        strcmp(tangentlMap, "ByPolygonVertex") != 0) {
+        assert(false && "Mapping Information Type for normal, binormal, and tangent has to be By Polygon Vertex!");
         return;
     }
     char const *normalRef = reinterpret_cast<char const*>(layerNormal->find("ReferenceInformationType")->getProperty(0).data());
@@ -94,9 +100,18 @@ void FBX::Scene::parseMesh(FBX::Document::Node const & node) {
         assert(false && "Reference Information Type for normal has to be Direct!");
         return;
     }
+    // copy normals
     auto const & normals = layerNormal->find("Normals")->getProperty(0);
     mesh.normals.resize(normals.bytes() / sizeof(glm::dvec3));
     std::memcpy(mesh.normals.data(), normals.data(), normals.bytes());
+    // copy binormals
+    auto const & binormals = layerBinormal->find("Binormals")->getProperty(0);
+    mesh.binormals.resize(binormals.bytes() / sizeof(glm::dvec3));
+    std::memcpy(mesh.binormals.data(), binormals.data(), binormals.bytes());
+    // copy tangents
+    auto const & tangents = layerTangent->find("Tangents")->getProperty(0);
+    mesh.tangents.resize(tangents.bytes() / sizeof(glm::dvec3));
+    std::memcpy(mesh.tangents.data(), tangents.data(), tangents.bytes());
     // Retrieve uv coordinates
     const Document::Node *layerUV = node.find("LayerElementUV");
     char const *uvMap = reinterpret_cast<char const*>(layerUV->find("MappingInformationType")->getProperty(0).data());

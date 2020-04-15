@@ -136,6 +136,9 @@ glm::quat safeQuatLookAt(
 }
 
 void Scene::update(float deltaTime) {
+    static float t = 0;
+
+    t+=deltaTime;
     updatePlayerInput();
     updatePlayerPhysics(deltaTime);
     updatePhysics(deltaTime);

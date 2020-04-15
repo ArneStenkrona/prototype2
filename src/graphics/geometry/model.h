@@ -26,7 +26,7 @@ struct Vertex {
     glm::vec3 normal;
     glm::vec2 texCoord;
     glm::vec3 tangent;
-    glm::vec3 bitangent;
+    glm::vec3 binormal;
     
     /**
      * @return vulkan binding description
@@ -69,13 +69,17 @@ struct Vertex {
         attributeDescriptions[4].binding = 0;
         attributeDescriptions[4].location = 4;
         attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[4].offset = offsetof(Vertex, bitangent);
+        attributeDescriptions[4].offset = offsetof(Vertex, binormal);
         
         return attributeDescriptions;
     }
 
     bool operator==(const Vertex& other) const {
-        return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
+        return pos      == other.pos      && 
+               normal   == other.normal   && 
+               texCoord == other.texCoord &&
+               tangent  == other.tangent  &&
+               binormal == other.binormal;
     }
 
     bool operator!=(const Vertex& other) const {
@@ -86,7 +90,11 @@ struct Vertex {
 namespace std {
     template<> struct hash<Vertex> {
         size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+            return ((((((hash<glm::vec3>()(vertex.pos) ^ 
+                        (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
+                        (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
+                        (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
+                        (hash<glm::vec3>()(vertex.binormal) << 1);
         }
     };
 }
@@ -106,15 +114,6 @@ struct Texture {
         return &pixelBuffer[si];
     }
 };
-
-// layout(push_constant) uniform MATERIAL {
-// 	// layout(offset = 0) int modelMatrixIdx;
-// 	layout(offset = 4) int albedoIndex;
-// 	layout(offset = 8) int normalIndex;
-// 	layout(offset = 12) int specularIndex;
-//  layout(offset = 16) vec3 baseColor;
-//  layout(offset = 28) float baseSpecularity;
-// } material;
 
 struct Material {
     char name[256];
@@ -151,7 +150,7 @@ struct Model {
 
 private:
     void calcTangentSpace();
-    bool _loaded = false;
+    bool m_loaded = false;
 };
 
 #endif

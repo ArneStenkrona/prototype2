@@ -161,7 +161,7 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
 
     // Descriptor sets
     modelPipeline.descriptorSets.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); i++) {
+    for (size_t i = 0; i < swapChainImages.size(); ++i) {
         modelPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
         modelPipeline.descriptorBufferInfos[i].offset = 0;
         modelPipeline.descriptorBufferInfos[i].range = ass.uniformBufferData.uboData.size();
@@ -283,7 +283,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     auto standardUboData = getAssets(materialPipelines[meshMaterialPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data();
     StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
     // model
-    for (size_t i = 0; i < modelMatrices.size(); i++) {
+    for (size_t i = 0; i < modelMatrices.size(); ++i) {
         standardUBO.model.model[i] = modelMatrices[i];
         standardUBO.model.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
     }
@@ -295,7 +295,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
 
     // lights
     standardUBO.lighting.sun = sun;
-    standardUBO.lighting.ambientLight = 1.0f;
+    standardUBO.lighting.ambientLight = 0.2f;
     standardUBO.lighting.noPointLights = 0;
 
 }
@@ -313,8 +313,8 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     ass.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
     ass.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
     ass.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
-    for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i].meshes.size(); j++) {
+    for (size_t i = 0; i < models.size(); ++i) {
+        for (size_t j = 0; j < models[i].meshes.size(); ++j) {
             auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
             auto const & texture = models[i].textures[material.albedoIndex];
             createTextureImage(ass.textureImages.images[numTex], 
@@ -327,7 +327,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
         }
     }
 
-    for (size_t i = numTex; i < ass.textureImages.images.size(); i++) {
+    for (size_t i = numTex; i < ass.textureImages.images.size(); ++i) {
         createTextureImage(ass.textureImages.images[i], 
                            ass.textureImages.imageMemories[i], 
                            models[0].textures.back());
@@ -368,23 +368,27 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
     prt::vector<uint32_t> indexOffsets = { 0 };
     imgIdxOffsets.resize(models.size());
     indexOffsets.resize(models.size());
-    for (size_t i = 1; i < models.size(); i++) {
+    for (size_t i = 1; i < models.size(); ++i) {
         imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
         indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
     }
 
-    for (size_t i = 0; i < modelIndices.size(); i++) {
+    for (size_t i = 0; i < modelIndices.size(); ++i) {
         const Model& model = models[modelIndices[i]];
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
             DrawCall drawCall;
+            // compute texture indices
+            int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] +  material.albedoIndex;
+            int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.normalIndex;
+            int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.specularIndex;
             // push constants
-            new (&drawCall.pushConstants[0]) int32_t(i);
-            new (&drawCall.pushConstants[4]) int32_t(imgIdxOffsets[modelIndices[i]] + material.albedoIndex);
-            new (&drawCall.pushConstants[8]) int32_t(imgIdxOffsets[modelIndices[i]] + material.normalIndex);
-            new (&drawCall.pushConstants[12]) int32_t(imgIdxOffsets[modelIndices[i]] + material.specularIndex);
-            new (&drawCall.pushConstants[12]) glm::vec3(material.baseColor);
-            new (&drawCall.pushConstants[28]) float(material.baseSpecularity);
+            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[0]) = i;
+            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[4]) = albedoIndex;
+            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[8]) = normalIndex;
+            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[12]) = specularIndex;
+            *reinterpret_cast<glm::vec3*>(&drawCall.pushConstants[16]) = material.baseColor;
+            *reinterpret_cast<float*>(&drawCall.pushConstants[28]) = material.baseSpecularity;
             // geometry
             drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
@@ -397,8 +401,8 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
 
 void GameRenderer::createVertexBuffer(const prt::vector<Model>& models) {
     prt::vector<Vertex> allVertices;
-    for (size_t i = 0; i < models.size(); i++) {
-        for (size_t j = 0; j < models[i].vertexBuffer.size(); j++) {
+    for (size_t i = 0; i < models.size(); ++i) {
+        for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
             allVertices.push_back(models[i].vertexBuffer[j]);
         }
     }
