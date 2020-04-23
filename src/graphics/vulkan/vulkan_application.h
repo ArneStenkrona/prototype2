@@ -210,8 +210,17 @@ private:
 
     void createPipelineCaches();
 
+    void createShadowMapPipeline();
     void createGraphicsPipelines();
     void createGraphicsPipeline(MaterialPipeline& materialPipeline);
+    void createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
+                                VkVertexInputBindingDescription const & vertexInputBinding,
+                                VkDescriptorSetLayout const & descriptorSetLayout,
+                                VkPipelineLayout & pipelineLayout,
+                                char const * vertexShader,
+                                char const * fragmentShader,
+                                VkPipelineCache const & pipelineCache,
+                                VkPipeline & pipeline);
     
     void createFramebuffers();
     

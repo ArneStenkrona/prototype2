@@ -565,13 +565,31 @@ void VulkanApplication::createPipelineCaches()
 }
 
 void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipeline) {
+    createGraphicsPipeline(materialPipeline.vertexInputAttributes,
+                           materialPipeline.vertexInputBinding,
+                           materialPipeline.descriptorSetLayout,
+                           materialPipeline.pipelineLayout,
+                           materialPipeline.vertexShader,
+                           materialPipeline.fragmentShader,
+                           materialPipeline.pipelineCache,
+                           materialPipeline.pipeline);
+}
+
+void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
+                                               VkVertexInputBindingDescription const & vertexInputBinding,
+                                               VkDescriptorSetLayout const & descriptorSetLayout,
+                                               VkPipelineLayout & pipelineLayout,
+                                               char const * vertexShader,
+                                               char const * fragmentShader,
+                                               VkPipelineCache const & pipelineCache,
+                                               VkPipeline & pipeline) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
     vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount = materialPipeline.vertexInputAttributes.size();
-    vertexInputInfo.pVertexBindingDescriptions = &materialPipeline.vertexInputBinding;
-    vertexInputInfo.pVertexAttributeDescriptions = materialPipeline.vertexInputAttributes.data();
+    vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributes.size();
+    vertexInputInfo.pVertexBindingDescriptions = &vertexInputBinding;
+    vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributes.data();
     
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -638,7 +656,7 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &materialPipeline.descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
@@ -648,7 +666,7 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
     
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &materialPipeline.pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         assert(false && "failed to create pipeline layout!");
     }
     prt::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { VkPipelineShaderStageCreateInfo{},
@@ -665,13 +683,13 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = materialPipeline.pipelineLayout;
+    pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     
-    VkShaderModule vertShaderModule = createShaderModule(materialPipeline.vertexShader);
-    VkShaderModule fragShaderModule = createShaderModule(materialPipeline.fragmentShader);
+    VkShaderModule vertShaderModule = createShaderModule(vertexShader);
+    VkShaderModule fragShaderModule = createShaderModule(fragmentShader);
 
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -684,8 +702,8 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
     shaderStages[1].pName = "main";
 
     
-    if (vkCreateGraphicsPipelines(device, materialPipeline.pipelineCache, 1, 
-                                  &pipelineInfo, nullptr, &materialPipeline.pipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, pipelineCache, 1, 
+                                  &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
         assert(false && "failed to create graphics pipeline!");
     }
     
