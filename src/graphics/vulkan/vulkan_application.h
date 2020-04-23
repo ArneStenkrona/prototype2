@@ -3,7 +3,7 @@
 
 #include "src/graphics/geometry/model.h"
 
-#include "material_pipeline.h"
+#include "graphics_pipeline.h"
 
 #include "src/system/input/input.h"
 
@@ -122,7 +122,7 @@ protected:
 
     VkRenderPass renderPass;
 
-    prt::vector<MaterialPipeline> materialPipelines;
+    prt::vector<GraphicsPipeline> graphicsPipelines;
 
     void update();
 
@@ -212,7 +212,7 @@ private:
 
     void createShadowMapPipeline();
     void createGraphicsPipelines();
-    void createGraphicsPipeline(MaterialPipeline& materialPipeline);
+    void createGraphicsPipeline(GraphicsPipeline& materialPipeline);
     void createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
                                 VkVertexInputBindingDescription const & vertexInputBinding,
                                 VkDescriptorSetLayout const & descriptorSetLayout,

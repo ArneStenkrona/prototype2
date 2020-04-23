@@ -113,10 +113,10 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    for (auto & materialPipeline : materialPipelines) {
-        vkDestroyPipelineCache(device, materialPipeline.pipelineCache, nullptr);
-        vkDestroyPipeline(device, materialPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, materialPipeline.pipelineLayout, nullptr);
+    for (auto & graphicsPipeline : graphicsPipelines) {
+        vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
+        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
+        vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
     }
     vkDestroyRenderPass(device, renderPass, nullptr);
  
@@ -126,9 +126,9 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    for (auto & materialPipeline : materialPipelines) {
-        vkDestroyDescriptorPool(device, materialPipeline.descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, materialPipeline.descriptorSetLayout, nullptr);
+    for (auto & graphicsPipeline : graphicsPipelines) {
+        vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
     }
 }
     
@@ -541,13 +541,13 @@ void VulkanApplication::createRenderPassMsaa() {
 }
 
 void VulkanApplication::createDescriptorSetLayouts() {
-    for (auto & materialPipeline : materialPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines) {
         VkDescriptorSetLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(materialPipeline.descriptorSetLayoutBindings.size());
-        layoutInfo.pBindings = materialPipeline.descriptorSetLayoutBindings.data();
+        layoutInfo.bindingCount = static_cast<uint32_t>(graphicsPipeline.descriptorSetLayoutBindings.size());
+        layoutInfo.pBindings = graphicsPipeline.descriptorSetLayoutBindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &materialPipeline.descriptorSetLayout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &graphicsPipeline.descriptorSetLayout) != VK_SUCCESS) {
             assert(false && "failed to create descriptor set layout!");
         }
     }
@@ -555,23 +555,23 @@ void VulkanApplication::createDescriptorSetLayouts() {
 
 void VulkanApplication::createPipelineCaches()
 {
-    for (auto & materialPipeline : materialPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines) {
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        if(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &materialPipeline.pipelineCache) != VK_SUCCESS) {
+        if(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &graphicsPipeline.pipelineCache) != VK_SUCCESS) {
             assert(false && "failed to create pipeline cache");
         }
     }
 }
 
-void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipeline) {
-    createGraphicsPipeline(materialPipeline.vertexInputAttributes,
-                           materialPipeline.vertexInputBinding,
-                           materialPipeline.descriptorSetLayout,
-                           materialPipeline.pipelineLayout,
-                           materialPipeline.shaderStages,
-                           materialPipeline.pipelineCache,
-                           materialPipeline.pipeline);
+void VulkanApplication::createGraphicsPipeline(GraphicsPipeline& graphicsPipeline) {
+    createGraphicsPipeline(graphicsPipeline.vertexInputAttributes,
+                           graphicsPipeline.vertexInputBinding,
+                           graphicsPipeline.descriptorSetLayout,
+                           graphicsPipeline.pipelineLayout,
+                           graphicsPipeline.shaderStages,
+                           graphicsPipeline.pipelineCache,
+                           graphicsPipeline.pipeline);
 }
 
 void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
@@ -705,8 +705,8 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
 }
 
 void VulkanApplication::createGraphicsPipelines() {
-    for (auto & materialPipeline : materialPipelines) {
-        createGraphicsPipeline(materialPipeline);
+    for (auto & graphicsPipeline : graphicsPipelines) {
+        createGraphicsPipeline(graphicsPipeline);
     }
 }
 
@@ -1208,54 +1208,54 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
 }
 
 void VulkanApplication::createDescriptorPools() {
-    for (auto & materialPipeline : materialPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines) {
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(materialPipeline.descriptorPoolSizes.size());
-        poolInfo.pPoolSizes = materialPipeline.descriptorPoolSizes.data();
+        poolInfo.poolSizeCount = static_cast<uint32_t>(graphicsPipeline.descriptorPoolSizes.size());
+        poolInfo.pPoolSizes = graphicsPipeline.descriptorPoolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(swapChainImages.size());
         
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &materialPipeline.descriptorPool) != VK_SUCCESS) {
+        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &graphicsPipeline.descriptorPool) != VK_SUCCESS) {
             assert(false && "failed to create descriptor pool!");
         }
     }
 }
 
 void VulkanApplication::createDescriptorSets() {
-    for (auto & materialPipeline : materialPipelines) {
-        prt::vector<VkDescriptorSetLayout> skyboxLayouts(swapChainImages.size(), materialPipeline.descriptorSetLayout);
+    for (auto & graphicsPipeline : graphicsPipelines) {
+        prt::vector<VkDescriptorSetLayout> skyboxLayouts(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = materialPipeline.descriptorPool;
+        allocInfo.descriptorPool = graphicsPipeline.descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
         allocInfo.pSetLayouts = skyboxLayouts.data();
 
-        materialPipeline.descriptorSets.resize(swapChainImages.size());
-        if (vkAllocateDescriptorSets(device, &allocInfo, materialPipeline.descriptorSets.data()) != VK_SUCCESS) {
+        graphicsPipeline.descriptorSets.resize(swapChainImages.size());
+        if (vkAllocateDescriptorSets(device, &allocInfo, graphicsPipeline.descriptorSets.data()) != VK_SUCCESS) {
             assert(false && "failed to allocate descriptor sets!");
         }
     
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
-                Assets& ass = assets[materialPipeline.assetsIndex];
+                Assets& ass = assets[graphicsPipeline.assetsIndex];
                 bufferInfo.buffer = ass.uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
                 bufferInfo.range = ass.uniformBufferData.uboData.size();
                 
-                for (auto & descriptorWrite : materialPipeline.descriptorWrites[i]) {
-                    descriptorWrite.dstSet = materialPipeline.descriptorSets[i];
+                for (auto & descriptorWrite : graphicsPipeline.descriptorWrites[i]) {
+                    descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
                 }
-                materialPipeline.descriptorWrites[i][0].pBufferInfo = &materialPipeline.descriptorBufferInfos[i];
-                for (size_t j = 0; j < materialPipeline.descriptorImageInfos.size(); j++) {
-                    materialPipeline.descriptorImageInfos[j].sampler = textureSampler;
-                    materialPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    materialPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
+                graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];
+                for (size_t j = 0; j < graphicsPipeline.descriptorImageInfos.size(); j++) {
+                    graphicsPipeline.descriptorImageInfos[j].sampler = textureSampler;
+                    graphicsPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    graphicsPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
                 }
-                materialPipeline.descriptorWrites[i][1].pImageInfo = materialPipeline.descriptorImageInfos.data();
+                graphicsPipeline.descriptorWrites[i][1].pImageInfo = graphicsPipeline.descriptorImageInfos.data();
 
-                vkUpdateDescriptorSets(device, static_cast<uint32_t>(materialPipeline.descriptorWrites[i].size()), 
-                                        materialPipeline.descriptorWrites[i].data(), 0, nullptr);
+                vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
+                                        graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);
         }
     }
 }
@@ -1442,33 +1442,33 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
 void VulkanApplication::createDrawCommands(size_t const imageIndex) {
     static constexpr VkDeviceSize offset = 0;
     size_t* prevAssetIndex = nullptr;
-    // for (auto & materialPipeline : materialPipelines) {
-    for (size_t i = 1; i < materialPipelines.size(); i++) {
+    // for (auto & graphicsPipeline : graphicsPipelines) {
+    for (size_t i = 1; i < graphicsPipelines.size(); i++) {
         if (i == 2) continue;
-        auto & materialPipeline = materialPipelines[i];
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, materialPipeline.pipeline);
+        auto & graphicsPipeline = graphicsPipelines[i];
+        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 
-        if (prevAssetIndex == nullptr || *prevAssetIndex != materialPipeline.assetsIndex) {
-            Assets& ass = assets[materialPipeline.assetsIndex];
+        if (prevAssetIndex == nullptr || *prevAssetIndex != graphicsPipeline.assetsIndex) {
+            Assets& ass = assets[graphicsPipeline.assetsIndex];
             vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
             vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-            prevAssetIndex = &materialPipeline.assetsIndex;
+            prevAssetIndex = &graphicsPipeline.assetsIndex;
         }
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                                materialPipeline.pipelineLayout, 0, 1, &materialPipeline.descriptorSets[imageIndex], 0, nullptr);
+                                graphicsPipeline.pipelineLayout, 0, 1, &graphicsPipeline.descriptorSets[imageIndex], 0, nullptr);
 
-        for (size_t i = 0; i < materialPipeline.drawCalls.size(); i++) {
-            vkCmdPushConstants(commandBuffers[imageIndex], materialPipeline.pipelineLayout, 
+        for (size_t i = 0; i < graphicsPipeline.drawCalls.size(); i++) {
+            vkCmdPushConstants(commandBuffers[imageIndex], graphicsPipeline.pipelineLayout, 
                                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
                                 0, 
-                                materialPipeline.drawCalls[i].pushConstants.size() * 
-                                                        sizeof(materialPipeline.drawCalls[i].pushConstants[0]), 
-                                (void *)materialPipeline.drawCalls[i].pushConstants.data());
+                                graphicsPipeline.drawCalls[i].pushConstants.size() * 
+                                                        sizeof(graphicsPipeline.drawCalls[i].pushConstants[0]), 
+                                (void *)graphicsPipeline.drawCalls[i].pushConstants.data());
 
             vkCmdDrawIndexed(commandBuffers[imageIndex], 
-                    materialPipeline.drawCalls[i].indexCount,
+                    graphicsPipeline.drawCalls[i].indexCount,
                     1,
-                    materialPipeline.drawCalls[i].firstIndex,
+                    graphicsPipeline.drawCalls[i].firstIndex,
                     0,
                     i);
         }

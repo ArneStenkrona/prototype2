@@ -1,5 +1,5 @@
-#ifndef MATERIAL_PIPELINE_H
-#define MATERIAL_PIPELINE_H
+#ifndef GRAPHICS_PIPELINE_H
+#define GRAPHICS_PIPELINE_H
 
 #include <vulkan/vulkan.h>
 
@@ -20,7 +20,7 @@ struct ShaderStage {
     char pName[512];
 };
 
-struct MaterialPipeline {
+struct GraphicsPipeline {
     // Assets handle
     size_t assetsIndex;
 
