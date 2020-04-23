@@ -89,6 +89,12 @@ struct Assets {
     UniformBufferData uniformBufferData;
 };
 
+struct FrameBufferAttachment {
+		VkImage image;
+		VkDeviceMemory memory;
+		VkImageView imageView;
+};
+
 class VulkanApplication {
 public:
     VulkanApplication();
@@ -119,7 +125,7 @@ protected:
     VkExtent2D swapChainExtent;
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
-
+    
     VkRenderPass renderPass;
 
     prt::vector<GraphicsPipeline> graphicsPipelines;
@@ -160,13 +166,12 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentQueue;
         
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
+    FrameBufferAttachment colorAttachment;
     
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    FrameBufferAttachment depthAttachment;
+    // VkImage depthImage;
+    // VkDeviceMemory depthImageMemory;
+    // VkImageView depthImageView;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;

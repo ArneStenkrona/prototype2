@@ -35,6 +35,10 @@ struct SkyboxUBO {
 		//alignas(4) float lodBias = 0.0f;
 };
 
+struct ShadowMapUBO  {
+    alignas(16) glm::mat4 depthMVP;
+};
+
 class GameRenderer : public VulkanApplication {
 public:
     GameRenderer();
@@ -67,6 +71,7 @@ public:
 
 private:
     size_t skyboxPipelineIndex;
+    size_t shadowMapPipelineIndex;
     prt::vector<size_t> meshGraphicsPipelineIndices;
     prt::hash_map<std::string, size_t> shaderToIndex;
 
