@@ -43,12 +43,13 @@ layout(push_constant) uniform MATERIAL {
 
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
-    vec3 normal;
+    //vec3 normal;
     vec2 fragTexCoord;
-    float t;
-    vec3 viewDir;
-    vec3 viewPos;
-    mat3 tbn;
+    //float t;
+    //vec3 viewDir;
+    //vec3 viewPos;
+    //mat3 tbn;
+    vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
 } fs_in;
@@ -56,16 +57,16 @@ layout(location = 0) in VS_OUT {
 
 layout(location = 0) out vec4 outColor;
 
-vec3 CalcPointLight(mat3 tbn, PointLight light, vec3 normal, vec3 viewDir,
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
-vec3 CalcDirLight(mat3 tbn, DirLight light, vec3 normal, vec3 viewDir,
+vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity);
 
 void main() {
     // normalize tbn
-    mat3 tbn = mat3(normalize(fs_in.tbn[0]),
-                    normalize(fs_in.tbn[1]),
-                    normalize(fs_in.tbn[2]));
+    //mat3 tbn = mat3(normalize(fs_in.tbn[0]),
+    //                normalize(fs_in.tbn[1]),
+    //                normalize(fs_in.tbn[2]));
 
     // get albedo
     vec3 albedo = material.albedoIndex < 0 ? material.baseColor :
@@ -75,33 +76,31 @@ void main() {
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
     // get normal
-    vec3 normal = material.normalIndex < 0 ? 2.0 * fs_in.normal - 1.0 :
+    vec3 normal = material.normalIndex < 0 ? vec3(0,0,1) :
                                          2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
     normal = normalize(normal);
-    // normal = normalize(fs_in.normal);
+
     // get view direction
     vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
-    // viewDir = normalize(fs_in.viewPos - fs_in.fragPos);
 
     // light
     vec3 res = ubo.ambientLight * albedo;;
     // Point lights
     for (int i = 0; i < ubo.noPointLights; ++i) {
-        res += CalcPointLight(tbn, ubo.pointLights[i], normal, viewDir,
+        res += CalcPointLight(ubo.pointLights[i], normal, viewDir,
                               albedo, specularity);
     }
 
     // Directional lighting
-    res += CalcDirLight(tbn, ubo.sun, normal, viewDir,
-                       albedo, specularity);
-                       
+    res += CalcDirLight(-fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
+                        albedo, specularity);
     outColor = vec4(res, 1.0);
 }
 
-vec3 CalcPointLight(mat3 tbn, PointLight light, vec3 normal, vec3 viewDir,
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = normalize((fs_in.tbn * light.pos) - fs_in.tangentFragPos);
-    // vec3 reflectDir = reflect(-lightDir, normal); // phong
+    vec3 lightDir = fs_in.tangentFragPos - light.pos;
+    vec3 reflectDir = reflect(-lightDir, normal); // phong
     vec3 halfwayDir = normalize(lightDir + viewDir); // blinn-phong
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -120,19 +119,17 @@ vec3 CalcPointLight(mat3 tbn, PointLight light, vec3 normal, vec3 viewDir,
     return diffuse + specular;
 }
 
-vec3 CalcDirLight(mat3 tbn, DirLight light, vec3 normal, vec3 viewDir,
+vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity) {
-    vec3 lightDir = -normalize(tbn * light.direction);
-    // vec3 lightDir = -light.direction;
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
     // specular shading
     // vec3 reflectDir = reflect(-lightDir, normal); // phong
     vec3 halfwayDir = normalize(lightDir + viewDir); // blinn-phong
     float shininess = 32.0;
-    float spec = /*specularity **/ pow(max(dot(normal, halfwayDir), 0.0), shininess);
+    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess);
     // combine results
-    vec3 diffuse  = light.color  * diff * albedo;
-    vec3 specular = light.color * spec;
+    vec3 diffuse  = lightColor  * diff * albedo;
+    vec3 specular = lightColor * spec;
     return diffuse + specular;
 }

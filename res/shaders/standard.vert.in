@@ -42,12 +42,13 @@ layout(location = 4) in vec3 inBinormal;
 
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
-    vec3 normal;
+    //vec3 normal;
     vec2 fragTexCoord;
-    float t;
-    vec3 viewDir;
-    vec3 viewPos;
-    mat3 tbn;
+    //float t;
+    //vec3 viewDir;
+    //vec3 viewPos;
+    //mat3 tbn;
+    vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
 } vs_out;
@@ -58,16 +59,17 @@ void main() {
     vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inBinormal);
     vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inNormal);
 
-    vs_out.normal = n;
-    vs_out.tbn = mat3(t,b,n);
+    mat3 tbn = transpose(mat3(t,b,n));
+    //vs_out.normal = vs_out.tbn * n;
     
     vs_out.fragTexCoord = inTexCoord;
-    vs_out.t = ubo.t;
-    vs_out.viewDir = ubo.viewPos - vs_out.fragPos;
-    vs_out.viewPos = ubo.viewPos;
+    //vs_out.t = ubo.t;
+    //vs_out.viewDir = ubo.viewPos - vs_out.fragPos;
+    //vs_out.viewPos = ubo.viewPos;
 
-    vs_out.tangentViewPos = vs_out.tbn * ubo.viewPos;
-    vs_out.tangentFragPos = vs_out.tbn * vs_out.fragPos;
+    vs_out.tangentSunDir = tbn * ubo.sun.direction;
+    vs_out.tangentViewPos = tbn * ubo.viewPos;
+    vs_out.tangentFragPos = tbn * vs_out.fragPos;
 
     gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
 }

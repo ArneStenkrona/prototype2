@@ -122,7 +122,7 @@ struct Material {
     int32_t normalIndex = -1;
     int32_t specularIndex = -1;
     glm::vec3 baseColor{1.0f, 1.0f, 1.0f};
-    float baseSpecularity = 0.0f;
+    float baseSpecularity = 0.5f;
 };
 
 // struct Material {

@@ -373,17 +373,6 @@ void Model::loadFBX(const char *path) {
         vi = 0;
         for (glm::dvec3 const & tan : fbx_mesh.tangents) {
             new (&vertexBufferTemp[vi].tangent) glm::vec3(invt * glm::dvec3(tan.x, tan.z, -tan.y));
-            auto & t = vertexBufferTemp[vi].tangent;
-            auto & b = vertexBufferTemp[vi].binormal;
-            auto const & n = vertexBufferTemp[vi].normal;
-            auto const cross = glm::cross(t, b);
-            /* WARNING: The below assumes that only
-             *          only x may be mirrored
-             * */
-            if (glm::dot(cross, n) >= 0.0f) {
-                t.x = -t.x;
-                b.x = -b.x;
-            } 
             ++vi;
         }
         vi = 0;

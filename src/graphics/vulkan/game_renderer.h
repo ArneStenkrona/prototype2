@@ -21,7 +21,7 @@ struct LightUBO {
     alignas(4) float ambientLight;
     alignas(4) int32_t noPointLights;
     alignas(16) DirLight sun;
-    alignas(16) PointLight pointLights[4];//[NUMBER_SUPPORTED_POINTLIGHTS];
+    alignas(16) PointLight pointLights[NUMBER_SUPPORTED_POINTLIGHTS];
 };
 
 struct StandardUBO {
