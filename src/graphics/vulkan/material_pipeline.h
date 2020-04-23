@@ -13,6 +13,12 @@ struct DrawCall {
     using PushConstants = prt::array<unsigned char, 32>;
     PushConstants pushConstants;
 };
+    
+struct ShaderStage {
+    VkShaderStageFlagBits stage;
+    char shader[512];
+    char pName[512];
+};
 
 struct MaterialPipeline {
     // Assets handle
@@ -34,8 +40,7 @@ struct MaterialPipeline {
     VkPipelineCache pipelineCache;
     VkVertexInputBindingDescription vertexInputBinding;
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-    char vertexShader[512];
-    char fragmentShader[512];
+    prt::vector<ShaderStage> shaderStages;
 
     // Draw calls
     prt::vector<DrawCall> drawCalls;

@@ -108,12 +108,22 @@ void GameRenderer::createSkyboxMaterialPipeline(size_t assetIndex) {
     skyboxPipeline.vertexInputAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     skyboxPipeline.vertexInputAttributes[0].offset = 0;
 
-    skyboxPipeline.vertexShader[0] = '\0';
-    strcat(skyboxPipeline.vertexShader, RESOURCE_PATH);
-    strcat(skyboxPipeline.vertexShader, "shaders/skybox.vert.spv");
-    skyboxPipeline.fragmentShader[0] = '\0';
-    strcat(skyboxPipeline.fragmentShader, RESOURCE_PATH);
-    strcat(skyboxPipeline.fragmentShader, "shaders/skybox.frag.spv");
+    auto & shaderStages = skyboxPipeline.shaderStages;
+    shaderStages.resize(2);
+
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, RESOURCE_PATH);
+    strcat(shaderStages[0].shader, "shaders/skybox.vert.spv");
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, RESOURCE_PATH);
+    strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 }
 void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader) {
     meshMaterialPipelineIndices.push_back(materialPipelines.size());
@@ -216,11 +226,20 @@ void GameRenderer::createMeshMaterialPipeline(size_t assetIndex, const char* ver
         modelPipeline.vertexInputAttributes[inIndx] = att;
         ++inIndx;
     }
+    auto & shaderStages = modelPipeline.shaderStages;
+    shaderStages.resize(2);
 
-    modelPipeline.vertexShader[0] = '\0';
-    strcat(modelPipeline.vertexShader, vertexShader);
-    modelPipeline.fragmentShader[0] = '\0';
-    strcat(modelPipeline.fragmentShader, fragmentShader);
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, vertexShader);
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, fragmentShader);
 }
 
 void GameRenderer::bindScene(Scene const & scene) {

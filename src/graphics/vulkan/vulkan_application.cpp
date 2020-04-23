@@ -569,8 +569,7 @@ void VulkanApplication::createGraphicsPipeline(MaterialPipeline& materialPipelin
                            materialPipeline.vertexInputBinding,
                            materialPipeline.descriptorSetLayout,
                            materialPipeline.pipelineLayout,
-                           materialPipeline.vertexShader,
-                           materialPipeline.fragmentShader,
+                           materialPipeline.shaderStages,
                            materialPipeline.pipelineCache,
                            materialPipeline.pipeline);
 }
@@ -579,8 +578,7 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
                                                VkVertexInputBindingDescription const & vertexInputBinding,
                                                VkDescriptorSetLayout const & descriptorSetLayout,
                                                VkPipelineLayout & pipelineLayout,
-                                               char const * vertexShader,
-                                               char const * fragmentShader,
+                                               prt::vector<ShaderStage> const & shaderStages,
                                                VkPipelineCache const & pipelineCache,
                                                VkPipeline & pipeline) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
@@ -669,13 +667,14 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         assert(false && "failed to create pipeline layout!");
     }
-    prt::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { VkPipelineShaderStageCreateInfo{},
-                                                                    VkPipelineShaderStageCreateInfo{} };
+
+    prt::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
+    shaderStageCreateInfos.resize(shaderStages.size());
     
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = shaderStages.size();
-    pipelineInfo.pStages = shaderStages.data();
+    pipelineInfo.stageCount = shaderStageCreateInfos.size();
+    pipelineInfo.pStages = shaderStageCreateInfos.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
@@ -687,28 +686,22 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-    
-    VkShaderModule vertShaderModule = createShaderModule(vertexShader);
-    VkShaderModule fragShaderModule = createShaderModule(fragmentShader);
 
-    shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = vertShaderModule;
-    shaderStages[0].pName = "main";
-    
-    shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = fragShaderModule;
-    shaderStages[1].pName = "main";
-
+    for (size_t i = 0; i < shaderStages.size(); ++i) {
+        shaderStageCreateInfos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageCreateInfos[i].stage = shaderStages[i].stage;
+        shaderStageCreateInfos[i].pName = shaderStages[i].pName;
+        shaderStageCreateInfos[i].module = createShaderModule(shaderStages[i].shader);
+    }
     
     if (vkCreateGraphicsPipelines(device, pipelineCache, 1, 
                                   &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
         assert(false && "failed to create graphics pipeline!");
     }
-    
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+
+    for (auto & shaderStageCreateInfo : shaderStageCreateInfos) {
+        vkDestroyShaderModule(device, shaderStageCreateInfo.module, nullptr);
+    }
 }
 
 void VulkanApplication::createGraphicsPipelines() {

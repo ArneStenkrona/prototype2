@@ -217,8 +217,7 @@ private:
                                 VkVertexInputBindingDescription const & vertexInputBinding,
                                 VkDescriptorSetLayout const & descriptorSetLayout,
                                 VkPipelineLayout & pipelineLayout,
-                                char const * vertexShader,
-                                char const * fragmentShader,
+                                prt::vector<ShaderStage> const & shaderStages,
                                 VkPipelineCache const & pipelineCache,
                                 VkPipeline & pipeline);
     
