@@ -167,11 +167,7 @@ private:
     VkQueue presentQueue;
         
     FrameBufferAttachment colorAttachment;
-    
     FrameBufferAttachment depthAttachment;
-    // VkImage depthImage;
-    // VkDeviceMemory depthImageMemory;
-    // VkImageView depthImageView;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
