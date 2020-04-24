@@ -6,7 +6,7 @@ Prototype 2 is a simple game engine. It is a successor to [Prototype](https://gi
 ## Dependencies
 [CMake]()  
 [Vulkan](https://vulkan.lunarg.com/sdk/home)  
-[Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp)
+[Vulkan-Hpp](https://github.com/KhronosGroup/Vulkan-Hpp)  
 [Catch2](https://github.com/catchorg/Catch2/)  
 [glfw3 3.3](https://www.glfw.org)  
 [glm](https://glm.g-truc.net/0.9.9/index.html)
