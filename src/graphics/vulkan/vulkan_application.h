@@ -128,6 +128,15 @@ protected:
     
     VkRenderPass renderPass;
 
+    struct OffscreenPass {
+        int32_t width, height;
+        prt::vector<VkFramebuffer> frameBuffers;
+        prt::vector<FrameBufferAttachment> depths;
+        VkRenderPass renderPass;
+        VkSampler depthSampler;
+        VkDescriptorImageInfo descriptor;
+    } offscreenPass;
+    
     prt::vector<GraphicsPipeline> graphicsPipelines;
 
     void update();
@@ -152,6 +161,8 @@ protected:
     inline Assets const & getAssets(size_t index) const { return assets[index]; } 
 
 private:
+    static constexpr int32_t shadowmapDimension = 1024;
+
     GLFWwindow* _window;
     int width, height;
     
@@ -206,6 +217,9 @@ private:
     void createRenderPassMsaa();
     void createRenderPassNoMsaa();
 
+    void createOffscreenSampler();
+    void createOffscreenRenderPass();
+    void createOffscreenFrameBuffer();
     
     void createDescriptorSetLayouts();
 
@@ -247,7 +261,7 @@ private:
     VkSampleCountFlagBits getMaxUsableSampleCount();
     
     
-    void createSamplers();
+    void createTextureSampler();
     
     VkImageView createImageView(VkImage image, VkFormat format, 
                                 VkImageAspectFlags aspectFlags, 
