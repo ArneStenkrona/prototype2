@@ -6,13 +6,13 @@
 #include "src/container/vector.h"
 #include "src/container/array.h"
 
-struct DrawCall {
-    uint32_t firstIndex;
-    uint32_t indexCount;
-    // typedef prt::array<uint32_t, 2> ConstantType;
-    using PushConstants = prt::array<unsigned char, 32>;
-    PushConstants pushConstants;
-};
+// struct DrawCall {
+//     uint32_t firstIndex;
+//     uint32_t indexCount;
+//     // typedef prt::array<uint32_t, 2> ConstantType;
+//     using PushConstants = prt::array<unsigned char, 32>;
+//     PushConstants pushConstants;
+// };
     
 struct ShaderStage {
     VkShaderStageFlagBits stage;
@@ -43,7 +43,7 @@ struct GraphicsPipeline {
     prt::vector<ShaderStage> shaderStages;
 
     // Draw calls
-    prt::vector<DrawCall> drawCalls;
+    // prt::vector<DrawCall> drawCalls;
 };
 
 #endif

@@ -117,20 +117,13 @@ struct Texture {
 
 struct Material {
     char name[256];
-    char fragmentShader[256];
+    // char fragmentShader[256];
     int32_t albedoIndex = -1;
     int32_t normalIndex = -1;
     int32_t specularIndex = -1;
     glm::vec3 baseColor{1.0f, 1.0f, 1.0f};
     float baseSpecularity = 0.5f;
 };
-
-// struct Material {
-//     char name[256];
-//     // char fragmentShader[256];
-//     int32_t albedoIndex = -1;
-//     // Texture texture;
-// };
 
 struct Mesh {
     size_t startIndex;

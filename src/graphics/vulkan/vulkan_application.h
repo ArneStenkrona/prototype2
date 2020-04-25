@@ -72,10 +72,19 @@ struct UniformBufferData {
     prt::vector<VkDeviceMemory> uniformBufferMemories;
 };
 
+struct DrawCall {
+    uint32_t firstIndex;
+    uint32_t indexCount;
+    // typedef prt::array<uint32_t, 2> ConstantType;
+    using PushConstants = prt::array<unsigned char, 32>;
+    PushConstants pushConstants;
+};
+
 struct Assets {
     VertexData vertexData;
     TextureImages textureImages;
     UniformBufferData uniformBufferData;
+    prt::vector<DrawCall> drawCalls;
 };
 
 struct FrameBufferAttachment {
@@ -126,7 +135,10 @@ protected:
         VkDescriptorImageInfo descriptor;
     } offscreenPass;
     
-    prt::vector<GraphicsPipeline> graphicsPipelines;
+    struct {
+        GraphicsPipeline offscreen;
+        prt::vector<GraphicsPipeline> scene;
+    } graphicsPipelines;
 
     void update();
 
@@ -151,11 +163,12 @@ protected:
 
 private:
     static constexpr int32_t shadowmapDimension = 1024;
+    static constexpr float depthBiasConstant = 1.25f;
+    static constexpr float depthBiasSlope = 1.75f;
 
     static constexpr unsigned int maxFramesInFlight = 2;
 
     static constexpr prt::array<const char*, 1> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-
     static constexpr prt::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
     #ifdef NDEBUG
@@ -242,7 +255,7 @@ private:
     void createCommandPool(); 
     void createCommandBuffers();
     void createCommandBuffer(size_t const imageIndex);
-    // void createOffscreenCommands(size_t const imageIndex);
+    void createOffscreenCommands(size_t const imageIndex);
     void createSceneCommands(size_t const imageIndex);
     void createDrawCommands(size_t const imageIndex);
 

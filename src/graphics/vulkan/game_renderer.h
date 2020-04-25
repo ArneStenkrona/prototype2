@@ -71,15 +71,13 @@ public:
 
 private:
     size_t skyboxPipelineIndex;
-    size_t shadowMapPipelineIndex;
-    prt::vector<size_t> meshGraphicsPipelineIndices;
-    prt::hash_map<std::string, size_t> shaderToIndex;
+    size_t standardPipelineIndex;
 
     VkDescriptorImageInfo samplerInfo;
 
     void createGraphicsPipelines(prt::vector<Model> const & models);
     void createSkyboxGraphicsPipeline(size_t assetIndex);
-    void createMeshGraphicsPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader);
+    void createStandardGraphicsPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);

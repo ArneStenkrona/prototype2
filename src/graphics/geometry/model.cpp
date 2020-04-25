@@ -240,9 +240,9 @@ void Model::loadOBJ(const char* path) {
     for (auto & mesh : meshes) {
         auto & material = materials[mesh.materialIndex];
         if (mtlToFragShader.find(material.name) == mtlToFragShader.end()) {
-            strcpy(material.fragmentShader, "standard.frag");
+            // strcpy(material.fragmentShader, "standard.frag");
         } else {
-            strcpy(material.fragmentShader, mtlToFragShader[material.name].c_str());
+            // strcpy(material.fragmentShader, mtlToFragShader[material.name].c_str());
         }
 
         material.albedoIndex = textures.size();
@@ -303,7 +303,7 @@ void Model::loadFBX(const char *path) {
         materialToIndex.insert(mtm.value(), materials.size());
         materials.push_back({});
         Material & material = materials.back();
-        strcpy(material.fragmentShader, "standard.frag");
+        // strcpy(material.fragmentShader, "standard.frag");
         auto & fbx_mat = fbx_materials[idToIndex[mtm.value()].index];
         strcpy(material.name, fbx_mat.name);
 
@@ -429,8 +429,8 @@ void Model::loadFBX(const char *path) {
 
         // retrieve material
         materials.push_back({});
-        Material & material = materials.back();
-        strcpy(material.fragmentShader, "standard.frag");
+        // Material & material = materials.back();
+        // strcpy(material.fragmentShader, "standard.frag");
         
         int64_t fbx_modelId = meshToModel[fbx_mesh.id];
         int64_t fbx_materialId = modelToMaterial[fbx_modelId];

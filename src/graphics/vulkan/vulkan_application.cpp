@@ -107,7 +107,7 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
         vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
         vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
@@ -121,7 +121,7 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
     }
@@ -685,7 +685,7 @@ void VulkanApplication::createOffscreenFrameBuffer() {
 
 
 void VulkanApplication::createDescriptorSetLayouts() {
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         VkDescriptorSetLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(graphicsPipeline.descriptorSetLayoutBindings.size());
@@ -699,7 +699,7 @@ void VulkanApplication::createDescriptorSetLayouts() {
 
 void VulkanApplication::createPipelineCaches()
 {
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
         if(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &graphicsPipeline.pipelineCache) != VK_SUCCESS) {
@@ -849,7 +849,7 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
 }
 
 void VulkanApplication::createGraphicsPipelines() {
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         createGraphicsPipeline(graphicsPipeline);
     }
 }
@@ -1367,7 +1367,7 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
 }
 
 void VulkanApplication::createDescriptorPools() {
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(graphicsPipeline.descriptorPoolSizes.size());
@@ -1381,7 +1381,7 @@ void VulkanApplication::createDescriptorPools() {
 }
 
 void VulkanApplication::createDescriptorSets() {
-    for (auto & graphicsPipeline : graphicsPipelines) {
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
         prt::vector<VkDescriptorSetLayout> skyboxLayouts(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
@@ -1573,6 +1573,7 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
         assert(false && "failed to begin recording command buffer!");
     }
     
+    // createOffscreenCommands(imageIndex);
     createSceneCommands(imageIndex);
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -1580,22 +1581,79 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
     }
 }
 
-void VulkanApplication::createSceneCommands(size_t const imageIndex) {
-    VkRenderPassBeginInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = swapChainExtent;
+void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
+    prt::array<VkClearValue, 2> clearValues = {};
+    clearValues[1].depthStencil = { 1.0f, 0 };
+
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = offscreenPass.renderPass;
+    renderPassBeginInfo.framebuffer = offscreenPass.frameBuffers[imageIndex];
+    renderPassBeginInfo.renderArea.extent.width = offscreenPass.width;
+    renderPassBeginInfo.renderArea.extent.height = offscreenPass.height;
+    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    /* similar to createDrawCommands()*/
+    // static constexpr VkDeviceSize offset = 0;
+    // vkCmdSetViewport?
+    // vkCmdSetScissor?
+    vkCmdSetDepthBias(commandBuffers[imageIndex],
+                      depthBiasConstant,
+                      0.0f,
+                      depthBiasSlope);
     
+    vkCmdBindPipeline(commandBuffers[imageIndex], 
+                      VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                      graphicsPipelines.offscreen.pipeline);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], 
+                            VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            graphicsPipelines.offscreen.pipelineLayout,
+                            0, 1, &graphicsPipelines.offscreen.descriptorSets[imageIndex],
+                            0, nullptr);
+    // for (auto const& assetsIndex : graphicsPipelines.offscreen.assetsIndices) {
+    //     Assets& ass = assets[assetsIndex];
+    //     vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
+    //     vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    // }
+    // vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+    //                         graphicsPipelines.offscreen.pipelineLayout, 0, 1, 
+    //                         &graphicsPipelines.offscreen.descriptorSets[imageIndex], 0, nullptr);
+
+    //     for (size_t i = 0; i < graphicsPipelines.offscreen.drawCalls.size(); i++) {
+    //         vkCmdPushConstants(commandBuffers[imageIndex], graphicsPipeline.pipelineLayout, 
+    //                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+    //                             0, 
+    //                             graphicsPipeline.drawCalls[i].pushConstants.size() * 
+    //                                                     sizeof(graphicsPipeline.drawCalls[i].pushConstants[0]), 
+    //                             (void *)graphicsPipeline.drawCalls[i].pushConstants.data());
+
+    //         vkCmdDrawIndexed(commandBuffers[imageIndex], 
+    //                 graphicsPipeline.drawCalls[i].indexCount,
+    //                 1,
+    //                 graphicsPipeline.drawCalls[i].firstIndex,
+    //                 0,
+    //                 i);
+    //     }
+    
+}
+
+void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     prt::array<VkClearValue, 2> clearValues = {};
     clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
     clearValues[1].depthStencil = { 1.0f, 0 };
-    
-    renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassInfo.pClearValues = clearValues.data();
 
-    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = swapChainFramebuffers[imageIndex];
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = swapChainExtent;
+    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassBeginInfo.pClearValues = clearValues.data();
+
+    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
     
     createDrawCommands(imageIndex);
 
@@ -1606,32 +1664,34 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex) {
     static constexpr VkDeviceSize offset = 0;
     size_t* prevAssetIndex = nullptr;
     // for (auto & graphicsPipeline : graphicsPipelines) {
-    for (size_t i = 1; i < graphicsPipelines.size(); i++) {
-        if (i == 2) continue;
-        auto & graphicsPipeline = graphicsPipelines[i];
+    for (size_t i = 0; i < graphicsPipelines.scene.size(); i++) {
+        // if (i == 2) continue;
+        auto & graphicsPipeline = graphicsPipelines.scene[i];
         vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 
+        Assets& asset = assets[graphicsPipeline.assetsIndex];
+        // only rebind if necessary
         if (prevAssetIndex == nullptr || *prevAssetIndex != graphicsPipeline.assetsIndex) {
-            Assets& ass = assets[graphicsPipeline.assetsIndex];
-            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
-            vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &asset.vertexData.vertexBuffer, &offset);
+            vkCmdBindIndexBuffer(commandBuffers[imageIndex], asset.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
             prevAssetIndex = &graphicsPipeline.assetsIndex;
         }
+
         vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
                                 graphicsPipeline.pipelineLayout, 0, 1, &graphicsPipeline.descriptorSets[imageIndex], 0, nullptr);
 
-        for (size_t i = 0; i < graphicsPipeline.drawCalls.size(); i++) {
+        for (auto const & drawCall : asset.drawCalls) {
             vkCmdPushConstants(commandBuffers[imageIndex], graphicsPipeline.pipelineLayout, 
                                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
                                 0, 
-                                graphicsPipeline.drawCalls[i].pushConstants.size() * 
-                                                        sizeof(graphicsPipeline.drawCalls[i].pushConstants[0]), 
-                                (void *)graphicsPipeline.drawCalls[i].pushConstants.data());
+                                drawCall.pushConstants.size() * 
+                                                        sizeof(drawCall.pushConstants[0]), 
+                                (void *)drawCall.pushConstants.data());
 
             vkCmdDrawIndexed(commandBuffers[imageIndex], 
-                    graphicsPipeline.drawCalls[i].indexCount,
+                    drawCall.indexCount,
                     1,
-                    graphicsPipeline.drawCalls[i].firstIndex,
+                    drawCall.firstIndex,
                     0,
                     i);
         }

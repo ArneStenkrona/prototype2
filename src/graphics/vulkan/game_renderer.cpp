@@ -7,35 +7,22 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height)
 GameRenderer::~GameRenderer() {
 }
 
-void GameRenderer::createGraphicsPipelines(prt::vector<Model> const & models) {
+void GameRenderer::createGraphicsPipelines(prt::vector<Model> const & /*models*/) {
     size_t assetIndex = pushBackAssets(sizeof(SkyboxUBO));
     createSkyboxGraphicsPipeline(assetIndex);
 
-    // create pipelines for different shaders
     assetIndex = pushBackAssets(sizeof(StandardUBO));
-
     char vert[256] = RESOURCE_PATH;
     strcat(vert, "shaders/standard.vert.spv");
-    for (auto & model : models) {
-        for (auto & mesh : model.meshes) {
-            auto const & material = model.materials[mesh.materialIndex];
-            if (shaderToIndex.find(material.fragmentShader) == shaderToIndex.end()) {
-                char frag[256] = RESOURCE_PATH;
-                strcat(frag, "shaders/");
-                strcat(frag, material.fragmentShader);
-                strcat(frag, ".spv");
-                // strcat(frag, "shaders/standard.frag.spv");
-                createMeshGraphicsPipeline(assetIndex, vert, frag);
-                shaderToIndex[material.fragmentShader] = meshGraphicsPipelineIndices.back();
-            }
-        }
-    }
+    char frag[256] = RESOURCE_PATH;
+    strcat(frag, "shaders/standard.frag.spv");
+    createStandardGraphicsPipeline(assetIndex, vert, frag);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex) {
-    skyboxPipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& skyboxPipeline = graphicsPipelines.back();
+    skyboxPipelineIndex = graphicsPipelines.scene.size();
+    graphicsPipelines.scene.push_back(GraphicsPipeline{});
+    GraphicsPipeline& skyboxPipeline = graphicsPipelines.scene.back();
 
     skyboxPipeline.assetsIndex = assetIndex;
     Assets const & ass = getAssets(assetIndex);
@@ -125,10 +112,10 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 }
-void GameRenderer::createMeshGraphicsPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader) {
-    meshGraphicsPipelineIndices.push_back(graphicsPipelines.size());
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& modelPipeline = graphicsPipelines.back();
+void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader) {
+    standardPipelineIndex = graphicsPipelines.scene.size();
+    graphicsPipelines.scene.push_back(GraphicsPipeline{});
+    GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
 
     modelPipeline.assetsIndex = assetIndex;
     Assets const & ass = getAssets(assetIndex);
@@ -284,8 +271,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
                               DirLight  const & sun,
                               float time) {
     // skybox ubo
-    // SkyboxUBO& skyboxUBO = *(new (getAssets(graphicsPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data()) SkyboxUBO{});
-    auto skyboxUboData = getAssets(graphicsPipelines[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
+    auto skyboxUboData = getAssets(graphicsPipelines.scene[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
     glm::mat4 skyboxViewMatrix = viewMatrix;
@@ -298,8 +284,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.projection[1][1] *= -1;
 
     // standard ubo                     
-    // StandardUBO& standardUBO = *(new (getAssets(graphicsPipelines[meshGraphicsPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data()) StandardUBO{});
-    auto standardUboData = getAssets(graphicsPipelines[meshGraphicsPipelineIndices[0]].assetsIndex).uniformBufferData.uboData.data();
+    auto standardUboData = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
     StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
     // model
     for (size_t i = 0; i < modelMatrices.size(); ++i) {
@@ -325,7 +310,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
     createVertexBuffer(models);
     createIndexBuffer(models);
 
-    size_t assetsIndex = graphicsPipelines[meshGraphicsPipelineIndices[0]].assetsIndex;
+    size_t assetsIndex = graphicsPipelines.scene[standardPipelineIndex].assetsIndex;
     Assets & ass = getAssets(assetsIndex);
 
     size_t numTex = 0;
@@ -359,7 +344,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models) {
 void GameRenderer::loadSkybox(const prt::array<Texture, 6>& skybox) {  
     createSkyboxBuffers();
 
-    GraphicsPipeline& skyboxPipeline = graphicsPipelines[skyboxPipelineIndex];
+    GraphicsPipeline& skyboxPipeline = graphicsPipelines.scene[skyboxPipelineIndex];
     Assets& ass = getAssets(skyboxPipeline.assetsIndex);
 
     ass.textureImages.images.resize(1);
@@ -377,10 +362,11 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
                                          const prt::vector<uint32_t>& modelIndices) {
     // skybox
     {
+        Assets & asset = getAssets(graphicsPipelines.scene[skyboxPipelineIndex].assetsIndex);
         DrawCall drawCall;
         drawCall.firstIndex = 0;
         drawCall.indexCount = 36;
-        graphicsPipelines[skyboxPipelineIndex].drawCalls.push_back(drawCall);
+        asset.drawCalls.push_back(drawCall);
     }
     // models
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
@@ -391,7 +377,6 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
         imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
         indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
     }
-
     for (size_t i = 0; i < modelIndices.size(); ++i) {
         const Model& model = models[modelIndices[i]];
         for (auto const & mesh : model.meshes) {
@@ -412,8 +397,9 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
             drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
             // pipeline index
-            size_t index = shaderToIndex[material.fragmentShader];
-            graphicsPipelines[index].drawCalls.push_back(drawCall);
+            // size_t index = shaderToIndex[material.fragmentShader];
+            Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
+            asset.drawCalls.push_back(drawCall);
         }
     }
 }
@@ -425,7 +411,7 @@ void GameRenderer::createVertexBuffer(const prt::vector<Model>& models) {
             allVertices.push_back(models[i].vertexBuffer[j]);
         }
     }
-    size_t assetsIndex = graphicsPipelines[meshGraphicsPipelineIndices[0]].assetsIndex;
+    size_t assetsIndex = graphicsPipelines.scene[standardPipelineIndex].assetsIndex;
     VertexData& data = getAssets(assetsIndex).vertexData;
     createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -442,7 +428,7 @@ void GameRenderer::createIndexBuffer(const prt::vector<Model>& models) {
         }
         vertexOffset += models[i].vertexBuffer.size();
     }
-    size_t assetsIndex = graphicsPipelines[meshGraphicsPipelineIndices[0]].assetsIndex;
+    size_t assetsIndex = graphicsPipelines.scene[standardPipelineIndex].assetsIndex;
     VertexData& data = getAssets(assetsIndex).vertexData;
     createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -465,7 +451,7 @@ void GameRenderer::createSkyboxBuffers() {
     vertices[1] = glm::vec3{-w,  w,  w};
     vertices[0] = glm::vec3{ w,  w,  w};
 
-    size_t assetsIndex = graphicsPipelines[skyboxPipelineIndex].assetsIndex;
+    size_t assetsIndex = graphicsPipelines.scene[skyboxPipelineIndex].assetsIndex;
     VertexData& data = getAssets(assetsIndex).vertexData;
     createAndMapBuffer(vertices.data(), sizeof(glm::vec3) * vertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
