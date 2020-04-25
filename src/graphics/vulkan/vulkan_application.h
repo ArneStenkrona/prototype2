@@ -257,7 +257,7 @@ private:
     void createCommandBuffer(size_t const imageIndex);
     void createOffscreenCommands(size_t const imageIndex);
     void createSceneCommands(size_t const imageIndex);
-    void createDrawCommands(size_t const imageIndex);
+    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
 
     void createColorResources();
     

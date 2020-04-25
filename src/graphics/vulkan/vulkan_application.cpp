@@ -1654,47 +1654,39 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     renderPassBeginInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    
-    createDrawCommands(imageIndex);
+    for (auto & pipeline : graphicsPipelines.scene) {
+        createDrawCommands(imageIndex, pipeline);
+    }
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 }
 
-void VulkanApplication::createDrawCommands(size_t const imageIndex) {
+void VulkanApplication::createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline) {
     static constexpr VkDeviceSize offset = 0;
-    size_t* prevAssetIndex = nullptr;
-    // for (auto & graphicsPipeline : graphicsPipelines) {
-    for (size_t i = 0; i < graphicsPipelines.scene.size(); i++) {
-        // if (i == 2) continue;
-        auto & graphicsPipeline = graphicsPipelines.scene[i];
-        vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
+    
+    vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
 
-        Assets& asset = assets[graphicsPipeline.assetsIndex];
-        // only rebind if necessary
-        if (prevAssetIndex == nullptr || *prevAssetIndex != graphicsPipeline.assetsIndex) {
-            vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &asset.vertexData.vertexBuffer, &offset);
-            vkCmdBindIndexBuffer(commandBuffers[imageIndex], asset.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-            prevAssetIndex = &graphicsPipeline.assetsIndex;
-        }
+    Assets& asset = assets[pipeline.assetsIndex];
+    vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &asset.vertexData.vertexBuffer, &offset);
+    vkCmdBindIndexBuffer(commandBuffers[imageIndex], asset.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                                graphicsPipeline.pipelineLayout, 0, 1, &graphicsPipeline.descriptorSets[imageIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            pipeline.pipelineLayout, 0, 1, &pipeline.descriptorSets[imageIndex], 0, nullptr);
 
-        for (auto const & drawCall : asset.drawCalls) {
-            vkCmdPushConstants(commandBuffers[imageIndex], graphicsPipeline.pipelineLayout, 
-                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-                                0, 
-                                drawCall.pushConstants.size() * 
-                                                        sizeof(drawCall.pushConstants[0]), 
-                                (void *)drawCall.pushConstants.data());
+    for (auto const & drawCall : asset.drawCalls) {
+        vkCmdPushConstants(commandBuffers[imageIndex], pipeline.pipelineLayout, 
+                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                            0, 
+                            drawCall.pushConstants.size() * 
+                                                    sizeof(drawCall.pushConstants[0]), 
+                            (void *)drawCall.pushConstants.data());
 
-            vkCmdDrawIndexed(commandBuffers[imageIndex], 
-                    drawCall.indexCount,
-                    1,
-                    drawCall.firstIndex,
-                    0,
-                    i);
-        }
+        vkCmdDrawIndexed(commandBuffers[imageIndex], 
+                drawCall.indexCount,
+                1,
+                drawCall.firstIndex,
+                0,
+                0);
     }
 }
 
