@@ -20,8 +20,9 @@ void GameRenderer::createGraphicsPipelines() {
     strcat(frag, "shaders/standard.frag.spv");
     createStandardGraphicsPipeline(assetIndex, uboIndex, vert, frag);
 
-    uboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
-    createShadowmapGraphicsPipeline(assetIndex, uboIndex);
+    // uboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
+    // createShadowmapGraphicsPipeline(assetIndex, uboIndex,
+    //                                 vert, SHADOWMAP_SHADER);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
@@ -237,15 +238,72 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
     strcat(shaderStages[1].shader, fragmentShader);
 }
 
-void GameRenderer::createShadowmapGraphicsPipeline(size_t /*assetIndex*/, size_t /*uboIndex*/) {
-    // shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
-    // graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
-    // GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
+void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                                   const char* vertexShader, const char* fragmentShader) {
+    shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
+    graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
+    GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
 
-    // pipeline.assetsIndex = assetIndex;
-    // pipeline.uboIndex = uboIndex;
-    // Assets const & ass = getAssets(assetIndex);
-    // // Descriptor pools
+    pipeline.assetsIndex = assetIndex;
+    pipeline.uboIndex = uboIndex;
+    UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
+    
+    // Descriptor set layout
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    pipeline.descriptorSetLayoutBindings.resize(1);
+    pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
+
+    // Descriptor pools
+    pipeline.descriptorPoolSizes.resize(3);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+
+    // Descriptor sets
+    pipeline.descriptorSets.resize(swapChainImages.size());
+    for (size_t i = 0; i < swapChainImages.size(); ++i) {
+        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.descriptorBufferInfos[i].offset = 0;
+        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        
+        pipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
+
+        pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+    }
+
+    // Vertex input
+    pipeline.vertexInputBinding = Vertex::getBindingDescription();
+    auto attrib = Vertex::getAttributeDescriptions();
+    pipeline.vertexInputAttributes.resize(attrib.size());
+    size_t inIndx = 0;
+    for (auto const & att : attrib) {
+        pipeline.vertexInputAttributes[inIndx] = att;
+        ++inIndx;
+    }
+    auto & shaderStages = pipeline.shaderStages;
+    shaderStages.resize(2);
+
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, vertexShader);
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, fragmentShader);
 }
 
 void GameRenderer::bindScene(Scene const & scene) {

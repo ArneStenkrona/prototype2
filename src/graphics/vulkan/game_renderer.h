@@ -80,7 +80,8 @@ private:
     void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
     void createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
                                         const char* vertexShader, const char* fragmentShader);
-    void createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex);
+    void createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                         const char* vertexShader, const char* fragmentShader);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);

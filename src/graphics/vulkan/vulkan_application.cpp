@@ -72,7 +72,8 @@ void VulkanApplication::initVulkan() {
     createSyncObjects();
 
     // createUniformBuffers();
-    createDescriptorPools();
+    createDescriptorPools(graphicsPipelines.offscreen);
+    createDescriptorPools(graphicsPipelines.scene);
 }
 
 void VulkanApplication::update() {
@@ -203,9 +204,11 @@ void VulkanApplication::recreateSwapChain() {
     
     createOffscreenFrameBuffer();
 
-    createDescriptorPools();
+    createDescriptorPools(graphicsPipelines.offscreen);
+    createDescriptorPools(graphicsPipelines.scene);
 
-    createDescriptorSets();
+    createDescriptorSets(graphicsPipelines.offscreen);
+    createDescriptorSets(graphicsPipelines.scene);
     createCommandBuffers();
 }
 
@@ -1366,8 +1369,8 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanApplication::createDescriptorPools() {
-    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+void VulkanApplication::createDescriptorPools(prt::vector<GraphicsPipeline> const & pipelines) {
+    for (auto & graphicsPipeline : pipelines) {
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(graphicsPipeline.descriptorPoolSizes.size());
@@ -1380,8 +1383,8 @@ void VulkanApplication::createDescriptorPools() {
     }
 }
 
-void VulkanApplication::createDescriptorSets() {
-    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+void VulkanApplication::createDescriptorSets(prt::vector<GraphicsPipeline> const & pipelines) {
+    for (auto & graphicsPipeline : pipelines) {
         prt::vector<VkDescriptorSetLayout> skyboxLayouts(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};

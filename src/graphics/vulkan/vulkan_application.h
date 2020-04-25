@@ -307,9 +307,9 @@ private:
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
     
-    void createDescriptorPools();
+    void createDescriptorPools(prt::vector<GraphicsPipeline> const & pipelines);
     
-    void createDescriptorSets();
+    void createDescriptorSets(prt::vector<GraphicsPipeline> const & pipelines);
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
