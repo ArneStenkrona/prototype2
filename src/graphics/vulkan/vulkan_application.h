@@ -33,17 +33,6 @@
 #include <cstring>
 #include <cstdlib>
 
-extern const int WIDTH;
-extern const int HEIGHT;
-
-extern const unsigned int MAX_FRAMES_IN_FLIGHT;
-
-extern const prt::vector<const char*> validationLayers;
-
-extern const prt::vector<const char*> deviceExtensions;
-
-extern const bool enableValidationLayers;
-
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
@@ -97,17 +86,17 @@ struct FrameBufferAttachment {
 
 class VulkanApplication {
 public:
-    VulkanApplication();
+    VulkanApplication(unsigned int width, unsigned int height);
     ~VulkanApplication();
 
     VulkanApplication & operator=(const VulkanApplication&) = delete;
     VulkanApplication(const VulkanApplication&) = delete;
 
-    void initWindow();
+    void initWindow(unsigned int width, unsigned int height);
     void initVulkan();
     
     GLFWwindow* getWindow() const { return _window; }
-    void getWindowSize(int& w, int& h) { w = width; h = height; };
+    void getWindowSize(int& w, int& h) { w = _width; h = _height; };
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 protected:
@@ -163,8 +152,20 @@ protected:
 private:
     static constexpr int32_t shadowmapDimension = 1024;
 
+    static constexpr unsigned int maxFramesInFlight = 2;
+
+    static constexpr prt::array<const char*, 1> validationLayers = { "VK_LAYER_KHRONOS_validation" };
+
+    static constexpr prt::array<const char*, 1> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+    #ifdef NDEBUG
+    static constexpr bool enableValidationLayers = false;
+    #else
+    static constexpr bool enableValidationLayers = true;
+    #endif
+
     GLFWwindow* _window;
-    int width, height;
+    int _width, _height;
     
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -185,7 +186,7 @@ private:
     prt::vector<VkSemaphore> renderFinishedSemaphores;
     prt::vector<VkFence> inFlightFences;
     prt::vector<VkFence> imagesInFlight;
-    size_t currentFrame = 0;
+    unsigned int currentFrame = 0;
 
     prt::vector<Assets> assets;
     

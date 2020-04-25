@@ -8,26 +8,6 @@
 #include <chrono>
 #include <thread>
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
-
-constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
-
-const prt::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
-
-const prt::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
-
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -44,8 +24,8 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-VulkanApplication::VulkanApplication() {
-    initWindow();
+VulkanApplication::VulkanApplication(unsigned int width, unsigned int height) {
+    initWindow(width, height);
     initVulkan();
 }
 
@@ -53,12 +33,12 @@ VulkanApplication::~VulkanApplication() {
     cleanup();
 }
 
-void VulkanApplication::initWindow() {
+void VulkanApplication::initWindow(unsigned int width, unsigned int height) {
     glfwInit();
  
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
  
-    _window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+    _window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
     glfwSetWindowUserPointer(_window, this);
     glfwSetFramebufferSizeCallback(_window, framebufferResizeCallback);
 }
@@ -177,7 +157,7 @@ void VulkanApplication::cleanup() {
         vkFreeMemory(device, ass.vertexData.indexBufferMemory, nullptr);
     }
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (unsigned int i = 0; i < maxFramesInFlight; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
@@ -200,10 +180,10 @@ void VulkanApplication::cleanup() {
 }
 
 void VulkanApplication::recreateSwapChain() {
-    width = 0;
-    height = 0;
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(_window, &width, &height);
+    _width = 0;
+    _height = 0;
+    while (_width == 0 || _height == 0) {
+        glfwGetFramebufferSize(_window, &_width, &_height);
         glfwWaitEvents();
     }
 
@@ -1655,9 +1635,9 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex) {
 }
 
 void VulkanApplication::createSyncObjects() {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    imageAvailableSemaphores.resize(maxFramesInFlight);
+    renderFinishedSemaphores.resize(maxFramesInFlight);
+    inFlightFences.resize(maxFramesInFlight);
     imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
     
     VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -1667,7 +1647,7 @@ void VulkanApplication::createSyncObjects() {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (unsigned int i = 0; i < maxFramesInFlight; i++) {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
@@ -1746,7 +1726,7 @@ void VulkanApplication::drawFrame() {
         assert(false && "failed to present swap chain image!");
     }
     
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    currentFrame = (currentFrame + 1) % maxFramesInFlight;
 }
 
 VkShaderModule VulkanApplication::createShaderModule(const char* filename) {

@@ -10,7 +10,7 @@
 
 Game::Game()
 : m_input(),
-  m_gameRenderer(),
+  m_gameRenderer(800, 600),
   m_assetManager(RESOURCE_PATH),
   m_camera(m_input),
   m_scene(m_assetManager, m_physicsSystem, m_input, m_camera),

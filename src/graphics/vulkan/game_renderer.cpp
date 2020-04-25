@@ -1,7 +1,7 @@
 #include "game_renderer.h"
 
-GameRenderer::GameRenderer()
-    : VulkanApplication() {
+GameRenderer::GameRenderer(unsigned int width, unsigned int height)
+    : VulkanApplication(width, height) {
 }
 
 GameRenderer::~GameRenderer() {

@@ -41,7 +41,7 @@ struct ShadowMapUBO  {
 
 class GameRenderer : public VulkanApplication {
 public:
-    GameRenderer();
+    GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
 
