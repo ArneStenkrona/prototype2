@@ -7,25 +7,31 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height)
 GameRenderer::~GameRenderer() {
 }
 
-void GameRenderer::createGraphicsPipelines(prt::vector<Model> const & /*models*/) {
-    size_t assetIndex = pushBackAssets(sizeof(SkyboxUBO));
-    createSkyboxGraphicsPipeline(assetIndex);
+void GameRenderer::createGraphicsPipelines() {
+    size_t assetIndex = pushBackAssets();
+    size_t uboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
+    createSkyboxGraphicsPipeline(assetIndex, uboIndex);
 
-    assetIndex = pushBackAssets(sizeof(StandardUBO));
+    assetIndex = pushBackAssets();
+    uboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
     char vert[256] = RESOURCE_PATH;
     strcat(vert, "shaders/standard.vert.spv");
     char frag[256] = RESOURCE_PATH;
     strcat(frag, "shaders/standard.frag.spv");
-    createStandardGraphicsPipeline(assetIndex, vert, frag);
+    createStandardGraphicsPipeline(assetIndex, uboIndex, vert, frag);
+
+    uboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
+    createShadowmapGraphicsPipeline(assetIndex, uboIndex);
 }
 
-void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex) {
+void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
     skyboxPipelineIndex = graphicsPipelines.scene.size();
     graphicsPipelines.scene.push_back(GraphicsPipeline{});
     GraphicsPipeline& skyboxPipeline = graphicsPipelines.scene.back();
 
     skyboxPipeline.assetsIndex = assetIndex;
-    Assets const & ass = getAssets(assetIndex);
+    skyboxPipeline.uboIndex = uboIndex;
+    UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
 
     // Descriptor set layout
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -54,9 +60,9 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex) {
     // Descriptor sets
     skyboxPipeline.descriptorSets.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) { 
-        skyboxPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
+        skyboxPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         skyboxPipeline.descriptorBufferInfos[i].offset = 0;
-        skyboxPipeline.descriptorBufferInfos[i].range = ass.uniformBufferData.uboData.size();
+        skyboxPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
         skyboxPipeline.descriptorImageInfos.resize(1);
         // skyboxPipeline.descriptorImageInfos[0].sampler = textureSampler;
@@ -112,13 +118,15 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 }
-void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, const char* vertexShader, const char* fragmentShader) {
+void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                                  const char* vertexShader, const char* fragmentShader) {
     standardPipelineIndex = graphicsPipelines.scene.size();
     graphicsPipelines.scene.push_back(GraphicsPipeline{});
     GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
 
     modelPipeline.assetsIndex = assetIndex;
-    Assets const & ass = getAssets(assetIndex);
+    modelPipeline.uboIndex = uboIndex;
+    UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
 
     // Descriptor set layout
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -159,9 +167,9 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, const char*
     // Descriptor sets
     modelPipeline.descriptorSets.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
-        modelPipeline.descriptorBufferInfos[i].buffer = ass.uniformBufferData.uniformBuffers[i];
+        modelPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         modelPipeline.descriptorBufferInfos[i].offset = 0;
-        modelPipeline.descriptorBufferInfos[i].range = ass.uniformBufferData.uboData.size();
+        modelPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
         modelPipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
         // for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
@@ -229,12 +237,23 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, const char*
     strcat(shaderStages[1].shader, fragmentShader);
 }
 
+void GameRenderer::createShadowmapGraphicsPipeline(size_t /*assetIndex*/, size_t /*uboIndex*/) {
+    // shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
+    // graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
+    // GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
+
+    // pipeline.assetsIndex = assetIndex;
+    // pipeline.uboIndex = uboIndex;
+    // Assets const & ass = getAssets(assetIndex);
+    // // Descriptor pools
+}
+
 void GameRenderer::bindScene(Scene const & scene) {
     prt::vector<Model> models;
     prt::vector<uint32_t> modelIndices;
     scene.getModels(models, modelIndices);
 
-    createGraphicsPipelines(models);
+    createGraphicsPipelines();
     loadModels(models);
 
     prt::array<Texture, 6> skybox;
@@ -271,7 +290,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
                               DirLight  const & sun,
                               float time) {
     // skybox ubo
-    auto skyboxUboData = getAssets(graphicsPipelines.scene[skyboxPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
+    auto skyboxUboData = getUniformBufferData(graphicsPipelines.scene[skyboxPipelineIndex].uboIndex).uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
     glm::mat4 skyboxViewMatrix = viewMatrix;
@@ -284,7 +303,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.projection[1][1] *= -1;
 
     // standard ubo                     
-    auto standardUboData = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex).uniformBufferData.uboData.data();
+    auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
     StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
     // model
     for (size_t i = 0; i < modelMatrices.size(); ++i) {

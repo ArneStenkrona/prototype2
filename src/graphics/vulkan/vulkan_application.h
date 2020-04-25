@@ -83,9 +83,9 @@ struct DrawCall {
 struct Assets {
     VertexData vertexData;
     TextureImages textureImages;
-    UniformBufferData uniformBufferData;
     prt::vector<DrawCall> drawCalls;
 };
+    // UniformBufferData uniformBufferData;
 
 struct FrameBufferAttachment {
 		VkImage image;
@@ -127,7 +127,7 @@ protected:
     VkRenderPass renderPass;
 
     struct OffscreenPass {
-        int32_t width, height;
+        VkExtent2D extent;
         prt::vector<VkFramebuffer> frameBuffers;
         prt::vector<FrameBufferAttachment> depths;
         VkRenderPass renderPass;
@@ -136,7 +136,7 @@ protected:
     } offscreenPass;
     
     struct {
-        GraphicsPipeline offscreen;
+        prt::vector<GraphicsPipeline> offscreen;
         prt::vector<GraphicsPipeline> scene;
     } graphicsPipelines;
 
@@ -156,10 +156,15 @@ protected:
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                         VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
-    size_t pushBackAssets(size_t uboSize);
+    size_t pushBackAssets();
 
     inline Assets& getAssets(size_t index) { return assets[index]; } 
     inline Assets const & getAssets(size_t index) const { return assets[index]; } 
+
+    size_t pushBackUniformBufferData(size_t uboSize);
+
+    inline UniformBufferData& getUniformBufferData(size_t index) { return uniformBufferDatas[index]; } 
+    inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
 
 private:
     static constexpr int32_t shadowmapDimension = 1024;
@@ -202,6 +207,7 @@ private:
     unsigned int currentFrame = 0;
 
     prt::vector<Assets> assets;
+    prt::vector<UniformBufferData> uniformBufferDatas;
     
     bool framebufferResized = false;
 

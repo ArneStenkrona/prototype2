@@ -23,6 +23,8 @@ struct ShaderStage {
 struct GraphicsPipeline {
     // Assets handle
     size_t assetsIndex;
+    // UBO handle
+    size_t uboIndex;
 
     // Descriptors
     prt::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;

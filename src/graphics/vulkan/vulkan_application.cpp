@@ -130,11 +130,11 @@ void VulkanApplication::cleanupSwapChain() {
 void VulkanApplication::cleanup() {
     cleanupSwapChain();
 
-    for (auto & ass : assets) {
+    for (auto & uniformBufferData : uniformBufferDatas) {
         for (size_t i = 0; i < swapChainImages.size(); i++) {
-            vkUnmapMemory(device, ass.uniformBufferData.uniformBufferMemories[i]);
-            vkDestroyBuffer(device, ass.uniformBufferData.uniformBuffers[i], nullptr);
-            vkFreeMemory(device, ass.uniformBufferData.uniformBufferMemories[i], nullptr);
+            vkUnmapMemory(device, uniformBufferData.uniformBufferMemories[i]);
+            vkDestroyBuffer(device, uniformBufferData.uniformBuffers[i], nullptr);
+            vkFreeMemory(device, uniformBufferData.uniformBufferMemories[i], nullptr);
         }
     }
 
@@ -614,16 +614,16 @@ void VulkanApplication::createOffscreenRenderPass() {
 }
 
 void VulkanApplication::createOffscreenFrameBuffer() {
-    offscreenPass.width = shadowmapDimension;
-    offscreenPass.height = shadowmapDimension;
+    offscreenPass.extent.width = shadowmapDimension;
+    offscreenPass.extent.height = shadowmapDimension;
 
     offscreenPass.depths.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
         VkImageCreateInfo image{};
         image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         image.imageType = VK_IMAGE_TYPE_2D;
-        image.extent.width = offscreenPass.width;
-        image.extent.height = offscreenPass.height;
+        image.extent.width = offscreenPass.extent.width;
+        image.extent.height = offscreenPass.extent.height;
         image.extent.depth = 1;
         image.mipLevels = 1;
         image.arrayLayers = 1;
@@ -674,8 +674,8 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         fbufCreateInfo.renderPass = offscreenPass.renderPass;
         fbufCreateInfo.attachmentCount = 1;
         fbufCreateInfo.pAttachments = &offscreenPass.depths[i].imageView;
-        fbufCreateInfo.width = offscreenPass.width;
-        fbufCreateInfo.height = offscreenPass.height;
+        fbufCreateInfo.width = offscreenPass.extent.width;
+        fbufCreateInfo.height = offscreenPass.extent.height;
         fbufCreateInfo.layers = 1;
         if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &offscreenPass.frameBuffers[i]) != VK_SUCCESS) {
             assert(false && "failed to create offscreen frame buffer!");
@@ -1398,9 +1398,10 @@ void VulkanApplication::createDescriptorSets() {
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
                 Assets& ass = assets[graphicsPipeline.assetsIndex];
-                bufferInfo.buffer = ass.uniformBufferData.uniformBuffers[i];
+                UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
+                bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
-                bufferInfo.range = ass.uniformBufferData.uboData.size();
+                bufferInfo.range = uniformBufferData.uboData.size();
                 
                 for (auto & descriptorWrite : graphicsPipeline.descriptorWrites[i]) {
                     descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
@@ -1468,23 +1469,29 @@ void VulkanApplication::createAndMapBuffer(void* bufferData, VkDeviceSize buffer
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
-size_t VulkanApplication::pushBackAssets(size_t uboSize) {
+size_t VulkanApplication::pushBackAssets() {
     size_t index = assets.size();
     assets.push_back({});
-    Assets& ass = assets.back();
-    ass.uniformBufferData.uboData.resize(uboSize);
-    ass.uniformBufferData.mappedMemories.resize(swapChainImages.size());
-    ass.uniformBufferData.uniformBuffers.resize(swapChainImages.size());
-    ass.uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+    return index;
+}
 
-    size_t size = ass.uniformBufferData.uboData.size();
+size_t VulkanApplication::pushBackUniformBufferData(size_t uboSize) {
+    size_t index = uniformBufferDatas.size();
+    uniformBufferDatas.push_back({});
+    UniformBufferData& uniformBufferData = uniformBufferDatas.back();
+    uniformBufferData.uboData.resize(uboSize);
+    uniformBufferData.mappedMemories.resize(swapChainImages.size());
+    uniformBufferData.uniformBuffers.resize(swapChainImages.size());
+    uniformBufferData.uniformBufferMemories.resize(swapChainImages.size());
+
+    size_t size = uniformBufferData.uboData.size();
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         createBuffer(size, 
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-                        ass.uniformBufferData.uniformBuffers[i], 
-                        ass.uniformBufferData.uniformBufferMemories[i]);
-        vkMapMemory(device, ass.uniformBufferData.uniformBufferMemories[i], 0, size, 0, &ass.uniformBufferData.mappedMemories[i]);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                     uniformBufferData.uniformBuffers[i], 
+                     uniformBufferData.uniformBufferMemories[i]);
+        vkMapMemory(device, uniformBufferData.uniformBufferMemories[i], 0, size, 0, &uniformBufferData.mappedMemories[i]);
     }
 
     return index;
@@ -1573,7 +1580,7 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
         assert(false && "failed to begin recording command buffer!");
     }
     
-    // createOffscreenCommands(imageIndex);
+    createOffscreenCommands(imageIndex);
     createSceneCommands(imageIndex);
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -1589,8 +1596,7 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = offscreenPass.renderPass;
     renderPassBeginInfo.framebuffer = offscreenPass.frameBuffers[imageIndex];
-    renderPassBeginInfo.renderArea.extent.width = offscreenPass.width;
-    renderPassBeginInfo.renderArea.extent.height = offscreenPass.height;
+    renderPassBeginInfo.renderArea.extent = offscreenPass.extent;
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = clearValues.data();
 
@@ -1604,39 +1610,10 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
                       0.0f,
                       depthBiasSlope);
     
-    vkCmdBindPipeline(commandBuffers[imageIndex], 
-                      VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                      graphicsPipelines.offscreen.pipeline);
-    vkCmdBindDescriptorSets(commandBuffers[imageIndex], 
-                            VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                            graphicsPipelines.offscreen.pipelineLayout,
-                            0, 1, &graphicsPipelines.offscreen.descriptorSets[imageIndex],
-                            0, nullptr);
-    // for (auto const& assetsIndex : graphicsPipelines.offscreen.assetsIndices) {
-    //     Assets& ass = assets[assetsIndex];
-    //     vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &ass.vertexData.vertexBuffer, &offset);
-    //     vkCmdBindIndexBuffer(commandBuffers[imageIndex], ass.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    // }
-    // vkCmdBindDescriptorSets(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, 
-    //                         graphicsPipelines.offscreen.pipelineLayout, 0, 1, 
-    //                         &graphicsPipelines.offscreen.descriptorSets[imageIndex], 0, nullptr);
-
-    //     for (size_t i = 0; i < graphicsPipelines.offscreen.drawCalls.size(); i++) {
-    //         vkCmdPushConstants(commandBuffers[imageIndex], graphicsPipeline.pipelineLayout, 
-    //                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-    //                             0, 
-    //                             graphicsPipeline.drawCalls[i].pushConstants.size() * 
-    //                                                     sizeof(graphicsPipeline.drawCalls[i].pushConstants[0]), 
-    //                             (void *)graphicsPipeline.drawCalls[i].pushConstants.data());
-
-    //         vkCmdDrawIndexed(commandBuffers[imageIndex], 
-    //                 graphicsPipeline.drawCalls[i].indexCount,
-    //                 1,
-    //                 graphicsPipeline.drawCalls[i].firstIndex,
-    //                 0,
-    //                 i);
-    //     }
-    
+    for (auto & pipeline : graphicsPipelines.offscreen) {
+        createDrawCommands(imageIndex, pipeline);
+    }
+    vkCmdEndRenderPass(commandBuffers[imageIndex]);
 }
 
 void VulkanApplication::createSceneCommands(size_t const imageIndex) {
@@ -1713,9 +1690,9 @@ void VulkanApplication::createSyncObjects() {
 }
 
 void VulkanApplication::updateUniformBuffers(uint32_t currentImage) {
-    for (auto & ass : assets) {
-        size_t size = ass.uniformBufferData.uboData.size();
-        memcpy(ass.uniformBufferData.mappedMemories[currentImage], ass.uniformBufferData.uboData.data(), size);
+    for (auto & uniformBufferData : uniformBufferDatas) {
+        size_t size = uniformBufferData.uboData.size();
+        memcpy(uniformBufferData.mappedMemories[currentImage], uniformBufferData.uboData.data(), size);
     }
 }
 
