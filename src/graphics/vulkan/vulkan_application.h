@@ -242,6 +242,8 @@ private:
     void createCommandPool(); 
     void createCommandBuffers();
     void createCommandBuffer(size_t const imageIndex);
+    // void createOffscreenCommands(size_t const imageIndex);
+    void createSceneCommands(size_t const imageIndex);
     void createDrawCommands(size_t const imageIndex);
 
     void createColorResources();

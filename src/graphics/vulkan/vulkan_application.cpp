@@ -1573,6 +1573,14 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
         assert(false && "failed to begin recording command buffer!");
     }
     
+    createSceneCommands(imageIndex);
+
+    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+        assert(false && "failed to record command buffer!");
+    }
+}
+
+void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     VkRenderPassBeginInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
@@ -1592,10 +1600,6 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
     createDrawCommands(imageIndex);
 
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
-    
-    if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
-        assert(false && "failed to record command buffer!");
-    }
 }
 
 void VulkanApplication::createDrawCommands(size_t const imageIndex) {
