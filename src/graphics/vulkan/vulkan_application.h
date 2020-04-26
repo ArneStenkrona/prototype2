@@ -124,7 +124,7 @@ protected:
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
     
-    VkRenderPass renderPass;
+    VkRenderPass scenePass;
 
     struct OffscreenPass {
         VkExtent2D extent;
@@ -233,28 +233,23 @@ private:
     
     void createImageViews();
     
-    void createRenderPass();
-    void createRenderPassMsaa();
-    void createRenderPassNoMsaa();
+    void createScenePass();
+    void createScenePassMsaa();
+    void createScenePassNoMsaa();
 
     void createOffscreenSampler();
     void createOffscreenRenderPass();
     void createOffscreenFrameBuffer();
     
-    void createDescriptorSetLayouts();
+    void connectRenderPasses();
 
-    void createPipelineCaches();
+    void createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines);
+
+    void createPipelineCaches(prt::vector<GraphicsPipeline> const & pipelines);
 
     void createShadowMapPipeline();
-    void createGraphicsPipelines();
-    void createGraphicsPipeline(GraphicsPipeline& materialPipeline);
-    void createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
-                                VkVertexInputBindingDescription const & vertexInputBinding,
-                                VkDescriptorSetLayout const & descriptorSetLayout,
-                                VkPipelineLayout & pipelineLayout,
-                                prt::vector<ShaderStage> const & shaderStages,
-                                VkPipelineCache const & pipelineCache,
-                                VkPipeline & pipeline);
+    void createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines);
+    void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
     void createFramebuffers();
     
@@ -269,7 +264,7 @@ private:
     
     void createDepthResources();
     
-    VkFormat findSupportedFormat(const prt::vector<VkFormat>& candidates, 
+    VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
     
     VkFormat findDepthFormat();
@@ -309,7 +304,7 @@ private:
     
     void createDescriptorPools(prt::vector<GraphicsPipeline> const & pipelines);
     
-    void createDescriptorSets(prt::vector<GraphicsPipeline> const & pipelines);
+    void createDescriptorSets(/*prt::vector<GraphicsPipeline> const & pipelines*/);
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 

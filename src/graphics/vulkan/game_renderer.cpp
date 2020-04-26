@@ -15,14 +15,21 @@ void GameRenderer::createGraphicsPipelines() {
     assetIndex = pushBackAssets();
     uboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
     char vert[256] = RESOURCE_PATH;
-    strcat(vert, "shaders/standard.vert.spv");
     char frag[256] = RESOURCE_PATH;
+    strcat(vert, "shaders/standard.vert.spv");
     strcat(frag, "shaders/standard.frag.spv");
     createStandardGraphicsPipeline(assetIndex, uboIndex, vert, frag);
 
-    // uboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
-    // createShadowmapGraphicsPipeline(assetIndex, uboIndex,
-    //                                 vert, SHADOWMAP_SHADER);
+    vert[0] = '\0';
+    frag[0] = '\0';
+    strcpy(vert, RESOURCE_PATH);
+    strcpy(frag, RESOURCE_PATH);
+    strcat(vert, "shaders/shadow_map.vert.spv");
+    strcat(frag, "shaders/shadow_map.frag.spv");
+
+    uboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
+    createShadowmapGraphicsPipeline(assetIndex, uboIndex,
+                                    vert, frag);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
@@ -118,6 +125,9 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
+
+    skyboxPipeline.colorAttachment = true;
+    skyboxPipeline.enableDepthBias = false;
 }
 void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
                                                   const char* vertexShader, const char* fragmentShader) {
@@ -236,10 +246,13 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
     strcat(shaderStages[1].pName, "main");
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, fragmentShader);
+
+    modelPipeline.colorAttachment = true;
+    modelPipeline.enableDepthBias = false;
 }
 
 void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                   const char* vertexShader, const char* fragmentShader) {
+                                                   const char* vertexShader, const char* /*fragmentShader*/) {
     shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
     graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
@@ -260,7 +273,7 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
 
     // Descriptor pools
-    pipeline.descriptorPoolSizes.resize(3);
+    pipeline.descriptorPoolSizes.resize(1);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
@@ -291,7 +304,7 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
         ++inIndx;
     }
     auto & shaderStages = pipeline.shaderStages;
-    shaderStages.resize(2);
+    shaderStages.resize(1);
 
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
     shaderStages[0].pName[0] = '\0';
@@ -299,11 +312,14 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     shaderStages[0].shader[0] = '\0';
     strcat(shaderStages[0].shader, vertexShader);
 
-    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].pName[0] = '\0';
-    strcat(shaderStages[1].pName, "main");
-    shaderStages[1].shader[0] = '\0';
-    strcat(shaderStages[1].shader, fragmentShader);
+    // shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // shaderStages[1].pName[0] = '\0';
+    // strcat(shaderStages[1].pName, "main");
+    // shaderStages[1].shader[0] = '\0';
+    // strcat(shaderStages[1].shader, fragmentShader);
+
+    pipeline.colorAttachment = false;
+    pipeline.enableDepthBias = true;
 }
 
 void GameRenderer::bindScene(Scene const & scene) {
@@ -378,6 +394,15 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     standardUBO.lighting.sun = sun;
     standardUBO.lighting.ambientLight = 0.2f;
     standardUBO.lighting.noPointLights = 0;
+
+    // shadow map ubo
+    auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
+    ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
+    // model
+    std::memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * NUMBER_SUPPORTED_MODEL_MATRICES);
+     // depth view and projection;
+    shadowUBO.depthVP = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f) * 
+                        glm::lookAt(viewPosition, viewPosition + sun.direction, { 0.0f, 1.0f, 0.0f });
 
 }
 

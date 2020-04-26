@@ -36,7 +36,8 @@ struct SkyboxUBO {
 };
 
 struct ShadowMapUBO  {
-    alignas(16) glm::mat4 depthMVP;
+    alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
+    alignas(16) glm::mat4 depthVP;
 };
 
 class GameRenderer : public VulkanApplication {

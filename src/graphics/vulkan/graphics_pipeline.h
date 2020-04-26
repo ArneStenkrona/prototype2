@@ -40,9 +40,12 @@ struct GraphicsPipeline {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkPipelineCache pipelineCache;
+    VkRenderPass renderpass;
     VkVertexInputBindingDescription vertexInputBinding;
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     prt::vector<ShaderStage> shaderStages;
+    bool colorAttachment;
+    bool enableDepthBias;
 
     // Draw calls
     // prt::vector<DrawCall> drawCalls;

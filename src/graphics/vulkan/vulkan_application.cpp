@@ -56,10 +56,15 @@ void VulkanApplication::initVulkan() {
     createLogicalDevice();
     createSwapChain();
     createImageViews();
-    createRenderPass();
-    createDescriptorSetLayouts();
-    createPipelineCaches();
-    createGraphicsPipelines();
+    createScenePass();
+    createOffscreenFrameBuffer();
+    connectRenderPasses();
+    createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    createDescriptorSetLayouts(graphicsPipelines.scene);
+    createPipelineCaches(graphicsPipelines.offscreen);
+    createPipelineCaches(graphicsPipelines.scene);
+    createGraphicsPipelines(graphicsPipelines.offscreen);
+    createGraphicsPipelines(graphicsPipelines.scene);
     createCommandPool();
     createColorResources();
     createDepthResources();
@@ -67,11 +72,9 @@ void VulkanApplication::initVulkan() {
     createTextureSampler();
 
     createOffscreenSampler();
-    createOffscreenFrameBuffer();
 
     createSyncObjects();
 
-    // createUniformBuffers();
     createDescriptorPools(graphicsPipelines.offscreen);
     createDescriptorPools(graphicsPipelines.scene);
 }
@@ -108,12 +111,17 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
+    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
+        vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
+        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
+        vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
+    }
     for (auto & graphicsPipeline : graphicsPipelines.scene) {
         vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
         vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
         vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
     }
-    vkDestroyRenderPass(device, renderPass, nullptr);
+    vkDestroyRenderPass(device, scenePass, nullptr);
     vkDestroyRenderPass(device, offscreenPass.renderPass, nullptr);
  
     for (auto & imageView : swapChainImageViews) {
@@ -122,6 +130,10 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
+    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
+        vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
+    }
     for (auto & graphicsPipeline : graphicsPipelines.scene) {
         vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
@@ -194,21 +206,25 @@ void VulkanApplication::recreateSwapChain() {
 
     createSwapChain();
     createImageViews();
-    createRenderPass();
-    createDescriptorSetLayouts();
-    createPipelineCaches();
-    createGraphicsPipelines();
+    createScenePass();
+    createOffscreenFrameBuffer();
+    connectRenderPasses();
+    createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    createDescriptorSetLayouts(graphicsPipelines.scene);
+    createPipelineCaches(graphicsPipelines.offscreen);
+    createPipelineCaches(graphicsPipelines.scene);
+    createGraphicsPipelines(graphicsPipelines.offscreen);
+    createGraphicsPipelines(graphicsPipelines.scene);
     createColorResources();
     createDepthResources();
     createFramebuffers();
     
-    createOffscreenFrameBuffer();
 
     createDescriptorPools(graphicsPipelines.offscreen);
     createDescriptorPools(graphicsPipelines.scene);
 
-    createDescriptorSets(graphicsPipelines.offscreen);
-    createDescriptorSets(graphicsPipelines.scene);
+    createDescriptorSets(/*graphicsPipelines.offscreen*/);
+    // createDescriptorSets(graphicsPipelines.scene);
     createCommandBuffers();
 }
 
@@ -407,11 +423,11 @@ void VulkanApplication::createImageViews() {
     }
 }
 
-void VulkanApplication::createRenderPass() {
-    enableMsaa ? createRenderPassMsaa() : createRenderPassNoMsaa();
+void VulkanApplication::createScenePass() {
+    enableMsaa ? createScenePassMsaa() : createScenePassNoMsaa();
 }
 
-void VulkanApplication::createRenderPassNoMsaa() {
+void VulkanApplication::createScenePassNoMsaa() {
     VkAttachmentDescription colorAttachmentDesc = {};
     colorAttachmentDesc.format = swapChainImageFormat;
     colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -464,12 +480,12 @@ void VulkanApplication::createRenderPassNoMsaa() {
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &scenePass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
 
-void VulkanApplication::createRenderPassMsaa() {
+void VulkanApplication::createScenePassMsaa() {
     VkAttachmentDescription colorAttachmentDesc = {};
     colorAttachmentDesc.format = swapChainImageFormat;
     colorAttachmentDesc.samples = msaaSamples;
@@ -537,7 +553,7 @@ void VulkanApplication::createRenderPassMsaa() {
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
     
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &scenePass) != VK_SUCCESS) {
         assert(false && "failed to create render pass!");
     }
 }
@@ -686,9 +702,19 @@ void VulkanApplication::createOffscreenFrameBuffer() {
     }
 }
 
+void VulkanApplication::connectRenderPasses() {
+    for (auto & pipeline : graphicsPipelines.offscreen) {
+        pipeline.renderpass = offscreenPass.renderPass;
+    }
 
-void VulkanApplication::createDescriptorSetLayouts() {
-    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+    for (auto & pipeline : graphicsPipelines.scene) {
+        pipeline.renderpass = scenePass;
+    }
+}
+
+
+void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines) {
+    for (auto & graphicsPipeline : pipelines) {
         VkDescriptorSetLayoutCreateInfo layoutInfo = {};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(graphicsPipeline.descriptorSetLayoutBindings.size());
@@ -700,9 +726,8 @@ void VulkanApplication::createDescriptorSetLayouts() {
     }
 }
 
-void VulkanApplication::createPipelineCaches()
-{
-    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+void VulkanApplication::createPipelineCaches(prt::vector<GraphicsPipeline> const & pipelines) {
+    for (auto & graphicsPipeline : pipelines) {
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
         if(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &graphicsPipeline.pipelineCache) != VK_SUCCESS) {
@@ -711,30 +736,14 @@ void VulkanApplication::createPipelineCaches()
     }
 }
 
-void VulkanApplication::createGraphicsPipeline(GraphicsPipeline& graphicsPipeline) {
-    createGraphicsPipeline(graphicsPipeline.vertexInputAttributes,
-                           graphicsPipeline.vertexInputBinding,
-                           graphicsPipeline.descriptorSetLayout,
-                           graphicsPipeline.pipelineLayout,
-                           graphicsPipeline.shaderStages,
-                           graphicsPipeline.pipelineCache,
-                           graphicsPipeline.pipeline);
-}
-
-void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttributeDescription> const & vertexInputAttributes,
-                                               VkVertexInputBindingDescription const & vertexInputBinding,
-                                               VkDescriptorSetLayout const & descriptorSetLayout,
-                                               VkPipelineLayout & pipelineLayout,
-                                               prt::vector<ShaderStage> const & shaderStages,
-                                               VkPipelineCache const & pipelineCache,
-                                               VkPipeline & pipeline) {
+void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeline) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
     vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributes.size();
-    vertexInputInfo.pVertexBindingDescriptions = &vertexInputBinding;
-    vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributes.data();
+    vertexInputInfo.vertexAttributeDescriptionCount = graphicsPipeline.vertexInputAttributes.size();
+    vertexInputInfo.pVertexBindingDescriptions = &graphicsPipeline.vertexInputBinding;
+    vertexInputInfo.pVertexAttributeDescriptions = graphicsPipeline.vertexInputAttributes.data();
     
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -768,7 +777,7 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE;
+    rasterizer.depthBiasEnable = graphicsPipeline.enableDepthBias ? VK_TRUE : VK_FALSE;
     
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -789,19 +798,23 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.logicOpEnable = VK_FALSE;
-    colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &colorBlendAttachment;
-    colorBlending.blendConstants[0] = 0.0f;
-    colorBlending.blendConstants[1] = 0.0f;
-    colorBlending.blendConstants[2] = 0.0f;
-    colorBlending.blendConstants[3] = 0.0f;
+    if (graphicsPipeline.colorAttachment) {
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = 1;
+        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+    } else {
+        colorBlending.attachmentCount = 0;
+    }
     
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &graphicsPipeline.descriptorSetLayout;
 
     VkPushConstantRange pushConstantRange = {};
 	pushConstantRange.offset = 0;
@@ -811,12 +824,12 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
     
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &graphicsPipeline.pipelineLayout) != VK_SUCCESS) {
         assert(false && "failed to create pipeline layout!");
     }
 
     prt::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
-    shaderStageCreateInfos.resize(shaderStages.size());
+    shaderStageCreateInfos.resize(graphicsPipeline.shaderStages.size());
     
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -829,20 +842,20 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.layout = graphicsPipeline.pipelineLayout;
+    pipelineInfo.renderPass = graphicsPipeline.renderpass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    for (size_t i = 0; i < shaderStages.size(); ++i) {
+    for (size_t i = 0; i < graphicsPipeline.shaderStages.size(); ++i) {
         shaderStageCreateInfos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStageCreateInfos[i].stage = shaderStages[i].stage;
-        shaderStageCreateInfos[i].pName = shaderStages[i].pName;
-        shaderStageCreateInfos[i].module = createShaderModule(shaderStages[i].shader);
+        shaderStageCreateInfos[i].stage = graphicsPipeline.shaderStages[i].stage;
+        shaderStageCreateInfos[i].pName = graphicsPipeline.shaderStages[i].pName;
+        shaderStageCreateInfos[i].module = createShaderModule(graphicsPipeline.shaderStages[i].shader);
     }
     
-    if (vkCreateGraphicsPipelines(device, pipelineCache, 1, 
-                                  &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, graphicsPipeline.pipelineCache, 1, 
+                                  &pipelineInfo, nullptr, &graphicsPipeline.pipeline) != VK_SUCCESS) {
         assert(false && "failed to create graphics pipeline!");
     }
 
@@ -851,8 +864,8 @@ void VulkanApplication::createGraphicsPipeline(prt::vector<VkVertexInputAttribut
     }
 }
 
-void VulkanApplication::createGraphicsPipelines() {
-    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+void VulkanApplication::createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines) {
+    for (auto & graphicsPipeline : pipelines) {
         createGraphicsPipeline(graphicsPipeline);
     }
 }
@@ -863,7 +876,7 @@ void VulkanApplication::createFramebuffers() {
     for (size_t i = 0; i < swapChainImageViews.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = renderPass;
+        framebufferInfo.renderPass = scenePass;
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
@@ -937,7 +950,8 @@ void VulkanApplication::createDepthResources() {
     transitionImageLayout(depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
 }
 
-VkFormat VulkanApplication::findSupportedFormat(const prt::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+VkFormat VulkanApplication::findSupportedFormat(prt::vector<VkFormat> const & candidates, 
+                                                VkImageTiling tiling, VkFormatFeatureFlags features) {
     for (VkFormat format : candidates) {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -1383,15 +1397,53 @@ void VulkanApplication::createDescriptorPools(prt::vector<GraphicsPipeline> cons
     }
 }
 
-void VulkanApplication::createDescriptorSets(prt::vector<GraphicsPipeline> const & pipelines) {
-    for (auto & graphicsPipeline : pipelines) {
-        prt::vector<VkDescriptorSetLayout> skyboxLayouts(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
+void VulkanApplication::createDescriptorSets(/*prt::vector<GraphicsPipeline> const & pipelines*/) {
+    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
+        prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = graphicsPipeline.descriptorPool;
         allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
-        allocInfo.pSetLayouts = skyboxLayouts.data();
+        allocInfo.pSetLayouts = layout.data();
+
+        graphicsPipeline.descriptorSets.resize(swapChainImages.size());
+        if (vkAllocateDescriptorSets(device, &allocInfo, graphicsPipeline.descriptorSets.data()) != VK_SUCCESS) {
+            assert(false && "failed to allocate descriptor sets!");
+        }
+
+        for (size_t i = 0; i < swapChainImages.size(); i++) {
+                VkDescriptorBufferInfo bufferInfo = {};
+                // Assets& ass = assets[graphicsPipeline.assetsIndex];
+                UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
+                bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
+                bufferInfo.offset = 0;
+                bufferInfo.range = uniformBufferData.uboData.size();
+                
+                for (auto & descriptorWrite : graphicsPipeline.descriptorWrites[i]) {
+                    descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
+                }
+                graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];
+                // for (size_t j = 0; j < graphicsPipeline.descriptorImageInfos.size(); j++) {
+                //     graphicsPipeline.descriptorImageInfos[j].sampler = textureSampler;
+                //     graphicsPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                //     graphicsPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
+                // }
+                // graphicsPipeline.descriptorWrites[i][1].pImageInfo = graphicsPipeline.descriptorImageInfos.data();
+
+                vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
+                                        graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);
+        }
+    }
+
+    for (auto & graphicsPipeline : graphicsPipelines.scene) {
+        prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
+
+        VkDescriptorSetAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = graphicsPipeline.descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
+        allocInfo.pSetLayouts = layout.data();
 
         graphicsPipeline.descriptorSets.resize(swapChainImages.size());
         if (vkAllocateDescriptorSets(device, &allocInfo, graphicsPipeline.descriptorSets.data()) != VK_SUCCESS) {
@@ -1626,7 +1678,7 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.renderPass = scenePass;
     renderPassBeginInfo.framebuffer = swapChainFramebuffers[imageIndex];
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = swapChainExtent;
