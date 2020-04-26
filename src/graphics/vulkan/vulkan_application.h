@@ -151,6 +151,8 @@ protected:
     void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void recreateSwapChain();
+    void reprepareSwapChain();
+    void completeSwapChain();
     void cleanupSwapChain();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
@@ -241,7 +243,7 @@ private:
     void createOffscreenRenderPass();
     void createOffscreenFrameBuffer();
     
-    void connectRenderPasses();
+    // void connectRenderPasses();
 
     void createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines);
 
@@ -304,7 +306,7 @@ private:
     
     void createDescriptorPools(prt::vector<GraphicsPipeline> const & pipelines);
     
-    void createDescriptorSets(/*prt::vector<GraphicsPipeline> const & pipelines*/);
+    void createDescriptorSets();
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 

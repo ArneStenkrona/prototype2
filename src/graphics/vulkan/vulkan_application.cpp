@@ -58,7 +58,6 @@ void VulkanApplication::initVulkan() {
     createImageViews();
     createScenePass();
     createOffscreenFrameBuffer();
-    connectRenderPasses();
     createDescriptorSetLayouts(graphicsPipelines.offscreen);
     createDescriptorSetLayouts(graphicsPipelines.scene);
     createPipelineCaches(graphicsPipelines.offscreen);
@@ -193,7 +192,42 @@ void VulkanApplication::cleanup() {
 }
 
 void VulkanApplication::recreateSwapChain() {
-    _width = 0;
+    // _width = 0;
+    // _height = 0;
+    // while (_width == 0 || _height == 0) {
+    //     glfwGetFramebufferSize(_window, &_width, &_height);
+    //     glfwWaitEvents();
+    // }
+
+    // vkDeviceWaitIdle(device);
+ 
+    // cleanupSwapChain();
+
+    // createSwapChain();
+    // createImageViews();
+    // createScenePass();
+    // createOffscreenFrameBuffer();
+    // createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    // createDescriptorSetLayouts(graphicsPipelines.scene);
+    // createPipelineCaches(graphicsPipelines.offscreen);
+    // createPipelineCaches(graphicsPipelines.scene);
+    // createGraphicsPipelines(graphicsPipelines.offscreen);
+    // createGraphicsPipelines(graphicsPipelines.scene);
+    // createColorResources();
+    // createDepthResources();
+    // createFramebuffers();
+
+    // createDescriptorPools(graphicsPipelines.offscreen);
+    // createDescriptorPools(graphicsPipelines.scene);
+
+    // createDescriptorSets();
+    // createCommandBuffers(); 
+    reprepareSwapChain();
+    completeSwapChain();
+}
+
+void VulkanApplication::reprepareSwapChain() {
+     _width = 0;
     _height = 0;
     while (_width == 0 || _height == 0) {
         glfwGetFramebufferSize(_window, &_width, &_height);
@@ -208,7 +242,9 @@ void VulkanApplication::recreateSwapChain() {
     createImageViews();
     createScenePass();
     createOffscreenFrameBuffer();
-    connectRenderPasses();
+}
+
+void VulkanApplication::completeSwapChain() {
     createDescriptorSetLayouts(graphicsPipelines.offscreen);
     createDescriptorSetLayouts(graphicsPipelines.scene);
     createPipelineCaches(graphicsPipelines.offscreen);
@@ -218,13 +254,11 @@ void VulkanApplication::recreateSwapChain() {
     createColorResources();
     createDepthResources();
     createFramebuffers();
-    
 
     createDescriptorPools(graphicsPipelines.offscreen);
     createDescriptorPools(graphicsPipelines.scene);
 
-    createDescriptorSets(/*graphicsPipelines.offscreen*/);
-    // createDescriptorSets(graphicsPipelines.scene);
+    createDescriptorSets();
     createCommandBuffers();
 }
 
@@ -649,7 +683,7 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         image.samples = VK_SAMPLE_COUNT_1_BIT;
         image.tiling = VK_IMAGE_TILING_OPTIMAL;
         image.format = findDepthFormat();
-        image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         if (vkCreateImage(device, &image, nullptr, &offscreenPass.depths[i].image) != VK_SUCCESS) {
             assert(false && "failed to create offscreen depth image!");
         }
@@ -701,17 +735,6 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         }
     }
 }
-
-void VulkanApplication::connectRenderPasses() {
-    for (auto & pipeline : graphicsPipelines.offscreen) {
-        pipeline.renderpass = offscreenPass.renderPass;
-    }
-
-    for (auto & pipeline : graphicsPipelines.scene) {
-        pipeline.renderpass = scenePass;
-    }
-}
-
 
 void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines) {
     for (auto & graphicsPipeline : pipelines) {
@@ -1397,7 +1420,7 @@ void VulkanApplication::createDescriptorPools(prt::vector<GraphicsPipeline> cons
     }
 }
 
-void VulkanApplication::createDescriptorSets(/*prt::vector<GraphicsPipeline> const & pipelines*/) {
+void VulkanApplication::createDescriptorSets() {
     for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
         prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
 
@@ -1452,7 +1475,7 @@ void VulkanApplication::createDescriptorSets(/*prt::vector<GraphicsPipeline> con
     
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
-                Assets& ass = assets[graphicsPipeline.assetsIndex];
+                // Assets& ass = assets[graphicsPipeline.assetsIndex];
                 UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
                 bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
@@ -1462,12 +1485,12 @@ void VulkanApplication::createDescriptorSets(/*prt::vector<GraphicsPipeline> con
                     descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
                 }
                 graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];
-                for (size_t j = 0; j < graphicsPipeline.descriptorImageInfos.size(); j++) {
-                    graphicsPipeline.descriptorImageInfos[j].sampler = textureSampler;
-                    graphicsPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    graphicsPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
-                }
-                graphicsPipeline.descriptorWrites[i][1].pImageInfo = graphicsPipeline.descriptorImageInfos.data();
+                // for (size_t j = 0; j < graphicsPipeline.descriptorImageInfos.size(); j++) {
+                //     graphicsPipeline.descriptorImageInfos[j].sampler = textureSampler;
+                //     graphicsPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                //     graphicsPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
+                // }
+                // graphicsPipeline.descriptorWrites[i][1].pImageInfo = graphicsPipeline.descriptorImageInfos.data();
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
                                         graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);

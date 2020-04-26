@@ -32,6 +32,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 layout(set = 0, binding = 1) uniform texture2D textures[32];
 layout(set = 0, binding = 2) uniform sampler samp;
 
+layout(set = 0, binding = 3) uniform sampler2D shadowMap;
+
 layout(push_constant) uniform MATERIAL {
 	// layout(offset = 0) int modelMatrixIdx;
 	layout(offset = 4) int albedoIndex;

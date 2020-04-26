@@ -76,8 +76,12 @@ private:
     size_t shadowmapPipelineIndex;
 
     VkDescriptorImageInfo samplerInfo;
+    prt::vector<VkDescriptorImageInfo> shadowmapDescriptor;
 
-    void createGraphicsPipelines();
+    void createGraphicsPipelines(size_t skyboxAssetIndex, size_t skyboxUboIndex, 
+                                 size_t standardAssetIndex, size_t standardUboIndex, 
+                                 size_t shadowmapAssetIndex, size_t shadowmapUboIndex);
+
     void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
     void createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
                                         const char* vertexShader, const char* fragmentShader);
@@ -87,15 +91,15 @@ private:
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
 
-    void createVertexBuffer(const prt::vector<Model>& models);
+    void createVertexBuffer(const prt::vector<Model>& models, size_t assetIndex);
     
-    void createIndexBuffer(const prt::vector<Model>& models);
+    void createIndexBuffer(const prt::vector<Model>& models, size_t assetIndex);
 
-    void createSkyboxBuffers();
+    void createCubeMapBuffers(size_t assetIndex);
 
-    void loadModels(const prt::vector<Model>& models);
+    void loadModels(const prt::vector<Model>& models, size_t assetIndex);
 
-    void loadSkybox(const prt::array<Texture, 6>& skybox);
+    void loadCubeMap(const prt::array<Texture, 6>& skybox, size_t assetIndex);
 
     void createDrawCalls(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
 
