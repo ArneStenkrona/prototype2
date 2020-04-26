@@ -26,6 +26,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
+    mat4 sunSpace;
     PointLight pointLights[4];
 } ubo;
 
@@ -51,7 +52,13 @@ layout(location = 0) out VS_OUT {
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
+    vec4 sunShadowCoord;
 } vs_out;
+
+const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
+                          0.0, 0.5, 0.0, 0.0,
+                          0.0, 0.0, 1.0, 0.0,
+                          0.5, 0.5, 0.0, 1.0);
 
 void main() {
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0));
@@ -70,6 +77,8 @@ void main() {
     vs_out.tangentSunDir = tbn * ubo.sun.direction;
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
+
+    vs_out.sunShadowCoord = (biasMat * ubo.sunSpace * ubo.model[pc.modelMatrixIdx]) * vec4(inPosition, 1.0);
 
     gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
 }

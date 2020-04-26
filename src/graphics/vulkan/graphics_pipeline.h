@@ -5,14 +5,6 @@
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
-
-// struct DrawCall {
-//     uint32_t firstIndex;
-//     uint32_t indexCount;
-//     // typedef prt::array<uint32_t, 2> ConstantType;
-//     using PushConstants = prt::array<unsigned char, 32>;
-//     PushConstants pushConstants;
-// };
     
 struct ShaderStage {
     VkShaderStageFlagBits stage;
@@ -33,18 +25,19 @@ struct GraphicsPipeline {
     VkDescriptorSetLayout descriptorSetLayout;
     prt::vector<VkDescriptorSet> descriptorSets;
     prt::array<VkDescriptorBufferInfo, 3> descriptorBufferInfos;
-    prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
-    prt::array<prt::vector<VkWriteDescriptorSet>, 3> descriptorWrites;
+    // prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
+    prt::vector<prt::vector<VkWriteDescriptorSet> > descriptorWrites;
 
     // Pipeline
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkPipelineCache pipelineCache;
     VkRenderPass renderpass;
+    VkExtent2D extent;
     VkVertexInputBindingDescription vertexInputBinding;
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     prt::vector<ShaderStage> shaderStages;
-    bool colorAttachment;
+    bool useColorAttachment;
     bool enableDepthBias;
 
     // Draw calls

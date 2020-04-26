@@ -65,15 +65,16 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     skyboxPipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
     // Descriptor sets
     skyboxPipeline.descriptorSets.resize(swapChainImages.size());
+    skyboxPipeline.descriptorWrites.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) { 
         skyboxPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         skyboxPipeline.descriptorBufferInfos[i].offset = 0;
         skyboxPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
-        skyboxPipeline.descriptorImageInfos.resize(1);
-        skyboxPipeline.descriptorImageInfos[0].sampler = textureSampler;
-        skyboxPipeline.descriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        skyboxPipeline.descriptorImageInfos[0].imageView = asset.textureImages.imageViews[0];
+        // skyboxPipeline.descriptorImageInfos.resize(1);
+        // skyboxPipeline.descriptorImageInfos[0].sampler = textureSampler;
+        // skyboxPipeline.descriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        // skyboxPipeline.descriptorImageInfos[0].imageView = asset.textureImages.imageViews[0];
 
         skyboxPipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
@@ -93,7 +94,7 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
         skyboxPipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         skyboxPipeline.descriptorWrites[i][1].descriptorCount = 1;
         skyboxPipeline.descriptorWrites[i][1].pBufferInfo = 0;
-        skyboxPipeline.descriptorWrites[i][1].pImageInfo = skyboxPipeline.descriptorImageInfos.data();
+        skyboxPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
     }
 
     // Vertex input
@@ -124,8 +125,9 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 
+    skyboxPipeline.extent = swapChainExtent;
     skyboxPipeline.renderpass = scenePass;
-    skyboxPipeline.colorAttachment = true;
+    skyboxPipeline.useColorAttachment = true;
     skyboxPipeline.enableDepthBias = false;
 }
 void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
@@ -187,17 +189,18 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
 
     // Descriptor sets
     modelPipeline.descriptorSets.resize(swapChainImages.size());
+    modelPipeline.descriptorWrites.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
         modelPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         modelPipeline.descriptorBufferInfos[i].offset = 0;
         modelPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
-        modelPipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
-        for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
-             modelPipeline.descriptorImageInfos[j].sampler = textureSampler;
-             modelPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-             modelPipeline.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
-        }
+        // modelPipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
+        // for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
+        //      modelPipeline.descriptorImageInfos[j].sampler = textureSampler;
+        //      modelPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        //      modelPipeline.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+        // }
         
         modelPipeline.descriptorWrites[i].resize(4, VkWriteDescriptorSet{});
         
@@ -217,7 +220,7 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
         modelPipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         modelPipeline.descriptorWrites[i][1].descriptorCount = NUMBER_SUPPORTED_TEXTURES;
         modelPipeline.descriptorWrites[i][1].pBufferInfo = 0;
-        modelPipeline.descriptorWrites[i][1].pImageInfo = modelPipeline.descriptorImageInfos.data();
+        modelPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
 
         // VkDescriptorImageInfo samplerInfo = {};
         samplerInfo.sampler = textureSampler;
@@ -232,10 +235,6 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
         modelPipeline.descriptorWrites[i][2].pBufferInfo = 0;
         modelPipeline.descriptorWrites[i][2].pImageInfo = &samplerInfo;
 
-        shadowmapDescriptor[i].sampler = offscreenPass.depthSampler;
-        shadowmapDescriptor[i].imageView = offscreenPass.depths[i].imageView;
-        shadowmapDescriptor[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
         modelPipeline.descriptorWrites[i][3] = {};
         modelPipeline.descriptorWrites[i][3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         // modelPipeline.descriptorWrites[i][3].dstSet = modelPipeline.descriptorSets[i];
@@ -244,7 +243,7 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
         modelPipeline.descriptorWrites[i][3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         modelPipeline.descriptorWrites[i][3].descriptorCount = 1;
         modelPipeline.descriptorWrites[i][3].pBufferInfo = 0;
-        modelPipeline.descriptorWrites[i][3].pImageInfo = &shadowmapDescriptor[i];
+        modelPipeline.descriptorWrites[i][3].pImageInfo = &offscreenPass.descriptors[i];
     }
 
     // Vertex input
@@ -271,8 +270,9 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, fragmentShader);
 
+    modelPipeline.extent = swapChainExtent;
     modelPipeline.renderpass = scenePass;
-    modelPipeline.colorAttachment = true;
+    modelPipeline.useColorAttachment = true;
     modelPipeline.enableDepthBias = false;
 }
 
@@ -304,6 +304,7 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
 
     // Descriptor sets
     pipeline.descriptorSets.resize(swapChainImages.size());
+    pipeline.descriptorWrites.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
@@ -342,8 +343,9 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     // shaderStages[1].shader[0] = '\0';
     // strcat(shaderStages[1].shader, fragmentShader);
 
+    pipeline.extent = offscreenPass.extent;
     pipeline.renderpass = offscreenPass.renderPass;
-    pipeline.colorAttachment = false;
+    pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
 }
 
@@ -365,8 +367,6 @@ void GameRenderer::bindScene(Scene const & scene) {
     loadCubeMap(skybox, skyboxAssetIndex);
 
     loadModels(models, standardAssetIndex);
-
-    shadowmapDescriptor.resize(swapChainImages.size());
 
     createGraphicsPipelines(skyboxAssetIndex, skyboxUboIndex,
                             standardAssetIndex, standardUboIndex,
@@ -434,15 +434,18 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     standardUBO.lighting.ambientLight = 0.2f;
     standardUBO.lighting.noPointLights = 0;
 
+    glm::mat4 const sunView = glm::lookAt(viewPosition, viewPosition + sun.direction, { 0.0f, 1.0f, 0.0f });
+    glm::mat4 const sunProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f);
+
+    standardUBO.lighting.sunSpace = sunProjection * sunView;
+
     // shadow map ubo
     auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
     ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
     // model
-    std::memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * NUMBER_SUPPORTED_MODEL_MATRICES);
+    std::memcpy(&shadowUBO.model[0], standardUBO.model.model, sizeof(standardUBO.model.model[0]) * NUMBER_SUPPORTED_MODEL_MATRICES);
      // depth view and projection;
-    shadowUBO.depthVP = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f) * 
-                        glm::lookAt(viewPosition, viewPosition + sun.direction, { 0.0f, 1.0f, 0.0f });
-
+    shadowUBO.depthVP = sunProjection * sunView;
 }
 
 void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetIndex) {
@@ -457,6 +460,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetInde
     asset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
     asset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
     asset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
+    asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
     for (size_t i = 0; i < models.size(); ++i) {
         for (size_t j = 0; j < models[i].meshes.size(); ++j) {
             auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
@@ -467,7 +471,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetInde
             createTextureImageView(asset.textureImages.imageViews[numTex], 
                                    asset.textureImages.images[numTex], 
                                    texture.mipLevels);
-            numTex++;
+            ++numTex;
         }
     }
 
@@ -488,6 +492,7 @@ void GameRenderer::loadCubeMap(const prt::array<Texture, 6>& skybox, size_t asse
     ass.textureImages.images.resize(1);
     ass.textureImages.imageViews.resize(1);
     ass.textureImages.imageMemories.resize(1);
+    ass.textureImages.descriptorImageInfos.resize(1);
     createCubeMapImage(ass.textureImages.images[0], 
                        ass.textureImages.imageMemories[0], 
                        skybox);
@@ -515,6 +520,7 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
         imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
         indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
     }
+    Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
     for (size_t i = 0; i < modelIndices.size(); ++i) {
         const Model& model = models[modelIndices[i]];
         for (auto const & mesh : model.meshes) {
@@ -536,7 +542,6 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
             drawCall.indexCount = mesh.numIndices;
             // pipeline index
             // size_t index = shaderToIndex[material.fragmentShader];
-            Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
             asset.drawCalls.push_back(drawCall);
         }
     }

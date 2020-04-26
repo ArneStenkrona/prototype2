@@ -58,12 +58,13 @@ void VulkanApplication::initVulkan() {
     createImageViews();
     createScenePass();
     createOffscreenFrameBuffer();
-    createDescriptorSetLayouts(graphicsPipelines.offscreen);
-    createDescriptorSetLayouts(graphicsPipelines.scene);
-    createPipelineCaches(graphicsPipelines.offscreen);
-    createPipelineCaches(graphicsPipelines.scene);
-    createGraphicsPipelines(graphicsPipelines.offscreen);
-    createGraphicsPipelines(graphicsPipelines.scene);
+    // createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    // createDescriptorSetLayouts(graphicsPipelines.scene);
+    // createPipelineCaches(graphicsPipelines.offscreen);
+    // createPipelineCaches(graphicsPipelines.scene);
+    // createGraphicsPipelines(graphicsPipelines.offscreen);
+    // createGraphicsPipelines(graphicsPipelines.scene);
+    prepareGraphicsPipelines();
     createCommandPool();
     createColorResources();
     createDepthResources();
@@ -245,12 +246,13 @@ void VulkanApplication::reprepareSwapChain() {
 }
 
 void VulkanApplication::completeSwapChain() {
-    createDescriptorSetLayouts(graphicsPipelines.offscreen);
-    createDescriptorSetLayouts(graphicsPipelines.scene);
-    createPipelineCaches(graphicsPipelines.offscreen);
-    createPipelineCaches(graphicsPipelines.scene);
-    createGraphicsPipelines(graphicsPipelines.offscreen);
-    createGraphicsPipelines(graphicsPipelines.scene);
+    // createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    // createDescriptorSetLayouts(graphicsPipelines.scene);
+    // createPipelineCaches(graphicsPipelines.offscreen);
+    // createPipelineCaches(graphicsPipelines.scene);
+    // createGraphicsPipelines(graphicsPipelines.offscreen);
+    // createGraphicsPipelines(graphicsPipelines.scene);
+    prepareGraphicsPipelines();
     createColorResources();
     createDepthResources();
     createFramebuffers();
@@ -623,7 +625,8 @@ void VulkanApplication::createOffscreenRenderPass() {
     attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
+    attachmentDescription.flags = 0;
+    
     VkAttachmentReference depthReference = {};
     depthReference.attachment = 0;
     depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -671,6 +674,7 @@ void VulkanApplication::createOffscreenFrameBuffer() {
     offscreenPass.extent.height = shadowmapDimension;
 
     offscreenPass.depths.resize(swapChainImages.size());
+    offscreenPass.descriptors.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
         VkImageCreateInfo image{};
         image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -715,6 +719,10 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         if (vkCreateImageView(device, &depthStencilImageView, nullptr, &offscreenPass.depths[i].imageView) != VK_SUCCESS) {
             assert(false && "failed to create image view for offscreen depth image!");
         }
+
+        offscreenPass.descriptors[i].sampler = offscreenPass.depthSampler;
+        offscreenPass.descriptors[i].imageView = offscreenPass.depths[i].imageView;
+        offscreenPass.descriptors[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }
 
     createOffscreenRenderPass();
@@ -734,6 +742,21 @@ void VulkanApplication::createOffscreenFrameBuffer() {
             assert(false && "failed to create offscreen frame buffer!");
         }
     }
+}
+
+void VulkanApplication::prepareGraphicsPipelines() {
+    for (auto & pipeline : graphicsPipelines.offscreen) {
+        pipeline.renderpass = offscreenPass.renderPass;
+    }
+    for (auto & pipeline : graphicsPipelines.scene) {
+        pipeline.renderpass = scenePass;
+    }
+    createDescriptorSetLayouts(graphicsPipelines.offscreen);
+    createDescriptorSetLayouts(graphicsPipelines.scene);
+    createPipelineCaches(graphicsPipelines.offscreen);
+    createPipelineCaches(graphicsPipelines.scene);
+    createGraphicsPipelines(graphicsPipelines.offscreen);
+    createGraphicsPipelines(graphicsPipelines.scene);
 }
 
 void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines) {
@@ -772,18 +795,24 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+    dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    prt::vector<VkDynamicState> dynamicStates;
+    dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+    dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
     
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float) swapChainExtent.width;
-    viewport.height = (float) swapChainExtent.height;
+    viewport.width = (float) graphicsPipeline.extent.width;
+    viewport.height = (float) graphicsPipeline.extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     
     VkRect2D scissor = {};
     scissor.offset = {0, 0};
-    scissor.extent = swapChainExtent;
+    scissor.extent = graphicsPipeline.extent;
     
     VkPipelineViewportStateCreateInfo viewportState = {};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -800,7 +829,16 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = graphicsPipeline.enableDepthBias ? VK_TRUE : VK_FALSE;
+
+    if (graphicsPipeline.enableDepthBias) {
+        rasterizer.depthBiasEnable = VK_TRUE;
+        dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
+    } else {
+        rasterizer.depthBiasEnable = VK_FALSE;
+    }
+
+    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
+    dynamicStateCreateInfo.dynamicStateCount = dynamicStates.size();
     
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -821,7 +859,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    if (graphicsPipeline.colorAttachment) {
+    if (graphicsPipeline.useColorAttachment) {
         colorBlending.logicOpEnable = VK_FALSE;
         colorBlending.logicOp = VK_LOGIC_OP_COPY;
         colorBlending.attachmentCount = 1;
@@ -869,6 +907,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     pipelineInfo.renderPass = graphicsPipeline.renderpass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
 
     for (size_t i = 0; i < graphicsPipeline.shaderStages.size(); ++i) {
         shaderStageCreateInfos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1473,9 +1512,9 @@ void VulkanApplication::createDescriptorSets() {
             assert(false && "failed to allocate descriptor sets!");
         }
     
-        for (size_t i = 0; i < swapChainImages.size(); i++) {
+        for (size_t i = 0; i < swapChainImages.size(); ++i) {
                 VkDescriptorBufferInfo bufferInfo = {};
-                // Assets& ass = assets[graphicsPipeline.assetsIndex];
+                Assets& asset = assets[graphicsPipeline.assetsIndex];
                 UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
                 bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
@@ -1485,12 +1524,12 @@ void VulkanApplication::createDescriptorSets() {
                     descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
                 }
                 graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];
-                // for (size_t j = 0; j < graphicsPipeline.descriptorImageInfos.size(); j++) {
-                //     graphicsPipeline.descriptorImageInfos[j].sampler = textureSampler;
-                //     graphicsPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                //     graphicsPipeline.descriptorImageInfos[j].imageView = ass.textureImages.imageViews[j];
-                // }
-                // graphicsPipeline.descriptorWrites[i][1].pImageInfo = graphicsPipeline.descriptorImageInfos.data();
+                for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
+                    asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+                    asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+                }
+                graphicsPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
                                         graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);
@@ -1667,8 +1706,8 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
 }
 
 void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
-    prt::array<VkClearValue, 2> clearValues = {};
-    clearValues[1].depthStencil = { 1.0f, 0 };
+    VkClearValue clearValue = {};
+    clearValue.depthStencil = { 1.0f, 0 };
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1676,18 +1715,29 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
     renderPassBeginInfo.framebuffer = offscreenPass.frameBuffers[imageIndex];
     renderPassBeginInfo.renderArea.extent = offscreenPass.extent;
     renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = clearValues.data();
+    renderPassBeginInfo.pClearValues = &clearValue;
 
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-    /* similar to createDrawCommands()*/
-    // static constexpr VkDeviceSize offset = 0;
-    // vkCmdSetViewport?
-    // vkCmdSetScissor?
+
+    VkViewport viewport;
+    viewport.width = offscreenPass.extent.width;
+    viewport.height = offscreenPass.extent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    viewport.x = 0;
+    viewport.y = 0;
+    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+ 
+    VkRect2D scissor;
+    scissor.extent = offscreenPass.extent;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
     vkCmdSetDepthBias(commandBuffers[imageIndex],
                       depthBiasConstant,
                       0.0f,
                       depthBiasSlope);
-    
     for (auto & pipeline : graphicsPipelines.offscreen) {
         createDrawCommands(imageIndex, pipeline);
     }
@@ -1709,6 +1759,22 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     renderPassBeginInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    VkViewport viewport;
+    viewport.width = swapChainExtent.width;
+    viewport.height = swapChainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    viewport.x = 0;
+    viewport.y = 0;
+    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+ 
+    VkRect2D scissor;
+    scissor.extent = swapChainExtent;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
     for (auto & pipeline : graphicsPipelines.scene) {
         createDrawCommands(imageIndex, pipeline);
     }

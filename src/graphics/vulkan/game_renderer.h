@@ -21,6 +21,7 @@ struct LightUBO {
     alignas(4) float ambientLight;
     alignas(4) int32_t noPointLights;
     alignas(16) DirLight sun;
+    alignas(16) glm::mat4 sunSpace;
     alignas(16) PointLight pointLights[NUMBER_SUPPORTED_POINTLIGHTS];
 };
 
@@ -76,7 +77,6 @@ private:
     size_t shadowmapPipelineIndex;
 
     VkDescriptorImageInfo samplerInfo;
-    prt::vector<VkDescriptorImageInfo> shadowmapDescriptor;
 
     void createGraphicsPipelines(size_t skyboxAssetIndex, size_t skyboxUboIndex, 
                                  size_t standardAssetIndex, size_t standardUboIndex, 

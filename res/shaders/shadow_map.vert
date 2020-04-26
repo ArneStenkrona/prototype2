@@ -18,10 +18,6 @@ layout(location = 2) in vec2 inTexCoord;
 layout(location = 3) in vec3 inTangent;
 layout(location = 4) in vec3 inBinormal;
 
-// out gl_PerVertex {
-//     vec4 gl_Position;
-// };
-
 void main() {
     gl_Position = ubo.depthVP * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
 }

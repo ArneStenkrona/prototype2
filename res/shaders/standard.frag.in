@@ -26,6 +26,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
+    mat4 sunSpace;
     PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
 } ubo;
 
@@ -54,8 +55,8 @@ layout(location = 0) in VS_OUT {
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
+    vec4 sunShadowCoord;
 } fs_in;
-
 
 layout(location = 0) out vec4 outColor;
 
@@ -63,6 +64,15 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity);
+
+float textureProj(vec4 shadowCoord, vec2 off);
+
+float linearizeDepth(float depth) {
+    float n = -10.0f;
+    float f = 100.0f;
+    float z = depth;
+    return (2.0 * n) / (f + n - z * (f - n));
+}
 
 void main() {
     // normalize tbn
@@ -94,7 +104,8 @@ void main() {
     }
 
     // Directional lighting
-    res += CalcDirLight(-fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
+    res += textureProj(fs_in.sunShadowCoord / fs_in.sunShadowCoord.w, vec2(0.0)) *
+           CalcDirLight(-fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                         albedo, specularity);
     outColor = vec4(res, 1.0);
 }
@@ -134,4 +145,15 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     vec3 diffuse  = lightColor  * diff * albedo;
     vec3 specular = lightColor * spec;
     return diffuse + specular;
+}
+
+float textureProj(vec4 shadowCoord, vec2 off) {
+    float shadow = 1.0f;
+    if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) {
+        float dist = texture(shadowMap, shadowCoord.st + off).r;
+        if (shadowCoord.w > 0.0 && dist < shadowCoord.z) {
+            shadow = 0.0f;
+        }
+    }
+    return shadow;
 }

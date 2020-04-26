@@ -63,6 +63,7 @@ struct TextureImages {
     prt::vector<VkImage> images;
     prt::vector<VkDeviceMemory> imageMemories;
     prt::vector<VkImageView> imageViews;
+    prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
 };
 
 struct UniformBufferData {
@@ -123,7 +124,7 @@ protected:
     VkExtent2D swapChainExtent;
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
-    
+
     VkRenderPass scenePass;
 
     struct OffscreenPass {
@@ -132,7 +133,7 @@ protected:
         prt::vector<FrameBufferAttachment> depths;
         VkRenderPass renderPass;
         VkSampler depthSampler;
-        VkDescriptorImageInfo descriptor;
+        prt::vector<VkDescriptorImageInfo> descriptors;
     } offscreenPass;
     
     struct {
@@ -242,9 +243,9 @@ private:
     void createOffscreenSampler();
     void createOffscreenRenderPass();
     void createOffscreenFrameBuffer();
-    
-    // void connectRenderPasses();
 
+    void prepareGraphicsPipelines();
+    
     void createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines);
 
     void createPipelineCaches(prt::vector<GraphicsPipeline> const & pipelines);
