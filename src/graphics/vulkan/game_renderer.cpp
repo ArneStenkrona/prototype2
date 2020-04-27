@@ -379,29 +379,27 @@ void GameRenderer::bindScene(Scene const & scene) {
 }
 
 void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
-                          glm::mat4 const & viewMatrix, 
-                          glm::mat4 const & projectionMatrix, 
-                          glm::vec3 const & viewPosition,
-                          glm::mat4 const & skyProjectionMatrix,
+                          Camera const & camera,
                           DirLight  const & sun,
                           float time) {      
     updateUBOs(modelMatrices, 
-               viewMatrix, 
-               projectionMatrix, 
-               viewPosition,
-               skyProjectionMatrix,
+               camera,
                sun,
                time);
     VulkanApplication::update();   
 }
 
 void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices, 
-                              glm::mat4 const & viewMatrix, 
-                              glm::mat4 const & projectionMatrix, 
-                              glm::vec3 const & viewPosition,
-                              glm::mat4 const & skyProjectionMatrix,
+                              Camera const & camera,
                               DirLight  const & sun,
                               float time) {
+    glm::mat4 viewMatrix = camera.getViewMatrix();
+    int w,h = 0;
+    getWindowSize(w, h);
+    glm::mat4 projectionMatrix = camera.getProjectionMatrix(float(w), float(h), nearPlane, farPlane);
+    glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(float(w), float(h), nearPlane, 1000.0f);
+    glm::vec3 viewPosition = camera.getPosition();
+
     // skybox ubo
     auto skyboxUboData = getUniformBufferData(graphicsPipelines.scene[skyboxPipelineIndex].uboIndex).uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
@@ -414,6 +412,10 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     skyboxUBO.model = skyboxViewMatrix * glm::mat4(1.0f);
     skyboxUBO.projection = skyProjectionMatrix;
     skyboxUBO.projection[1][1] *= -1;
+
+    prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> cascadeSpace;
+    prt::array<float, NUMBER_SHADOWMAP_CASCADES> splitDepths;
+    updateCascades(projectionMatrix, viewMatrix, sun.direction, cascadeSpace, splitDepths);
 
     // standard ubo                     
     auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
@@ -434,18 +436,101 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     standardUBO.lighting.ambientLight = 0.2f;
     standardUBO.lighting.noPointLights = 0;
 
-    glm::mat4 const sunView = glm::lookAt(viewPosition, viewPosition + sun.direction, { 0.0f, 1.0f, 0.0f });
-    glm::mat4 const sunProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, -10.0f, 100.0f);
-
-    standardUBO.lighting.sunSpace = sunProjection * sunView;
-
+    for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+        standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
+        standardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
+    }
+    // std::cout << "___begin___" << std::endl;
+    // for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+    //     std::cout << "splitDepth: " << standardUBO.lighting.splitDepths[i] << std::endl;
+    // }
     // shadow map ubo
     auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
     ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
     // model
     std::memcpy(&shadowUBO.model[0], standardUBO.model.model, sizeof(standardUBO.model.model[0]) * NUMBER_SUPPORTED_MODEL_MATRICES);
      // depth view and projection;
-    shadowUBO.depthVP = sunProjection * sunView;
+    for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+        shadowUBO.depthVP[i] = cascadeSpace[i];
+    }
+}
+
+void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
+                                  glm::mat4 const & viewMatrix,
+                                  glm::vec3 const & lightDir,
+                                  prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
+                                  prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths) {
+    float cascadeSplits[NUMBER_SHADOWMAP_CASCADES];
+
+    float clipRange = farPlane - nearPlane;
+
+    float minZ = nearPlane;
+    float maxZ = farPlane;
+
+    float ratio = maxZ / minZ;
+    for (unsigned int i = 0;  i < NUMBER_SHADOWMAP_CASCADES; ++i) {
+        float p = (i + 1) / static_cast<float>(NUMBER_SHADOWMAP_CASCADES);
+        float log = minZ * glm::pow(ratio, p);
+        float uniform = minZ + clipRange * p;
+        float d = cascadeSplitLambda * (log - uniform) + uniform;
+        cascadeSplits[i] = (d - nearPlane) / clipRange;
+    }
+
+    float lastSplitDist = 0.0f;
+    for (unsigned int i = 0; i < NUMBER_SHADOWMAP_CASCADES; ++i) {
+        float splitDist = cascadeSplits[i];
+        
+        glm::vec3 frustumCorners[8] = {
+            // near face
+            glm::vec3(-1.0f,  1.0f, -1.0f),
+            glm::vec3( 1.0f,  1.0f, -1.0f),
+            glm::vec3( 1.0f, -1.0f, -1.0f),
+            glm::vec3(-1.0f, -1.0f, -1.0f),
+
+            // far face
+            glm::vec3(-1.0f,  1.0f, 1.0f),
+            glm::vec3( 1.0f,  1.0f, 1.0f),
+            glm::vec3( 1.0f, -1.0f, 1.0f),
+            glm::vec3(-1.0f, -1.0f, 1.0f)
+        };
+
+        glm::mat4 const camInv = glm::inverse(projectionMatrix * viewMatrix);
+        for (unsigned int j = 0; j < 8; ++j) {
+            glm::vec4 invCorner = camInv * glm::vec4(frustumCorners[j], 1.0f);
+            frustumCorners[j] = invCorner / invCorner.w;
+        }
+
+        for (unsigned int i = 0; i < 4; ++i) {
+            glm::vec3 dist = frustumCorners[i + 4] - frustumCorners[i];
+            frustumCorners[i + 4] = frustumCorners[i] + (dist * splitDist);
+            frustumCorners[i] = frustumCorners[i] + (dist * lastSplitDist);
+        }
+
+        // Get frustum center
+        glm::vec3 frustumCenter{ 0.0f, 0.0f, 0.0f };
+        for (unsigned int j = 0; j < 8; ++j) {
+            frustumCenter += frustumCorners[j];
+        }
+        frustumCenter /= 8.0f;
+
+        float radius = 0.0f;
+        for (size_t j = 0; j < 8; ++j) {
+            float distance = glm::length(frustumCorners[j] - frustumCenter);
+            radius = glm::max(radius, distance);
+        } 
+        radius = std::ceil(radius * 16.0f) / 16.0f;
+
+        glm::vec3 maxExtents = glm::vec3{radius};
+        glm::vec3 minExtents = -maxExtents;
+        glm::mat4 sunView = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, {0.0f, 1.0f, 0.0f});
+        glm::mat4 sunProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+
+        sunProjection[1][1] *= -1;
+        cascadeSpace[i] = sunProjection * sunView;
+        splitDepths[i] = (nearPlane + splitDist * clipRange) *  -1.0f;
+
+        lastSplitDist = cascadeSplits[i];
+    }
 }
 
 void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetIndex) {
@@ -505,44 +590,56 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
                                          const prt::vector<uint32_t>& modelIndices) {
     // skybox
     {
-        Assets & asset = getAssets(graphicsPipelines.scene[skyboxPipelineIndex].assetsIndex);
+        GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
+        // Assets & asset = getAssets(pipeline.assetsIndex);
         DrawCall drawCall;
         drawCall.firstIndex = 0;
         drawCall.indexCount = 36;
-        asset.drawCalls.push_back(drawCall);
+        pipeline.drawCalls.push_back(drawCall);
     }
-    // models
-    prt::vector<uint32_t> imgIdxOffsets = { 0 };
-    prt::vector<uint32_t> indexOffsets = { 0 };
-    imgIdxOffsets.resize(models.size());
-    indexOffsets.resize(models.size());
-    for (size_t i = 1; i < models.size(); ++i) {
-        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
-        indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
+    // standard
+    {
+        GraphicsPipeline & pipeline = graphicsPipelines.scene[standardPipelineIndex];
+        prt::vector<uint32_t> imgIdxOffsets = { 0 };
+        prt::vector<uint32_t> indexOffsets = { 0 };
+        imgIdxOffsets.resize(models.size());
+        indexOffsets.resize(models.size());
+        for (size_t i = 1; i < models.size(); ++i) {
+            imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
+            indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
+        }
+        // Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
+        for (size_t i = 0; i < modelIndices.size(); ++i) {
+            const Model& model = models[modelIndices[i]];
+            for (auto const & mesh : model.meshes) {
+                auto const & material = model.materials[mesh.materialIndex];
+                DrawCall drawCall;
+                // compute texture indices
+                int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] +  material.albedoIndex;
+                int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.normalIndex;
+                int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.specularIndex;
+                // push constants
+                StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
+                pc.modelMatrixIdx = i;
+                pc.albedoIndex = albedoIndex;
+                pc.normalIndex = normalIndex;
+                pc.specularIndex = specularIndex;
+                pc.baseColor = material.baseColor;
+                pc.baseSpecularity = material.baseSpecularity;
+                // geometry
+                drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
+                drawCall.indexCount = mesh.numIndices;
+
+                pipeline.drawCalls.push_back(drawCall);
+            }
+        }
     }
-    Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
-    for (size_t i = 0; i < modelIndices.size(); ++i) {
-        const Model& model = models[modelIndices[i]];
-        for (auto const & mesh : model.meshes) {
-            auto const & material = model.materials[mesh.materialIndex];
-            DrawCall drawCall;
-            // compute texture indices
-            int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] +  material.albedoIndex;
-            int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.normalIndex;
-            int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.specularIndex;
-            // push constants
-            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[0]) = i;
-            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[4]) = albedoIndex;
-            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[8]) = normalIndex;
-            *reinterpret_cast<int32_t*>(&drawCall.pushConstants[12]) = specularIndex;
-            *reinterpret_cast<glm::vec3*>(&drawCall.pushConstants[16]) = material.baseColor;
-            *reinterpret_cast<float*>(&drawCall.pushConstants[28]) = material.baseSpecularity;
-            // geometry
-            drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
-            drawCall.indexCount = mesh.numIndices;
-            // pipeline index
-            // size_t index = shaderToIndex[material.fragmentShader];
-            asset.drawCalls.push_back(drawCall);
+    // shadow map
+    {
+        GraphicsPipeline & shadowPipeline = graphicsPipelines.offscreen[shadowmapPipelineIndex];
+        GraphicsPipeline & standardPipeline = graphicsPipelines.scene[standardPipelineIndex];
+        for (auto & standardDrawCall : standardPipeline.drawCalls) {
+            shadowPipeline.drawCalls.push_back(standardDrawCall);
         }
     }
 }

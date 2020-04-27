@@ -24,6 +24,8 @@ public:
     inline glm::mat4 getViewMatrix() const { return glm::lookAt(_position, _position + _front, _up); }
     glm::mat4 getProjectionMatrix(float width, float height, float near, float far) const;
     
+    inline float getFOV() const { return _fieldOfView; }
+    
 
     inline glm::vec3 getPosition() const { return _position; }
     inline glm::vec3 getFront() const { return _front; }

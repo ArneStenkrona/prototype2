@@ -26,14 +26,15 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
-    mat4 sunSpace;
+    vec4 splitDepths[(3 + 4) / 4];
+    mat4 cascadeSpace[3];
     PointLight pointLights[4];
 } ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[32];
 layout(set = 0, binding = 2) uniform sampler samp;
 
-layout(set = 0, binding = 3) uniform sampler2D shadowMap;
+layout(set = 0, binding = 3) uniform sampler2DArray shadowMap;
 
 layout(push_constant) uniform MATERIAL {
 	// layout(offset = 0) int modelMatrixIdx;
@@ -50,13 +51,20 @@ layout(location = 0) in VS_OUT {
     vec2 fragTexCoord;
     //float t;
     //vec3 viewDir;
-    //vec3 viewPos;
+    // vec3 viewPos;
+    vec3 viewSpacePos;
     //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
-    vec4 sunShadowCoord;
+    // vec4 sunShadowCoord;
 } fs_in;
+
+const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
+                          0.0, 0.5, 0.0, 0.0,
+                          0.0, 0.0, 1.0, 0.0,
+                          0.5, 0.5, 0.0, 1.0);
+
 
 layout(location = 0) out vec4 outColor;
 
@@ -65,7 +73,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity);
 
-float textureProj(vec4 shadowCoord, vec2 off);
+float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
+float filterPCF(vec4 shadowCoord, int cascadeIndex);
 
 float linearizeDepth(float depth) {
     float n = -10.0f;
@@ -75,11 +84,6 @@ float linearizeDepth(float depth) {
 }
 
 void main() {
-    // normalize tbn
-    //mat3 tbn = mat3(normalize(fs_in.tbn[0]),
-    //                normalize(fs_in.tbn[1]),
-    //                normalize(fs_in.tbn[2]));
-
     // get albedo
     vec3 albedo = material.albedoIndex < 0 ? material.baseColor :
                                         //0.5 * (material.baseColor + 2 *
@@ -103,10 +107,18 @@ void main() {
                               albedo, specularity);
     }
 
+    int cascadeIndex = 0;
+    for (int i = 0; i < 3 - 1; ++i) {
+        if (fs_in.viewSpacePos.z < ubo.splitDepths[i/4][i%4]) {
+            cascadeIndex = i + 1;
+        }
+    }
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos, 1.0));
+
     // Directional lighting
-    res += textureProj(fs_in.sunShadowCoord / fs_in.sunShadowCoord.w, vec2(0.0)) *
+    res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
            CalcDirLight(-fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
-                        albedo, specularity);
+                         albedo, specularity);
     outColor = vec4(res, 1.0);
 }
 
@@ -147,13 +159,32 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     return diffuse + specular;
 }
 
-float textureProj(vec4 shadowCoord, vec2 off) {
+float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
     float shadow = 1.0f;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) {
-        float dist = texture(shadowMap, shadowCoord.st + off).r;
+        float dist = texture(shadowMap, vec3(shadowCoord.st + off, cascadeIndex)).r;
         if (shadowCoord.w > 0.0 && dist < shadowCoord.z) {
             shadow = 0.0f;
         }
     }
     return shadow;
+}
+
+float filterPCF(vec4 shadowCoord, int cascadeIndex) {
+    ivec2 textDim = textureSize(shadowMap, 0).xy;
+    float scale = 1.5;
+    float dx = scale * 1.0 / float(textDim.x);
+    float dy = scale * 1.0 / float(textDim.y);
+
+    float shadowFactor = 0.0;
+    int count = 0;
+    int range = 1;
+
+    for (int x = -range; x <= range; ++x) {
+        for (int y = -range; y <= range; ++y) {
+            shadowFactor += textureProj(shadowCoord, vec2(dx*x, dy*y), cascadeIndex);
+            ++count;
+        }
+    }
+    return shadowFactor / count;
 }

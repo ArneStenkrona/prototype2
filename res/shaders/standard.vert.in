@@ -26,7 +26,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
-    mat4 sunSpace;
+    vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
+    mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
     PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
 } ubo;
 
@@ -47,18 +48,19 @@ layout(location = 0) out VS_OUT {
     vec2 fragTexCoord;
     //float t;
     //vec3 viewDir;
-    //vec3 viewPos;
+    // vec3 viewPos;
+    vec3 viewSpacePos;
     //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
-    vec4 sunShadowCoord;
+    // vec4 sunShadowCoord;
 } vs_out;
 
-const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
-                          0.0, 0.5, 0.0, 0.0,
-                          0.0, 0.0, 1.0, 0.0,
-                          0.5, 0.5, 0.0, 1.0);
+// const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
+//                           0.0, 0.5, 0.0, 0.0,
+//                           0.0, 0.0, 1.0, 0.0,
+//                           0.5, 0.5, 0.0, 1.0);
 
 void main() {
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0));
@@ -72,13 +74,14 @@ void main() {
     vs_out.fragTexCoord = inTexCoord;
     //vs_out.t = ubo.t;
     //vs_out.viewDir = ubo.viewPos - vs_out.fragPos;
-    //vs_out.viewPos = ubo.viewPos;
+    // vs_out.viewPos = ubo.viewPos;
+    vs_out.viewSpacePos = (ubo.view * vec4(vs_out.fragPos, 1.0)).xyz;
 
     vs_out.tangentSunDir = tbn * ubo.sun.direction;
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
 
-    vs_out.sunShadowCoord = (biasMat * ubo.sunSpace * ubo.model[pc.modelMatrixIdx]) * vec4(inPosition, 1.0);
+    // vs_out.sunShadowCoord = (biasMat * ubo.sunSpace * ubo.model[pc.modelMatrixIdx]) * vec4(inPosition, 1.0);
 
     gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
 }

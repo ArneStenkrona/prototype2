@@ -73,18 +73,9 @@ struct UniformBufferData {
     prt::vector<VkDeviceMemory> uniformBufferMemories;
 };
 
-struct DrawCall {
-    uint32_t firstIndex;
-    uint32_t indexCount;
-    // typedef prt::array<uint32_t, 2> ConstantType;
-    using PushConstants = prt::array<unsigned char, 32>;
-    PushConstants pushConstants;
-};
-
 struct Assets {
     VertexData vertexData;
     TextureImages textureImages;
-    prt::vector<DrawCall> drawCalls;
 };
     // UniformBufferData uniformBufferData;
 
@@ -92,6 +83,16 @@ struct FrameBufferAttachment {
 		VkImage image;
 		VkDeviceMemory memory;
 		VkImageView imageView;
+};
+
+struct Cascade {
+    VkFramebuffer frameBuffer;
+    VkDescriptorSet descriptorSet;
+    VkImageView imageView;
+    VkDescriptorImageInfo descriptors;
+
+    // float splitDepth;
+    // glm::mat4 viewProjMatrix;
 };
 
 class VulkanApplication {
@@ -129,11 +130,15 @@ protected:
 
     struct OffscreenPass {
         VkExtent2D extent;
-        prt::vector<VkFramebuffer> frameBuffers;
+        // prt::vector<VkFramebuffer> frameBuffers;
         prt::vector<FrameBufferAttachment> depths;
         VkRenderPass renderPass;
         VkSampler depthSampler;
         prt::vector<VkDescriptorImageInfo> descriptors;
+        VkDescriptorPool descriptorPool;
+        VkDescriptorSetLayout descriptorSetLayout;
+
+        prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
     } offscreenPass;
     
     struct {
@@ -170,7 +175,7 @@ protected:
     inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
 
 private:
-    static constexpr int32_t shadowmapDimension = 1024;
+    static constexpr int32_t shadowmapDimension = 2048;
     static constexpr float depthBiasConstant = 1.25f;
     static constexpr float depthBiasSlope = 1.75f;
 

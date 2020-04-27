@@ -5,7 +5,14 @@
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
-    
+
+struct DrawCall {
+    uint32_t firstIndex;
+    uint32_t indexCount;
+    using PushConstants = prt::array<unsigned char, 32>;
+    alignas(16) PushConstants pushConstants;
+};
+
 struct ShaderStage {
     VkShaderStageFlagBits stage;
     char shader[512];
@@ -41,7 +48,7 @@ struct GraphicsPipeline {
     bool enableDepthBias;
 
     // Draw calls
-    // prt::vector<DrawCall> drawCalls;
+    prt::vector<DrawCall> drawCalls;
 };
 
 #endif

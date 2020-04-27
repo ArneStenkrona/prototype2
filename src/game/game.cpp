@@ -70,20 +70,21 @@ void Game::updateGraphics(float /*deltaTime*/) {
     prt::vector<glm::mat4> modelMatrices; 
     m_scene.getTransformMatrices(modelMatrices);
 
-    glm::mat4 viewMatrix = m_camera.getViewMatrix();
-    int w,h = 0;
-    m_gameRenderer.getWindowSize(w, h);
-    glm::mat4 projectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 200.0f);
-    glm::mat4 skyProjectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
-    glm::vec3 viewPosition = m_camera.getPosition();
+    // glm::mat4 viewMatrix = m_camera.getViewMatrix();
+    // int w,h = 0;
+    // m_gameRenderer.getWindowSize(w, h);
+    // glm::mat4 projectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 100.0f);
+    // glm::mat4 skyProjectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
+    // glm::vec3 viewPosition = m_camera.getPosition();
 
     auto const & sun = m_scene.getSun();
 
     m_gameRenderer.update(modelMatrices, 
-                         viewMatrix, 
+                         /*viewMatrix, 
                          projectionMatrix, 
                          viewPosition, 
-                         skyProjectionMatrix, 
+                         skyProjectionMatrix,*/
+                         m_camera, 
                          sun,
                          m_time);
 }
