@@ -176,8 +176,8 @@ protected:
 
 private:
     static constexpr int32_t shadowmapDimension = 2048;
-    static constexpr float depthBiasConstant = 1.25f;
-    static constexpr float depthBiasSlope = 1.75f;
+    static constexpr float depthBiasConstant = 0.01f;//1.25f;
+    static constexpr float depthBiasSlope = 0.01f;//1.75f;
 
     static constexpr unsigned int maxFramesInFlight = 2;
 

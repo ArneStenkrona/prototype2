@@ -26,8 +26,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
-    vec4 splitDepths[(3 + 4) / 4];
-    mat4 cascadeSpace[3];
+    vec4 splitDepths[(4 + 4) / 4];
+    mat4 cascadeSpace[4];
     PointLight pointLights[4];
 } ubo;
 
@@ -52,7 +52,7 @@ layout(location = 0) in VS_OUT {
     //float t;
     //vec3 viewDir;
     // vec3 viewPos;
-    vec3 viewSpacePos;
+    vec3 shadowPos;
     //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -75,13 +75,6 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
-
-float linearizeDepth(float depth) {
-    float n = -10.0f;
-    float f = 100.0f;
-    float z = depth;
-    return (2.0 * n) / (f + n - z * (f - n));
-}
 
 void main() {
     // get albedo
@@ -108,8 +101,8 @@ void main() {
     }
 
     int cascadeIndex = 0;
-    for (int i = 0; i < 3 - 1; ++i) {
-        if (fs_in.viewSpacePos.z < ubo.splitDepths[i/4][i%4]) {
+    for (int i = 0; i < 4 - 1; ++i) {
+        if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
             cascadeIndex = i + 1;
         }
     }
@@ -117,7 +110,7 @@ void main() {
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
-           CalcDirLight(-fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
+           CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     outColor = vec4(res, 1.0);
 }
@@ -147,10 +140,10 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity) {
     // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
+    float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
     // vec3 reflectDir = reflect(-lightDir, normal); // phong
-    vec3 halfwayDir = normalize(lightDir + viewDir); // blinn-phong
+    vec3 halfwayDir = normalize(-lightDir + viewDir); // blinn-phong
     float shininess = 32.0;
     float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess);
     // combine results

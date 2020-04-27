@@ -49,7 +49,7 @@ layout(location = 0) out VS_OUT {
     //float t;
     //vec3 viewDir;
     // vec3 viewPos;
-    vec3 viewSpacePos;
+    vec3 shadowPos;
     //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -75,7 +75,7 @@ void main() {
     //vs_out.t = ubo.t;
     //vs_out.viewDir = ubo.viewPos - vs_out.fragPos;
     // vs_out.viewPos = ubo.viewPos;
-    vs_out.viewSpacePos = (ubo.view * vec4(vs_out.fragPos, 1.0)).xyz;
+    vs_out.shadowPos = (ubo.view * vec4(vs_out.fragPos + inNormal, 1.0)).xyz;
 
     vs_out.tangentSunDir = tbn * ubo.sun.direction;
     vs_out.tangentViewPos = tbn * ubo.viewPos;

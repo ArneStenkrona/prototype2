@@ -26,8 +26,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     int noPointLights;
     DirLight sun;
-    vec4 splitDepths[(3 + 4) / 4];
-    mat4 cascadeSpace[3];
+    vec4 splitDepths[(4 + 4) / 4];
+    mat4 cascadeSpace[4];
     PointLight pointLights[4];
 } ubo;
 
@@ -49,7 +49,7 @@ layout(location = 0) out VS_OUT {
     //float t;
     //vec3 viewDir;
     // vec3 viewPos;
-    vec3 viewSpacePos;
+    vec3 shadowPos;
     //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -75,7 +75,7 @@ void main() {
     //vs_out.t = ubo.t;
     //vs_out.viewDir = ubo.viewPos - vs_out.fragPos;
     // vs_out.viewPos = ubo.viewPos;
-    vs_out.viewSpacePos = (ubo.view * vec4(vs_out.fragPos, 1.0)).xyz;
+    vs_out.shadowPos = (ubo.view * vec4(vs_out.fragPos + inNormal, 1.0)).xyz;
 
     vs_out.tangentSunDir = tbn * ubo.sun.direction;
     vs_out.tangentViewPos = tbn * ubo.viewPos;

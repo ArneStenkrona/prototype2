@@ -4,7 +4,7 @@
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[100];
-    mat4 depthVP[3];
+    mat4 depthVP[4];
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT

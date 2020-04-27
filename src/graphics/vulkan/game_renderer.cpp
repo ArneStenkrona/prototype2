@@ -440,10 +440,6 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
         standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
         standardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
     }
-    // std::cout << "___begin___" << std::endl;
-    // for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
-    //     std::cout << "splitDepth: " << standardUBO.lighting.splitDepths[i] << std::endl;
-    // }
     // shadow map ubo
     auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
     ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
@@ -522,11 +518,10 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
 
         glm::vec3 maxExtents = glm::vec3{radius};
         glm::vec3 minExtents = -maxExtents;
-        glm::mat4 sunView = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, {0.0f, 1.0f, 0.0f});
-        glm::mat4 sunProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+        glm::mat4 cascadeView = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, {0.0f, 1.0f, 0.0f});
+        glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
-        sunProjection[1][1] *= -1;
-        cascadeSpace[i] = sunProjection * sunView;
+        cascadeSpace[i] = cascadeProjection * cascadeView;
         splitDepths[i] = (nearPlane + splitDist * clipRange) *  -1.0f;
 
         lastSplitDist = cascadeSplits[i];
