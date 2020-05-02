@@ -415,6 +415,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
 
     prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> cascadeSpace;
     prt::array<float, NUMBER_SHADOWMAP_CASCADES> splitDepths;
+    
     updateCascades(projectionMatrix, viewMatrix, sun.direction, cascadeSpace, splitDepths);
 
     // standard ubo                     
