@@ -10,32 +10,32 @@ namespace prt {
     public:
         typedef T data_type;
         enum {
-            _size = N,
-            _data_size = sizeof(T) * N
+            Size = N,
+            DataSize = sizeof(T) * N
         };
         
-        T _data[N];    
+        T m_data[N];    
 
         T operator [](size_t index) const { 
-            assert(index < _size);
-            return _data[index];
+            assert(index < Size);
+            return m_data[index];
         }
 
         T & operator [](size_t index) {
-            assert(index < _size);
-            return _data[index];
+            assert(index < Size);
+            return m_data[index];
         }
 
-        constexpr inline size_t size() const { return _size; }
-        constexpr inline T* data() { return &_data[0]; }
-        constexpr inline const T* data() const { return const_cast<const T*>(&_data[0]); }
+        constexpr inline size_t size() const { return Size; }
+        constexpr inline T* data() { return &m_data[0]; }
+        constexpr inline const T* data() const { return const_cast<const T*>(&m_data[0]); }
 
-        constexpr inline T* begin() { return &_data[0]; }
-        constexpr inline const T* begin() const { return const_cast<const T*>(&_data[0]); }
-        constexpr inline T* end() { return &_data[_size]; }
-        constexpr inline const T* end() const { return const_cast<const T*>(&_data[_size]); }
+        constexpr inline T* begin() { return &m_data[0]; }
+        constexpr inline const T* begin() const { return const_cast<const T*>(&m_data[0]); }
+        constexpr inline T* end() { return &m_data[Size]; }
+        constexpr inline const T* end() const { return const_cast<const T*>(&m_data[Size]); }
 
-        constexpr inline size_t data_size() const { return _data_size; }
+        constexpr inline size_t data_size() const { return DataSize; }
     };
 }
 
