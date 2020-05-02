@@ -7,7 +7,7 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
-#include "src/game/system/physics_system.h"
+#include "src/game/system/physics/physics_system.h"
 
 #include "src/container/vector.h"
 

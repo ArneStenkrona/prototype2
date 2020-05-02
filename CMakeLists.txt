@@ -97,6 +97,7 @@ file(GLOB SOURCES
     "src/game/level/*.cpp"
     "src/game/scene/*.cpp"
     "src/game/system/*.cpp"
+    "src/game/system/physics/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/graphics/vulkan/*.cpp"

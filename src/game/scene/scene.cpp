@@ -2,8 +2,6 @@
 
 #include "src/graphics/geometry/parametric_shapes.h"
 
-#include "src/game/system/physics_system.h"
-
 prt::vector<glm::vec3> tris{};
 PhysicsSystem physicsSystem{};
 
