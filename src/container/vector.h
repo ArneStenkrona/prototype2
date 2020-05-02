@@ -36,18 +36,14 @@ namespace prt
         }
 
         template< class InputIt >
-        vector(InputIt first, InputIt last,
+        vector(InputIt const & first, InputIt const & last,
                ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : vector(allocator) {
-            /*assert(first <= last);
+            assert(first <= last);
             size_t numOfT = last - first;
             reserve(numOfT);
             std::copy(first, last, _data);
-            _size = numOfT;*/
-
-            for (auto it = first; it != last; it++) {
-                push_back(*it);
-            }
+            _size = numOfT;
         }
 
         vector(std::initializer_list<T> ilist, 
@@ -194,8 +190,10 @@ namespace prt
 
         inline bool empty() const { return _size == 0; }
 
-        inline T& front() const { assert(!empty()); return _data[0]; }
-        inline T& back() const { assert(!empty()); return _data[_size - 1]; }
+        inline T& front() { assert(!empty()); return _data[0]; }
+        inline T const & front() const { assert(!empty()); return _data[0]; }
+        inline T& back() { assert(!empty()); return _data[_size - 1]; }
+        inline T const & back() const { assert(!empty()); return _data[_size - 1]; }
 
         inline size_t size() const { return _size; }
         inline size_t capacity() const { return _capacity; }
