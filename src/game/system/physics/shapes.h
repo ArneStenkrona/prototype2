@@ -17,6 +17,12 @@ struct AABB {
     float volume() const;
 
     /**
+     * @param other
+     * @return true if aabb encloses other
+     */
+    bool contains(AABB const & other);
+
+    /**
      * expands the AABB to the AABB enclosing
      * both operand AABB's
      * @param rhs right-hand side of the operation 

@@ -5,6 +5,24 @@
 #include <algorithm>
 #include <cassert>
 
+void DynamicAABBTree::insert(int32_t const * objectIndices, AABB const * aabbs, size_t n,
+                             int32_t * treeIndices) {
+    for (size_t i = 0; i < n; ++i) {
+        treeIndices[i] = insertLeaf(objectIndices[i], aabbs[i]);
+    }
+}
+
+void DynamicAABBTree::update(int32_t * treeIndices, AABB const * aabbs, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        Node & node = m_nodes[treeIndices[i]];
+        if (!node.aabb.contains(aabbs[i])) {
+            int32_t objectIndex = node.objectIndex;
+            remove(treeIndices[i]);
+            treeIndices[i] = insertLeaf(objectIndex, aabbs[i]);
+        }
+    }
+}
+
 float DynamicAABBTree::cost() const {
     float cost = 0.0f;
     for (auto const & node : m_nodes) {
@@ -13,14 +31,14 @@ float DynamicAABBTree::cost() const {
     return cost;
 }
 
-void DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
+int32_t DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
     // insert new node into vector
     int32_t leafIndex = allocateNode();
-    if (m_size == 0) {
-        rootIndex = leafIndex;
-        return;
-    }
     ++m_size;
+    if (m_size == 1) {
+        rootIndex = leafIndex;
+        return leafIndex;
+    }
 
     Node & leaf = m_nodes[leafIndex];
     // add objectIndex to user data
@@ -63,6 +81,8 @@ void DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
 
     // stage 3: walk back up the tree refitting AABBs and applying rotations
     synchHierarchy(leafIndex);
+
+    return leafIndex;
 }
 
 void DynamicAABBTree::remove(int32_t index) {
@@ -106,7 +126,6 @@ int32_t DynamicAABBTree::allocateNode() {
     m_nodes[index].height = 0;
     return index;
 }
-
 
 void DynamicAABBTree::synchHierarchy(int32_t index) {
     while (index != Node::nullIndex) {
@@ -215,4 +234,3 @@ DynamicAABBTree::NodeCost DynamicAABBTree::siblingCost(Node const & leaf, int32_
     cost.inheritedCost = inheritedCost;
     return cost;
 }
-
