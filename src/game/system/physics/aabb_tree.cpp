@@ -84,6 +84,9 @@ void DynamicAABBTree::remove(int32_t index) {
     }
     m_nodes[siblingIndex].parent = parent.parent;
 
+    n.height = -1;
+    parent.height = -1;
+
     parent.next = freeHead;
     n.next = n.parent;
     freeHead = index;
@@ -100,6 +103,7 @@ int32_t DynamicAABBTree::allocateNode() {
         index = freeHead;
         freeHead = m_nodes[freeHead].next;
     }
+    m_nodes[index].height = 0;
     return index;
 }
 
