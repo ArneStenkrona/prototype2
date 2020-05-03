@@ -17,8 +17,16 @@ struct AABB {
     float volume() const;
 
     /**
+     * @param a
+     * @param b
+     * @return  true if a intersects with b,
+     *          false otherwise
+     */
+    static bool intersect(AABB const & a, AABB const & b);
+    /**
      * @param other
-     * @return true if aabb encloses other
+     * @return true if aabb encloses other, 
+     *         false otherwise
      */
     bool contains(AABB const & other);
 
@@ -26,7 +34,7 @@ struct AABB {
      * expands the AABB to the AABB enclosing
      * both operand AABB's
      * @param rhs right-hand side of the operation 
-     * @return reference to this
+     * @return reference to result
      */
     AABB& operator+=(AABB const & rhs);
     /**

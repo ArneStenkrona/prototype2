@@ -1,5 +1,15 @@
 #include "shapes.h"
 
+bool AABB::intersect(AABB const & a, AABB const & b) {
+    return !(a.lowerBound.x > b.upperBound.x ||
+             a.upperBound.x < b.lowerBound.x ||
+             a.lowerBound.y > b.upperBound.y ||
+             a.upperBound.y < b.lowerBound.y ||
+             a.lowerBound.z > b.upperBound.z ||
+             a.upperBound.z < b.lowerBound.z);
+           
+}
+
 bool AABB::contains(AABB const & other) {
     return lowerBound.x <= other.lowerBound.x &&
            lowerBound.y <= other.lowerBound.y &&
