@@ -23,12 +23,15 @@ private:
     int32_t rootIndex;
 
     void insertLeaf(int32_t objectIndex, AABB const & aabb);
-    void remove(AABB const & aabb);
+    void remove(int32_t index);
     void update();
+
+    int32_t allocateNode();
 
     void synchHierarchy(int32_t index);
     void rotate(int32_t index);
     void swap(int32_t shorter, int32_t higher);
+
 
     int32_t findBestSibling(Node const & leaf) const;
 
@@ -50,8 +53,11 @@ private:
                 int32_t left;
                 int32_t right;
             };
-
-            void *userData;
+            struct {
+                int32_t objectIndex;
+                int32_t notUsed;
+            };
+            // void *userData;
         };
 
         // leaf = 0, free nodes = -1
@@ -67,7 +73,8 @@ private:
         friend bool operator<(NodeCost const & lhs, NodeCost const & rhs) 
                             { return lhs.directCost + lhs.inheritedCost < rhs.directCost + rhs.inheritedCost; }
     };
-
+    int32_t freeHead = Node::nullIndex; // free list
+    int32_t m_size;
     prt::vector<Node> m_nodes;
 };
 

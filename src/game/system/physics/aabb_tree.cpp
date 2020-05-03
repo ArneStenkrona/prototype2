@@ -15,16 +15,17 @@ float DynamicAABBTree::cost() const {
 
 void DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
     // insert new node into vector
-    int32_t leafIndex = m_nodes.size();
-    if (m_nodes.size() == 0) {
+    int32_t leafIndex = allocateNode();
+    if (m_size == 0) {
         rootIndex = leafIndex;
         return;
     }
+    ++m_size;
 
-    m_nodes.push_back({});
-    Node & leaf = m_nodes.back();
+    Node & leaf = m_nodes[leafIndex];
     // add objectIndex to user data
-    *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
+    // *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
+    leaf.objectIndex = objectIndex;
     // add buffer to aabb 
     leaf.aabb.lowerBound = aabb.lowerBound - buffer;
     leaf.aabb.upperBound = aabb.upperBound + buffer;
@@ -35,9 +36,8 @@ void DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
 
     // stage 2: create a new parent
     int32_t oldParentIndex = m_nodes[siblingIndex].parent;
-    int32_t newParentIndex = m_nodes.size();
-    m_nodes.push_back({});
-    Node & newParent = m_nodes.back();
+    int32_t newParentIndex = allocateNode();
+    Node & newParent = m_nodes[newParentIndex];
     Node & oldParent = m_nodes[oldParentIndex];
     newParent.parent = oldParentIndex;
     newParent.aabb = leaf.aabb + sibling.aabb;
@@ -63,6 +63,44 @@ void DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
 
     // stage 3: walk back up the tree refitting AABBs and applying rotations
     synchHierarchy(leafIndex);
+}
+
+void DynamicAABBTree::remove(int32_t index) {
+    Node & n = m_nodes[index];
+    assert(n.isLeaf());
+    Node & parent = m_nodes[n.parent];
+    int32_t siblingIndex;
+    if (parent.left == index) {
+        siblingIndex = parent.right;
+    } else {
+        siblingIndex = parent.left;
+    }
+    
+    Node & grandParent = m_nodes[parent.parent];
+    if (grandParent.left == n.parent) {
+        grandParent.left = siblingIndex;
+    } else {
+        grandParent.right = siblingIndex;
+    }
+    m_nodes[siblingIndex].parent = parent.parent;
+
+    parent.next = freeHead;
+    n.next = n.parent;
+    freeHead = index;
+
+    --m_size;
+}
+
+int32_t DynamicAABBTree::allocateNode() {
+    int32_t index;
+    if (freeHead == Node::nullIndex) {
+        index = m_nodes.size();
+        m_nodes.push_back({});
+    } else {
+        index = freeHead;
+        freeHead = m_nodes[freeHead].next;
+    }
+    return index;
 }
 
 
