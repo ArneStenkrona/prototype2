@@ -10,6 +10,13 @@
 class DynamicAABBTree {
 public:
     /**
+     * Finds all intersecting nodes for aabb
+     * @param aabb aabb of query object
+     * @param objectIndices vector to store object indices of nodes
+     */
+    void query(AABB const & aabb, prt::vector<int32_t> & objectIndices);
+    
+    /**
      * Inserts aabbs along with their object indices into the tree
      * @param objectIndices address of the start of the range of object indices
      * @param aabbs address of the start of the range of aabbs
