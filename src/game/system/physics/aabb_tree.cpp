@@ -5,16 +5,23 @@
 #include <algorithm>
 #include <cassert>
 
-void DynamicAABBTree::query(AABB const & /*aabb*/, prt::vector<int32_t> & /*objectIndices*/) {
-    // prt::vector<int32_t> nodeStack;
-    // nodeStack.push_back(rootIndex);
-    // while (nodeStack) {
-    //     int32_t index = nodeStack.back();
-    //     nodeStack.pop_back();
-    //     if (AABB::intersect())
-    // }
+void DynamicAABBTree::query(AABB const & aabb, prt::vector<int32_t> & objectIndices) {
+    prt::vector<int32_t> nodeStack;
+    nodeStack.push_back(rootIndex);
+    while (!nodeStack.empty()) {
+        int32_t index = nodeStack.back();
+        nodeStack.pop_back();
+        Node const & node = m_nodes[index];
+        if (AABB::intersect(node.aabb, aabb)) {
+            if (node.isLeaf()) {
+                objectIndices.push_back(index);
+            } else {
+                nodeStack.push_back(node.left);
+                nodeStack.push_back(node.right);
+            }
+        }
+    }
 }
-
 
 void DynamicAABBTree::insert(int32_t const * objectIndices, AABB const * aabbs, size_t n,
                              int32_t * treeIndices) {
