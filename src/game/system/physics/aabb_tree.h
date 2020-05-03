@@ -28,8 +28,8 @@ private:
 
     void synchHierarchy(int32_t index);
     void rotate(int32_t index);
-    void swap(int32_t indexA, int32_t indexB);
-    
+    void swap(int32_t shorter, int32_t higher);
+
     int32_t findBestSibling(Node const & leaf) const;
 
     struct NodeCost;

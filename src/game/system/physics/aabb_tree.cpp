@@ -107,27 +107,29 @@ void DynamicAABBTree::rotate(int32_t index) {
     }
 }
 
-void DynamicAABBTree::swap(int32_t indexA, int32_t indexB) {
-    Node & a = m_nodes[indexA];
-    Node & b = m_nodes[indexB];
+void DynamicAABBTree::swap(int32_t shorter, int32_t higher) {
+    Node & a = m_nodes[shorter];
+    Node & b = m_nodes[higher];
     Node & parentA = m_nodes[a.parent];
     Node & parentB = m_nodes[b.parent];
 
     // parents be notified of switch
-    if (parentA.left == indexA) {
-        parentA.left = indexB;
+    if (parentA.left == shorter) {
+        parentA.left = higher;
     } else {
-        parentA.right = indexB;
+        parentA.right = higher;
     }
-    if (parentB.left == indexB) {
-        parentB.left = indexA;
+    if (parentB.left == higher) {
+        parentB.left = shorter;
     } else {
-        parentB.right = indexA;
+        parentB.right = shorter;
     }
     // set new parents
     int32_t tempIndex = a.parent;
     a.parent = b.parent;
     b.parent = tempIndex;
+    
+    parentB.aabb = m_nodes[parentB.left].aabb + m_nodes[parentB.right].aabb;
 }
 
 int32_t DynamicAABBTree::findBestSibling(Node const & leaf) const {
@@ -166,8 +168,6 @@ DynamicAABBTree::NodeCost DynamicAABBTree::siblingCost(Node const & leaf, int32_
     cost.index = siblingIndex;
 
     float directCost = (leaf.aabb + m_nodes[siblingIndex].aabb).area();
-    // int32_t parentIndex = m_nodes[siblingIndex].parent;
-    // inheritedCost += (m_nodes[parentIndex].aabb + leaf.aabb).area() - m_nodes[parentIndex].aabb.area();
 
     cost.directCost = directCost;
     cost.inheritedCost = inheritedCost;
