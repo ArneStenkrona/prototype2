@@ -1,5 +1,5 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef PRT_MODEL_H
+#define PRT_MODEL_H
 
 #include "src/graphics/geometry/parametric_shapes.h"
 
@@ -87,18 +87,6 @@ struct Vertex {
     }
 };
 
-namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((((((hash<glm::vec3>()(vertex.pos) ^ 
-                        (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
-                        (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
-                        (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
-                        (hash<glm::vec3>()(vertex.binormal) << 1);
-        }
-    };
-}
-
 struct Texture {
     char path[256];
     prt::vector<unsigned char> pixelBuffer;
@@ -145,5 +133,17 @@ private:
     void calcTangentSpace();
     bool m_loaded = false;
 };
+
+namespace std {
+    template<> struct hash<Vertex> {
+        size_t operator()(Vertex const& vertex) const {
+            return ((((((hash<glm::vec3>()(vertex.pos) ^ 
+                        (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
+                        (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
+                        (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
+                        (hash<glm::vec3>()(vertex.binormal) << 1);
+        }
+    };
+}
 
 #endif
