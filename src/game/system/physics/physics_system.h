@@ -37,7 +37,8 @@ public:
                                  float deltaTime);
 
     uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);
-    void addModelColliders(uint32_t const * modelIDs, size_t count, uint32_t * ids);
+    void addModelColliders(uint32_t const * modelIDs, Transform const * transforms,
+                           size_t count, uint32_t * ids);
     /**
      * Checks for collision between an ellipsoid and a triangle mesh.
      * 
@@ -73,11 +74,13 @@ private:
 
     prt::vector<ModelCollider> m_modelColliders;
     prt::vector<MeshCollider> m_meshColliders;
+    // caches geometry after aplpying transforms
+    prt::vector<glm::vec3> m_geometry_cache;
     prt::vector<glm::vec3> m_geometry;
 
     DynamicAABBTree m_aabbTree;
 
-    uint32_t addMeshCollider(Model const & model);
+    uint32_t addMeshCollider(Model const & model, Transform const & transform);
 
     bool collideEllipsoidMesh(glm::vec3 const& ellipsoid, 
                               glm::vec3 const& ellipsoidPos,

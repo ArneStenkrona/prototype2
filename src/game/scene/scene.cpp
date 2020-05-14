@@ -86,7 +86,8 @@ void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
 // }
 
 void Scene::initColliders() {
-    m_physicsSystem.addModelColliders(m_staticSolidEntities.modelIDs, m_staticSolidEntities.size,
+    m_physicsSystem.addModelColliders(m_staticSolidEntities.modelIDs, m_staticSolidEntities.transforms,
+                                      m_staticSolidEntities.size,
                                       m_staticSolidEntities.colliderIDs);
 }
 
@@ -226,9 +227,9 @@ void Scene::updatePlayerPhysics(float deltaTime) {
 }
 
 void Scene::updatePhysics(float deltaTime) {
-    m_physicsSystem.updateModelColliders(m_staticSolidEntities.colliderIDs,
-                                         m_staticSolidEntities.transforms,
-                                         m_staticSolidEntities.size);
+    // m_physicsSystem.updateModelColliders(m_staticSolidEntities.colliderIDs,
+    //                                      m_staticSolidEntities.transforms,
+    //                                      m_staticSolidEntities.size);
 
     m_physicsSystem.resolveEllipsoidsModels(&m_playerEntity.ellipsoidColliderID,
                                             &m_playerEntity.transform,

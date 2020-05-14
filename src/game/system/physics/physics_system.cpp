@@ -15,11 +15,25 @@ PhysicsSystem::PhysicsSystem(ModelManager & modelManager)
 void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
                                         Transform const *transforms,
                                         size_t count) {
+    for (auto & meshCollider : m_meshColliders) {
+        meshCollider.hasMoved = false;
+    }
+
     for (size_t i = 0; i< count; ++i) {
         MeshCollider * curr = m_meshColliders.data() + m_modelColliders[colliderIDs[i]].startIndex;
         MeshCollider * end = curr + m_modelColliders[colliderIDs[i]].numIndices;
+        glm::mat4 mat = transforms[i].transformMatrix();
         while (curr < end) {
+            curr->hasMoved = true;
             curr->transform = transforms[i];
+
+            // update geometry cache
+            size_t currIndex = curr->startIndex;
+            size_t endIndex = currIndex + curr->numIndices;
+            while (currIndex < endIndex) {
+                m_geometry_cache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
+                ++currIndex;
+            }
             ++curr;
         }
     }
@@ -71,9 +85,11 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
     }    
 }
 
-void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, size_t count, uint32_t * ids) {
+void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const * transforms, 
+                                      size_t count, uint32_t * ids) {
     for (size_t i = 0; i < count; ++i) {
-        ids[i] = addMeshCollider(m_modelManager.getModel(modelIDs[i]));
+        ids[i] = addMeshCollider(m_modelManager.getModel(modelIDs[i]),
+                                 transforms[i]);
     }
 }
 
@@ -83,14 +99,15 @@ uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
     return id;
 }
 
-uint32_t PhysicsSystem::addMeshCollider(Model const & model) {
+uint32_t PhysicsSystem::addMeshCollider(Model const & model, Transform const & transform) {
     // get next index of geometry container
     size_t i = m_geometry.size();
     // insert new model collider
     size_t modelIndex = m_modelColliders.size();
-    m_modelColliders.push_back({m_meshColliders.size(), model.meshes.size(), true});
+    m_modelColliders.push_back({m_meshColliders.size(), model.meshes.size()});
     // resize geometry container
     m_geometry.resize(m_geometry.size() + model.indexBuffer.size());
+    m_geometry_cache.resize(m_geometry.size() + model.indexBuffer.size());
     // create colliders from meshes
     for (auto const & mesh : model.meshes) {
         size_t index = mesh.startIndex;
@@ -98,10 +115,14 @@ uint32_t PhysicsSystem::addMeshCollider(Model const & model) {
         // insert new mesh collider
         m_meshColliders.push_back({});
         MeshCollider & col = m_meshColliders.back();
+        col.transform = transform;
         col.startIndex = i;
         col.numIndices = mesh.numIndices;
+
+        glm::mat4 mat = transform.transformMatrix();
         while (index < endIndex) {
             m_geometry[i] = model.vertexBuffer[model.indexBuffer[index]].pos;
+            m_geometry_cache[i] = mat * glm::vec4(m_geometry[i], 1.0f);
             ++i;
             ++index;
         }
@@ -131,12 +152,10 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid,
                                 1.0f / ellipsoid.z };
         
         prt::vector<glm::vec3> geometry;
-        glm::mat4 mat = meshCollider.transform.transformMatrix();
         geometry.resize(meshCollider.numIndices);
         size_t index = meshCollider.startIndex;
         for (size_t i = 0; i < meshCollider.numIndices; ++i) {
-            geometry[i] = mat * glm::vec4(m_geometry[index], 1.0f);
-            geometry[i] = cbm * geometry[i];
+            geometry[i] = cbm * m_geometry_cache[index];
             ++index;
         }
 
@@ -154,6 +173,7 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid,
                                         grounded, groundNormal,
                                         geometry, tPos, tVel,
                                         intersectionPoint, iTime);
+
         if (res && iTime < intersectionTime) {
             collision = true;
             eGrounded = grounded;
@@ -364,8 +384,7 @@ void PhysicsSystem::respondEllipsoidMesh(glm::vec3& ellipsoidPos,
     ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
     glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
 
-    // if (intersectionTime < 0.0f) slideNormal = -slideNormal;
-    // if (intersectionTime < 0.0f) return;
+    if (intersectionTime < 0.0f) slideNormal = -slideNormal;
     ellipsoidPos += verySmallDistance * slideNormal;
     ellipsoidVel = glm::cross(slideNormal, 
                               glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal));

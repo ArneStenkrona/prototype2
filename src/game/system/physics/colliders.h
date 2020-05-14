@@ -20,7 +20,7 @@ struct MeshCollider {
     size_t startIndex;
     size_t numIndices;
 
-    // bool hasMoved;
+    bool hasMoved;
 };
 
 struct ModelCollider {
@@ -31,7 +31,7 @@ struct ModelCollider {
     // number of mesh colliders
     size_t numIndices;
     // has the model moved since last computation?
-    bool hasMoved;
+    // bool hasMoved;
 };
 
 #endif
