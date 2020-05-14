@@ -59,8 +59,8 @@ public:
                                         glm::vec3 & ellipsoidVel,
                                         bool & ellipsoidIsGrounded,
                                         glm::vec3 & ellipsoidGroundNormal,
-                                        Transform const & meshTransform,
-                                        MeshCollider const & meshCollider,
+                                        // MeshCollider const & meshCollider,
+                                        prt::vector<uint32_t> const & colliderIDs,
                                         glm::vec3& intersectionPoint,
                                         float& intersectionTime);
         

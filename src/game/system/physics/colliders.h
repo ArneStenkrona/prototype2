@@ -12,7 +12,7 @@
 #include <glm/glm.hpp>
 
 struct MeshCollider {
-    // Transform transform;
+    Transform transform;
 
     BoundingBox boundingBox;
     AABB aabb;
@@ -25,7 +25,7 @@ struct MeshCollider {
 
 struct ModelCollider {
     // transform applied to mesh colliders
-    Transform transform;
+    // Transform transform;
     // index of the first mesh collider
     size_t startIndex;
     // number of mesh colliders
