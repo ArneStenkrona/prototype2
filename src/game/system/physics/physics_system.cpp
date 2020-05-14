@@ -189,9 +189,10 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid,
                              intersectionPoint, intersectionTime);
         ellipsoidIsGrounded = ellipsoidIsGrounded || eGrounded;
         if (eGrounded) {
-            ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
-                                    glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
-                                    eGroundN : ellipsoidGroundNormal;
+            ellipsoidGroundNormal = eGroundN;
+            // ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
+            //                         glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
+            //                         eGroundN : ellipsoidGroundNormal;
         }
         return true;
     }
