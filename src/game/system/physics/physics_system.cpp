@@ -27,7 +27,6 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
                                             glm::vec3* ellipsoidGroundNormals,
                                             size_t const nEllipsoids,
                                             uint32_t const * colliderIDs,
-                                        //    const Transform* triangleTransforms,
                                             size_t const nColliderIDs,
                                             float /*deltaTime*/){
     // this is currently O(m*n), which is pretty bad.
@@ -36,35 +35,37 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
         Transform& eT = ellipsoidTransforms[i];
         glm::vec3 const & eCol = ellipsoids[ellipsoidIDs[i]];
         glm::vec3& eVel = ellipsoidVelocities[i];
-        bool& eIsGround = ellipsoidsAreGrounded[i];
+        bool & eIsGround = ellipsoidsAreGrounded[i];
+        eIsGround = false;
         glm::vec3& eGroundN = ellipsoidGroundNormals[i];
 
-    static constexpr size_t max_iter = 5;
-    size_t iter = 0;
-    while (iter < max_iter) {
-        for (size_t j = 0; j < nColliderIDs; ++j) {
-            // iterate through mesh colliders
-            ModelCollider & mCol = m_modelColliders[colliderIDs[j]];
-            MeshCollider * current = m_meshColliders.data() + mCol.startIndex;
-            MeshCollider * end = m_meshColliders.data() + mCol.startIndex + mCol.numIndices;
+        static constexpr size_t max_iter = 5;
+        size_t iter = 0;
+        while (iter < max_iter) {
+            for (size_t j = 0; j < nColliderIDs; ++j) {
+                // iterate through mesh colliders
+                ModelCollider & mCol = m_modelColliders[colliderIDs[j]];
+                MeshCollider * current = m_meshColliders.data() + mCol.startIndex;
+                MeshCollider * end = m_meshColliders.data() + mCol.startIndex + mCol.numIndices;
 
-            while (current < end) {
-                glm::vec3 intersectionPoint;
-                float intersectionTime;
+                while (current < end) {
+                    glm::vec3 intersectionPoint;
+                    float intersectionTime;
 
-                bool res = collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
-                                                          mCol.transform, *current, 
-                                                          intersectionPoint, intersectionTime);
-                if (res) goto next;
-                ++current;
+                    bool res = collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
+                                                              mCol.transform, *current, 
+                                                              intersectionPoint, intersectionTime);
+                    if (eIsGround) std::cout << "grounded!!!" << std::endl;                                     
+                    if (res) goto next;
+                    ++current;
+                }
             }
+            next:
+            ++iter;
         }
-        next:
-        ++iter;
-    }
         eT.position += eVel;
         ellipsoidVelocities[i] = eVel;
-    }                                         
+    }    
 }
 
 void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, size_t count, uint32_t * ids) {
@@ -107,17 +108,15 @@ uint32_t PhysicsSystem::addMeshCollider(Model const & model) {
 
 
 
-bool PhysicsSystem::collideAndRespondEllipsoidMesh(const glm::vec3& ellipsoid, 
-                                                   Transform& ellipsoidTransform,
-                                                   glm::vec3& ellipsoidVel,
-                                                   bool& ellipsoidIsGrounded,
+bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid, 
+                                                   Transform & ellipsoidTransform,
+                                                   glm::vec3 & ellipsoidVel,
+                                                   bool & ellipsoidIsGrounded,
                                                    glm::vec3& ellipsoidGroundNormal,
-                                                //    const prt::vector<glm::vec3>& triangles,
                                                    Transform const & meshTransform,
-                                                //    const glm::vec3& trianglesVel,
                                                    MeshCollider const & meshCollider,
-                                                   glm::vec3& intersectionPoint,
-                                                   float& intersectionTime) {
+                                                   glm::vec3 & intersectionPoint,
+                                                   float & intersectionTime) {
     // prt::vector<glm::vec3> tris = triangles;
     // convert to eSpace
     // TODO: make different scales for ellipsoid work
@@ -158,29 +157,29 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(const glm::vec3& ellipsoid,
     // glm::vec3 tVel = { cbm.x * trianglesVel.x, cbm.y * trianglesVel.y, cbm.z * trianglesVel.z };
     glm::vec3 tVel = { cbm.x * 0.0f, cbm.y * 0.0f, cbm.z * 0.0f };
 
-    ellipsoidIsGrounded = false;
-    ellipsoidGroundNormal = glm::vec3{0.0f,-1.0f,0.0f};
+    // ellipsoidIsGrounded = false;
+    // ellipsoidGroundNormal = glm::vec3{0.0f,-1.0f,0.0f};
     glm::vec3 eGroundN;
 
-    static constexpr uint32_t max_iter = 1;
-    uint32_t iter = 0;
     bool eGround = false;
-    while (iter < max_iter && 
-        collideEllipsoidMesh(ellipsoid, ePos, eVel, eGround, eGroundN,
+    bool collision = false;
+    if (collideEllipsoidMesh(ellipsoid, ePos, eVel, eGround, eGroundN,
                              geometry, tPos, tVel,
                              intersectionPoint, intersectionTime)) {
         
         respondEllipsoidMesh(ePos, eVel,
                              intersectionPoint, intersectionTime);
         ellipsoidIsGrounded = ellipsoidIsGrounded || eGround;
+        if (eGround) {
+            ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
+                                    glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
+                                    eGroundN : ellipsoidGroundNormal;
+        }
         eGround = false;
-        ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
-                                glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
-                                eGroundN : ellipsoidGroundNormal;
-        iter++;
+        collision = true;
     };
     //assert(iter < max_iter);
-    if (iter == 0) {
+    if (!collision) {
         // no collision
         return false;
     } else {
