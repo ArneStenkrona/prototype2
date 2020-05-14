@@ -38,17 +38,10 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
         glm::vec3& eVel = ellipsoidVelocities[i];
         bool& eIsGround = ellipsoidsAreGrounded[i];
         glm::vec3& eGroundN = ellipsoidGroundNormals[i];
-        
-        // for (size_t j = 0; j < nTriangles; j++) {
-        //     Transform const& tT = triangleTransforms[j];
-        //     TriangleMeshCollider& tCol = triangleMeshColliders[triangleMeshIDs[j]];
-        //     glm::vec3 intersectionPoint;
-        //     float intersectionTime;
 
-        //     collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
-        //                                    tCol.triangles, tT, {0.0f,0.0f,0.0f},
-        //                                    intersectionPoint, intersectionTime);
-        // }
+    static constexpr size_t max_iter = 5;
+    size_t iter = 0;
+    while (iter < max_iter) {
         for (size_t j = 0; j < nColliderIDs; ++j) {
             // iterate through mesh colliders
             ModelCollider & mCol = m_modelColliders[colliderIDs[j]];
@@ -59,33 +52,20 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
                 glm::vec3 intersectionPoint;
                 float intersectionTime;
 
-                collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
-                                               mCol.transform, *current, 
-                                               intersectionPoint, intersectionTime);
+                bool res = collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
+                                                          mCol.transform, *current, 
+                                                          intersectionPoint, intersectionTime);
+                if (res) goto next;
                 ++current;
             }
         }
+        next:
+        ++iter;
+    }
         eT.position += eVel;
         ellipsoidVelocities[i] = eVel;
     }                                         
 }
-
-// void PhysicsSystem::loadTriangleMeshColliders(const prt::vector<Model>& models,
-//                                               const prt::vector<uint32_t>& modelIDs) {
-//     triangleMeshes.resize(models.size());
-//     for (size_t i = 0; i < models.size(); i++) {
-//         const Model& model = models[i];
-
-//         float boundingSphere = 0.0f;
-//         triangleMeshes[i].triangles.resize(model.indexBuffer.size());
-//         for (size_t j = 0; j < model.indexBuffer.size(); j++) {
-//             const glm::vec3& pos = model.vertexBuffer[model.indexBuffer[j]].pos;
-//             triangleMeshes[i].triangles[j] = pos;
-//             boundingSphere = std::max(boundingSphere, glm::length(pos));
-//         }
-//         modelIDToTriangleMeshIndex.insert(modelIDs[i], i);
-//     }
-// }
 
 void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, size_t count, uint32_t * ids) {
     for (size_t i = 0; i < count; ++i) {
@@ -182,7 +162,7 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(const glm::vec3& ellipsoid,
     ellipsoidGroundNormal = glm::vec3{0.0f,-1.0f,0.0f};
     glm::vec3 eGroundN;
 
-    static constexpr uint32_t max_iter = 5;
+    static constexpr uint32_t max_iter = 1;
     uint32_t iter = 0;
     bool eGround = false;
     while (iter < max_iter && 

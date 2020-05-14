@@ -36,13 +36,6 @@ public:
                                  size_t const nColliderIDs,
                                  float deltaTime);
 
-    // void loadTriangleMeshColliders(prt::vector<Model> const & models,
-    //                                prt::vector<uint32_t> const & modelIDs);
-
-    // uint32_t getTriangleMeshID(uint32_t modelID) {
-    //     return modelIDToTriangleMeshIndex[modelID];
-    // }
-
     uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);
     void addModelColliders(uint32_t const * modelIDs, size_t count, uint32_t * ids);
     /**
@@ -75,14 +68,6 @@ public:
         
 private:
     static constexpr float verySmallDistance = 0.005f;
-    
-    // colliders
-    // struct TriangleMeshCollider {
-    //     prt::vector<glm::vec3> triangles;
-    //     float boundingSphere; 
-    // };
-    // prt::hash_map<uint32_t, uint32_t> modelIDToTriangleMeshIndex;
-    // prt::vector<TriangleMeshCollider> triangleMeshColliders;
 
     prt::vector<glm::vec3> ellipsoids;
 
