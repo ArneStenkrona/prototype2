@@ -1,7 +1,7 @@
 #ifndef AABB_TREE_H
 #define AABB_TREE_H
 
-#include "shapes.h"
+#include "aabb.h"
 #include "src/container/vector.h"
 
 #include <cstdint>
@@ -50,6 +50,10 @@ private:
     static constexpr float buffer = 0.05f; 
     int32_t rootIndex;
 
+    int32_t freeHead = Node::nullIndex; // free list
+    int32_t m_size;
+    prt::vector<Node> m_nodes;
+
     int32_t insertLeaf(int32_t objectIndex, AABB const & aabb);
     void remove(int32_t index);
 
@@ -66,9 +70,14 @@ private:
     NodeCost siblingCost(Node const & leaf, int32_t siblingIndex, float inheritedCost) const;
 
     struct Node {
-        bool isLeaf() const { return right != nullIndex; }
-
         AABB aabb;
+
+        // leaf = 0, free nodes = -1
+        int32_t height = 0;
+
+        static constexpr int32_t nullIndex = -1;
+
+        bool isLeaf() const { return right != nullIndex; }
 
         union {
             int32_t parent;
@@ -87,10 +96,6 @@ private:
             // void *userData;
         };
 
-        // leaf = 0, free nodes = -1
-        int32_t height = 0;
-
-        static constexpr int32_t nullIndex = -1;
     };
 
     struct NodeCost {
@@ -100,9 +105,6 @@ private:
         friend bool operator<(NodeCost const & lhs, NodeCost const & rhs) 
                             { return lhs.directCost + lhs.inheritedCost < rhs.directCost + rhs.inheritedCost; }
     };
-    int32_t freeHead = Node::nullIndex; // free list
-    int32_t m_size;
-    prt::vector<Node> m_nodes;
 };
 
 #endif

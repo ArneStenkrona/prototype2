@@ -99,17 +99,22 @@ private:
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
 
-    void createVertexBuffer(const prt::vector<Model>& models, size_t assetIndex);
+    // void createVertexBuffer(const prt::vector<Model>& models, size_t assetIndex);
+    void createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex);
     
-    void createIndexBuffer(const prt::vector<Model>& models, size_t assetIndex);
+    // void createIndexBuffer(const prt::vector<Model>& models, size_t assetIndex);
+    void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
 
     void createCubeMapBuffers(size_t assetIndex);
 
-    void loadModels(const prt::vector<Model>& models, size_t assetIndex);
+    // void loadModels(const prt::vector<Model>& models, size_t assetIndex);
+    void loadModels(Model const * models, size_t nModels, size_t assetIndex);
 
     void loadCubeMap(const prt::array<Texture, 6>& skybox, size_t assetIndex);
 
-    void createDrawCalls(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
+    // void createDrawCalls(const prt::vector<Model>& models, const prt::vector<uint32_t>& modelIndices);
+    void createDrawCalls(Model const * models, size_t nModels,
+                         uint32_t const * modelIDs, size_t nModelIDs);
 
     void updateUBOs(prt::vector<glm::mat4> const & modelMatrices, 
                     Camera const & camera,

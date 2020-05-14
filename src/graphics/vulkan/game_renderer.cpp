@@ -350,9 +350,14 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
 }
 
 void GameRenderer::bindScene(Scene const & scene) {
-    prt::vector<Model> models;
-    prt::vector<uint32_t> modelIndices;
-    scene.getModels(models, modelIndices);
+    // prt::vector<Model> models;
+    prt::vector<uint32_t> modelIDs;
+    // scene.getModels(models, modelIndices);
+    Model const * models;
+    size_t nModels;
+    // uint32_t const * modelIDs; 
+    // size_t nModelIDs;
+    scene.getModels(models, nModels, modelIDs);
 
     size_t skyboxAssetIndex = pushBackAssets();
     size_t skyboxUboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
@@ -366,14 +371,15 @@ void GameRenderer::bindScene(Scene const & scene) {
     scene.getSkybox(skybox);
     loadCubeMap(skybox, skyboxAssetIndex);
 
-    loadModels(models, standardAssetIndex);
+    loadModels(models, nModels, standardAssetIndex);
 
     createGraphicsPipelines(skyboxAssetIndex, skyboxUboIndex,
                             standardAssetIndex, standardUboIndex,
                             standardAssetIndex, shadowMapUboIndex);
 
 
-    createDrawCalls(models, modelIndices);
+    // createDrawCalls(models, modelIndices);
+    createDrawCalls(models, nModels, modelIDs.data(), modelIDs.size());
 
     completeSwapChain();
 }
@@ -529,11 +535,12 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
     }
 }
 
-void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetIndex) {
-    assert(!models.empty());
+void GameRenderer::loadModels(Model const * models, size_t nModels, size_t assetIndex) {
+    
+    assert(nModels != 0 && "models can not be empty!");
 
-    createVertexBuffer(models, assetIndex);
-    createIndexBuffer(models, assetIndex);
+    createVertexBuffer(models, nModels, assetIndex);
+    createIndexBuffer(models, nModels, assetIndex);
 
     Assets & asset = getAssets(assetIndex);
 
@@ -542,7 +549,7 @@ void GameRenderer::loadModels(const prt::vector<Model>& models, size_t assetInde
     asset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
     asset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
     asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
-    for (size_t i = 0; i < models.size(); ++i) {
+    for (size_t i = 0; i < nModels; ++i) {
         for (size_t j = 0; j < models[i].meshes.size(); ++j) {
             auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
             auto const & texture = models[i].textures[material.albedoIndex];
@@ -582,8 +589,10 @@ void GameRenderer::loadCubeMap(const prt::array<Texture, 6>& skybox, size_t asse
                            skybox[0].mipLevels);
 }
 
-void GameRenderer::createDrawCalls(const prt::vector<Model>& models, 
-                                         const prt::vector<uint32_t>& modelIndices) {
+// void GameRenderer::createDrawCalls(const prt::vector<Model>& models, 
+//                                          const prt::vector<uint32_t>& modelIndices) {
+void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
+                                   uint32_t const * modelIDs, size_t nModelIDs) {
     // skybox
     {
         GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
@@ -598,22 +607,22 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
         GraphicsPipeline & pipeline = graphicsPipelines.scene[standardPipelineIndex];
         prt::vector<uint32_t> imgIdxOffsets = { 0 };
         prt::vector<uint32_t> indexOffsets = { 0 };
-        imgIdxOffsets.resize(models.size());
-        indexOffsets.resize(models.size());
-        for (size_t i = 1; i < models.size(); ++i) {
+        imgIdxOffsets.resize(nModels);
+        indexOffsets.resize(nModels);
+        for (size_t i = 1; i < nModels; ++i) {
             imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
             indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
         }
         // Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
-        for (size_t i = 0; i < modelIndices.size(); ++i) {
-            const Model& model = models[modelIndices[i]];
+        for (size_t i = 0; i < nModelIDs; ++i) {
+            const Model& model = models[modelIDs[i]];
             for (auto const & mesh : model.meshes) {
                 auto const & material = model.materials[mesh.materialIndex];
                 DrawCall drawCall;
                 // compute texture indices
-                int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] +  material.albedoIndex;
-                int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.normalIndex;
-                int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIndices[i]] + material.specularIndex;
+                int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
+                int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.normalIndex;
+                int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.specularIndex;
                 // push constants
                 StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
                 pc.modelMatrixIdx = i;
@@ -623,7 +632,7 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
                 pc.baseColor = material.baseColor;
                 pc.baseSpecularity = material.baseSpecularity;
                 // geometry
-                drawCall.firstIndex = indexOffsets[modelIndices[i]] + mesh.startIndex;
+                drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
                 drawCall.indexCount = mesh.numIndices;
 
                 pipeline.drawCalls.push_back(drawCall);
@@ -640,9 +649,9 @@ void GameRenderer::createDrawCalls(const prt::vector<Model>& models,
     }
 }
 
-void GameRenderer::createVertexBuffer(const prt::vector<Model>& models, size_t assetIndex) {
+void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex) {
     prt::vector<Vertex> allVertices;
-    for (size_t i = 0; i < models.size(); ++i) {
+    for (size_t i = 0; i < nModels; ++i) {
         for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
             allVertices.push_back(models[i].vertexBuffer[j]);
         }
@@ -654,10 +663,10 @@ void GameRenderer::createVertexBuffer(const prt::vector<Model>& models, size_t a
                        data.vertexBufferMemory);    
 }
 
-void GameRenderer::createIndexBuffer(const prt::vector<Model>& models, size_t assetIndex) {
+void GameRenderer::createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex) {
     prt::vector<uint32_t> allIndices;
     size_t vertexOffset = 0;
-    for (size_t i = 0; i < models.size(); i++) {
+    for (size_t i = 0; i < nModels; i++) {
         for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
             allIndices.push_back(models[i].indexBuffer[j] + vertexOffset);
         }

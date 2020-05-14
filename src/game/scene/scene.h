@@ -24,8 +24,11 @@ public:
 
     void update(float deltaTime);
 
-    void getModels(prt::vector<Model>& models,
-                   prt::vector<uint32_t>& modelIndices) const;
+    void getModels(Model const * & models, size_t & nModels, 
+                   prt::vector<uint32_t> & modelIDs) const;
+
+    // void getModels(prt::vector<Model>& models,
+    //                prt::vector<uint32_t>& modelIndices) const;
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
 
     DirLight const & getSun() const { return m_lights.sun; }
@@ -53,7 +56,8 @@ private:
         size_t size = 0;
         uint32_t modelIDs[N];
         Transform transforms[N];
-        uint32_t triangleMeshColliderIDs[N];
+        // uint32_t triangleMeshColliderIDs[N];
+        uint32_t colliderIDs[N];
     };
     StaticSolidEntities<10> m_staticSolidEntities;
 
@@ -80,9 +84,10 @@ private:
     float m_gravity;
     
     void resetTransforms();
-    void getModelIDs(prt::vector<uint32_t>& modelIDs) const;
+    void getModelIDs(prt::vector<uint32_t> & modelIDs) const;
 
-    void resolveColliderIDs();
+    // void resolveColliderIDs();
+    void initColliders();
 
     void initPlayer();
     void updatePlayerInput();

@@ -1,4 +1,4 @@
-#include "shapes.h"
+#include "aabb.h"
 
 bool AABB::intersect(AABB const & a, AABB const & b) {
     return !(a.lowerBound.x > b.upperBound.x ||

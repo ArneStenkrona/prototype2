@@ -13,6 +13,7 @@ Game::Game()
   m_gameRenderer(800, 600),
   m_assetManager(RESOURCE_PATH),
   m_camera(m_input),
+  m_physicsSystem(m_assetManager.getModelManager()),
   m_scene(m_assetManager, m_physicsSystem, m_input, m_camera),
   m_frameRate(FRAME_RATE),
   m_microsecondsPerFrame(1000000 / m_frameRate),

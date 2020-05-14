@@ -147,7 +147,7 @@ public:
          * recursively prints the node and its contents
          * @param out : output stream
          */
-        void print(std::ostream & out) const;
+        void print(std::ostream & out = std::cout) const;
     private:
         prt::vector<Document::Property> properties;
         prt::vector<Node> children;

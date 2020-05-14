@@ -59,20 +59,17 @@ struct AnimationCurve {
     float keyValue[2];
 };
 
-// Pose { (int64: 531894667) (string: "BindPose") (string: "BindPose") }
-//             Type { (string: "BindPose") }
-//             Version { (int32: 100) }
-//             NbPoseNodes { (int32: 41) }
-//             PoseNode { }
-//                 Node { (int64: 140090682) }
-//                 Matrix { (double[16]) }
-//             PoseNode { }
-//                 Node { (int64: 705723536) }
-//                 Matrix { (double[16]) }
-
 struct PoseNode {
     int64_t id;
     glm::dmat4 matrix;
+};
+
+struct Deformer {
+    int64_t id;
+    prt::vector<int32_t> indices; // vector is very data consuming here. Consider using a smarter data scheme.
+    prt::vector<double> weights;  // vector is very data consuming here. Consider using a smarter data scheme.
+    glm::dmat4 transform;
+    glm::dmat4 transformLink;
 };
 
 enum NODE_TYPE : int16_t {
@@ -87,6 +84,15 @@ enum NODE_TYPE : int16_t {
 struct TypedIndex {
 NODE_TYPE type;
 int16_t index;
+};
+
+struct AnimationLayer {
+    int64_t id;
+};
+
+struct AnimationStack {
+    int64_t id;
+    prt::vector<AnimationLayer> layers;
 };
 
 

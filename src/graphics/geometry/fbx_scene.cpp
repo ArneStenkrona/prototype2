@@ -3,6 +3,7 @@
 FBX::Scene::Scene(char const* path)
     : globalSettings{} {
     FBX::Document doc(path);
+
     auto const & globalSettings = doc.getNode("GlobalSettings");
     assert(globalSettings && "FBX file must contain Global Settings node!");
     parseGlobalSettings(*globalSettings);
