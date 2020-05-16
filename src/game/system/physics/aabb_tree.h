@@ -62,9 +62,7 @@ private:
     int32_t allocateNode();
 
     void synchHierarchy(int32_t index);
-    void rotate(int32_t index);
-    void swap(int32_t shorter, int32_t higher);
-
+    void balance(int32_t index);
 
     int32_t findBestSibling(int32_t leafIndex) const;
 

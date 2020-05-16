@@ -29,7 +29,6 @@ void DynamicAABBTree::insert(uint32_t const * objectIndices, AABB const * aabbs,
                              int32_t * treeIndices) {
     for (size_t i = 0; i < n; ++i) {
         treeIndices[i] = insertLeaf(objectIndices[i], aabbs[i]);
-        ++numberOfLeaves;
     }
 }
 
@@ -98,11 +97,12 @@ int32_t DynamicAABBTree::insertLeaf(uint32_t objectIndex, AABB const & aabb) {
     m_nodes[siblingIndex].parent = newParentIndex;
     m_nodes[leafIndex].parent = newParentIndex;
 
-    newParent.height = std::max(m_nodes[newParent.left].left, m_nodes[newParent.right].height) + 1;
-    if (oldParentIndex != Node::nullIndex) {
-        Node & oldParent = m_nodes[oldParentIndex];
-        oldParent.height = std::max(m_nodes[oldParent.left].left, m_nodes[oldParent.right].height) + 1;
-    }
+    // newParent.height = std::max(m_nodes[newParent.left].left, m_nodes[newParent.right].height) + 1;
+    // // std::cout << "new parent height: " << newParent.height << std::endl;
+    // if (oldParentIndex != Node::nullIndex) {
+    //     Node & oldParent = m_nodes[oldParentIndex];
+    //     oldParent.height = std::max(m_nodes[oldParent.left].left, m_nodes[oldParent.right].height) + 1;
+    // }
 
     // stage 3: walk back up the tree refitting AABBs and applying rotations
     synchHierarchy(m_nodes[leafIndex].parent);
@@ -161,67 +161,51 @@ void DynamicAABBTree::synchHierarchy(int32_t index) {
         m_nodes[index].height = 1 + std::max(m_nodes[left].height, m_nodes[right].height);
         m_nodes[index].aabb = m_nodes[left].aabb + m_nodes[right].aabb;
 
+        balance(index);
         // rotate(index);
 
         index = m_nodes[index].parent;
     }
 }
 
-void DynamicAABBTree::rotate(int32_t index) {
-    int32_t childIndex = Node::nullIndex;
-    int32_t grandChildIndex = Node::nullIndex;
-    // find first unbalanced node
-    while (index != rootIndex) {  
-        grandChildIndex = childIndex;
-        childIndex = index;
-        index = m_nodes[index].parent;
-
-        if (grandChildIndex == Node::nullIndex) {
-            continue;
-        }
-
-        Node const & n = m_nodes[index];
-        Node const & left = m_nodes[n.left];
-        Node const & right = m_nodes[n.right];
-        int32_t difference = left.height - right.height;
-        assert(difference >= -2 && difference <= 2);
-
-        // unbalanced tree
-        if (difference > 1) {
-            // right is higher than left
-            swap(n.left, grandChildIndex);
-            return;
-        } else if (difference < -1) {
-            // left is higher than right
-            swap(n.right, grandChildIndex);
-            return;
-        }
+void DynamicAABBTree::balance(int32_t index) {
+    Node & node = m_nodes[index];
+    if (node.height < 2) {
+        return;
     }
-}
 
-void DynamicAABBTree::swap(int32_t shorter, int32_t higher) {
-    Node & a = m_nodes[shorter];
-    Node & b = m_nodes[higher];
-    Node & parentA = m_nodes[a.parent];
-    Node & parentB = m_nodes[b.parent];
+    int32_t ileft = node.left;
+    int32_t iright = node.right;
+    Node & left = m_nodes[ileft];
+    Node & right = m_nodes[iright];
 
-    // parents be notified of switch
-    if (parentA.left == shorter) {
-        parentA.left = higher;
-    } else {
-        parentA.right = higher;
+    int32_t difference = left.height - right.height;
+    if (difference > 1) {
+        // left is higher than right, rotate left up
+        int32_t * ia = m_nodes[left.left].height > m_nodes[left.right].height ? &left.left : &left.right;
+        Node & a = m_nodes[*ia];
+        right.parent = ileft;
+        a.parent = index;
+
+        node.right = *ia;
+        *ia = iright;
+
+        left.aabb = m_nodes[left.left].aabb + m_nodes[left.right].aabb;
+        left.height = std::max(m_nodes[left.left].height, m_nodes[left.right].height) + 1;
+    } else if (difference < -1) {
+        // right is higher than left, rotate right up
+        int32_t * ia = m_nodes[right.left].height > m_nodes[right.right].height ? &right.left : &right.right;
+        Node & a = m_nodes[*ia];
+        left.parent = iright;
+        a.parent = index;
+
+        node.left = *ia;
+        *ia = ileft;
+
+        right.aabb = m_nodes[right.left].aabb + m_nodes[right.right].aabb;
+        right.height = std::max(m_nodes[right.left].height, m_nodes[right.right].height) + 1;
     }
-    if (parentB.left == higher) {
-        parentB.left = shorter;
-    } else {
-        parentB.right = shorter;
-    }
-    // set new parents
-    int32_t tempIndex = a.parent;
-    a.parent = b.parent;
-    b.parent = tempIndex;
-    
-    parentB.aabb = m_nodes[parentB.left].aabb + m_nodes[parentB.right].aabb;
+    node.height = std::max(m_nodes[node.left].height, m_nodes[node.right].height) + 1;
 }
 
 int32_t DynamicAABBTree::findBestSibling(int32_t leafIndex) const {
@@ -242,7 +226,7 @@ int32_t DynamicAABBTree::findBestSibling(int32_t leafIndex) const {
 
         Node const & curr = m_nodes[nc.index];
         if (!curr.isLeaf()) {
-            float inheritedCost = nc.inheritedCost + (leaf.aabb +curr.aabb).area() - curr.aabb.area();
+            float inheritedCost = nc.inheritedCost + (leaf.aabb + curr.aabb).area() - curr.aabb.area();
             float cLow = leaf.aabb.area() + inheritedCost;
             if (cLow < bestCost) {
                 NodeCost left = siblingCost(leaf, curr.left, inheritedCost);
