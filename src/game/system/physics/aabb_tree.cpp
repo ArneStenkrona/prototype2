@@ -2,10 +2,12 @@
 
 #include "src/container/priority_queue.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 #include <algorithm>
 #include <cassert>
 
-void DynamicAABBTree::query(AABB const & aabb, prt::vector<int32_t> & objectIndices) {
+void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectIndices) {
     prt::vector<int32_t> nodeStack;
     nodeStack.push_back(rootIndex);
     while (!nodeStack.empty()) {
@@ -14,7 +16,7 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<int32_t> & objectIndi
         Node const & node = m_nodes[index];
         if (AABB::intersect(node.aabb, aabb)) {
             if (node.isLeaf()) {
-                objectIndices.push_back(index);
+                objectIndices.push_back(node.objectIndex);
             } else {
                 nodeStack.push_back(node.left);
                 nodeStack.push_back(node.right);
@@ -23,10 +25,11 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<int32_t> & objectIndi
     }
 }
 
-void DynamicAABBTree::insert(int32_t const * objectIndices, AABB const * aabbs, size_t n,
+void DynamicAABBTree::insert(uint32_t const * objectIndices, AABB const * aabbs, size_t n,
                              int32_t * treeIndices) {
     for (size_t i = 0; i < n; ++i) {
         treeIndices[i] = insertLeaf(objectIndices[i], aabbs[i]);
+        ++numberOfLeaves;
     }
 }
 
@@ -49,36 +52,37 @@ float DynamicAABBTree::cost() const {
     return cost;
 }
 
-int32_t DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
+int32_t DynamicAABBTree::insertLeaf(uint32_t objectIndex, AABB const & aabb) {
     // insert new node into vector
     int32_t leafIndex = allocateNode();
     ++m_size;
+
+    // Node & leaf = m_nodes[leafIndex];
+    // add objectIndex to user data
+    // *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
+    m_nodes[leafIndex].objectIndex = objectIndex;
+    // add buffer to aabb 
+    m_nodes[leafIndex].aabb.lowerBound = aabb.lowerBound - buffer;
+    m_nodes[leafIndex].aabb.upperBound = aabb.upperBound + buffer;
+    
     if (m_size == 1) {
         rootIndex = leafIndex;
         return leafIndex;
     }
-
-    Node & leaf = m_nodes[leafIndex];
-    // add objectIndex to user data
-    // *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
-    leaf.objectIndex = objectIndex;
-    // add buffer to aabb 
-    leaf.aabb.lowerBound = aabb.lowerBound - buffer;
-    leaf.aabb.upperBound = aabb.upperBound + buffer;
     // traverse tree to find suitable place of insertion
     // stage 1: find the best sibling for the new leaf
-    int32_t siblingIndex = findBestSibling(leaf);
-    Node & sibling = m_nodes[siblingIndex];
+    int32_t siblingIndex = findBestSibling(leafIndex);
+    // Node & sibling = m_nodes[siblingIndex];
 
     // stage 2: create a new parent
     int32_t oldParentIndex = m_nodes[siblingIndex].parent;
-    int32_t newParentIndex = allocateNode();
+    int32_t newParentIndex = allocateNode(); // warning, this may invalidate references
     Node & newParent = m_nodes[newParentIndex];
-    Node & oldParent = m_nodes[oldParentIndex];
     newParent.parent = oldParentIndex;
-    newParent.aabb = leaf.aabb + sibling.aabb;
+    newParent.aabb = m_nodes[leafIndex].aabb + m_nodes[siblingIndex].aabb;
 
     if (oldParentIndex != Node::nullIndex) {
+        Node & oldParent = m_nodes[oldParentIndex];
         // The sibling was not the root
         if (oldParent.left == siblingIndex) {
             oldParent.left = newParentIndex;
@@ -91,14 +95,17 @@ int32_t DynamicAABBTree::insertLeaf(int32_t objectIndex, AABB const & aabb) {
     }
     newParent.left = siblingIndex;
     newParent.right = leafIndex;
-    sibling.parent = newParentIndex;
-    leaf.parent = newParentIndex;
+    m_nodes[siblingIndex].parent = newParentIndex;
+    m_nodes[leafIndex].parent = newParentIndex;
 
     newParent.height = std::max(m_nodes[newParent.left].left, m_nodes[newParent.right].height) + 1;
-    oldParent.height = std::max(m_nodes[oldParent.left].left, m_nodes[oldParent.right].height) + 1;
+    if (oldParentIndex != Node::nullIndex) {
+        Node & oldParent = m_nodes[oldParentIndex];
+        oldParent.height = std::max(m_nodes[oldParent.left].left, m_nodes[oldParent.right].height) + 1;
+    }
 
     // stage 3: walk back up the tree refitting AABBs and applying rotations
-    synchHierarchy(leafIndex);
+    synchHierarchy(m_nodes[leafIndex].parent);
 
     return leafIndex;
 }
@@ -139,9 +146,10 @@ int32_t DynamicAABBTree::allocateNode() {
         m_nodes.push_back({});
     } else {
         index = freeHead;
+        m_nodes[freeHead] = {};
         freeHead = m_nodes[freeHead].next;
     }
-    m_nodes[index].height = 0;
+    // m_nodes[index].height = 0;
     return index;
 }
 
@@ -149,11 +157,11 @@ void DynamicAABBTree::synchHierarchy(int32_t index) {
     while (index != Node::nullIndex) {
         int32_t left = m_nodes[index].left;
         int32_t right = m_nodes[index].right;
-
+        
         m_nodes[index].height = 1 + std::max(m_nodes[left].height, m_nodes[right].height);
         m_nodes[index].aabb = m_nodes[left].aabb + m_nodes[right].aabb;
 
-        rotate(index);
+        // rotate(index);
 
         index = m_nodes[index].parent;
     }
@@ -168,11 +176,16 @@ void DynamicAABBTree::rotate(int32_t index) {
         childIndex = index;
         index = m_nodes[index].parent;
 
+        if (grandChildIndex == Node::nullIndex) {
+            continue;
+        }
+
         Node const & n = m_nodes[index];
         Node const & left = m_nodes[n.left];
         Node const & right = m_nodes[n.right];
         int32_t difference = left.height - right.height;
-        assert(difference > -2 && difference < 2);
+        assert(difference >= -2 && difference <= 2);
+
         // unbalanced tree
         if (difference > 1) {
             // right is higher than left
@@ -211,7 +224,8 @@ void DynamicAABBTree::swap(int32_t shorter, int32_t higher) {
     parentB.aabb = m_nodes[parentB.left].aabb + m_nodes[parentB.right].aabb;
 }
 
-int32_t DynamicAABBTree::findBestSibling(Node const & leaf) const {
+int32_t DynamicAABBTree::findBestSibling(int32_t leafIndex) const {
+    Node const & leaf = m_nodes[leafIndex];
     int32_t bestSibling = rootIndex;
     float bestCost = (leaf.aabb + m_nodes[rootIndex].aabb).area();
     prt::priority_queue<NodeCost> q;

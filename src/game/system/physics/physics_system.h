@@ -22,7 +22,7 @@ public:
     PhysicsSystem(ModelManager & modelManager);
 
     void updateModelColliders(uint32_t const * colliderIDs,
-                              Transform const *transforms,
+                              Transform const * transforms,
                               size_t count);
 
     void resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
@@ -31,9 +31,9 @@ public:
                                  bool* ellipsoidsAreGrounded,
                                  glm::vec3* ellipsoidGroundNormals,
                                  size_t const nEllipsoids,
-                                 uint32_t const * colliderIDs,
+                                //  uint32_t const * colliderIDs,
                                  // Transform const * triangleTransforms,
-                                 size_t const nColliderIDs,
+                                //  size_t const nColliderIDs,
                                  float deltaTime);
 
     uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);
@@ -74,13 +74,16 @@ private:
 
     prt::vector<ModelCollider> m_modelColliders;
     prt::vector<MeshCollider> m_meshColliders;
+
     // caches geometry after aplpying transforms
     prt::vector<glm::vec3> m_geometry_cache;
     prt::vector<glm::vec3> m_geometry;
 
+    prt::vector<AABB> m_aabbs;
+    prt::vector<int32_t> m_treeIndices;
     DynamicAABBTree m_aabbTree;
 
-    uint32_t addMeshCollider(Model const & model, Transform const & transform);
+    uint32_t addModelCollider(Model const & model, Transform const & transform);
 
     bool collideEllipsoidMesh(glm::vec3 const& ellipsoid, 
                               glm::vec3 const& ellipsoidPos,

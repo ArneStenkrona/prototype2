@@ -21,7 +21,7 @@ bool AABB::contains(AABB const & other) {
 
 AABB& AABB::operator+=(AABB const & rhs) {
     lowerBound = glm::min(lowerBound, rhs.lowerBound);
-    upperBound = glm::min(upperBound, rhs.upperBound);
+    upperBound = glm::max(upperBound, rhs.upperBound);
     return *this;
 }
 

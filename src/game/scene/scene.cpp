@@ -237,9 +237,9 @@ void Scene::updatePhysics(float deltaTime) {
                                             &m_playerEntity.isGrounded,
                                             &m_playerEntity.groundNormal,
                                             1,
-                                            m_staticSolidEntities.colliderIDs,
+                                            // m_staticSolidEntities.colliderIDs,
                                             // m_staticSolidEntities.transforms,
-                                            m_staticSolidEntities.size,
+                                            // m_staticSolidEntities.size,
                                             deltaTime);
 
     // if (m_applyGravity) {
@@ -249,9 +249,9 @@ void Scene::updatePhysics(float deltaTime) {
                                                 &m_playerEntity.isGrounded,
                                                 &m_playerEntity.groundNormal,
                                                 1,
-                                                m_staticSolidEntities.colliderIDs,
+                                                // m_staticSolidEntities.colliderIDs,
                                                 // m_staticSolidEntities.transforms,
-                                                m_staticSolidEntities.size,
+                                                // m_staticSolidEntities.size,
                                                 deltaTime);   
     // }
 }

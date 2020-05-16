@@ -15,7 +15,7 @@ struct MeshCollider {
     Transform transform;
 
     BoundingBox boundingBox;
-    AABB aabb;
+    // AABB aabb;
 
     size_t startIndex;
     size_t numIndices;

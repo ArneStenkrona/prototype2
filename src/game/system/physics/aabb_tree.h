@@ -4,6 +4,8 @@
 #include "aabb.h"
 #include "src/container/vector.h"
 
+#include "colliders.h"
+
 #include <cstdint>
 
 // thank you, Andy Gaul: https://www.randygaul.net/2013/08/06/dynamic-aabb-tree/
@@ -14,7 +16,7 @@ public:
      * @param aabb aabb of query object
      * @param objectIndices vector to store object indices of nodes
      */
-    void query(AABB const & aabb, prt::vector<int32_t> & objectIndices);
+    void query(AABB const & aabb, prt::vector<uint32_t> & objectIndices);
     
     /**
      * Inserts aabbs along with their object indices into the tree
@@ -24,7 +26,7 @@ public:
      * @param treeIndices address to the start of the range that will 
      *                    recieve the resulting indices in the tree
      */
-    void insert(int32_t const * objectIndices, AABB const * aabbs, size_t n,
+    void insert(uint32_t const * objectIndices, AABB const * aabbs, size_t n,
                 int32_t * treeIndices);
 
     /**
@@ -54,7 +56,7 @@ private:
     int32_t m_size;
     prt::vector<Node> m_nodes;
 
-    int32_t insertLeaf(int32_t objectIndex, AABB const & aabb);
+    int32_t insertLeaf(uint32_t objectIndex, AABB const & aabb);
     void remove(int32_t index);
 
     int32_t allocateNode();
@@ -64,7 +66,7 @@ private:
     void swap(int32_t shorter, int32_t higher);
 
 
-    int32_t findBestSibling(Node const & leaf) const;
+    int32_t findBestSibling(int32_t leafIndex) const;
 
     struct NodeCost;
     NodeCost siblingCost(Node const & leaf, int32_t siblingIndex, float inheritedCost) const;
@@ -77,24 +79,24 @@ private:
 
         static constexpr int32_t nullIndex = -1;
 
-        bool isLeaf() const { return right != nullIndex; }
+        bool isLeaf() const { return right == nullIndex; }
 
         union {
-            int32_t parent;
+            int32_t parent = nullIndex;
             int32_t next; // free list
         };
 
-        union {
-            struct {
-                int32_t left;
-                int32_t right;
-            };
-            struct {
-                int32_t objectIndex;
-                int32_t notUsed;
-            };
+        // union {
+            // struct {
+                int32_t left = nullIndex;
+                int32_t right = nullIndex;
+            // };
+            // struct {
+                uint32_t objectIndex = -1;
+                // int32_t notUsed;
+            // };
             // void *userData;
-        };
+        // };
 
     };
 
