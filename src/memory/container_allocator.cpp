@@ -10,22 +10,22 @@
 #include <new>
 
 prt::ALIGNMENT prt::getAlignment(size_t alignment) {
-        switch(alignment) {
-            case 1      : return ALIGNMENT::ALIGN_1_BYTE;
-            case 2      : return ALIGNMENT::ALIGN_2_BYTES;
-            case 4      : return ALIGNMENT::ALIGN_4_BYTES;
-            case 8      : return ALIGNMENT::ALIGN_8_BYTES;
-            case 16     : return ALIGNMENT::ALIGN_16_BYTES;
-            case 32     : return ALIGNMENT::ALIGN_32_BYTES;
-            case 64     : return ALIGNMENT::ALIGN_64_BYTES;
-            case 128    : return ALIGNMENT::ALIGN_128_BYTES;
-            case 256    : return ALIGNMENT::ALIGN_256_BYTES;
-            // case 512    : return ALIGNMENT::ALIGN_512_BYTES;
-            // case 1024   : return ALIGNMENT::ALIGN_1024_BYTES;
-        }
-        assert(false && "Invalid alignment. Alignment must be a power of 2. ");
-        return ALIGNMENT::ALIGN_1_BYTE;
+    switch(alignment) {
+        case 1      : return ALIGNMENT::ALIGN_1_BYTE;
+        case 2      : return ALIGNMENT::ALIGN_2_BYTES;
+        case 4      : return ALIGNMENT::ALIGN_4_BYTES;
+        case 8      : return ALIGNMENT::ALIGN_8_BYTES;
+        case 16     : return ALIGNMENT::ALIGN_16_BYTES;
+        case 32     : return ALIGNMENT::ALIGN_32_BYTES;
+        case 64     : return ALIGNMENT::ALIGN_64_BYTES;
+        case 128    : return ALIGNMENT::ALIGN_128_BYTES;
+        case 256    : return ALIGNMENT::ALIGN_256_BYTES;
+        // case 512    : return ALIGNMENT::ALIGN_512_BYTES;
+        // case 1024   : return ALIGNMENT::ALIGN_1024_BYTES;
     }
+    assert(false && "Invalid alignment. Alignment must be a power of 2. ");
+    return ALIGNMENT::ALIGN_1_BYTE;
+}
 
 alignas(prt::ContainerAllocator) static char defaultContainerAllocatorBuffer[sizeof(prt::ContainerAllocator)];
 alignas(std::max_align_t)        static char defaultContainerAllocatorMemory[DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES];
