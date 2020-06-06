@@ -144,7 +144,6 @@ uint32_t PhysicsSystem::addModelCollider(Model const & model, Transform const & 
             ++index;
         }
         m_aabbs.push_back({min, max});
-        // std::cout << "name: " << mesh.name << ", lower: " << glm::to_string(min) << ", upper: " << glm::to_string(max) << std::endl;
     }
     return modelIndex;
 }
