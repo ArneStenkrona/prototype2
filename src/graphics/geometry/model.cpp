@@ -111,20 +111,20 @@ void Model::load(char const * path) {
                 vertexBuffer[vert].pos.y = pos.y;
                 vertexBuffer[vert].pos.z = pos.z;
 
-                aiVector3D norm = invtpos * aiMesh->mNormals[j];
+                aiVector3D norm = (invtpos * aiMesh->mNormals[j]).Normalize();
                 vertexBuffer[vert].normal.x = norm.x;
                 vertexBuffer[vert].normal.y = norm.y;
                 vertexBuffer[vert].normal.z = norm.z;
 
-                aiVector3D tan = invtpos * aiMesh->mTangents[j];
-                vertexBuffer[vert].tangent.x = tan.x;
-                vertexBuffer[vert].tangent.y = tan.y;
-                vertexBuffer[vert].tangent.z = tan.z;
+                // aiVector3D tan = (invtpos * aiMesh->mTangents[j]).Normalize();
+                // vertexBuffer[vert].tangent.x = tan.x;
+                // vertexBuffer[vert].tangent.y = tan.y;
+                // vertexBuffer[vert].tangent.z = tan.z;
 
-                aiVector3D bitan = invtpos * aiMesh->mBitangents[j];
-                vertexBuffer[vert].bitangent.x = bitan.x;
-                vertexBuffer[vert].bitangent.y = bitan.y;
-                vertexBuffer[vert].bitangent.z = bitan.z;
+                // aiVector3D bitan = (invtpos * aiMesh->mBitangents[j]).Normalize();
+                // vertexBuffer[vert].bitangent.x = bitan.x;
+                // vertexBuffer[vert].bitangent.y = bitan.y;
+                // vertexBuffer[vert].bitangent.z = bitan.z;
                 
                 vertexBuffer[vert].texCoord.x = aiMesh->mTextureCoords[0][j].x;
                 vertexBuffer[vert].texCoord.y = aiMesh->mTextureCoords[0][j].y;
@@ -149,6 +149,7 @@ void Model::load(char const * path) {
 
     // release assimp resources
     mLoaded = true;
+    calcTangentSpace();
     aiReleaseImport(scene);
 }
 
@@ -566,45 +567,45 @@ void Model::load(char const * path) {
 //     m_loaded = true;
 // }
 
-// void Model::calcTangentSpace() {
-//     for (size_t i = 0; i < indexBuffer.size(); i+=3) {
-//         auto & v0 = vertexBuffer[indexBuffer[i]];
-//         auto & v1 = vertexBuffer[indexBuffer[i+1]];
-//         auto & v2 = vertexBuffer[indexBuffer[i+2]];
+void Model::calcTangentSpace() {
+    for (size_t i = 0; i < indexBuffer.size(); i+=3) {
+        auto & v0 = vertexBuffer[indexBuffer[i]];
+        auto & v1 = vertexBuffer[indexBuffer[i+1]];
+        auto & v2 = vertexBuffer[indexBuffer[i+2]];
 
-//         glm::vec3 edge1 = v1.pos - v0.pos;
-//         glm::vec3 edge2 = v2.pos - v0.pos;
-//         glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
-//         glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;  
+        glm::vec3 edge1 = v1.pos - v0.pos;
+        glm::vec3 edge2 = v2.pos - v0.pos;
+        glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
+        glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;  
 
-//         float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-//         glm::vec3 tan;
-//         glm::vec3 bi;
+        glm::vec3 tan;
+        glm::vec3 bi;
 
-//         tan.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-//         tan.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-//         tan.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-//         // tan = glm::normalize(tan);
-//         v0.tangent += tan; 
-//         v1.tangent += tan;
-//         v2.tangent += tan;
+        tan.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        tan.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        tan.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+        // tan = glm::normalize(tan);
+        v0.tangent += tan; 
+        v1.tangent += tan;
+        v2.tangent += tan;
 
-//         bi.x = f * ((-deltaUV2.x * edge1.x) + deltaUV1.x * edge2.x);
-//         bi.y = f * ((-deltaUV2.x * edge1.y) + deltaUV1.x * edge2.y);
-//         bi.z = f * ((-deltaUV2.x * edge1.z) + deltaUV1.x * edge2.z);
-//         // bi = glm::normalize(bi); 
-//         v0.binormal += bi; 
-//         v1.binormal += bi; 
-//         v2.binormal += bi; 
-//     }
-//     for (auto & vert : vertexBuffer) {
-//         vert.tangent = normalize(vert.tangent);
-//         vert.tangent = glm::normalize(vert.tangent - (vert.normal * glm::dot(vert.normal, vert.tangent)));
-//         glm::vec3 c = glm::cross(vert.normal, vert.tangent);
-//         if (glm::dot(c, vert.binormal) < 0) {
-//             vert.tangent = -vert.tangent;
-//         }
-//         vert.binormal = glm::cross(vert.normal, vert.tangent);
-//     }
-// }
+        bi.x = f * ((-deltaUV2.x * edge1.x) + deltaUV1.x * edge2.x);
+        bi.y = f * ((-deltaUV2.x * edge1.y) + deltaUV1.x * edge2.y);
+        bi.z = f * ((-deltaUV2.x * edge1.z) + deltaUV1.x * edge2.z);
+        // bi = glm::normalize(bi); 
+        v0.bitangent += bi; 
+        v1.bitangent += bi; 
+        v2.bitangent += bi; 
+    }
+    for (auto & vert : vertexBuffer) {
+        vert.tangent = normalize(vert.tangent);
+        vert.tangent = glm::normalize(vert.tangent - (vert.normal * glm::dot(vert.normal, vert.tangent)));
+        glm::vec3 c = glm::cross(vert.normal, vert.tangent);
+        if (glm::dot(c, vert.bitangent) < 0) {
+            vert.tangent = -vert.tangent;
+        }
+        vert.bitangent = glm::cross(vert.normal, vert.tangent);
+    }
+}
