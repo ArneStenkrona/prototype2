@@ -13,8 +13,8 @@ FBX::Document::Document(const char* file)
     std::ifstream input(file, std::ios::binary);
     assert(input && "Cannot open fbx file!");
     // Read header
-    bool validHeader = readHeader(input);
-    assert(validHeader && "Invalid FBX Header!");
+    /*bool validHeader = */readHeader(input);
+    //assert(validHeader && "Invalid FBX Header!");
     // read version
     readScalar<uint32_t>(input, reinterpret_cast<unsigned char*>(&version));
     // Initialize the data stack
