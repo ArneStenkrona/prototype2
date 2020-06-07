@@ -21,12 +21,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include <assimp/scene.h>
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 texCoord;
     glm::vec3 tangent;
-    glm::vec3 binormal;
+    glm::vec3 bitangent;
     
     /**
      * @return vulkan binding description
@@ -69,7 +71,7 @@ struct Vertex {
         attributeDescriptions[4].binding = 0;
         attributeDescriptions[4].location = 4;
         attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[4].offset = offsetof(Vertex, binormal);
+        attributeDescriptions[4].offset = offsetof(Vertex, bitangent);
         
         return attributeDescriptions;
     }
@@ -79,7 +81,7 @@ struct Vertex {
                normal   == other.normal   && 
                texCoord == other.texCoord &&
                tangent  == other.tangent  &&
-               binormal == other.binormal;
+               bitangent == other.bitangent;
     }
 
     bool operator!=(const Vertex& other) const {
@@ -88,12 +90,12 @@ struct Vertex {
 };
 
 struct Texture {
-    char path[256];
+    // char path[256];
     prt::vector<unsigned char> pixelBuffer;
     int texWidth, texHeight, texChannels;
     uint32_t mipLevels;
 
-    void load();
+    void load(char const * path);
 
     inline unsigned char* sample(float x, float y) {
         int sx = static_cast<int>(float(texWidth - 1) * x + 0.5f);
@@ -126,12 +128,13 @@ struct Model {
     prt::vector<Texture> textures;
     prt::vector<Vertex> vertexBuffer;
     prt::vector<uint32_t> indexBuffer;
-    void loadOBJ(const char* path);
-    void loadFBX(const char* path);
+    // void loadOBJ(const char* path);
+    // void loadFBX(const char* path);
+    void load(char const * path);
 
 private:
     void calcTangentSpace();
-    bool m_loaded = false;
+    bool mLoaded = false;
 };
 
 namespace std {
@@ -141,7 +144,24 @@ namespace std {
                         (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
                         (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
                         (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
-                        (hash<glm::vec3>()(vertex.binormal) << 1);
+                        (hash<glm::vec3>()(vertex.bitangent) << 1);
+        }
+    };
+
+    // thanks, Basile Starynkevitch!
+    template<> struct hash<aiString> {
+        size_t operator()(aiString const& str) const {
+            static constexpr int A = 54059; /* a prime */
+            static constexpr int B = 76963; /* another prime */
+            // static constexpr int C = 86969; /* yet another prime */
+            static constexpr int FIRSTH = 37; /* also prime */
+            unsigned h = FIRSTH;
+            char const *s = str.C_Str();
+            while (*s) {
+                h = (h * A) ^ (s[0] * B);
+                s++;
+            }
+            return h; // or return h % C;
         }
     };
 }

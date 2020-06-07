@@ -9,32 +9,22 @@ AssetManager::AssetManager(char const * assetDirectory)
 }
 
 void AssetManager::loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap) {
-  char path[256];
-  strcpy(path, m_assetDirectory);
-  strcat(path, "textures/skybox/");
-  strcat(path, name);
-  // std::string path = (m_assetDirectory + "textures/skybox/") + name;
-  // strcpy(cubeMap[0].path, (path + "/front.png").c_str());
-  // strcpy(cubeMap[1].path, (path + "/back.png").c_str());
-  // strcpy(cubeMap[2].path, (path + "/up.png").c_str());
-  // strcpy(cubeMap[3].path, (path + "/down.png").c_str());
-  // strcpy(cubeMap[4].path, (path + "/right.png").c_str());
-  // strcpy(cubeMap[5].path, (path + "/left.png").c_str());
+    char path[256];
+    strcpy(path, m_assetDirectory);
+    strcat(path, "textures/skybox/");
+    strcat(path, name);
 
-  strcpy(cubeMap[0].path, path);
-  strcat(cubeMap[0].path, "/front.png");
-  strcpy(cubeMap[1].path, path);
-  strcat(cubeMap[1].path, "/back.png");
-  strcpy(cubeMap[2].path, path);
-  strcat(cubeMap[2].path, "/up.png");
-  strcpy(cubeMap[3].path, path);
-  strcat(cubeMap[3].path, "/down.png");
-  strcpy(cubeMap[4].path, path);
-  strcat(cubeMap[4].path, "/right.png");
-  strcpy(cubeMap[5].path, path);
-  strcat(cubeMap[5].path, "/left.png");
-  
-  for (auto & tex : cubeMap) {
-    tex.load();
-  }
+    char * tok = path + strlen(path);
+    strcpy(tok, "/front.png");
+    cubeMap[0].load(path);
+    strcpy(tok, "/back.png");
+    cubeMap[1].load(path);
+    strcpy(tok, "/up.png");
+    cubeMap[2].load(path);
+    strcpy(tok, "/down.png");
+    cubeMap[3].load(path);
+    strcpy(tok, "/right.png");
+    cubeMap[4].load(path);
+    strcpy(tok, "/left.png");
+    cubeMap[5].load(path);
 }

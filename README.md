@@ -10,6 +10,7 @@ Prototype 2 is a simple game engine. It is a successor to [Prototype](https://gi
 [glfw3 3.3](https://www.glfw.org)  
 [glm](https://glm.g-truc.net/0.9.9/index.html)
 [zlib](https://www.zlib.net)
+[assimp](https://www.assimp.org)
 
 ## Setting up Vulkan
 * Download [VulkanSDK](https://vulkan.lunarg.com/sdk/home)

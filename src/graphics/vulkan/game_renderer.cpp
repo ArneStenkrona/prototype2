@@ -550,9 +550,9 @@ void GameRenderer::loadModels(Model const * models, size_t nModels, size_t asset
     asset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
     asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
     for (size_t i = 0; i < nModels; ++i) {
-        for (size_t j = 0; j < models[i].meshes.size(); ++j) {
-            auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
-            auto const & texture = models[i].textures[material.albedoIndex];
+        for (size_t j = 0; j < models[i].textures.size(); ++j) {
+            // auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
+            auto const & texture = models[i].textures[j];
             createTextureImage(asset.textureImages.images[numTex], 
                                asset.textureImages.imageMemories[numTex], 
                                texture);
@@ -610,7 +610,7 @@ void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
         imgIdxOffsets.resize(nModels);
         indexOffsets.resize(nModels);
         for (size_t i = 1; i < nModels; ++i) {
-            imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].meshes.size();
+            imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].textures.size();
             indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
         }
         // Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);

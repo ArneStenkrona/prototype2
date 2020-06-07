@@ -128,6 +128,9 @@ include_directories(${GLFW_INCLUDE_DIRS})
 find_package(glm REQUIRED)
 # zlib
 find_package(ZLIB REQUIRED)
+# assimp
+find_package(ASSIMP REQUIRED)
+include_directories(${ASSIMP_INCLUDE_DIR})
 
 # Compile shaders
 #if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL <<TARGET PLATFORM>>)
@@ -167,6 +170,7 @@ target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)
 target_link_libraries(prototype2 glm)
 target_link_libraries(prototype2 ZLIB::ZLIB)
+target_link_libraries(prototype2 assimp::assimp)
 
 # Build prototype2 as library
 add_library(prototype2.lib ${SOURCES})
@@ -174,6 +178,7 @@ target_link_libraries(prototype2.lib Vulkan::Vulkan)
 target_link_libraries(prototype2.lib glfw)
 target_link_libraries(prototype2.lib glm)
 target_link_libraries(prototype2.lib ZLIB::ZLIB)
+target_link_libraries(prototype2.lib assimp::assimp)
 
 
 # Test project

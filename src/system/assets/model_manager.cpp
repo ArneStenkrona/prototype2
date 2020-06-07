@@ -37,15 +37,16 @@ ModelManager::ModelManager(const char* modelDirectory) {
 
             m_loadedModels.push_back({});
             Model & model = m_loadedModels.back();
+            model.load(path);
 
-            char const * dot = strrchr(subpath, '.');
-            if (dot && strcmp(dot, ".obj") == 0) {
-                model.loadOBJ(path);
-            } else if (dot && strcmp(dot, ".fbx") == 0) {
-                model.loadFBX(path);
-            } else {
-                assert(false && "Invalid file extension!");
-            }
+            // char const * dot = strrchr(subpath, '.');
+            // if (dot && strcmp(dot, ".obj") == 0) {
+            //     model.loadOBJ(path);
+            // } else if (dot && strcmp(dot, ".fbx") == 0) {
+            //     model.loadFBX(path);
+            // } else {
+            //     assert(false && "Invalid file extension!");
+            // }
         } else {
             ids[i] = m_pathToModelID.find(paths[i])->value();
         }

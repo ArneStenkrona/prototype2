@@ -12,9 +12,8 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
       m_gravity(1.0f) {
     resetTransforms();
 
-    // uint32_t islandID = m_assetManager.getModelManager().getModelID("island/island.obj");
     uint32_t islandID; 
-    char const *islandStr = "island/island.obj";
+    char const *islandStr = "island/island.dae";
     m_assetManager.loadModels(&islandStr, 1, &islandID);
 
     m_staticSolidEntities.modelIDs[0] = islandID;
@@ -24,16 +23,13 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };
 
     initPlayer();
-    // resolveColliderIDs();
     initColliders();
 }
 
 void Scene::initPlayer() {
-    char const *monkeyStr = "monkey/monkey.fbx";
-    // uint32_t sphere_index = m_assetManager.getModelManager().getModelID("monkey/monkey.fbx");
+    char const *monkeyStr = "monkey/monkey.dae";
     m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID);
 
-    // m_playerEntity.modelID = sphere_index;
     m_playerEntity.acceleration = 1.0f;
     m_playerEntity.friction = 0.1f;
     m_playerEntity.velocity = {0.0f, 0.0f, 0.0f};
@@ -42,14 +38,6 @@ void Scene::initPlayer() {
     m_playerEntity.isGrounded = false;
 
 }
-
-// void Scene::getModels(prt::vector<Model>& models,
-//                 prt::vector<uint32_t>& modelIndices) const {
-//     prt::vector<uint32_t> modelIDs;
-//     getModelIDs(modelIDs);
-
-//     m_assetManager.loadSceneModels(modelIDs, models, modelIndices);
-// }
 
 void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) const {
     m_assetManager.loadCubeMap("default", cubeMap);
@@ -69,21 +57,6 @@ void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
     }
     modelIDs[iID++] = m_playerEntity.modelID;
 }
-
-// void Scene::resolveColliderIDs() {
-//     prt::vector<Model> models;
-//     prt::vector<uint32_t> modelIDs;
-//     modelIDs.resize(m_staticSolidEntities.size);
-
-//     for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-//         modelIDs[i] = m_staticSolidEntities.modelIDs[i];
-//     }
-//     prt::vector<uint32_t> modelIndices;
-//     m_assetManager.loadSceneModels(modelIDs, models, modelIndices);
-//     for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-//        m_staticSolidEntities.triangleMeshColliderIDs[i] = m_physicsSystem.addTriangleMeshCollider(models[i]);
-//     }
-// }
 
 void Scene::initColliders() {
     m_physicsSystem.addModelColliders(m_staticSolidEntities.modelIDs, m_staticSolidEntities.transforms,
@@ -227,19 +200,12 @@ void Scene::updatePlayerPhysics(float deltaTime) {
 }
 
 void Scene::updatePhysics(float deltaTime) {
-    // m_physicsSystem.updateModelColliders(m_staticSolidEntities.colliderIDs,
-    //                                      m_staticSolidEntities.transforms,
-    //                                      m_staticSolidEntities.size);
-
     m_physicsSystem.resolveEllipsoidsModels(&m_playerEntity.ellipsoidColliderID,
                                             &m_playerEntity.transform,
                                             &m_playerEntity.velocity,
                                             &m_playerEntity.isGrounded,
                                             &m_playerEntity.groundNormal,
                                             1,
-                                            // m_staticSolidEntities.colliderIDs,
-                                            // m_staticSolidEntities.transforms,
-                                            // m_staticSolidEntities.size,
                                             deltaTime);
 
     // if (m_applyGravity) {
@@ -249,9 +215,6 @@ void Scene::updatePhysics(float deltaTime) {
                                                 &m_playerEntity.isGrounded,
                                                 &m_playerEntity.groundNormal,
                                                 1,
-                                                // m_staticSolidEntities.colliderIDs,
-                                                // m_staticSolidEntities.transforms,
-                                                // m_staticSolidEntities.size,
                                                 deltaTime);   
     // }
 }
