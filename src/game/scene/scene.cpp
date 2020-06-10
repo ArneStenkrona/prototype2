@@ -13,11 +13,12 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
     resetTransforms();
 
     uint32_t islandID; 
-    char const *islandStr = "island/island.dae";
+    char const *islandStr = "waterside/waterside.dae";
     m_assetManager.loadModels(&islandStr, 1, &islandID);
 
     m_staticSolidEntities.modelIDs[0] = islandID;
-    m_staticSolidEntities.transforms[0].position = { 0.0f, -20.0f, 0.0f };
+    m_staticSolidEntities.transforms[0].position = { -100.0f, -20.0f, 0.0f };
+    m_staticSolidEntities.transforms[0].scale = { 2.0f, 2.0f, 2.0f };
     m_staticSolidEntities.size = 1;
 
     m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };

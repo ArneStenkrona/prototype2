@@ -9,7 +9,8 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include <assimp/cimport.h>
+// #include <assimp/cimport.h>
+#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
@@ -34,18 +35,23 @@ void Texture::load(char const * path) {
 
 void Model::load(char const * path) {
     assert(!mLoaded && "Model is already loaded!");
-    const aiScene* scene = aiImportFile(path,
-                                        aiProcess_CalcTangentSpace         |
-                                        aiProcess_Triangulate              |
-                                        aiProcess_FlipUVs                  |
-                                        aiProcess_FindDegenerates          |
-                                        aiProcess_JoinIdenticalVertices    |
-                                        aiProcess_RemoveRedundantMaterials |
-                                        aiProcess_SortByPType);
+    
+    Assimp::Importer importer;
+    importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, 
+                                aiPrimitiveType_LINE | aiPrimitiveType_POINT);
+    
+    const aiScene* scene = importer.ReadFile(path,
+                                             aiProcess_CalcTangentSpace         |
+                                             aiProcess_Triangulate              |
+                                             aiProcess_FlipUVs                  |
+                                             aiProcess_FindDegenerates          |
+                                             aiProcess_JoinIdenticalVertices    |
+                                             aiProcess_RemoveRedundantMaterials |
+                                             aiProcess_SortByPType);
 
     // check if import failed
-    if(scene == nullptr) {
-        std::cout << aiGetErrorString() << std::endl;
+    if(!scene) {
+        std::cout << importer.GetErrorString() << std::endl;
         assert(false && "failed to load file!");
     }
 
@@ -61,6 +67,9 @@ void Model::load(char const * path) {
         if (scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
             char fullTexPath[256];
             strcpy(fullTexPath, path);
+            aiColor3D color;
+            scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+            materials[i].baseColor = { color.r, color.g, color.b };
             auto it = texturePathToIndex.find(texPath);
             if (it != texturePathToIndex.end()) {
                 materials[i].albedoIndex = it->value();
@@ -94,6 +103,7 @@ void Model::load(char const * path) {
         // process all the node's meshes (if any)
         for(size_t i = 0; i < node->mNumMeshes; ++i) {
             aiMesh *aiMesh = scene->mMeshes[node->mMeshes[i]]; 
+            if (aiMesh->mNumFaces == 0) continue; 
 
             // resize vertex buffer
             size_t prevVertSize = vertexBuffer.size();
@@ -105,6 +115,7 @@ void Model::load(char const * path) {
             mesh.materialIndex = aiMesh->mMaterialIndex;
 
             size_t vert = prevVertSize;
+            bool hasTexCoords = aiMesh->HasTextureCoords(0);
             for (size_t j = 0; j < aiMesh->mNumVertices; ++j) {
                 aiVector3D pos = tform * aiMesh->mVertices[j];
                 vertexBuffer[vert].pos.x = pos.x;
@@ -125,9 +136,10 @@ void Model::load(char const * path) {
                 // vertexBuffer[vert].bitangent.x = bitan.x;
                 // vertexBuffer[vert].bitangent.y = bitan.y;
                 // vertexBuffer[vert].bitangent.z = bitan.z;
-                
-                vertexBuffer[vert].texCoord.x = aiMesh->mTextureCoords[0][j].x;
-                vertexBuffer[vert].texCoord.y = aiMesh->mTextureCoords[0][j].y;
+                if (hasTexCoords) {
+                    vertexBuffer[vert].texCoord.x = aiMesh->mTextureCoords[0][j].x;
+                    vertexBuffer[vert].texCoord.y = aiMesh->mTextureCoords[0][j].y;
+                }
                 ++vert;
             }
             size_t prevIndSize = indexBuffer.size();
@@ -150,7 +162,6 @@ void Model::load(char const * path) {
     // release assimp resources
     mLoaded = true;
     calcTangentSpace();
-    aiReleaseImport(scene);
 }
 
 void Model::calcTangentSpace() {
@@ -163,8 +174,9 @@ void Model::calcTangentSpace() {
         glm::vec3 edge2 = v2.pos - v0.pos;
         glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
         glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;  
-
-        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        
+        float denom = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        float f = denom != 0.0f ? 1.0f / denom : 0.0f;
 
         glm::vec3 tan;
         glm::vec3 bi;
@@ -186,7 +198,7 @@ void Model::calcTangentSpace() {
         v2.bitangent += bi; 
     }
     for (auto & vert : vertexBuffer) {
-        vert.tangent = normalize(vert.tangent);
+        vert.tangent = vert.tangent.length() != 0.0f ? normalize(vert.tangent) : glm::vec3{ 0.0f, 1.0f, 0.0f };
         vert.tangent = glm::normalize(vert.tangent - (vert.normal * glm::dot(vert.normal, vert.tangent)));
         glm::vec3 c = glm::cross(vert.normal, vert.tangent);
         if (glm::dot(c, vert.bitangent) < 0) {
