@@ -126,7 +126,7 @@ void Model::load(char const * path) {
                 vertexBuffer[vert].normal.x = norm.x;
                 vertexBuffer[vert].normal.y = norm.y;
                 vertexBuffer[vert].normal.z = norm.z;
-
+            
                 // aiVector3D tan = (invtpos * aiMesh->mTangents[j]).Normalize();
                 // vertexBuffer[vert].tangent.x = tan.x;
                 // vertexBuffer[vert].tangent.y = tan.y;
@@ -136,6 +136,7 @@ void Model::load(char const * path) {
                 // vertexBuffer[vert].bitangent.x = bitan.x;
                 // vertexBuffer[vert].bitangent.y = bitan.y;
                 // vertexBuffer[vert].bitangent.z = bitan.z;
+
                 if (hasTexCoords) {
                     vertexBuffer[vert].texCoord.x = aiMesh->mTextureCoords[0][j].x;
                     vertexBuffer[vert].texCoord.y = aiMesh->mTextureCoords[0][j].y;
@@ -175,11 +176,15 @@ void Model::calcTangentSpace() {
         glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
         glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;  
         
-        float denom = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-        float f = denom != 0.0f ? 1.0f / denom : 0.0f;
-
         glm::vec3 tan;
         glm::vec3 bi;
+
+        float denom = (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+        if (denom == 0) {
+            continue;
+        }
+        float f = 1.0f / denom;
+
 
         tan.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
         tan.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
@@ -198,7 +203,8 @@ void Model::calcTangentSpace() {
         v2.bitangent += bi; 
     }
     for (auto & vert : vertexBuffer) {
-        vert.tangent = vert.tangent.length() != 0.0f ? normalize(vert.tangent) : glm::vec3{ 0.0f, 1.0f, 0.0f };
+        if (glm::length(vert.tangent) == 0.0f) continue;
+        vert.tangent = normalize(vert.tangent);
         vert.tangent = glm::normalize(vert.tangent - (vert.normal * glm::dot(vert.normal, vert.tangent)));
         glm::vec3 c = glm::cross(vert.normal, vert.tangent);
         if (glm::dot(c, vert.bitangent) < 0) {
