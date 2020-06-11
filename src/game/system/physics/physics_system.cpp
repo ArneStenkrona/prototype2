@@ -269,6 +269,7 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
         const glm::vec3& p3 = tris[i+2];
         // plane normal
         glm::vec3 n = glm::cross((p2-p1),(p3-p1));
+        if (glm::length(n) == 0.0f) continue;
         n = glm::normalize(n);
 
         // skip triangle if relative velocity is not towards the triangle
