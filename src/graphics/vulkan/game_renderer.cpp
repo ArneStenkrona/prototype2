@@ -385,7 +385,7 @@ void GameRenderer::bindScene(Scene const & scene) {
 }
 
 void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
-                          Camera const & camera,
+                          Camera & camera,
                           DirLight  const & sun,
                           float time) {      
     updateUBOs(modelMatrices, 
@@ -396,14 +396,15 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
 }
 
 void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices, 
-                              Camera const & camera,
+                              Camera & camera,
                               DirLight  const & sun,
                               float time) {
     glm::mat4 viewMatrix = camera.getViewMatrix();
     int w,h = 0;
     getWindowSize(w, h);
-    glm::mat4 projectionMatrix = camera.getProjectionMatrix(float(w), float(h), nearPlane, farPlane);
-    glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(float(w), float(h), nearPlane, 1000.0f);
+    camera.setProjection(w, h, nearPlane, farPlane);
+    glm::mat4 projectionMatrix = camera.getProjectionMatrix();
+    glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(nearPlane, 1000.0f);
     glm::vec3 viewPosition = camera.getPosition();
 
     // skybox ubo

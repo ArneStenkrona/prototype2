@@ -221,5 +221,18 @@ void Scene::updatePhysics(float deltaTime) {
 }
 
 void Scene::updateCamera() {
+    glm::vec3 hit;
+    glm::vec3 corners[4];
+    float dist = 5.0f;
+    m_camera.getCameraCorners(corners[0], corners[1], corners[2], corners[3]);
+    for (size_t i = 0; i < 4; ++i) {
+        glm::vec3 dir = glm::normalize(corners[i] - m_playerEntity.transform.position);
+        if (m_physicsSystem.raycast(m_playerEntity.transform.position, dir, 
+                                    5.0f, hit)) {
+            dist = std::min(dist, glm::distance(m_playerEntity.transform.position, hit));
+
+        }
+    }
+    m_camera.setTargetDistance(dist);
     m_camera.setTarget(m_playerEntity.transform.position);
 }

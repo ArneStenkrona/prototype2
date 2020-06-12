@@ -71,12 +71,12 @@ public:
      * @param time : simulation time in seconds
      */
     void update(prt::vector<glm::mat4> const & modelMatrices, 
-                Camera const & camera,
+                Camera & camera,
                 DirLight  const & sun,
                 float time);
 
 private:
-    float nearPlane = 1.0f;
+    float nearPlane = 0.3f;
     float farPlane = 100.0f;
     float cascadeSplitLambda = 0.95f;
 
@@ -117,7 +117,7 @@ private:
                          uint32_t const * modelIDs, size_t nModelIDs);
 
     void updateUBOs(prt::vector<glm::mat4> const & modelMatrices, 
-                    Camera const & camera,
+                    Camera & camera,
                     DirLight  const & sun,
                     float time);
     void updateCascades(glm::mat4 const & projectionMatrix,

@@ -23,6 +23,19 @@ struct AABB {
      *          false otherwise
      */
     static bool intersect(AABB const & a, AABB const & b);
+
+    /**
+     * @param a aabb
+     * @param origin origin of line segment
+     * @param end end of line segment
+     * @return  true if a intersects with line segment,
+     *          false otherwise
+     */
+    static bool intersectRay(AABB const & a, 
+                             glm::vec3 const & origin,
+                             glm::vec3 const & direction,
+                             float maxDistance);
+
     /**
      * @param other
      * @return true if aabb encloses other, 

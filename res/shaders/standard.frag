@@ -89,6 +89,7 @@ void main() {
                                          2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
     normal = normalize(normal);
 
+
     // get view direction
     vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
 
@@ -112,7 +113,7 @@ void main() {
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo, specularity);
-    outColor = vec4(res, 1.0);
+    outColor = material.normalIndex >= 0 ? vec4(1,1,1,1) : vec4(res, 1.0);
 }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,

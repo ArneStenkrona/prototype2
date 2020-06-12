@@ -17,6 +17,18 @@ public:
      * @param objectIndices vector to store object indices of nodes
      */
     void query(AABB const & aabb, prt::vector<uint32_t> & objectIndices);
+
+    /**
+     * Finds all intersecting nodes for raycast
+     * @param origin origin of the ray
+     * @param direction direction of the ray
+     * @param maxDistance maximum length of the ray
+     * @param objectIndices vector to store object indices of nodes
+     */
+    void queryRaycast(glm::vec3 const& origin,
+                      glm::vec3 const& direction,
+                      float maxDistance,
+                      prt::vector<uint32_t> & objectIndices);
     
     /**
      * Inserts aabbs along with their object indices into the tree

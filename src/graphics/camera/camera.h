@@ -17,38 +17,64 @@ public:
     // Constructor with scalar values
     Camera(Input& input, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
 
+    /**
+     * Retrieve world-space coordinates of camera
+     * corners
+     * @param topleft top left corner, returned by reference
+     * @param topleft top right corner, returned by reference
+     * @param topleft bottom left corner, returned by reference
+     * @param topleft bottom right corner, returned by reference
+     */
+    void getCameraCorners(glm::vec3 & topleft,
+                          glm::vec3 & topright,
+                          glm::vec3 & bottomleft,
+                          glm::vec3 & bottomright);
+
     void setTarget(glm::vec3 target);
     void update(float deltaTime);
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
-    inline glm::mat4 getViewMatrix() const { return glm::lookAt(_position, _position + _front, _up); }
-    glm::mat4 getProjectionMatrix(float width, float height, float near, float far) const;
+    inline glm::mat4 getViewMatrix() const { return glm::lookAt(m_position, m_position + m_front, m_up); }
+    void setProjection(float width, float height, float near, float far);
+    glm::mat4 getProjectionMatrix() const;
+    glm::mat4 getProjectionMatrix(float near, float far) const;
     
-    inline float getFOV() const { return _fieldOfView; }
+    inline float getFOV() const { return m_fieldOfView; }
+
+    inline float getTargetDistance() const { return m_targetDistance; }
+    inline void setTargetDistance(float distance) { m_targetDistance = distance; }
     
 
-    inline glm::vec3 getPosition() const { return _position; }
-    inline glm::vec3 getFront() const { return _front; }
-    inline glm::vec3 getUp() const { return _up; }
-    inline glm::vec3 getRight() const { return _right; }
-    inline glm::vec3 getWorldUp() const { return _worldUp; }
+    inline glm::vec3 const & getPosition() const { return m_position; }
+    inline glm::vec3 const & getFront() const { return m_front; }
+    inline glm::vec3 const & getUp() const { return m_up; }
+    inline glm::vec3 const & getRight() const { return m_right; }
+    inline glm::vec3 const & getWorldUp() const { return m_worldUp; }
 
 private:
     // Camera Attributes
-    glm::vec3 _position;
-    glm::vec3 _front;
-    glm::vec3 _up;
-    glm::vec3 _right;
-    glm::vec3 _worldUp;
+    glm::vec3 m_position;
+    glm::vec3 m_front;
+    glm::vec3 m_up;
+    glm::vec3 m_right;
+    glm::vec3 m_worldUp;
     // Euler Angles
-    float _yaw;
-    float _pitch;
+    float m_yaw;
+    float m_pitch;
     // Camera options
-    float _movementSpeed;
-    float _mouseSensitivity;
-    float _fieldOfView;
+    float m_movementSpeed;
+    float m_mouseSensitivity;
+    float m_fieldOfView;
+    // Projection
+    float m_width;
+    float m_height;
+    float m_nearPlane;
+    float m_farPlane;
 
-    Input& _input;
+    // Target attributes
+    float m_targetDistance;
+
+    Input& m_input;
 
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
     void processKeyboard(float deltaTime);

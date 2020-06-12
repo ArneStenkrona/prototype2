@@ -33,6 +33,31 @@ void Texture::load(char const * path) {
     stbi_image_free(pixels);
 }
 
+void Model::getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
+                       prt::hash_map<aiString, size_t> &map, const char * modelPath) {
+    aiString texPath;
+    if (aiMat.GetTexture(type, 0, &texPath) == AI_SUCCESS) {
+        if (type != aiTextureType_DIFFUSE) std::cout << "NORMALS" << std::endl;
+        char fullTexPath[256];
+        strcpy(fullTexPath, modelPath);
+        auto it = map.find(texPath);
+        if (it != map.end()) {
+            textureIndex = it->value();
+        } else {
+            size_t index = textures.size();
+            map.insert(texPath, index);
+            textures.push_back({});
+            Texture &tex = textures.back();
+            
+            char *ptr = strrchr(fullTexPath, '/');
+            strcpy(++ptr, texPath.C_Str());
+            tex.load(fullTexPath);
+
+            textureIndex = index;
+        }
+    }
+}
+
 void Model::load(char const * path) {
     assert(!mLoaded && "Model is already loaded!");
     
@@ -56,36 +81,22 @@ void Model::load(char const * path) {
     }
 
     // parse materials
-    prt::hash_map<aiString, size_t> texturePathToIndex;
+    prt::hash_map<aiString, size_t> albedoPathToIndex;
+    prt::hash_map<aiString, size_t> normalPathToIndex;
     materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < materials.size(); ++i) {
         aiString matName;
         aiGetMaterialString(scene->mMaterials[i], AI_MATKEY_NAME, &matName);
         strcpy(materials[i].name, matName.C_Str());
  
-        aiString texPath;
-        if (scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS) {
-            char fullTexPath[256];
-            strcpy(fullTexPath, path);
-            aiColor3D color;
-            scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-            materials[i].baseColor = { color.r, color.g, color.b };
-            auto it = texturePathToIndex.find(texPath);
-            if (it != texturePathToIndex.end()) {
-                materials[i].albedoIndex = it->value();
-            } else {
-                size_t index = textures.size();
-                texturePathToIndex.insert(texPath, index);
-                textures.push_back({});
-                Texture &tex = textures.back();
-                
-                char *ptr = strrchr(fullTexPath, '/');
-                strcpy(++ptr, texPath.C_Str());
-                tex.load(fullTexPath);
-
-                materials[i].albedoIndex = index;
-            }
-        }
+        aiColor3D color;
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+        materials[i].baseColor = { color.r, color.g, color.b };
+        
+        getTexture(materials[i].albedoIndex, *scene->mMaterials[i], aiTextureType_DIFFUSE,
+                   albedoPathToIndex, path);
+        getTexture(materials[i].normalIndex, *scene->mMaterials[i], aiTextureType_NORMALS,
+                   normalPathToIndex, path);
     }
 
     struct TFormNode {

@@ -134,6 +134,8 @@ struct Model {
 
 private:
     void calcTangentSpace();
+    void getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
+                    prt::hash_map<aiString, size_t> &map, const char * modelPath);
     bool mLoaded = false;
 };
 

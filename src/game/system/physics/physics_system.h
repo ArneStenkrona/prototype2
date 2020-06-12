@@ -54,6 +54,7 @@ public:
      * @param intersectionDistance intersection time,
      *                             returned by reference
      * @param collisionNormals list of collision normals
+     * @return true if collision, false otherwise
      */
     bool collideAndRespondEllipsoidMesh(glm::vec3 const& ellipsoid, 
                                         Transform & ellipsoidTransform,
@@ -64,6 +65,19 @@ public:
                                         prt::vector<uint32_t> const & colliderIDs,
                                         glm::vec3& intersectionPoint,
                                         float& intersectionTime);
+
+    /**
+     * Checks hit between ray and active colliders
+     * 
+     * @param origin ray origin
+     * @param direction ray direction
+     * @param maxDistance maximum distance ray may travel from origin
+     * @param hit point of raycast hit, return by reference
+     */
+    bool raycast(glm::vec3 const& origin,
+                 glm::vec3 const& direction,
+                 float maxDistance,
+                 glm::vec3 & hit);
         
 private:
     static constexpr float verySmallDistance = 0.005f;
@@ -75,7 +89,7 @@ private:
     prt::vector<ModelCollider> m_modelColliders;
     prt::vector<MeshCollider> m_meshColliders;
 
-    // caches geometry after aplpying transforms
+    // caches geometry after applying transforms
     prt::vector<glm::vec3> m_geometry_cache;
     prt::vector<glm::vec3> m_geometry;
 
@@ -100,6 +114,13 @@ private:
                               glm::vec3& ellipsoidVel,
                               glm::vec3& intersectionPoint,
                               const float intersectionTime);
+
+    bool intersectLineSegmentTriangle(glm::vec3 const & origin, 
+                                      glm::vec3 const & end, 
+                                      glm::vec3 const & a,
+                                      glm::vec3 const & b,
+                                      glm::vec3 const & c,
+                                      float &t);
 };
 
 #endif

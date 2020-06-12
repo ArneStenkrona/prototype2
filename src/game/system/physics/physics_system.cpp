@@ -409,3 +409,75 @@ void PhysicsSystem::respondEllipsoidMesh(glm::vec3& ellipsoidPos,
     ellipsoidVel = glm::cross(slideNormal, 
                               glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal));
 }
+
+bool PhysicsSystem::raycast(glm::vec3 const& origin,
+                            glm::vec3 const& direction,
+                            float maxDistance,
+                            glm::vec3 & hit) {
+    prt::vector<uint32_t> colIDs; 
+    m_aabbTree.queryRaycast(origin, direction, maxDistance, colIDs);
+
+    float intersectionTime = std::numeric_limits<float>::max();
+    bool intersect = false;
+    for (auto id : colIDs) {
+        MeshCollider & meshCollider = m_meshColliders[id];
+        size_t index = meshCollider.startIndex;
+        for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
+            float t;
+            bool in = intersectLineSegmentTriangle(origin, origin + direction * maxDistance,
+                                                   m_geometry_cache[index],
+                                                   m_geometry_cache[index+1],
+                                                   m_geometry_cache[index+2],
+                                                   t);
+            intersect |= in;
+            if (in) {
+                intersectionTime = std::min(intersectionTime, t);
+            }
+            
+            index += 3;
+        }
+    }
+    if (intersect) {
+        hit = origin + direction * intersectionTime * maxDistance;
+    }
+    return intersect;
+}
+
+
+// From "Realtime Collision Detection" by Christer Ericson
+bool PhysicsSystem::intersectLineSegmentTriangle(glm::vec3 const & origin, 
+                                                 glm::vec3 const & end, 
+                                                 glm::vec3 const & a,
+                                                 glm::vec3 const & b,
+                                                 glm::vec3 const & c,
+                                                 float &t) {
+    glm::vec3 ab = b - a;
+    glm::vec3 ac = c - a;
+    glm::vec3 qp = origin - end;
+    // Compute triangle normal. Can be precalculated or cached if // intersecting multiple segments against the same triangle 
+    glm::vec3 n = glm::cross(ab, ac);
+    // Compute denominator d. If d <= 0, segment is parallel to or points // away from triangle, so exit early
+    float d = glm::dot(qp, n);
+    if (d <= 0.0f) return false;
+        // Compute intersection t value of pq with plane of triangle. A ray
+        // intersects iff 0 <= t. Segment intersects iff 0 <= t <= 1. Delay
+        // dividing by d until intersection has been found to pierce triangle
+
+    glm::vec3 ap = origin - a;
+    t = glm::dot(ap, n);
+    if (t < 0.0f) return false;
+    if (t > d) return false; // For segment; exclude this code line for a ray test
+    // Compute barycentric coordinate components and test if within bounds
+    glm::vec3 e = glm::cross(qp, ap);
+    float v = glm::dot(ac, e);
+    if (v < 0.0f || v > d) return false;
+    float w = -glm::dot(ab, e);
+    if (w < 0.0f || v + w > d) return false;
+    // Segment/ray intersects triangle. Perform delayed division and // compute the last barycentric coordinate component
+    float ood = 1.0f / d;
+    t *= ood;
+    v *= ood;
+    w *= ood;
+    //float u = 1.0f - v - w;
+    return true;
+}

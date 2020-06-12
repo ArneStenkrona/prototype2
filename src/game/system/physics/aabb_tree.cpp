@@ -25,6 +25,27 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectInd
     }
 }
 
+void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
+                                   glm::vec3 const& direction,
+                                   float maxDistance,
+                                   prt::vector<uint32_t> & objectIndices) {
+    prt::vector<int32_t> nodeStack;
+    nodeStack.push_back(rootIndex);
+    while (!nodeStack.empty()) {
+        int32_t index = nodeStack.back();
+        nodeStack.pop_back();
+        Node const & node = m_nodes[index];
+        if (AABB::intersectRay(node.aabb, origin, direction, maxDistance)) {
+            if (node.isLeaf()) {
+                objectIndices.push_back(node.objectIndex);
+            } else {
+                nodeStack.push_back(node.left);
+                nodeStack.push_back(node.right);
+            }
+        }
+    }
+}
+
 void DynamicAABBTree::insert(uint32_t const * objectIndices, AABB const * aabbs, size_t n,
                              int32_t * treeIndices) {
     for (size_t i = 0; i < n; ++i) {
