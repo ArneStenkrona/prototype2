@@ -34,7 +34,7 @@ bool AABB::intersectRay(AABB const & a,
             }
             // Compute the intersection of slab intersection intervals
             if (t1 > tmin) tmin = t1;
-            if (t2 > tmax) tmax = t2;
+            if (t2 < tmax) tmax = t2;
             // Exit with no collision as soon as slab intersection becomes empty 
             if (tmin > tmax) {
                 return false;

@@ -76,7 +76,7 @@ public:
                 float time);
 
 private:
-    float nearPlane = 0.3f;
+    float nearPlane = 0.03f;
     float farPlane = 100.0f;
     float cascadeSplitLambda = 0.95f;
 
