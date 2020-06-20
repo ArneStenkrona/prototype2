@@ -247,8 +247,8 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
     }
 
     // Vertex input
-    modelPipeline.vertexInputBinding = Vertex::getBindingDescription();
-    auto attrib = Vertex::getAttributeDescriptions();
+    modelPipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
+    auto attrib = Model::Vertex::getAttributeDescriptions();
     modelPipeline.vertexInputAttributes.resize(attrib.size());
     size_t inIndx = 0;
     for (auto const & att : attrib) {
@@ -320,8 +320,8 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     }
 
     // Vertex input
-    pipeline.vertexInputBinding = Vertex::getBindingDescription();
-    auto attrib = Vertex::getAttributeDescriptions();
+    pipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
+    auto attrib = Model::Vertex::getAttributeDescriptions();
     pipeline.vertexInputAttributes.resize(attrib.size());
     size_t inIndx = 0;
     for (auto const & att : attrib) {
@@ -527,7 +527,10 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
         glm::vec3 maxExtents = glm::vec3{radius};
         glm::vec3 minExtents = -maxExtents;
         glm::mat4 cascadeView = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, {0.0f, 1.0f, 0.0f});
-        glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+        // I use negative farPlane as minExtents in Z axis in order to get
+        // shadow casters behind camera.
+        // This is not ideal but a work-around for now
+        glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f - farPlane, maxExtents.z - minExtents.z);
 
         cascadeSpace[i] = cascadeProjection * cascadeView;
         splitDepths[i] = (nearPlane + splitDist * clipRange) *  -1.0f;
@@ -590,14 +593,11 @@ void GameRenderer::loadCubeMap(const prt::array<Texture, 6>& skybox, size_t asse
                            skybox[0].mipLevels);
 }
 
-// void GameRenderer::createDrawCalls(const prt::vector<Model>& models, 
-//                                          const prt::vector<uint32_t>& modelIndices) {
 void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
                                    uint32_t const * modelIDs, size_t nModelIDs) {
     // skybox
     {
         GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
-        // Assets & asset = getAssets(pipeline.assetsIndex);
         DrawCall drawCall;
         drawCall.firstIndex = 0;
         drawCall.indexCount = 36;
@@ -614,15 +614,14 @@ void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
             imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].textures.size();
             indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
         }
-        // Assets & asset = getAssets(graphicsPipelines.scene[standardPipelineIndex].assetsIndex);
         for (size_t i = 0; i < nModelIDs; ++i) {
             const Model& model = models[modelIDs[i]];
             for (auto const & mesh : model.meshes) {
                 auto const & material = model.materials[mesh.materialIndex];
                 DrawCall drawCall;
                 // compute texture indices
-                int32_t albedoIndex = material.albedoIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
-                int32_t normalIndex = material.normalIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.normalIndex;
+                int32_t albedoIndex = material.albedoIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
+                int32_t normalIndex = material.normalIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.normalIndex;
                 int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.specularIndex;
                 // push constants
                 StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
@@ -651,14 +650,14 @@ void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
 }
 
 void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex) {
-    prt::vector<Vertex> allVertices;
+    prt::vector<Model::Vertex> allVertices;
     for (size_t i = 0; i < nModels; ++i) {
         for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
             allVertices.push_back(models[i].vertexBuffer[j]);
         }
     }
     VertexData& data = getAssets(assetIndex).vertexData;
-    createAndMapBuffer(allVertices.data(), sizeof(Vertex) * allVertices.size(),
+    createAndMapBuffer(allVertices.data(), sizeof(Model::Vertex) * allVertices.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                        data.vertexBuffer, 
                        data.vertexBufferMemory);    

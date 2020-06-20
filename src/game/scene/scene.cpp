@@ -1,7 +1,5 @@
 #include "scene.h"
 
-#include "src/graphics/geometry/parametric_shapes.h"
-
 Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem, 
              Input& input, Camera& camera)
     : m_assetManager(assetManager),
@@ -43,7 +41,6 @@ void Scene::initPlayer() {
 void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) const {
     m_assetManager.loadCubeMap("default", cubeMap);
 }
-
 
 void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
     modelIDs.resize(m_staticEntities.size + 

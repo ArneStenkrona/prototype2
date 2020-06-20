@@ -1,7 +1,7 @@
 #ifndef PRT_MODEL_H
 #define PRT_MODEL_H
 
-#include "src/graphics/geometry/parametric_shapes.h"
+#include "texture.h"
 
 #include "src/container/vector.h"
 #include "src/container/array.h"
@@ -23,7 +23,79 @@
 
 #include <assimp/scene.h>
 
-struct Vertex {
+struct Model {
+    struct Mesh;
+    struct Material;
+    struct Vertex;
+    struct BonedVertex;
+    struct BoneData;
+    struct Bone;
+    struct Animation;
+    struct AnimatedVertex;
+    struct AnimationKey;
+    struct AnimationNode;
+
+    prt::vector<Mesh> meshes;
+    prt::vector<Animation> animations;
+    prt::vector<Material> materials;
+    prt::vector<Texture> textures;
+    prt::vector<Vertex> vertexBuffer;
+    prt::vector<BoneData> vertexBoneBuffer;
+    prt::vector<uint32_t> indexBuffer;
+    void load(char const * path, bool loadAnimation = false);
+
+private:
+    void calcTangentSpace();
+    void getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
+                    prt::hash_map<aiString, size_t> &map, const char * modelPath);
+
+    bool mLoaded = false;
+    bool mAnimated = false;
+};
+
+struct Model::Material {
+    char name[256];
+    int32_t albedoIndex = -1;
+    int32_t normalIndex = -1;
+    int32_t specularIndex = -1;
+    glm::vec3 baseColor{1.0f, 1.0f, 1.0f};
+    float baseSpecularity = 0.5f;
+};
+
+struct Model::Bone {
+    glm::mat4 offsetMatrix;
+};
+
+struct Model::Mesh {
+    size_t startIndex;
+    size_t numIndices;
+    int32_t materialIndex = 0;
+    prt::vector<Bone> bones;
+    char name[256];
+};
+
+struct Model::AnimationKey {
+    glm::vec3 position;
+    glm::quat rotation;
+    //glm::vec3 scaling;
+};
+
+struct Model::AnimationNode {
+    prt::vector<AnimationKey> keys;
+};
+
+struct Model::Animation {
+    float duration;
+    double ticksPerSecond;
+    prt::vector<AnimationNode> channels;
+};
+
+struct Model::BoneData {
+    int32_t boneIDs[4] = { -1, -1, -1, -1 };
+    float boneWeights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+};
+
+struct Model::Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 texCoord;
@@ -33,122 +105,58 @@ struct Vertex {
     /**
      * @return vulkan binding description
      */
-    static VkVertexInputBindingDescription getBindingDescription() {
-        VkVertexInputBindingDescription bindingDescription = {};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        
-        return bindingDescription;
-    }
+    static VkVertexInputBindingDescription getBindingDescription();
     
     /**
      * @return vulkan attribute description
      */
-    static prt::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
-        prt::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
-        
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-        
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, normal);
-        
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+    static prt::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions();
 
-        attributeDescriptions[3].binding = 0;
-        attributeDescriptions[3].location = 3;
-        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[3].offset = offsetof(Vertex, tangent);
+    // bool operator==(const Vertex& other) const {
+    //     return pos      == other.pos      && 
+    //            normal   == other.normal   && 
+    //            texCoord == other.texCoord &&
+    //            tangent  == other.tangent  &&
+    //            bitangent == other.bitangent;
+    // }
 
-        attributeDescriptions[4].binding = 0;
-        attributeDescriptions[4].location = 4;
-        attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[4].offset = offsetof(Vertex, bitangent);
-        
-        return attributeDescriptions;
-    }
+    // bool operator!=(const Vertex& other) const {
+    //     return !(*this == other);
+    // }
 
-    bool operator==(const Vertex& other) const {
-        return pos      == other.pos      && 
-               normal   == other.normal   && 
-               texCoord == other.texCoord &&
-               tangent  == other.tangent  &&
-               bitangent == other.bitangent;
-    }
-
-    bool operator!=(const Vertex& other) const {
-        return !(*this == other);
-    }
+    //friend struct std::hash<Model::Vertex>;
 };
 
-struct Texture {
-    // char path[256];
-    prt::vector<unsigned char> pixelBuffer;
-    int texWidth, texHeight, texChannels;
-    uint32_t mipLevels;
+struct Model::BonedVertex {
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec2 texCoord;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+    BoneData boneData;
+    
+    /**
+     * @return vulkan binding description
+     */
+    static VkVertexInputBindingDescription getBindingDescription();
+    
+    /**
+     * @return vulkan attribute description
+     */
+    static prt::array<VkVertexInputAttributeDescription, 7> getAttributeDescriptions();
 
-    void load(char const * path);
-
-    inline unsigned char* sample(float x, float y) {
-        int sx = static_cast<int>(float(texWidth - 1) * x + 0.5f);
-        int sy = static_cast<int>(float(texHeight - 1) * y + 0.5f);
-        int si = texChannels * (sy * texWidth + sx);
-        return &pixelBuffer[si];
-    }
-};
-
-struct Material {
-    char name[256];
-    // char fragmentShader[256];
-    int32_t albedoIndex = -1;
-    int32_t normalIndex = -1;
-    int32_t specularIndex = -1;
-    glm::vec3 baseColor{1.0f, 1.0f, 1.0f};
-    float baseSpecularity = 0.5f;
-};
-
-struct Mesh {
-    size_t startIndex;
-    size_t numIndices;
-    int32_t materialIndex = 0;
-    char name[256];
-};
-
-struct Model {
-    prt::vector<Mesh> meshes;
-    prt::vector<Material> materials;
-    prt::vector<Texture> textures;
-    prt::vector<Vertex> vertexBuffer;
-    prt::vector<uint32_t> indexBuffer;
-    // void loadOBJ(const char* path);
-    // void loadFBX(const char* path);
-    void load(char const * path);
-
-private:
-    void calcTangentSpace();
-    void getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
-                    prt::hash_map<aiString, size_t> &map, const char * modelPath);
-    bool mLoaded = false;
 };
 
 namespace std {
-    template<> struct hash<Vertex> {
-        size_t operator()(Vertex const& vertex) const {
-            return ((((((hash<glm::vec3>()(vertex.pos) ^ 
-                        (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
-                        (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
-                        (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
-                        (hash<glm::vec3>()(vertex.bitangent) << 1);
-        }
-    };
+    // template<> struct hash<Model::Vertex> {
+    //     size_t operator()(Model::Vertex const& vertex) const {
+    //         return ((((((hash<glm::vec3>()(vertex.pos) ^ 
+    //                     (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
+    //                     (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
+    //                     (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
+    //                     (hash<glm::vec3>()(vertex.bitangent) << 1);
+    //     }
+    // };
 
     // thanks, Basile Starynkevitch!
     template<> struct hash<aiString> {
