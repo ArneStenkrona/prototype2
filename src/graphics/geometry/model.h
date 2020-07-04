@@ -8,7 +8,6 @@
 #include "src/container/hash_map.h"
 #include "src/container/hash_set.h"
 
-
 #include <vulkan/vulkan.h>
 
 #define GLFW_INCLUDE_VULKAN
@@ -91,7 +90,7 @@ struct Model::Animation {
 };
 
 struct Model::BoneData {
-    int32_t boneIDs[4] = { -1, -1, -1, -1 };
+    uint32_t boneIDs[4] = { 0, 0, 0, 0 };
     float boneWeights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 
@@ -110,21 +109,7 @@ struct Model::Vertex {
     /**
      * @return vulkan attribute description
      */
-    static prt::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions();
-
-    // bool operator==(const Vertex& other) const {
-    //     return pos      == other.pos      && 
-    //            normal   == other.normal   && 
-    //            texCoord == other.texCoord &&
-    //            tangent  == other.tangent  &&
-    //            bitangent == other.bitangent;
-    // }
-
-    // bool operator!=(const Vertex& other) const {
-    //     return !(*this == other);
-    // }
-
-    //friend struct std::hash<Model::Vertex>;
+    static prt::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 };
 
 struct Model::BonedVertex {
@@ -143,21 +128,11 @@ struct Model::BonedVertex {
     /**
      * @return vulkan attribute description
      */
-    static prt::array<VkVertexInputAttributeDescription, 7> getAttributeDescriptions();
+    static prt::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 
 };
 
 namespace std {
-    // template<> struct hash<Model::Vertex> {
-    //     size_t operator()(Model::Vertex const& vertex) const {
-    //         return ((((((hash<glm::vec3>()(vertex.pos) ^ 
-    //                     (hash<glm::vec3>()(vertex.normal)   << 1)) >> 1) ^ 
-    //                     (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^
-    //                     (hash<glm::vec3>()(vertex.tangent)  << 1)) >> 1) ^
-    //                     (hash<glm::vec3>()(vertex.bitangent) << 1);
-    //     }
-    // };
-
     // thanks, Basile Starynkevitch!
     template<> struct hash<aiString> {
         size_t operator()(aiString const& str) const {

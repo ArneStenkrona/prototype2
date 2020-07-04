@@ -125,10 +125,7 @@ void Model::load(char const * path, bool loadAnimation) {
                         float weight = bone->mWeights[iv].mWeight;
                         float leastWeight = weight;
                         for (size_t ind = 0; ind < 4; ++ind) {
-                            if (bd.boneIDs[ind] == -1) {
-                                leastInd = ind;
-                                break;
-                            } else if (bd.boneWeights[ind] < leastWeight) {
+                            if (bd.boneWeights[ind] < leastWeight) {
                                 leastWeight = bd.boneWeights[ind];
                                 leastInd = ind;
                             }
@@ -263,8 +260,9 @@ VkVertexInputBindingDescription Model::Vertex::getBindingDescription() {
     return bindingDescription;
 }
 
-prt::array<VkVertexInputAttributeDescription, 5> Model::Vertex::getAttributeDescriptions() {
-    prt::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
+prt::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescriptions() {
+    prt::vector<VkVertexInputAttributeDescription> attributeDescriptions = {};
+    attributeDescriptions.resize(5);
     
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
@@ -303,8 +301,9 @@ VkVertexInputBindingDescription Model::BonedVertex::getBindingDescription() {
     return bindingDescription;
 }
 
-prt::array<VkVertexInputAttributeDescription, 7> Model::BonedVertex::getAttributeDescriptions() {
-    prt::array<VkVertexInputAttributeDescription, 7> attributeDescriptions = {};
+prt::vector<VkVertexInputAttributeDescription> Model::BonedVertex::getAttributeDescriptions() {
+    prt::vector<VkVertexInputAttributeDescription> attributeDescriptions = {};
+    attributeDescriptions.resize(7);
     
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;

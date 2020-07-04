@@ -16,17 +16,14 @@ void GameRenderer::createGraphicsPipelines(size_t skyboxAssetIndex, size_t skybo
     char frag[256] = RESOURCE_PATH;
     strcat(vert, "shaders/standard.vert.spv");
     strcat(frag, "shaders/standard.frag.spv");
-    createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag);
+    createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag, Model::Vertex::getAttributeDescriptions());
 
     vert[0] = '\0';
-    frag[0] = '\0';
     strcpy(vert, RESOURCE_PATH);
-    strcpy(frag, RESOURCE_PATH);
     strcat(vert, "shaders/shadow_map.vert.spv");
-    strcat(frag, "shaders/shadow_map.frag.spv");
 
     createShadowmapGraphicsPipeline(shadowmapAssetIndex, shadowmapUboIndex,
-                                    vert, frag);
+                                    vert);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
@@ -70,11 +67,6 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
         skyboxPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         skyboxPipeline.descriptorBufferInfos[i].offset = 0;
         skyboxPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
-
-        // skyboxPipeline.descriptorImageInfos.resize(1);
-        // skyboxPipeline.descriptorImageInfos[0].sampler = textureSampler;
-        // skyboxPipeline.descriptorImageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        // skyboxPipeline.descriptorImageInfos[0].imageView = asset.textureImages.imageViews[0];
 
         skyboxPipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
@@ -131,7 +123,8 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     skyboxPipeline.enableDepthBias = false;
 }
 void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                  const char* vertexShader, const char* fragmentShader) {
+                                                  const char* vertexShader, const char* fragmentShader,
+                                                  prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
     standardPipelineIndex = graphicsPipelines.scene.size();
     graphicsPipelines.scene.push_back(GraphicsPipeline{});
     GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
@@ -195,13 +188,6 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
         modelPipeline.descriptorBufferInfos[i].offset = 0;
         modelPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
-        // modelPipeline.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
-        // for (size_t j = 0; j < modelPipeline.descriptorImageInfos.size(); j++) {
-        //      modelPipeline.descriptorImageInfos[j].sampler = textureSampler;
-        //      modelPipeline.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        //      modelPipeline.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
-        // }
-        
         modelPipeline.descriptorWrites[i].resize(4, VkWriteDescriptorSet{});
         
         modelPipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -248,10 +234,9 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
 
     // Vertex input
     modelPipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
-    auto attrib = Model::Vertex::getAttributeDescriptions();
-    modelPipeline.vertexInputAttributes.resize(attrib.size());
+    modelPipeline.vertexInputAttributes.resize(attributeDescription.size());
     size_t inIndx = 0;
-    for (auto const & att : attrib) {
+    for (auto const & att : attributeDescription) {
         modelPipeline.vertexInputAttributes[inIndx] = att;
         ++inIndx;
     }
@@ -277,7 +262,7 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
 }
 
 void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                   const char* vertexShader, const char* /*fragmentShader*/) {
+                                                   const char* vertexShader) {
     shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
     graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
@@ -337,12 +322,6 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     shaderStages[0].shader[0] = '\0';
     strcat(shaderStages[0].shader, vertexShader);
 
-    // shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    // shaderStages[1].pName[0] = '\0';
-    // strcat(shaderStages[1].pName, "main");
-    // shaderStages[1].shader[0] = '\0';
-    // strcat(shaderStages[1].shader, fragmentShader);
-
     pipeline.extent = offscreenPass.extent;
     pipeline.renderpass = offscreenPass.renderPass;
     pipeline.useColorAttachment = false;
@@ -350,13 +329,9 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
 }
 
 void GameRenderer::bindScene(Scene const & scene) {
-    // prt::vector<Model> models;
     prt::vector<uint32_t> modelIDs;
-    // scene.getModels(models, modelIndices);
     Model const * models;
     size_t nModels;
-    // uint32_t const * modelIDs; 
-    // size_t nModelIDs;
     scene.getModels(models, nModels, modelIDs);
 
     size_t skyboxAssetIndex = pushBackAssets();
@@ -377,8 +352,6 @@ void GameRenderer::bindScene(Scene const & scene) {
                             standardAssetIndex, standardUboIndex,
                             standardAssetIndex, shadowMapUboIndex);
 
-
-    // createDrawCalls(models, modelIndices);
     createDrawCalls(models, nModels, modelIDs.data(), modelIDs.size());
 
     completeSwapChain();
@@ -540,7 +513,6 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
 }
 
 void GameRenderer::loadModels(Model const * models, size_t nModels, size_t assetIndex) {
-    
     assert(nModels != 0 && "models can not be empty!");
 
     createVertexBuffer(models, nModels, assetIndex);
@@ -555,7 +527,6 @@ void GameRenderer::loadModels(Model const * models, size_t nModels, size_t asset
     asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
     for (size_t i = 0; i < nModels; ++i) {
         for (size_t j = 0; j < models[i].textures.size(); ++j) {
-            // auto const & material = models[i].materials[models[i].meshes[j].materialIndex];
             auto const & texture = models[i].textures[j];
             createTextureImage(asset.textureImages.images[numTex], 
                                asset.textureImages.imageMemories[numTex], 

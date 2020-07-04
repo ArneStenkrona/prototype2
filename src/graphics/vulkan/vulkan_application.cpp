@@ -195,36 +195,6 @@ void VulkanApplication::cleanup() {
 }
 
 void VulkanApplication::recreateSwapChain() {
-    // _width = 0;
-    // _height = 0;
-    // while (_width == 0 || _height == 0) {
-    //     glfwGetFramebufferSize(_window, &_width, &_height);
-    //     glfwWaitEvents();
-    // }
-
-    // vkDeviceWaitIdle(device);
- 
-    // cleanupSwapChain();
-
-    // createSwapChain();
-    // createImageViews();
-    // createScenePass();
-    // createOffscreenFrameBuffer();
-    // createDescriptorSetLayouts(graphicsPipelines.offscreen);
-    // createDescriptorSetLayouts(graphicsPipelines.scene);
-    // createPipelineCaches(graphicsPipelines.offscreen);
-    // createPipelineCaches(graphicsPipelines.scene);
-    // createGraphicsPipelines(graphicsPipelines.offscreen);
-    // createGraphicsPipelines(graphicsPipelines.scene);
-    // createColorResources();
-    // createDepthResources();
-    // createFramebuffers();
-
-    // createDescriptorPools(graphicsPipelines.offscreen);
-    // createDescriptorPools(graphicsPipelines.scene);
-
-    // createDescriptorSets();
-    // createCommandBuffers(); 
     reprepareSwapChain();
     completeSwapChain();
 }
@@ -248,12 +218,6 @@ void VulkanApplication::reprepareSwapChain() {
 }
 
 void VulkanApplication::completeSwapChain() {
-    // createDescriptorSetLayouts(graphicsPipelines.offscreen);
-    // createDescriptorSetLayouts(graphicsPipelines.scene);
-    // createPipelineCaches(graphicsPipelines.offscreen);
-    // createPipelineCaches(graphicsPipelines.scene);
-    // createGraphicsPipelines(graphicsPipelines.offscreen);
-    // createGraphicsPipelines(graphicsPipelines.scene);
     prepareGraphicsPipelines();
     createColorResources();
     createDepthResources();
@@ -764,22 +728,6 @@ void VulkanApplication::createOffscreenFrameBuffer() {
             offscreenPass.cascades[i][j].descriptors.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         }
     }
-
-    // offscreenPass.frameBuffers.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); ++i) {
-        // // Create frame buffer
-        // VkFramebufferCreateInfo fbufCreateInfo{};
-        // fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        // fbufCreateInfo.renderPass = offscreenPass.renderPass;
-        // fbufCreateInfo.attachmentCount = 1;
-        // fbufCreateInfo.pAttachments = &offscreenPass.depths[i].imageView;
-        // fbufCreateInfo.width = offscreenPass.extent.width;
-        // fbufCreateInfo.height = offscreenPass.extent.height;
-        // fbufCreateInfo.layers = 1;
-        // if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &offscreenPass.frameBuffers[i]) != VK_SUCCESS) {
-        //     assert(false && "failed to create offscreen frame buffer!");
-        // }
-    }
 }
 
 void VulkanApplication::prepareGraphicsPipelines() {
@@ -1010,7 +958,6 @@ void VulkanApplication::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-    // poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         assert(false && "failed to create graphics command pool!");
@@ -1074,11 +1021,6 @@ VkFormat VulkanApplication::findDepthFormat() {
                                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
                                );
     return format;
-    // return findSupportedFormat(
-    //                            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-    //                            VK_IMAGE_TILING_OPTIMAL,
-    //                            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-    //                            );
 }
 
 bool VulkanApplication::hasStencilComponent(VkFormat format) {
@@ -1131,7 +1073,6 @@ void VulkanApplication::createCubeMapImage(VkImage& texImage, VkDeviceMemory& te
                                            const prt::array<Texture, 6>& textures) {
     VkDeviceSize layerSize = textures[0].texWidth * textures[0].texHeight * 4;
     VkDeviceSize imageSize = layerSize * textures.size();
-    //mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textures[0].texWidth, textures[0].texHeight)))) + 1;
  
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -1515,7 +1456,6 @@ void VulkanApplication::createDescriptorSets() {
 
         for (size_t i = 0; i < swapChainImages.size(); i++) {
                 VkDescriptorBufferInfo bufferInfo = {};
-                // Assets& ass = assets[graphicsPipeline.assetsIndex];
                 UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
                 bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
                 bufferInfo.offset = 0;
@@ -1745,7 +1685,6 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = offscreenPass.renderPass;
-    // renderPassBeginInfo.framebuffer = offscreenPass.frameBuffers[imageIndex];
     renderPassBeginInfo.renderArea.extent = offscreenPass.extent;
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearValue;
