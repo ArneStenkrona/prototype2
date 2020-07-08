@@ -7,23 +7,23 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height)
 GameRenderer::~GameRenderer() {
 }
 
-void GameRenderer::createGraphicsPipelines(size_t skyboxAssetIndex, size_t skyboxUboIndex, 
-                                           size_t standardAssetIndex, size_t standardUboIndex, 
-                                           size_t shadowmapAssetIndex, size_t shadowmapUboIndex) {
-    createSkyboxGraphicsPipeline(skyboxAssetIndex, skyboxUboIndex);
-
+void GameRenderer::createStandardAndShadowGraphicsPipelines(size_t standardAssetIndex, size_t standardUboIndex,
+                                                            size_t shadowmapUboIndex, 
+                                                            const char * relativeVert, const char * relativeFrag,
+                                                            const char * relativeShadowVert,
+                                                            prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                                            size_t & standardPipeline, size_t & shadowPipeline) {
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
-    strcat(vert, "shaders/standard.vert.spv");
-    strcat(frag, "shaders/standard.frag.spv");
-    createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag, Model::Vertex::getAttributeDescriptions());
+    strcat(vert, relativeVert);
+    strcat(frag, relativeFrag);
+    standardPipeline = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag, 
+                                                      attributeDescription);
 
     vert[0] = '\0';
     strcpy(vert, RESOURCE_PATH);
-    strcat(vert, "shaders/shadow_map.vert.spv");
-
-    createShadowmapGraphicsPipeline(shadowmapAssetIndex, shadowmapUboIndex,
-                                    vert);
+    strcat(vert, relativeShadowVert);
+    shadowPipeline = createShadowmapGraphicsPipeline(standardAssetIndex, shadowmapUboIndex, vert);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
@@ -122,10 +122,11 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     skyboxPipeline.useColorAttachment = true;
     skyboxPipeline.enableDepthBias = false;
 }
-void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                  const char* vertexShader, const char* fragmentShader,
-                                                  prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
-    standardPipelineIndex = graphicsPipelines.scene.size();
+
+size_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                                    char const * vertexShader, char const * fragmentShader,
+                                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
+    size_t pipelineIndex = graphicsPipelines.scene.size();
     graphicsPipelines.scene.push_back(GraphicsPipeline{});
     GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
 
@@ -259,11 +260,13 @@ void GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboI
     modelPipeline.renderpass = scenePass;
     modelPipeline.useColorAttachment = true;
     modelPipeline.enableDepthBias = false;
+
+    return pipelineIndex;
 }
 
-void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                   const char* vertexShader) {
-    shadowmapPipelineIndex = graphicsPipelines.offscreen.size();
+size_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                                   char const * vertexShader) {
+    size_t pipelineIndex = graphicsPipelines.offscreen.size();
     graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
 
@@ -326,33 +329,83 @@ void GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t ubo
     pipeline.renderpass = offscreenPass.renderPass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
+
+    return pipelineIndex;
 }
 
 void GameRenderer::bindScene(Scene const & scene) {
-    prt::vector<uint32_t> modelIDs;
-    Model const * models;
-    size_t nModels;
-    scene.getModels(models, nModels, modelIDs);
-
+    /* skybox */
     size_t skyboxAssetIndex = pushBackAssets();
     size_t skyboxUboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
-    size_t standardAssetIndex = pushBackAssets();
-    size_t standardUboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
-    size_t shadowMapUboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
-
+    /* non-animated */
+    prt::vector<uint32_t> modelIDs;
+    Model const * models;
+    size_t nModels = 0;
+    size_t standardAssetIndex;   
+    size_t standardUboIndex;
+    size_t shadowMapUboIndex;
+    scene.getModels(models, nModels, modelIDs, false);
+    if (nModels != 0) {
+        // standard
+        standardAssetIndex = pushBackAssets();
+        standardUboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
+        // shadow map
+        shadowMapUboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
+    }
+    /* animated */
+    prt::vector<uint32_t> animatedModelIDs;
+    Model const * animatedModels;
+    size_t nAnimatedModels;
+    size_t animatedStandardAssetIndex;
+    size_t animatedStandardUboIndex;
+    size_t animatedShadowMapUboIndex;
+    scene.getModels(animatedModels, nAnimatedModels, animatedModelIDs, true);
+    if (nAnimatedModels != 0) {
+        // standard
+        animatedStandardAssetIndex = pushBackAssets();
+        animatedStandardUboIndex = pushBackUniformBufferData(sizeof(AnimatedStandardUBO));
+        // shadow
+        animatedShadowMapUboIndex = pushBackUniformBufferData(sizeof(AnimatedShadowMapUBO));
+    }
+    // Swapchain needs to be updated
     reprepareSwapChain();
 
+    /* skybox */
     prt::array<Texture, 6> skybox;
     scene.getSkybox(skybox);
+    
     loadCubeMap(skybox, skyboxAssetIndex);
+    createSkyboxGraphicsPipeline(skyboxAssetIndex, skyboxUboIndex);
+    createSkyboxDrawCalls();
+    
+    /* non-animated */
+    if (nModels != 0) {
+        loadModels(models, nModels, standardAssetIndex, false);
+        createStandardAndShadowGraphicsPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
+                                                 "shaders/standard.vert.spv", "shaders/standard.frag.spv",
+                                                 "shaders/shadow_map.vert.spv",
+                                                 Model::Vertex::getAttributeDescriptions(),
+                                                 standardPipelineIndex,
+                                                 shadowmapPipelineIndex);
+        createStandardDrawCalls(models, nModels, modelIDs.data(), modelIDs.size(), 
+                                standardPipelineIndex);
+        createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
+    }    
 
-    loadModels(models, nModels, standardAssetIndex);
+    /* animated */
+    if (nAnimatedModels != 0) {
+        loadModels(animatedModels, nAnimatedModels, animatedStandardAssetIndex, true);
+        createStandardAndShadowGraphicsPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
+                                                 "shaders/standard_animated.vert.spv", "shaders/standard_animated.frag.spv",
+                                                 "shaders/shadow_map_animated.vert.spv",
+                                                 Model::BonedVertex::getAttributeDescriptions(),
+                                                 animatedStandardPipelineIndex,
+                                                 animatedShadowmapPipelineIndex);
 
-    createGraphicsPipelines(skyboxAssetIndex, skyboxUboIndex,
-                            standardAssetIndex, standardUboIndex,
-                            standardAssetIndex, shadowMapUboIndex);
-
-    createDrawCalls(models, nModels, modelIDs.data(), modelIDs.size());
+        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs.data(), animatedModelIDs.size(), 
+                                animatedStandardPipelineIndex);
+        createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);
+    }
 
     completeSwapChain();
 }
@@ -397,7 +450,6 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     prt::array<float, NUMBER_SHADOWMAP_CASCADES> splitDepths;
     
     updateCascades(projectionMatrix, viewMatrix, sun.direction, cascadeSpace, splitDepths);
-
     // standard ubo                     
     auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
     StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
@@ -512,10 +564,11 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
     }
 }
 
-void GameRenderer::loadModels(Model const * models, size_t nModels, size_t assetIndex) {
+void GameRenderer::loadModels(Model const * models, size_t nModels, size_t assetIndex,
+                              bool animated) {
     assert(nModels != 0 && "models can not be empty!");
 
-    createVertexBuffer(models, nModels, assetIndex);
+    createVertexBuffer(models, nModels, assetIndex, animated);
     createIndexBuffer(models, nModels, assetIndex);
 
     Assets & asset = getAssets(assetIndex);
@@ -548,7 +601,7 @@ void GameRenderer::loadModels(Model const * models, size_t nModels, size_t asset
     }
 }
 
-void GameRenderer::loadCubeMap(const prt::array<Texture, 6>& skybox, size_t assetIndex) {  
+void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex) {  
     createCubeMapBuffers(assetIndex);
     Assets& ass = getAssets(assetIndex);
 
@@ -564,71 +617,80 @@ void GameRenderer::loadCubeMap(const prt::array<Texture, 6>& skybox, size_t asse
                            skybox[0].mipLevels);
 }
 
-void GameRenderer::createDrawCalls(Model const * models, size_t nModels,
-                                   uint32_t const * modelIDs, size_t nModelIDs) {
-    // skybox
-    {
-        GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
-        DrawCall drawCall;
-        drawCall.firstIndex = 0;
-        drawCall.indexCount = 36;
-        pipeline.drawCalls.push_back(drawCall);
-    }
-    // standard
-    {
-        GraphicsPipeline & pipeline = graphicsPipelines.scene[standardPipelineIndex];
-        prt::vector<uint32_t> imgIdxOffsets = { 0 };
-        prt::vector<uint32_t> indexOffsets = { 0 };
-        imgIdxOffsets.resize(nModels);
-        indexOffsets.resize(nModels);
-        for (size_t i = 1; i < nModels; ++i) {
-            imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].textures.size();
-            indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
-        }
-        for (size_t i = 0; i < nModelIDs; ++i) {
-            const Model& model = models[modelIDs[i]];
-            for (auto const & mesh : model.meshes) {
-                auto const & material = model.materials[mesh.materialIndex];
-                DrawCall drawCall;
-                // compute texture indices
-                int32_t albedoIndex = material.albedoIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
-                int32_t normalIndex = material.normalIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.normalIndex;
-                int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.specularIndex;
-                // push constants
-                StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
-                pc.modelMatrixIdx = i;
-                pc.albedoIndex = albedoIndex;
-                pc.normalIndex = normalIndex;
-                pc.specularIndex = specularIndex;
-                pc.baseColor = material.baseColor;
-                pc.baseSpecularity = material.baseSpecularity;
-                // geometry
-                drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
-                drawCall.indexCount = mesh.numIndices;
+void GameRenderer::createSkyboxDrawCalls() {
+    GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
+    DrawCall drawCall;
+    drawCall.firstIndex = 0;
+    drawCall.indexCount = 36;
+    pipeline.drawCalls.push_back(drawCall);
+}
 
-                pipeline.drawCalls.push_back(drawCall);
-            }
-        }
+void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nModels,
+                                           uint32_t const * modelIDs, size_t nModelIDs,
+                                           size_t pipelineIndex) {
+    GraphicsPipeline & pipeline = graphicsPipelines.scene[pipelineIndex];
+    prt::vector<uint32_t> imgIdxOffsets = { 0 };
+    prt::vector<uint32_t> indexOffsets = { 0 };
+    imgIdxOffsets.resize(nModels);
+    indexOffsets.resize(nModels);
+    for (size_t i = 1; i < nModels; ++i) {
+        imgIdxOffsets[i] = imgIdxOffsets[i-1] + models[i-1].textures.size();
+        indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
     }
-    // shadow map
-    {
-        GraphicsPipeline & shadowPipeline = graphicsPipelines.offscreen[shadowmapPipelineIndex];
-        GraphicsPipeline & standardPipeline = graphicsPipelines.scene[standardPipelineIndex];
-        for (auto & standardDrawCall : standardPipeline.drawCalls) {
-            shadowPipeline.drawCalls.push_back(standardDrawCall);
+
+    for (size_t i = 0; i < nModelIDs; ++i) {
+        const Model& model = models[modelIDs[i]];
+        for (auto const & mesh : model.meshes) {
+            auto const & material = model.materials[mesh.materialIndex];
+            DrawCall drawCall;
+            // compute texture indices
+            int32_t albedoIndex = material.albedoIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
+            int32_t normalIndex = material.normalIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.normalIndex;
+            int32_t specularIndex = material.specularIndex < 0 ? -1 : imgIdxOffsets[modelIDs[i]] + material.specularIndex;
+            // push constants
+            StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
+            pc.modelMatrixIdx = i;
+            pc.albedoIndex = albedoIndex;
+            pc.normalIndex = normalIndex;
+            pc.specularIndex = specularIndex;
+            pc.baseColor = material.baseColor;
+            pc.baseSpecularity = material.baseSpecularity;
+            // geometry
+            drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
+            drawCall.indexCount = mesh.numIndices;
+
+            pipeline.drawCalls.push_back(drawCall);
         }
     }
 }
+void GameRenderer::createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex) {
+    GraphicsPipeline & shadowPipeline = graphicsPipelines.offscreen[shadowPipelineIndex];
+    GraphicsPipeline & standardPipeline = graphicsPipelines.scene[pipelineIndex];
+    for (auto & standardDrawCall : standardPipeline.drawCalls) {
+        shadowPipeline.drawCalls.push_back(standardDrawCall);
+    }
+}
 
-void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex) {
-    prt::vector<Model::Vertex> allVertices;
+void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,
+                                      bool animated) {
+    size_t vertexSize = animated ? sizeof(Model::BonedVertex) : sizeof(Model::Vertex);
+    prt::vector<unsigned char> vertexData;
     for (size_t i = 0; i < nModels; ++i) {
-        for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
-            allVertices.push_back(models[i].vertexBuffer[j]);
+        size_t prevSize = vertexData.size();
+        vertexData.resize(prevSize + vertexSize * models[i].vertexBuffer.size());
+        unsigned char* dest = vertexData.data() + prevSize;
+        if (animated) {
+            assert(models[i].vertexBuffer.size() == models[i].vertexBoneBuffer.size());
+            for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
+                memcpy(dest, &models[i].vertexBuffer[j], sizeof(Model::Vertex));
+                memcpy(dest + sizeof(Model::Vertex), &models[i].vertexBoneBuffer[j], sizeof(Model::BoneData));
+            }
+        } else {
+            memcpy(dest, models[i].vertexBuffer.data(), vertexSize * models[i].vertexBuffer.size());
         }
     }
     VertexData& data = getAssets(assetIndex).vertexData;
-    createAndMapBuffer(allVertices.data(), sizeof(Model::Vertex) * allVertices.size(),
+    createAndMapBuffer(vertexData.data(), vertexSize * vertexData.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                        data.vertexBuffer, 
                        data.vertexBufferMemory);    

@@ -55,44 +55,44 @@ size_t prt::ContainerAllocator::calcNumBlocks(uintptr_t memoryPointer, size_t me
 
 prt::ContainerAllocator::ContainerAllocator(void* memoryPointer, size_t memorySizeBytes,
                         size_t blockSize/*, size_t alignment*/)
-                        : _memoryPointer(memoryPointer),
-                          _paddedMemoryPointer(nullptr),
-                          _blockSize(blockSize),
+                        : m_memoryPointer(memoryPointer),
+                          m_paddedMemoryPointer(nullptr),
+                          m_blockSize(blockSize),
                           /*_alignment(alignment),*/
-                          _numBlocks(calcNumBlocks(reinterpret_cast<uintptr_t>(memoryPointer),
-                                                   memorySizeBytes, blockSize, _alignment)),
-                          _initialPadding(prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(memoryPointer),
-                                                                        _alignment)),
-                          _numFreeBlocks(_numBlocks),
-                          _firstFreeBlockIndex(0) {
-    assert(_alignment > 0);
-    assert(_blockSize >= sizeof(size_t));
-    assert(_alignment <= _blockSize);
+                          m_numBlocks(calcNumBlocks(reinterpret_cast<uintptr_t>(memoryPointer),
+                                                   memorySizeBytes, blockSize, m_alignment)),
+                          m_initialPadding(prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(memoryPointer),
+                                                                        m_alignment)),
+                          m_numFreeBlocks(m_numBlocks),
+                          m_firstFreeBlockIndex(0) {
+    assert(m_alignment > 0);
+    assert(m_blockSize >= sizeof(size_t));
+    assert(m_alignment <= m_blockSize);
     // assert(alignment <= 128);
-    assert(_alignment <= 256);
-    assert(_blockSize % _alignment == 0);
-    assert((_alignment & (_alignment - 1)) == 0); // verify power of 2
+    assert(m_alignment <= 256);
+    assert(m_blockSize % m_alignment == 0);
+    assert((m_alignment & (m_alignment - 1)) == 0); // verify power of 2
 
-    uintptr_t memPtr = reinterpret_cast<uintptr_t>(memoryPointer) + _initialPadding;
-    _paddedMemoryPointer = reinterpret_cast<void*>(memPtr);
+    uintptr_t memPtr = reinterpret_cast<uintptr_t>(memoryPointer) + m_initialPadding;
+    m_paddedMemoryPointer = reinterpret_cast<void*>(memPtr);
 
-    for (size_t i = 0; i < _numBlocks; ++i) {
+    for (size_t i = 0; i < m_numBlocks; ++i) {
        nextIndex(i) = i + 1;
     } 
 }
 
 void* prt::ContainerAllocator::allocate(size_t sizeBytes, size_t alignment) {
-    assert(alignment + sizeof(size_t) <= _blockSize);
+    assert(alignment + sizeof(size_t) <= m_blockSize);
     assert(alignment >= 1);
     // assert(alignment <= 128);
     assert(alignment <= 256);
     assert((alignment & (alignment - 1)) == 0); // verify power of 2
-    assert((sizeBytes <= _numFreeBlocks * _blockSize));
+    assert((sizeBytes <= m_numFreeBlocks * m_blockSize));
 
     // allocated enough to store number of blocks + sizeBytes + padding
-    size_t blocks = alignment <= _alignment ? 
-                    (sizeof(size_t) + sizeBytes + _blockSize - 1) / _blockSize :
-                    (sizeof(size_t) + sizeBytes + alignment + _blockSize - 1) / _blockSize;
+    size_t blocks = alignment <= m_alignment ? 
+                    (sizeof(size_t) + sizeBytes + m_blockSize - 1) / m_blockSize :
+                    (sizeof(size_t) + sizeBytes + alignment + m_blockSize - 1) / m_blockSize;
     
     uintptr_t blockPointer = reinterpret_cast<uintptr_t>(allocate(blocks));
     size_t padding = prt::memory_util::calcPadding(reinterpret_cast<uintptr_t>(blockPointer + sizeof(size_t)),
@@ -106,9 +106,9 @@ void prt::ContainerAllocator::free(void* pointer) {
     size_t blockIndex = pointerToBlockIndex(pointer);
     void *mem = blockIndexToPointer(blockIndex);
     size_t freed = *reinterpret_cast<size_t*>(mem);
-    _numFreeBlocks += freed;
+    m_numFreeBlocks += freed;
     
-    size_t *pCurr = &_firstFreeBlockIndex;
+    size_t *pCurr = &m_firstFreeBlockIndex;
     while (*pCurr < blockIndex) {
         pCurr = &nextIndex(*pCurr);
     }
@@ -123,28 +123,28 @@ void prt::ContainerAllocator::free(void* pointer) {
 }
 
 void prt::ContainerAllocator::clear() {
-    _numFreeBlocks = _numBlocks;
-    _firstFreeBlockIndex = 0;
-    for (size_t i = 0; i < _numBlocks; ++i) {
+    m_numFreeBlocks = m_numBlocks;
+    m_firstFreeBlockIndex = 0;
+    for (size_t i = 0; i < m_numBlocks; ++i) {
         nextIndex(i) = i + 1;
     } 
 }
 
 void* prt::ContainerAllocator::allocate(size_t blocks) {
     assert(blocks > 0);
-    assert(blocks <= _numBlocks);
-    assert(_numFreeBlocks >= blocks);
-    assert(_firstFreeBlockIndex < _numBlocks);
+    assert(blocks <= m_numBlocks);
+    assert(m_numFreeBlocks >= blocks);
+    assert(m_firstFreeBlockIndex < m_numBlocks);
     // Find suitable range of blocks. O(n)
-    size_t curr = _firstFreeBlockIndex;
-    size_t index = _firstFreeBlockIndex;
-    size_t *pToIndex = &_firstFreeBlockIndex;
+    size_t curr = m_firstFreeBlockIndex;
+    size_t index = m_firstFreeBlockIndex;
+    size_t *pToIndex = &m_firstFreeBlockIndex;
     size_t blocksInARow = 0;
-    while (curr < _numBlocks) {
+    while (curr < m_numBlocks) {
         ++blocksInARow;
         size_t *pNext = &nextIndex(curr);
         if (blocksInARow == blocks) {
-            _numFreeBlocks -= blocks;
+            m_numFreeBlocks -= blocks;
             *pToIndex = *pNext;
 
             return blockIndexToPointer(index);

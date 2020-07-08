@@ -10,6 +10,10 @@
 
 class GameRenderer : public VulkanApplication {
 public:
+    /**
+     * @param width frame width
+     * @param heght frame height
+     */
     GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
@@ -41,37 +45,48 @@ private:
     size_t standardPipelineIndex;
     size_t animatedStandardPipelineIndex;
     size_t shadowmapPipelineIndex;
+    size_t animatedShadowmapPipelineIndex;
 
     VkDescriptorImageInfo samplerInfo;
 
-    void createGraphicsPipelines(size_t skyboxAssetIndex, size_t skyboxUboIndex, 
-                                 size_t standardAssetIndex, size_t standardUboIndex, 
-                                 size_t shadowmapAssetIndex, size_t shadowmapUboIndex);
+    void createStandardAndShadowGraphicsPipelines(size_t standardAssetIndex, size_t standardUboIndex,
+                                                  size_t shadowmapUboIndex, 
+                                                  const char * relativeVert, const char * relativeFrag,
+                                                  const char * relativeShadowVert,
+                                                  prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                                  size_t & standardPipeline, size_t & shadowPipeline);
 
     void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
-    void createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
-                                        const char* vertexShader, const char* fragmentShader,
-                                        prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
-    void createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                         const char* vertexShader);
+    size_t createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
+                                          char const * vertexShader, char const * fragmentShader,
+                                          prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
+    size_t createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                          char const * vertexShader);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
 
-    void createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex);
+    void createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,
+                            bool animated);
     
     void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
 
     void createCubeMapBuffers(size_t assetIndex);
 
-    void loadModels(Model const * models, size_t nModels, size_t assetIndex);
+    void loadModels(Model const * models, size_t nModels, size_t assetIndex,
+                    bool animated);
 
-    void loadCubeMap(const prt::array<Texture, 6>& skybox, size_t assetIndex);
+    void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
-    void createDrawCalls(Model const * models, size_t nModels,
-                         uint32_t const * modelIDs, size_t nModelIDs);
+    void createSkyboxDrawCalls();
+    void createStandardDrawCalls(Model    const * models,   size_t nModels,
+                                 uint32_t const * modelIDs, size_t nModelIDs,
+                                 size_t pipelineIndex);
+    void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
-    void updateUBOs(prt::vector<glm::mat4> const & modelMatrices, 
+    void updateUBOs(prt::vector<glm::mat4> const & nonAnimatedModelMatrices, 
+                    // prt::vector<glm::mat4> const & animatedModelMatrices,
+                    // prt::vector<glm::mat4> const & bones,
                     Camera & camera,
                     DirLight  const & sun,
                     float time);

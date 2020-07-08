@@ -33,7 +33,10 @@ struct Model {
     struct AnimatedVertex;
     struct AnimationKey;
     struct AnimationNode;
-
+    struct Node;
+    // Consider making these private
+    // and making gameRenderer friend for
+    // easy access
     prt::vector<Mesh> meshes;
     prt::vector<Animation> animations;
     prt::vector<Material> materials;
@@ -41,15 +44,29 @@ struct Model {
     prt::vector<Vertex> vertexBuffer;
     prt::vector<BoneData> vertexBoneBuffer;
     prt::vector<uint32_t> indexBuffer;
-    void load(char const * path, bool loadAnimation = false);
+    prt::vector<Bone> bones;
+    char name[256];
+
+    void load(char const * path, bool loadAnimation);
+    void sampleAnimation(float t, size_t animationIndex, prt::vector<glm::mat4> & transforms);
 
 private:
     void calcTangentSpace();
     void getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
                     prt::hash_map<aiString, size_t> &map, const char * modelPath);
 
+    prt::vector<Node> mNodes;
+    glm::mat4 mGlobalInverseTransform;
+
     bool mLoaded = false;
     bool mAnimated = false;
+};
+
+struct Model::Node {
+    int32_t parentIndex = -1;
+    prt::vector<int32_t> childIndices;
+    int32_t boneIndex = -1;
+    glm::mat4 transform;
 };
 
 struct Model::Material {
@@ -69,7 +86,7 @@ struct Model::Mesh {
     size_t startIndex;
     size_t numIndices;
     int32_t materialIndex = 0;
-    prt::vector<Bone> bones;
+    // prt::vector<Bone> bones;
     char name[256];
 };
 
@@ -113,11 +130,7 @@ struct Model::Vertex {
 };
 
 struct Model::BonedVertex {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 texCoord;
-    glm::vec3 tangent;
-    glm::vec3 bitangent;
+    Vertex vertexData;
     BoneData boneData;
     
     /**

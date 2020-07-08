@@ -5,6 +5,7 @@
 #include <glm/gtx/transform.hpp> 
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -20,20 +21,21 @@ void Model::load(char const * path, bool loadAnimation) {
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, 
                                 aiPrimitiveType_LINE | aiPrimitiveType_POINT);
     
-    const aiScene* scene = importer.ReadFile(path,
-                                             aiProcess_CalcTangentSpace         |
-                                             aiProcess_Triangulate              |
-                                             aiProcess_FlipUVs                  |
-                                             aiProcess_FindDegenerates          |
-                                             aiProcess_JoinIdenticalVertices    |
-                                             aiProcess_RemoveRedundantMaterials |
-                                             aiProcess_SortByPType);
+    aiScene const * scene = importer.ReadFile(path,
+                                              aiProcess_CalcTangentSpace         |
+                                              aiProcess_Triangulate              |
+                                              aiProcess_FlipUVs                  |
+                                              aiProcess_FindDegenerates          |
+                                              aiProcess_JoinIdenticalVertices    |
+                                              aiProcess_RemoveRedundantMaterials |
+                                              aiProcess_SortByPType);
 
     // check if import failed
     if(!scene) {
         std::cout << importer.GetErrorString() << std::endl;
         assert(false && "failed to load file!");
     }
+    strcpy(name, strchr(path, '/'));
 
     // parse materials
     prt::hash_map<aiString, size_t> albedoPathToIndex;
@@ -54,18 +56,40 @@ void Model::load(char const * path, bool loadAnimation) {
                    normalPathToIndex, path);
     }
 
+    /* Process node hierarchy */
     struct TFormNode {
         aiNode* node;
         aiMatrix4x4 tform;
+        int32_t parentIndex;
     };
+
+    memcpy(&mGlobalInverseTransform, &scene->mRootNode->mTransformation, sizeof(glm::mat4));
+    mGlobalInverseTransform = glm::inverse(mGlobalInverseTransform);
+    
+    prt::hash_map<aiString, size_t> nodeToIndex;
+
     prt::vector<TFormNode> nodes;
-    nodes.push_back({scene->mRootNode, scene->mRootNode->mTransformation});
+    //mNodes.push_back({});
+    nodes.push_back({scene->mRootNode, scene->mRootNode->mTransformation, -1});
     while(!nodes.empty()) {
         aiNode *node = nodes.back().node;
+        int32_t parentIndex = nodes.back().parentIndex;
         aiMatrix4x4 &tform = nodes.back().tform;
         aiMatrix3x3 invtpos = aiMatrix3x3(tform);
         invtpos.Inverse().Transpose();
         nodes.pop_back();
+
+        // add node member
+        int32_t nodeIndex = mNodes.size();
+        mNodes.push_back({});
+        Node & n = mNodes.back();
+        n.parentIndex = parentIndex;
+        memcpy(&n.transform, &tform, sizeof(glm::mat4));
+        nodeToIndex.insert(node->mName, nodeIndex);
+        if (n.parentIndex != -1) {
+            mNodes[n.parentIndex].childIndices.push_back(nodeIndex);
+        }
+
         // process all the node's meshes (if any)
         for(size_t i = 0; i < node->mNumMeshes; ++i) {
             aiMesh *aiMesh = scene->mMeshes[node->mMeshes[i]]; 
@@ -113,10 +137,17 @@ void Model::load(char const * path, bool loadAnimation) {
             // bones
             if (loadAnimation) {
                 vertexBoneBuffer.resize(vertexBuffer.size());
-                mesh.bones.resize(aiMesh->mNumBones);
+                // mesh.bones.resize(aiMesh->mNumBones);
+                size_t prevBoneSize = bones.size();
+                bones.resize(prevBoneSize + aiMesh->mNumBones);
                 for (size_t j = 0; j < aiMesh->mNumBones; ++j) {
+                    size_t bi = prevBoneSize + j;
                     aiBone const * bone = aiMesh->mBones[i];
-                    memcpy(&mesh.bones[j].offsetMatrix, &bone->mOffsetMatrix, sizeof(mesh.bones[j]));
+                    size_t nodeIndex = nodeToIndex.find(bone->mName)->value();
+                    mNodes[nodeIndex].boneIndex = bi;
+
+                    // memcpy(&mesh.bones[j].offsetMatrix, &bone->mOffsetMatrix, sizeof(mesh.bones[j]));
+                    memcpy(&bones[bi].offsetMatrix, &bone->mOffsetMatrix, sizeof(bones[bi]));
                     // store the bone weights and IDs in vertices
                     for (size_t iv = 0; iv < bone->mNumWeights; ++iv) {
                         BoneData & bd = vertexBoneBuffer[prevVertSize + bone->mWeights[iv].mVertexId];
@@ -138,9 +169,10 @@ void Model::load(char const * path, bool loadAnimation) {
                 }
             }
         }
+
         // process all children of the node
         for (size_t i = 0; i < node->mNumChildren; ++i) {
-            nodes.push_back({node->mChildren[i], tform * node->mChildren[i]->mTransformation});
+            nodes.push_back({node->mChildren[i], tform * node->mChildren[i]->mTransformation, nodeIndex});
         }
     }
     // parse animations
@@ -157,7 +189,7 @@ void Model::load(char const * path, bool loadAnimation) {
                 AnimationNode & channel = anim.channels[j];
 
                 assert(aiChannel->mNumPositionKeys == aiChannel->mNumRotationKeys && 
-                    aiChannel->mNumPositionKeys == aiChannel->mNumScalingKeys && "number of position, rotation and scaling keys need to match");
+                       aiChannel->mNumPositionKeys == aiChannel->mNumScalingKeys && "number of position, rotation and scaling keys need to match");
                 channel.keys.resize(aiChannel->mNumPositionKeys);
 
                 for (size_t k = 0; k < channel.keys.size(); ++k) {
@@ -175,6 +207,60 @@ void Model::load(char const * path, bool loadAnimation) {
     // release assimp resources
     mLoaded = true;
     calcTangentSpace();
+}
+
+void Model::sampleAnimation(float t, size_t animationIndex, prt::vector<glm::mat4> & transforms) {
+    assert(mAnimated);
+    auto const & animation = animations[animationIndex];
+    float ticksPerSecond =animation.ticksPerSecond;
+    float timeInTicks = t * ticksPerSecond;
+    float animationTime = fmod(timeInTicks, animation.duration);
+
+    transforms.resize(bones.size());
+
+    struct IndexedTForm {
+        int32_t index;
+        glm::mat4 tform;
+    };
+
+    prt::vector<IndexedTForm> nodeIndices;
+    nodeIndices.push_back({0, glm::mat4(1.0f)});
+    while (!nodeIndices.empty()) {
+        auto index = nodeIndices.back().index;
+        auto parentTForm = nodeIndices.back().tform;
+        nodeIndices.pop_back();
+
+        glm::mat4 tform = mNodes[index].transform;
+
+        int32_t boneIndex = mNodes[index].boneIndex;
+        if (boneIndex != -1) {
+            auto & channel = animation.channels[boneIndex];
+            uint32_t prevFrame = static_cast<uint32_t>(animationTime);
+            uint32_t nextFrame = (prevFrame + 1) % channel.keys.size();
+            float frac = animationTime - prevFrame;
+            
+            glm::vec3 const & prevPos = channel.keys[prevFrame].position;
+            glm::vec3 const & nextPos = channel.keys[nextFrame].position;
+
+            glm::quat const & prevRot = channel.keys[prevFrame].rotation;
+            glm::quat const & nextRot = channel.keys[nextFrame].rotation;
+
+            glm::vec3 pos = glm::mix(prevPos, nextPos, frac);
+            glm::quat rot = glm::slerp(prevRot, nextRot, frac);
+
+            tform = glm::translate(pos) * glm::toMat4(rot);
+        }
+        
+        glm::mat4 globalTransform = parentTForm * tform;
+
+        if (boneIndex != -1) {
+            transforms[boneIndex] = mGlobalInverseTransform * globalTransform * bones[boneIndex].offsetMatrix;
+        }
+
+        for (auto & childIndex : mNodes[index].childIndices) {
+            nodeIndices.push_back({childIndex, globalTransform});
+        }
+    }
 }
 
 void Model::getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
@@ -308,27 +394,27 @@ prt::vector<VkVertexInputAttributeDescription> Model::BonedVertex::getAttributeD
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(BonedVertex, pos);
+    attributeDescriptions[0].offset = offsetof(BonedVertex, vertexData.pos);
     
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(BonedVertex, normal);
+    attributeDescriptions[1].offset = offsetof(BonedVertex, vertexData.normal);
     
     attributeDescriptions[2].binding = 0;
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(BonedVertex, texCoord);
+    attributeDescriptions[2].offset = offsetof(BonedVertex, vertexData.texCoord);
 
     attributeDescriptions[3].binding = 0;
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[3].offset = offsetof(BonedVertex, tangent);
+    attributeDescriptions[3].offset = offsetof(BonedVertex, vertexData.tangent);
 
     attributeDescriptions[4].binding = 0;
     attributeDescriptions[4].location = 4;
     attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[4].offset = offsetof(BonedVertex, bitangent);
+    attributeDescriptions[4].offset = offsetof(BonedVertex, vertexData.bitangent);
 
     attributeDescriptions[5].binding = 0;
     attributeDescriptions[5].location = 5;

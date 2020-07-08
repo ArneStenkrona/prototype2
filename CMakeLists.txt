@@ -25,7 +25,7 @@ set (prototype2_VERSION_MINOR 0)
 
 # Memory allocation
 set (ENTITY_MANAGER_STACK_SIZE_BYTES 1*1024*1024)
-set (DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES 128*1024*1024)
+set (DEFAULT_CONTAINER_ALLOCATOR_SIZE_BYTES 256*1024*1024)
 set (DEFAULT_CONTAINER_ALLOCATOR_BLOCK_SIZE_BYTES 256)
 set (DEFAULT_CONTAINER_ALLOCATOR_ALIGNMENT_BYTES 4)
 
@@ -186,8 +186,8 @@ target_link_libraries(prototype2.lib assimp::assimp)
 # Test project
 add_executable(prototype2_tests ${TESTSOURCES})
 # Set compiler flags
-target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_compile_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(prototype2_tests PUBLIC -Wall -Wextra -Werror -g -fsanitize=address -fno-omit-frame-pointer)
 # Link libraries
 target_link_libraries(prototype2_tests Catch2::Catch2)
 target_link_libraries(prototype2_tests prototype2.lib)

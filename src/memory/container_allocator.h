@@ -78,15 +78,15 @@ namespace prt {
          */
         void clear();
 
-        inline size_t getAlignment() const { return _alignment; }
+        inline size_t getAlignment() const { return m_alignment; }
 
-        inline size_t getBlockSize() const { return _blockSize; }
+        inline size_t getBlockSize() const { return m_blockSize; }
 
-        inline size_t getNumberOfBlocks() const { return _numBlocks; }
+        inline size_t getNumberOfBlocks() const { return m_numBlocks; }
 
-        inline size_t getNumberOfFreeBlocks() const { return _numFreeBlocks; }
+        inline size_t getNumberOfFreeBlocks() const { return m_numFreeBlocks; }
 
-        inline size_t getFreeMemory() const { return _numFreeBlocks * _blockSize; }
+        inline size_t getFreeMemory() const { return m_numFreeBlocks * m_blockSize; }
 
         /**
          * @return default container allocator
@@ -100,47 +100,47 @@ namespace prt {
                             size_t blockSize, size_t alignment);
 
         inline void* blockIndexToPointer(size_t blockIndex) const {
-            uintptr_t pointer = reinterpret_cast<uintptr_t>(_memoryPointer) + 
-                                _initialPadding +
-                                (blockIndex * _blockSize);
+            uintptr_t pointer = reinterpret_cast<uintptr_t>(m_memoryPointer) + 
+                                m_initialPadding +
+                                (blockIndex * m_blockSize);
             return reinterpret_cast<void*>(pointer);
         }
 
         inline size_t pointerToBlockIndex(void* pointer) const {
             uintptr_t ptr = reinterpret_cast<uintptr_t>(pointer);
-            uintptr_t memStart = reinterpret_cast<uintptr_t>(_memoryPointer) + 
-                                 _initialPadding;
+            uintptr_t memStart = reinterpret_cast<uintptr_t>(m_memoryPointer) + 
+                                 m_initialPadding;
 
             assert(ptr >= memStart);
 
             uintptr_t diff = ptr - memStart;
             
-            return diff / _blockSize;
+            return diff / m_blockSize;
         }
 
         inline size_t & nextIndex(size_t const & index) {
             return *reinterpret_cast<size_t*>(&(reinterpret_cast<unsigned char*>
-                                               (_paddedMemoryPointer)[index * _blockSize]));
+                                               (m_paddedMemoryPointer)[index * m_blockSize]));
         }
 
-        void* _memoryPointer;
-        void* _paddedMemoryPointer;
+        void* m_memoryPointer;
+        void* m_paddedMemoryPointer;
 
         // Size of block.
-        size_t _blockSize;
+        size_t m_blockSize;
         // Data alignment.
         // size_t _alignment;
-        static constexpr size_t _alignment = alignof(size_t);
+        static constexpr size_t m_alignment = alignof(size_t);
         // Number of blocks.
-        size_t _numBlocks;
+        size_t m_numBlocks;
         // Padding at the start of the memory
-        size_t _initialPadding;
+        size_t m_initialPadding;
         // Number of free blocks
-        size_t _numFreeBlocks;
+        size_t m_numFreeBlocks;
         // Index of the first free block
         // If this is greater than or equal to
-        // _numBlocks, there are no free blocks
-        size_t _firstFreeBlockIndex;
+        // m_numBlocks, there are no free blocks
+        size_t m_firstFreeBlockIndex;
     };
 }
 

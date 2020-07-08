@@ -12,13 +12,8 @@ public:
     ModelManager& getModelManager() { return m_modelManager; };
 
     void loadModels(char const * paths[], size_t count,
-                    uint32_t * ids) { m_modelManager.loadModels(paths, count, ids); }
+                    uint32_t * ids, bool animated = false) { m_modelManager.loadModels(paths, count, ids, animated); }
 
-    // inline void loadSceneModels(const prt::vector<uint32_t>& modelIDs, 
-    //                             prt::vector<Model>& models, 
-    //                             prt::vector<uint32_t>& modelIndices) { _modelManager.loadSceneModels(modelIDs,
-    //                                                                                                  models,
-    //                                                                                                  modelIndices);}
     void loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap);
 
     std::string getDirectory() const { return m_assetDirectory; }

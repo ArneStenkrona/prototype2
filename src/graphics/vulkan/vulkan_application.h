@@ -162,7 +162,7 @@ protected:
     void cleanupSwapChain();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
-                        VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
+                            VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
     size_t pushBackAssets();
 

@@ -1,7 +1,7 @@
 #include "scene.h"
 
-Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem, 
-             Input& input, Camera& camera)
+Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem, 
+             Input & input, Camera & camera)
     : m_assetManager(assetManager),
       m_physicsSystem(physicsSystem),
       m_input(input),
@@ -12,7 +12,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
 
     uint32_t islandID; 
     char const *islandStr = "waterside/waterside.dae";
-    m_assetManager.loadModels(&islandStr, 1, &islandID);
+    m_assetManager.loadModels(&islandStr, 1, &islandID, false);
 
     m_staticSolidEntities.modelIDs[0] = islandID;
     m_staticSolidEntities.transforms[0].position = { -100.0f, -20.0f, 0.0f };
@@ -27,7 +27,7 @@ Scene::Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
 
 void Scene::initPlayer() {
     char const *monkeyStr = "monkey/monkey.dae";
-    m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID);
+    m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, false);
 
     m_playerEntity.acceleration = 1.0f;
     m_playerEntity.friction = 0.1f;
@@ -38,22 +38,25 @@ void Scene::initPlayer() {
 
 }
 
-void Scene::getSkybox(prt::array<Texture, 6>& cubeMap) const {
+void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
     m_assetManager.loadCubeMap("default", cubeMap);
 }
 
-void Scene::getModelIDs(prt::vector<uint32_t>& modelIDs) const {
-    modelIDs.resize(m_staticEntities.size + 
-                    m_staticSolidEntities.size +
-                    1 /* player */);
-    size_t iID = 0;
-    for (size_t i = 0; i <  m_staticEntities.size; i++) {
-        modelIDs[iID++] = m_staticEntities.modelIDs[i];
+void Scene::getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const {
+    if (animated) {
+        modelIDs.push_back(m_playerEntity.modelID);
+    } else {
+        modelIDs.resize(m_staticEntities.size + 
+                        m_staticSolidEntities.size + 1);
+        size_t iID = 0;
+        for (size_t i = 0; i <  m_staticEntities.size; i++) {
+            modelIDs[iID++] = m_staticEntities.modelIDs[i];
+        }
+        for (size_t i = 0; i <  m_staticSolidEntities.size; i++) {
+            modelIDs[iID++] = m_staticSolidEntities.modelIDs[i];
+        }
+        modelIDs[iID++] = m_playerEntity.modelID;
     }
-    for (size_t i = 0; i <  m_staticSolidEntities.size; i++) {
-        modelIDs[iID++] = m_staticSolidEntities.modelIDs[i];
-    }
-    modelIDs[iID++] = m_playerEntity.modelID;
 }
 
 void Scene::initColliders() {
@@ -124,9 +127,9 @@ void Scene::update(float deltaTime) {
 }
 
 void Scene::getModels(Model const * & models, size_t & nModels,
-                      prt::vector<uint32_t> & modelIDs) const {
-    m_assetManager.getModelManager().getModels(models, nModels);
-    getModelIDs(modelIDs);
+                      prt::vector<uint32_t> & modelIDs, bool animated) const {
+    m_assetManager.getModelManager().getModels(models, nModels, animated);
+    getModelIDs(modelIDs, animated);
 }
 
 void Scene::updatePlayerInput() {

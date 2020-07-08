@@ -8,6 +8,10 @@
 #include <cassert>
 
 void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectIndices) {
+    if (m_size == 0) {
+        return;
+    }
+    
     prt::vector<int32_t> nodeStack;
     nodeStack.push_back(rootIndex);
     while (!nodeStack.empty()) {
@@ -29,6 +33,10 @@ void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
                                    glm::vec3 const& direction,
                                    float maxDistance,
                                    prt::vector<uint32_t> & objectIndices) {
+    if (m_size == 0) {
+        return;
+    }
+    
     prt::vector<int32_t> nodeStack;
     nodeStack.push_back(rootIndex);
     while (!nodeStack.empty()) {
