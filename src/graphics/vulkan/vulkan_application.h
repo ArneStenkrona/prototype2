@@ -7,8 +7,6 @@
 
 #include "src/system/input/input.h"
 
-#include "src/game/scene/scene.h"
-
 #include <vulkan/vulkan.h>
 
 #include "src/container/vector.h"
@@ -77,7 +75,6 @@ struct Assets {
     VertexData vertexData;
     TextureImages textureImages;
 };
-    // UniformBufferData uniformBufferData;
 
 struct FrameBufferAttachment {
 		VkImage image;

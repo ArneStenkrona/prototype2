@@ -9,7 +9,7 @@
 struct DrawCall {
     uint32_t firstIndex;
     uint32_t indexCount;
-    using PushConstants = prt::array<unsigned char, 32>;
+    using PushConstants = prt::array<unsigned char, 64>;
     alignas(16) PushConstants pushConstants;
 };
 

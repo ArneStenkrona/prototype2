@@ -8,6 +8,7 @@
 #include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
 #include "src/game/system/physics/physics_system.h"
+#include "src/graphics/vulkan/game_renderer.h"
 
 #include "src/container/vector.h"
 
@@ -20,14 +21,16 @@ public:
     Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
           Input& input, Camera& camera);
 
-    void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices);
+    void bindToRenderer(GameRenderer & gameRenderer);
+
+    void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const;
 
     void update(float deltaTime);
 
-    void getModels(Model const * & models, size_t & nModels, 
-                   prt::vector<uint32_t> & modelIDs, bool animated) const;
+    void getSampledAnimation(float t, prt::vector<glm::mat4> & transforms);
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
+
 
     DirLight const & getSun() const { return m_lights.sun; }
     
@@ -80,6 +83,11 @@ private:
     
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const;
+
+    void getNonAnimatedModels(Model const * & models, size_t & nModels, 
+                              prt::vector<uint32_t> & modelIDs) const;
+    void getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
+                           size_t & nModels, prt::vector<uint32_t> & modelIDs);
 
     void initColliders();
 

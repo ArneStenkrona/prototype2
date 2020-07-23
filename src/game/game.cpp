@@ -24,7 +24,7 @@ Game::Game()
 }
 
 void Game::loadScene() {
-    m_gameRenderer.bindScene(m_scene);
+    m_scene.bindToRenderer(m_gameRenderer);
 }
 
 Game::~Game() {
@@ -69,23 +69,19 @@ void Game::update(float deltaTime) {
 
 void Game::updateGraphics(float /*deltaTime*/) {
     prt::vector<glm::mat4> modelMatrices; 
-    m_scene.getTransformMatrices(modelMatrices);
+    m_scene.getTransformMatrices(modelMatrices, false);
+    prt::vector<glm::mat4> animatedModelMatrices; 
+    m_scene.getTransformMatrices(animatedModelMatrices, true);
 
-    // glm::mat4 viewMatrix = m_camera.getViewMatrix();
-    // int w,h = 0;
-    // m_gameRenderer.getWindowSize(w, h);
-    // glm::mat4 projectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 100.0f);
-    // glm::mat4 skyProjectionMatrix = m_camera.getProjectionMatrix(float(w), float(h), 0.1f, 1000.0f);
-    // glm::vec3 viewPosition = m_camera.getPosition();
+    prt::vector<glm::mat4> bones; 
+    m_scene.getSampledAnimation(m_time, bones);
 
     auto const & sun = m_scene.getSun();
 
     m_gameRenderer.update(modelMatrices, 
-                         /*viewMatrix, 
-                         projectionMatrix, 
-                         viewPosition, 
-                         skyProjectionMatrix,*/
-                         m_camera, 
-                         sun,
-                         m_time);
+                          animatedModelMatrices,
+                          bones,
+                          m_camera, 
+                          sun,
+                          m_time);
 }

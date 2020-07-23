@@ -48,7 +48,7 @@ struct Model {
     char name[256];
 
     void load(char const * path, bool loadAnimation);
-    void sampleAnimation(float t, size_t animationIndex, prt::vector<glm::mat4> & transforms);
+    void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
 
 private:
     void calcTangentSpace();
@@ -66,7 +66,10 @@ struct Model::Node {
     int32_t parentIndex = -1;
     prt::vector<int32_t> childIndices;
     int32_t boneIndex = -1;
+    int32_t channelIndex = -1;
     glm::mat4 transform;
+
+    glm::mat4 thatTform;
 };
 
 struct Model::Material {
@@ -80,6 +83,7 @@ struct Model::Material {
 
 struct Model::Bone {
     glm::mat4 offsetMatrix;
+    glm::mat4 meshTransform;
 };
 
 struct Model::Mesh {
@@ -93,7 +97,7 @@ struct Model::Mesh {
 struct Model::AnimationKey {
     glm::vec3 position;
     glm::quat rotation;
-    //glm::vec3 scaling;
+    glm::vec3 scaling;
 };
 
 struct Model::AnimationNode {
@@ -107,8 +111,8 @@ struct Model::Animation {
 };
 
 struct Model::BoneData {
-    uint32_t boneIDs[4] = { 0, 0, 0, 0 };
-    float boneWeights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    glm::uvec4 boneIDs = { 0, 0, 0, 0 };
+    glm::vec4 boneWeights = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 
 struct Model::Vertex {

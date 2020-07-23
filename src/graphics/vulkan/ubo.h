@@ -30,7 +30,7 @@ struct LightUBO {
 };
 
 struct BoneUBO {
-    glm::mat4 bones[NUMBER_MAX_BONES];
+    alignas(16) glm::mat4 bones[NUMBER_MAX_BONES];
 };
 
 struct StandardUBO {
@@ -40,7 +40,7 @@ struct StandardUBO {
 
 struct AnimatedStandardUBO {
     ModelUBO model;
-    LightUBO lightning;
+    LightUBO lighting;
     BoneUBO bones;
 };
 
@@ -51,6 +51,8 @@ struct StandardPushConstants {
 	alignas(4)  int32_t specularIndex;
     alignas(16) glm::vec3 baseColor;
     alignas(4)  float baseSpecularity;
+    // use if more data is needed
+    alignas(16) unsigned char additionalData[32];
 };
 
 struct SkyboxUBO {
@@ -67,7 +69,7 @@ struct ShadowMapUBO  {
 struct AnimatedShadowMapUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 depthVP[NUMBER_SHADOWMAP_CASCADES];
-    BoneUBO bones;
+    alignas(16) BoneUBO bones;
 };
 
 #endif

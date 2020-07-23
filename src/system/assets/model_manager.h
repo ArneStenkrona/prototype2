@@ -10,15 +10,16 @@ class ModelManager {
 public:
     ModelManager(const char* directory);
 
-    inline void getModels(Model const * & models, 
-                          size_t & nModels,
-                          bool animated = false) const { models = animated ? m_loadedAnimatedModels.data() : 
-                                                                             m_loadedNonAnimatedModels.data();
-                                                         nModels = animated ? m_loadedAnimatedModels.size() :
-                                                                              m_loadedNonAnimatedModels.size(); }
-    inline Model const & getModel(uint32_t modelID, 
-                                  bool animated = false) const { return animated ? m_loadedAnimatedModels[modelID] : 
-                                                                                   m_loadedNonAnimatedModels[modelID]; } 
+    inline void getNonAnimatedModels(Model const * & models, 
+                                     size_t & nModels) const { models = m_loadedNonAnimatedModels.data();
+                                                               nModels = m_loadedNonAnimatedModels.size(); }
+    void getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets, size_t & nModels);
+
+    // void getBoneOffsets(prt::vector<uint32_t> offsets);
+    void getSampledAnimation(float t, /*size_t animationIndex,*/ prt::vector<glm::mat4> & transforms);
+
+    inline Model const & getNonAnimatedModel(uint32_t modelID) const { return m_loadedNonAnimatedModels[modelID]; } 
+    Model const & getAnimatedModel(uint32_t modelID, uint32_t & boneOffset) const;
 
     void loadModels(char const * paths[], size_t count,
                     uint32_t * ids, bool animated);
@@ -27,7 +28,10 @@ private:
     prt::hash_map<std::string, uint32_t> m_pathToModelID;
     char m_modelDirectory[256];
     prt::vector<Model> m_loadedNonAnimatedModels;
-    prt::vector<Model> m_loadedAnimatedModels;
+    struct {
+        prt::vector<Model> models;
+        prt::vector<uint32_t> boneOffsets;
+    } m_loadedAnimatedModels;
 };
 
 #endif

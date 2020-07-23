@@ -65,7 +65,7 @@ private:
     int32_t rootIndex;
 
     int32_t freeHead = Node::nullIndex; // free list
-    int32_t m_size;
+    int32_t m_size = 0;
     prt::vector<Node> m_nodes;
 
     int32_t insertLeaf(uint32_t objectIndex, AABB const & aabb);

@@ -92,7 +92,7 @@ void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
 void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const * transforms, 
                                       size_t count, uint32_t * ids) {
     for (size_t i = 0; i < count; ++i) {
-        ids[i] = addModelCollider(m_modelManager.getModel(modelIDs[i]),
+        ids[i] = addModelCollider(m_modelManager.getNonAnimatedModel(modelIDs[i]),
                                  transforms[i]);
     }
     size_t prevSize = m_treeIndices.size();

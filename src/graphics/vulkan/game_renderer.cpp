@@ -11,19 +11,21 @@ void GameRenderer::createStandardAndShadowGraphicsPipelines(size_t standardAsset
                                                             size_t shadowmapUboIndex, 
                                                             const char * relativeVert, const char * relativeFrag,
                                                             const char * relativeShadowVert,
+                                                            VkVertexInputBindingDescription bindingDescription,
                                                             prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                                            size_t & standardPipeline, size_t & shadowPipeline) {
+                                                            int32_t & standardPipeline, int32_t & shadowPipeline) {
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
     strcat(vert, relativeVert);
     strcat(frag, relativeFrag);
     standardPipeline = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag, 
-                                                      attributeDescription);
+                                                      bindingDescription, attributeDescription);
 
     vert[0] = '\0';
     strcpy(vert, RESOURCE_PATH);
     strcat(vert, relativeShadowVert);
-    shadowPipeline = createShadowmapGraphicsPipeline(standardAssetIndex, shadowmapUboIndex, vert);
+    shadowPipeline = createShadowmapGraphicsPipeline(standardAssetIndex, shadowmapUboIndex, vert,
+                                                     bindingDescription, attributeDescription);
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
@@ -123,10 +125,11 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     skyboxPipeline.enableDepthBias = false;
 }
 
-size_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+int32_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
                                                     char const * vertexShader, char const * fragmentShader,
+                                                    VkVertexInputBindingDescription bindingDescription,
                                                     prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
-    size_t pipelineIndex = graphicsPipelines.scene.size();
+    int32_t pipelineIndex = graphicsPipelines.scene.size();
     graphicsPipelines.scene.push_back(GraphicsPipeline{});
     GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
 
@@ -147,21 +150,21 @@ size_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t ub
     textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
     textureLayoutBinding.binding = 1;
     textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;;
+    textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     textureLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.descriptorCount = 1;
     samplerLayoutBinding.binding = 2;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;;
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutBinding shadowmapLayoutBinding = {};
     shadowmapLayoutBinding.descriptorCount = 1;
     shadowmapLayoutBinding.binding = 3;
     shadowmapLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shadowmapLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;;
+    shadowmapLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     shadowmapLayoutBinding.pImmutableSamplers = nullptr;
 
     modelPipeline.descriptorSetLayoutBindings.resize(4);
@@ -234,7 +237,7 @@ size_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t ub
     }
 
     // Vertex input
-    modelPipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
+    modelPipeline.vertexInputBinding = bindingDescription;
     modelPipeline.vertexInputAttributes.resize(attributeDescription.size());
     size_t inIndx = 0;
     for (auto const & att : attributeDescription) {
@@ -264,9 +267,11 @@ size_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t ub
     return pipelineIndex;
 }
 
-size_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                                   char const * vertexShader) {
-    size_t pipelineIndex = graphicsPipelines.offscreen.size();
+int32_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
+                                                   char const * vertexShader,
+                                                   VkVertexInputBindingDescription bindingDescription,
+                                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
+    int32_t pipelineIndex = graphicsPipelines.offscreen.size();
     graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
 
@@ -308,8 +313,8 @@ size_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t u
     }
 
     // Vertex input
-    pipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
-    auto attrib = Model::Vertex::getAttributeDescriptions();
+    pipeline.vertexInputBinding = bindingDescription;
+    auto attrib = attributeDescription;
     pipeline.vertexInputAttributes.resize(attrib.size());
     size_t inIndx = 0;
     for (auto const & att : attrib) {
@@ -333,18 +338,20 @@ size_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t u
     return pipelineIndex;
 }
 
-void GameRenderer::bindScene(Scene const & scene) {
+void GameRenderer::bindAssets(Model const * models, size_t nModels,
+                              prt::vector<uint32_t> const & modelIDs,
+                              Model const * animatedModels,
+                              uint32_t const * boneOffsets,
+                              size_t nAnimatedModels,
+                              prt::vector<uint32_t> const & animatedModelIDs,
+                              prt::array<Texture, 6> const & skybox) {
     /* skybox */
     size_t skyboxAssetIndex = pushBackAssets();
     size_t skyboxUboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
     /* non-animated */
-    prt::vector<uint32_t> modelIDs;
-    Model const * models;
-    size_t nModels = 0;
     size_t standardAssetIndex;   
     size_t standardUboIndex;
     size_t shadowMapUboIndex;
-    scene.getModels(models, nModels, modelIDs, false);
     if (nModels != 0) {
         // standard
         standardAssetIndex = pushBackAssets();
@@ -353,13 +360,9 @@ void GameRenderer::bindScene(Scene const & scene) {
         shadowMapUboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
     }
     /* animated */
-    prt::vector<uint32_t> animatedModelIDs;
-    Model const * animatedModels;
-    size_t nAnimatedModels;
     size_t animatedStandardAssetIndex;
     size_t animatedStandardUboIndex;
     size_t animatedShadowMapUboIndex;
-    scene.getModels(animatedModels, nAnimatedModels, animatedModelIDs, true);
     if (nAnimatedModels != 0) {
         // standard
         animatedStandardAssetIndex = pushBackAssets();
@@ -371,9 +374,6 @@ void GameRenderer::bindScene(Scene const & scene) {
     reprepareSwapChain();
 
     /* skybox */
-    prt::array<Texture, 6> skybox;
-    scene.getSkybox(skybox);
-    
     loadCubeMap(skybox, skyboxAssetIndex);
     createSkyboxGraphicsPipeline(skyboxAssetIndex, skyboxUboIndex);
     createSkyboxDrawCalls();
@@ -384,10 +384,12 @@ void GameRenderer::bindScene(Scene const & scene) {
         createStandardAndShadowGraphicsPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
                                                  "shaders/standard.vert.spv", "shaders/standard.frag.spv",
                                                  "shaders/shadow_map.vert.spv",
+                                                 Model::Vertex::getBindingDescription(),
                                                  Model::Vertex::getAttributeDescriptions(),
                                                  standardPipelineIndex,
                                                  shadowmapPipelineIndex);
         createStandardDrawCalls(models, nModels, modelIDs.data(), modelIDs.size(), 
+                                nullptr, 0,
                                 standardPipelineIndex);
         createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
     }    
@@ -396,13 +398,15 @@ void GameRenderer::bindScene(Scene const & scene) {
     if (nAnimatedModels != 0) {
         loadModels(animatedModels, nAnimatedModels, animatedStandardAssetIndex, true);
         createStandardAndShadowGraphicsPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
-                                                 "shaders/standard_animated.vert.spv", "shaders/standard_animated.frag.spv",
+                                                 "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
                                                  "shaders/shadow_map_animated.vert.spv",
+                                                 Model::BonedVertex::getBindingDescription(),
                                                  Model::BonedVertex::getAttributeDescriptions(),
                                                  animatedStandardPipelineIndex,
                                                  animatedShadowmapPipelineIndex);
 
         createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs.data(), animatedModelIDs.size(), 
+                                boneOffsets, sizeof(boneOffsets[0]),
                                 animatedStandardPipelineIndex);
         createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);
     }
@@ -411,17 +415,23 @@ void GameRenderer::bindScene(Scene const & scene) {
 }
 
 void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
+                          prt::vector<glm::mat4> const & animatedModelMatrices,
+                          prt::vector<glm::mat4> const & bones,
                           Camera & camera,
                           DirLight  const & sun,
                           float time) {      
     updateUBOs(modelMatrices, 
+               animatedModelMatrices,
+               bones,
                camera,
                sun,
                time);
     VulkanApplication::update();   
 }
 
-void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices, 
+void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices, 
+                              prt::vector<glm::mat4> const & animatedModelMatrices,
+                              prt::vector<glm::mat4> const & bones,
                               Camera & camera,
                               DirLight  const & sun,
                               float time) {
@@ -430,58 +440,106 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4>  const & modelMatrices,
     getWindowSize(w, h);
     camera.setProjection(w, h, nearPlane, farPlane);
     glm::mat4 projectionMatrix = camera.getProjectionMatrix();
-    glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(nearPlane, 1000.0f);
+    // glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(nearPlane, 1000.0f);
     glm::vec3 viewPosition = camera.getPosition();
 
     // skybox ubo
-    auto skyboxUboData = getUniformBufferData(graphicsPipelines.scene[skyboxPipelineIndex].uboIndex).uboData.data();
-    SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
-
-    glm::mat4 skyboxViewMatrix = viewMatrix;
-    skyboxViewMatrix[3][0] = 0.0f;
-    skyboxViewMatrix[3][1] = 0.0f;
-    skyboxViewMatrix[3][2] = 0.0f;
-
-    skyboxUBO.model = skyboxViewMatrix * glm::mat4(1.0f);
-    skyboxUBO.projection = skyProjectionMatrix;
-    skyboxUBO.projection[1][1] *= -1;
+    if (skyboxPipelineIndex != -1) {
+        updateSkyboxUBO(camera);
+    }
 
     prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> cascadeSpace;
     prt::array<float, NUMBER_SHADOWMAP_CASCADES> splitDepths;
     
     updateCascades(projectionMatrix, viewMatrix, sun.direction, cascadeSpace, splitDepths);
-    // standard ubo                     
-    auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
-    StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
-    // model
-    for (size_t i = 0; i < modelMatrices.size(); ++i) {
-        standardUBO.model.model[i] = modelMatrices[i];
-        standardUBO.model.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
-    }
-    standardUBO.model.view = viewMatrix;
-    standardUBO.model.proj = projectionMatrix;
-    standardUBO.model.proj[1][1] *= -1;
-    standardUBO.model.viewPosition = viewPosition;
-    standardUBO.model.t = time;
+    /* non-animated */
+    // standard ubo         
+    if (standardPipelineIndex !=  -1) {    
+        assert(shadowmapPipelineIndex  != -1);     
+        auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
+        StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
+        // model
+        for (size_t i = 0; i < modelMatrices.size(); ++i) {
+            standardUBO.model.model[i] = modelMatrices[i];
+            standardUBO.model.invTransposeModel[i] = glm::transpose(glm::inverse(modelMatrices[i]));
+        }
+        standardUBO.model.view = viewMatrix;
+        standardUBO.model.proj = projectionMatrix;
+        standardUBO.model.proj[1][1] *= -1;
+        standardUBO.model.viewPosition = viewPosition;
+        standardUBO.model.t = time;
 
-    // lights
-    standardUBO.lighting.sun = sun;
-    standardUBO.lighting.ambientLight = 0.2f;
-    standardUBO.lighting.noPointLights = 0;
+        // lights
+        standardUBO.lighting.sun = sun;
+        standardUBO.lighting.ambientLight = 0.2f;
+        standardUBO.lighting.noPointLights = 0;
 
-    for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
-        standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
-        standardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
+        for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+            standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
+            standardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
+        }
+        // shadow map ubo
+        auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
+        ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
+        // shadow model
+        memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * animatedModelMatrices.size());
+        // depth view and projection;
+        for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+            shadowUBO.depthVP[i] = cascadeSpace[i];
+        }
     }
-    // shadow map ubo
-    auto shadowUboData = getUniformBufferData(graphicsPipelines.offscreen[shadowmapPipelineIndex].uboIndex).uboData.data();
-    ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
-    // model
-    std::memcpy(&shadowUBO.model[0], standardUBO.model.model, sizeof(standardUBO.model.model[0]) * NUMBER_SUPPORTED_MODEL_MATRICES);
-     // depth view and projection;
-    for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
-        shadowUBO.depthVP[i] = cascadeSpace[i];
+    /* animated*/
+    if (animatedStandardPipelineIndex != -1) {
+    assert(animatedShadowmapPipelineIndex != -1);
+        auto animatedStandardUboData = getUniformBufferData(graphicsPipelines.scene[animatedStandardPipelineIndex].uboIndex).uboData.data();
+        AnimatedStandardUBO & animatedStandardUBO = *reinterpret_cast<AnimatedStandardUBO*>(animatedStandardUboData);
+        for (size_t i = 0; i < animatedModelMatrices.size(); ++i) {
+            animatedStandardUBO.model.model[i] = animatedModelMatrices[i];
+            animatedStandardUBO.model.invTransposeModel[i] = glm::transpose(glm::inverse(animatedModelMatrices[i]));
+        }
+        // model
+        animatedStandardUBO.model.view = viewMatrix;
+        animatedStandardUBO.model.proj = projectionMatrix;
+        animatedStandardUBO.model.proj[1][1] *= -1;
+        animatedStandardUBO.model.viewPosition = viewPosition;
+        animatedStandardUBO.model.t = time;
+        // lights
+        animatedStandardUBO.lighting.sun = sun;
+        animatedStandardUBO.lighting.ambientLight = 0.2f;
+        animatedStandardUBO.lighting.noPointLights = 0;
+
+        for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+            animatedStandardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
+            animatedStandardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
+        }
+        // bones
+        assert(bones.size() <= NUMBER_MAX_BONES);
+        memcpy(&animatedStandardUBO.bones.bones[0], bones.data(), sizeof(glm::mat4) * bones.size()); 
+        // shadow map ubo
+        auto animatedShadowUboData = getUniformBufferData(graphicsPipelines.offscreen[animatedShadowmapPipelineIndex].uboIndex).uboData.data();
+        AnimatedShadowMapUBO & animatedShadowUBO = *reinterpret_cast<AnimatedShadowMapUBO*>(animatedShadowUboData);
+        // shadow model
+        memcpy(animatedShadowUBO.model, animatedStandardUBO.model.model, sizeof(animatedStandardUBO.model.model[0]) * animatedModelMatrices.size());
+        memcpy(animatedShadowUBO.bones.bones, animatedStandardUBO.bones.bones, sizeof(animatedStandardUBO.bones.bones[0]) * bones.size());
+        // depth view and projection;
+        for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
+            animatedShadowUBO.depthVP[i] = cascadeSpace[i];
+        }
     }
+}
+
+void GameRenderer::updateSkyboxUBO(Camera const & camera) {
+    auto skyboxUboData = getUniformBufferData(graphicsPipelines.scene[skyboxPipelineIndex].uboIndex).uboData.data();
+    SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
+
+    glm::mat4 skyboxViewMatrix = camera.getViewMatrix();
+    skyboxViewMatrix[3][0] = 0.0f;
+    skyboxViewMatrix[3][1] = 0.0f;
+    skyboxViewMatrix[3][2] = 0.0f;
+
+    skyboxUBO.model = skyboxViewMatrix * glm::mat4(1.0f);
+    skyboxUBO.projection = camera.getProjectionMatrix(nearPlane, 1000.0f);
+    skyboxUBO.projection[1][1] *= -1;
 }
 
 void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
@@ -627,6 +685,7 @@ void GameRenderer::createSkyboxDrawCalls() {
 
 void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nModels,
                                            uint32_t const * modelIDs, size_t nModelIDs,
+                                           void const * additionalPushConstants, size_t additionalPushConstantSize,
                                            size_t pipelineIndex) {
     GraphicsPipeline & pipeline = graphicsPipelines.scene[pipelineIndex];
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
@@ -640,6 +699,7 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
 
     for (size_t i = 0; i < nModelIDs; ++i) {
         const Model& model = models[modelIDs[i]];
+
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
             DrawCall drawCall;
@@ -655,6 +715,12 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
+            // add any additional push constants
+            if (additionalPushConstantSize != 0) {
+                memcpy(pc.additionalData, 
+                       &static_cast<unsigned char const *>(additionalPushConstants)[i * additionalPushConstantSize], 
+                       additionalPushConstantSize);
+            }
             // geometry
             drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
@@ -684,6 +750,7 @@ void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size
             for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
                 memcpy(dest, &models[i].vertexBuffer[j], sizeof(Model::Vertex));
                 memcpy(dest + sizeof(Model::Vertex), &models[i].vertexBoneBuffer[j], sizeof(Model::BoneData));
+                dest += vertexSize;
             }
         } else {
             memcpy(dest, models[i].vertexBuffer.data(), vertexSize * models[i].vertexBuffer.size());

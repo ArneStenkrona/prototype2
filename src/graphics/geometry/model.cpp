@@ -64,16 +64,18 @@ void Model::load(char const * path, bool loadAnimation) {
     };
 
     memcpy(&mGlobalInverseTransform, &scene->mRootNode->mTransformation, sizeof(glm::mat4));
-    mGlobalInverseTransform = glm::inverse(mGlobalInverseTransform);
+    // assimp row-major, glm col-major
+    mGlobalInverseTransform = glm::transpose(glm::inverse(mGlobalInverseTransform));
     
     prt::hash_map<aiString, size_t> nodeToIndex;
+    prt::vector<aiString> boneToName;
 
     prt::vector<TFormNode> nodes;
-    //mNodes.push_back({});
     nodes.push_back({scene->mRootNode, scene->mRootNode->mTransformation, -1});
     while(!nodes.empty()) {
         aiNode *node = nodes.back().node;
         int32_t parentIndex = nodes.back().parentIndex;
+        aiMatrix4x4 & nodeTform = node->mTransformation;
         aiMatrix4x4 &tform = nodes.back().tform;
         aiMatrix3x3 invtpos = aiMatrix3x3(tform);
         invtpos.Inverse().Transpose();
@@ -83,11 +85,14 @@ void Model::load(char const * path, bool loadAnimation) {
         int32_t nodeIndex = mNodes.size();
         mNodes.push_back({});
         Node & n = mNodes.back();
-        n.parentIndex = parentIndex;
-        memcpy(&n.transform, &tform, sizeof(glm::mat4));
+        memcpy(&n.transform, &nodeTform, sizeof(glm::mat4));
+        // assimp row-major, glm col-major
+        n.transform = glm::transpose(n.transform);
         nodeToIndex.insert(node->mName, nodeIndex);
+        
+        n.parentIndex = parentIndex;
         if (n.parentIndex != -1) {
-            mNodes[n.parentIndex].childIndices.push_back(nodeIndex);
+           mNodes[n.parentIndex].childIndices.push_back(nodeIndex);
         }
 
         // process all the node's meshes (if any)
@@ -111,6 +116,7 @@ void Model::load(char const * path, bool loadAnimation) {
                 vertexBuffer[vert].pos.x = pos.x;
                 vertexBuffer[vert].pos.y = pos.y;
                 vertexBuffer[vert].pos.z = pos.z;
+                vertexBuffer[vert].pos = vertexBuffer[vert].pos;
 
                 aiVector3D norm = (invtpos * aiMesh->mNormals[j]).Normalize();
                 vertexBuffer[vert].normal.x = norm.x;
@@ -137,17 +143,18 @@ void Model::load(char const * path, bool loadAnimation) {
             // bones
             if (loadAnimation) {
                 vertexBoneBuffer.resize(vertexBuffer.size());
-                // mesh.bones.resize(aiMesh->mNumBones);
                 size_t prevBoneSize = bones.size();
                 bones.resize(prevBoneSize + aiMesh->mNumBones);
                 for (size_t j = 0; j < aiMesh->mNumBones; ++j) {
                     size_t bi = prevBoneSize + j;
-                    aiBone const * bone = aiMesh->mBones[i];
-                    size_t nodeIndex = nodeToIndex.find(bone->mName)->value();
-                    mNodes[nodeIndex].boneIndex = bi;
+                    aiBone const * bone = aiMesh->mBones[j];
+                    boneToName.push_back(bone->mName);
+                    memcpy(&bones[bi].offsetMatrix, &bone->mOffsetMatrix, sizeof(glm::mat4));
 
-                    // memcpy(&mesh.bones[j].offsetMatrix, &bone->mOffsetMatrix, sizeof(mesh.bones[j]));
-                    memcpy(&bones[bi].offsetMatrix, &bone->mOffsetMatrix, sizeof(bones[bi]));
+                    memcpy(&bones[bi].meshTransform, &tform, sizeof(glm::mat4));
+                    bones[bi].meshTransform = glm::transpose(bones[bi].meshTransform);
+                    // assimp row-major, glm col-major
+                    bones[bi].offsetMatrix = glm::transpose(bones[bi].offsetMatrix) * glm::inverse(bones[bi].meshTransform);
                     // store the bone weights and IDs in vertices
                     for (size_t iv = 0; iv < bone->mNumWeights; ++iv) {
                         BoneData & bd = vertexBoneBuffer[prevVertSize + bone->mWeights[iv].mVertexId];
@@ -162,10 +169,17 @@ void Model::load(char const * path, bool loadAnimation) {
                             }
                         }
                         if (leastInd != -1) {
-                            bd.boneIDs[leastInd] = j;
+                            bd.boneIDs[leastInd] = bi;
                             bd.boneWeights[leastInd] = weight;
                         }
                     }
+                    // make sure bone weights add up to 1 for each boned vertex
+                    for (auto & bd : vertexBoneBuffer) {
+                        if (glm::length2(bd.boneWeights) > 0) {
+                            float boneSum = bd.boneWeights[0] + bd.boneWeights[1] + bd.boneWeights[2] + bd.boneWeights[3];
+                            bd.boneWeights = bd.boneWeights / boneSum;                            
+                        }
+                    } 
                 }
             }
         }
@@ -184,9 +198,14 @@ void Model::load(char const * path, bool loadAnimation) {
             anim.duration = aiAnim->mDuration;
             anim.ticksPerSecond = aiAnim->mTicksPerSecond;
             anim.channels.resize(aiAnim->mNumChannels);
+
             for (size_t j = 0; j < aiAnim->mNumChannels; ++j) {
                 aiNodeAnim const * aiChannel = aiAnim->mChannels[j];
                 AnimationNode & channel = anim.channels[j];
+
+                assert(nodeToIndex.find(aiChannel->mNodeName) != nodeToIndex.end() && "animation does not correspond to node");
+                auto nodeIndex = nodeToIndex.find(aiChannel->mNodeName)->value();
+                mNodes[nodeIndex].channelIndex = j;
 
                 assert(aiChannel->mNumPositionKeys == aiChannel->mNumRotationKeys && 
                        aiChannel->mNumPositionKeys == aiChannel->mNumScalingKeys && "number of position, rotation and scaling keys need to match");
@@ -195,12 +214,19 @@ void Model::load(char const * path, bool loadAnimation) {
                 for (size_t k = 0; k < channel.keys.size(); ++k) {
                     aiVector3D const & aiPos = aiChannel->mPositionKeys[k].mValue;
                     aiQuaternion const & aiRot = aiChannel->mRotationKeys[k].mValue;
-                    //aiVector3D const & aiScale = aiChannel->mScalingKeys[k].mValue;
+                    aiVector3D const & aiScale = aiChannel->mScalingKeys[k].mValue;
                     channel.keys[k].position = { aiPos.x, aiPos.y, aiPos.z };
-                    channel.keys[k].rotation = { aiRot.x, aiRot.y, aiRot.z, aiRot.w };
-                    //channel.keys[k].scaling = { aiScale.x, aiScale.y, aiScale.z };
+                    channel.keys[k].rotation = { aiRot.w, aiRot.x, aiRot.y, aiRot.z };
+                    channel.keys[k].scaling = { aiScale.x, aiScale.y, aiScale.z };
                 }
             }
+        }
+
+        // set node Indices
+        for (size_t i = 0; i < bones.size(); ++i) {
+            assert(nodeToIndex.find(boneToName[i]) != nodeToIndex.end() && "No corresponding node for bone");
+            size_t nodeIndex = nodeToIndex.find(boneToName[i])->value();
+            mNodes[nodeIndex].boneIndex = i;
         }
     }
 
@@ -209,14 +235,19 @@ void Model::load(char const * path, bool loadAnimation) {
     calcTangentSpace();
 }
 
-void Model::sampleAnimation(float t, size_t animationIndex, prt::vector<glm::mat4> & transforms) {
+void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const {
     assert(mAnimated);
     auto const & animation = animations[animationIndex];
-    float ticksPerSecond =animation.ticksPerSecond;
-    float timeInTicks = t * ticksPerSecond;
-    float animationTime = fmod(timeInTicks, animation.duration);
 
-    transforms.resize(bones.size());
+    // calculate prev and next frame
+    float duration = animation.duration / (1000 * animation.ticksPerSecond);
+    float animTime = t / duration;
+    size_t numFrames = animation.channels[0].keys.size();
+    float fracFrame = animTime * numFrames;
+    uint32_t prevFrame = static_cast<uint32_t>(fracFrame);
+    float frac = fracFrame - prevFrame;
+    prevFrame = prevFrame % numFrames;
+    uint32_t nextFrame = (prevFrame + 1) % numFrames;
 
     struct IndexedTForm {
         int32_t index;
@@ -231,34 +262,34 @@ void Model::sampleAnimation(float t, size_t animationIndex, prt::vector<glm::mat
         nodeIndices.pop_back();
 
         glm::mat4 tform = mNodes[index].transform;
-
         int32_t boneIndex = mNodes[index].boneIndex;
-        if (boneIndex != -1) {
-            auto & channel = animation.channels[boneIndex];
-            uint32_t prevFrame = static_cast<uint32_t>(animationTime);
-            uint32_t nextFrame = (prevFrame + 1) % channel.keys.size();
-            float frac = animationTime - prevFrame;
-            
+        int32_t channelIndex = mNodes[index].channelIndex;
+        if (channelIndex != -1) {
+            auto & channel = animation.channels[channelIndex];
+
             glm::vec3 const & prevPos = channel.keys[prevFrame].position;
             glm::vec3 const & nextPos = channel.keys[nextFrame].position;
 
             glm::quat const & prevRot = channel.keys[prevFrame].rotation;
             glm::quat const & nextRot = channel.keys[nextFrame].rotation;
 
-            glm::vec3 pos = glm::mix(prevPos, nextPos, frac);
-            glm::quat rot = glm::slerp(prevRot, nextRot, frac);
+            glm::vec3 const & prevScale = channel.keys[prevFrame].scaling;
+            glm::vec3 const & nextScale = channel.keys[nextFrame].scaling;
 
-            tform = glm::translate(pos) * glm::toMat4(rot);
+            glm::vec3 pos = glm::lerp(prevPos, nextPos, frac);
+            glm::quat rot = glm::slerp(prevRot, nextRot, frac);
+            glm::vec3 scale = glm::lerp(prevScale, nextScale, frac);
+            tform = glm::translate(pos) * glm::toMat4(rot) * glm::scale(scale);
         }
-        
-        glm::mat4 globalTransform = parentTForm * tform;
+        // pose matrix
+        glm::mat4 poseMatrix = parentTForm * tform;
 
         if (boneIndex != -1) {
-            transforms[boneIndex] = mGlobalInverseTransform * globalTransform * bones[boneIndex].offsetMatrix;
+            transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
         }
 
         for (auto & childIndex : mNodes[index].childIndices) {
-            nodeIndices.push_back({childIndex, globalTransform});
+            nodeIndices.push_back({childIndex, poseMatrix});
         }
     }
 }
@@ -353,27 +384,27 @@ prt::vector<VkVertexInputAttributeDescription> Model::Vertex::getAttributeDescri
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(Vertex, pos);
+    attributeDescriptions[0].offset = 0;
     
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(Vertex, normal);
+    attributeDescriptions[1].offset = 12;
     
     attributeDescriptions[2].binding = 0;
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+    attributeDescriptions[2].offset = 24;
 
     attributeDescriptions[3].binding = 0;
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[3].offset = offsetof(Vertex, tangent);
+    attributeDescriptions[3].offset = 32;
 
     attributeDescriptions[4].binding = 0;
     attributeDescriptions[4].location = 4;
     attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[4].offset = offsetof(Vertex, bitangent);
+    attributeDescriptions[4].offset = 44;
     
     return attributeDescriptions;
 }
@@ -394,37 +425,37 @@ prt::vector<VkVertexInputAttributeDescription> Model::BonedVertex::getAttributeD
     attributeDescriptions[0].binding = 0;
     attributeDescriptions[0].location = 0;
     attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[0].offset = offsetof(BonedVertex, vertexData.pos);
+    attributeDescriptions[0].offset = 0;
     
     attributeDescriptions[1].binding = 0;
     attributeDescriptions[1].location = 1;
     attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[1].offset = offsetof(BonedVertex, vertexData.normal);
+    attributeDescriptions[1].offset = 12;
     
     attributeDescriptions[2].binding = 0;
     attributeDescriptions[2].location = 2;
     attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescriptions[2].offset = offsetof(BonedVertex, vertexData.texCoord);
+    attributeDescriptions[2].offset = 24;
 
     attributeDescriptions[3].binding = 0;
     attributeDescriptions[3].location = 3;
     attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[3].offset = offsetof(BonedVertex, vertexData.tangent);
+    attributeDescriptions[3].offset = 32;
 
     attributeDescriptions[4].binding = 0;
     attributeDescriptions[4].location = 4;
     attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescriptions[4].offset = offsetof(BonedVertex, vertexData.bitangent);
+    attributeDescriptions[4].offset = 44;
 
     attributeDescriptions[5].binding = 0;
     attributeDescriptions[5].location = 5;
-    attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SINT;
-    attributeDescriptions[5].offset = offsetof(BonedVertex, boneData.boneIDs);
+    attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_UINT;
+    attributeDescriptions[5].offset = 56;
 
     attributeDescriptions[6].binding = 0;
     attributeDescriptions[6].location = 6;
     attributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    attributeDescriptions[6].offset = offsetof(BonedVertex, boneData.boneWeights);
+    attributeDescriptions[6].offset = 72;
     
     return attributeDescriptions;
 }

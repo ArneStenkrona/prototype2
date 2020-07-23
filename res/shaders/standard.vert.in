@@ -44,7 +44,7 @@ layout(location = 4) in vec3 inBinormal;
 
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
-    //vec3 normal;
+    // vec3 normal;
     vec2 fragTexCoord;
     //float t;
     //vec3 viewDir;
@@ -67,7 +67,7 @@ void main() {
     
     vs_out.fragTexCoord = inTexCoord;
 
-    vs_out.shadowPos = (ubo.view * vec4(vs_out.fragPos + inNormal, 1.0)).xyz;
+    vs_out.shadowPos = (ubo.view * vec4(vs_out.fragPos + n, 1.0)).xyz;
 
     vs_out.tangentSunDir = tbn * ubo.sun.direction;
     vs_out.tangentViewPos = tbn * ubo.viewPos;

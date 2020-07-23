@@ -25,9 +25,31 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
     initColliders();
 }
 
+void Scene::bindToRenderer(GameRenderer & gameRenderer) {
+    prt::vector<uint32_t> modelIDs;
+    Model const * models;
+    size_t nModels = 0;
+    getNonAnimatedModels(models, nModels, modelIDs);
+
+    prt::vector<uint32_t> animatedModelIDs;
+    Model const * animatedModels;
+    uint32_t const * boneOffsets;
+    size_t nAnimatedModels;
+    getAnimatedModels(animatedModels, boneOffsets, nAnimatedModels, animatedModelIDs);
+
+
+    prt::array<Texture, 6> skybox;
+    getSkybox(skybox);
+
+    gameRenderer.bindAssets(models, nModels, modelIDs,
+                            animatedModels, boneOffsets, nAnimatedModels, 
+                            animatedModelIDs,
+                            skybox);
+}
+
 void Scene::initPlayer() {
-    char const *monkeyStr = "monkey/monkey.dae";
-    m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, false);
+    char const *monkeyStr = "test/Character Running.dae";
+    m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, true);
 
     m_playerEntity.acceleration = 1.0f;
     m_playerEntity.friction = 0.1f;
@@ -44,10 +66,11 @@ void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
 
 void Scene::getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const {
     if (animated) {
-        modelIDs.push_back(m_playerEntity.modelID);
+        modelIDs.resize(1);
+        modelIDs[0] = m_playerEntity.modelID;
     } else {
         modelIDs.resize(m_staticEntities.size + 
-                        m_staticSolidEntities.size + 1);
+                        m_staticSolidEntities.size);
         size_t iID = 0;
         for (size_t i = 0; i <  m_staticEntities.size; i++) {
             modelIDs[iID++] = m_staticEntities.modelIDs[i];
@@ -55,7 +78,6 @@ void Scene::getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const {
         for (size_t i = 0; i <  m_staticSolidEntities.size; i++) {
             modelIDs[iID++] = m_staticSolidEntities.modelIDs[i];
         }
-        modelIDs[iID++] = m_playerEntity.modelID;
     }
 }
 
@@ -65,19 +87,21 @@ void Scene::initColliders() {
                                       m_staticSolidEntities.colliderIDs);
 }
 
-void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) {
-    transformMatrices.resize(m_staticEntities.size +
-                             m_staticSolidEntities.size + 
-                             1 /* player */);
-
-    size_t iMatrix = 0;
-    for (size_t i = 0; i < m_staticEntities.size; i++) {
-        transformMatrices[iMatrix++] = m_staticEntities.transforms[i].transformMatrix();
+void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const {
+    if (animated) {
+        transformMatrices.resize(1);
+        transformMatrices[0] = m_playerEntity.transform.transformMatrix();
+    } else {
+        transformMatrices.resize(m_staticEntities.size +
+                                 m_staticSolidEntities.size);
+        size_t iMatrix = 0;
+        for (size_t i = 0; i < m_staticEntities.size; i++) {
+            transformMatrices[iMatrix++] = m_staticEntities.transforms[i].transformMatrix();
+        }
+        for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
+            transformMatrices[iMatrix++] = m_staticSolidEntities.transforms[i].transformMatrix();
+        }
     }
-    for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-        transformMatrices[iMatrix++] = m_staticSolidEntities.transforms[i].transformMatrix();
-    }
-    transformMatrices[iMatrix++] = m_playerEntity.transform.transformMatrix();
 }
 
 void Scene::resetTransforms() {
@@ -126,11 +150,22 @@ void Scene::update(float deltaTime) {
     updateCamera();
 }
 
-void Scene::getModels(Model const * & models, size_t & nModels,
-                      prt::vector<uint32_t> & modelIDs, bool animated) const {
-    m_assetManager.getModelManager().getModels(models, nModels, animated);
-    getModelIDs(modelIDs, animated);
+void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
+                      prt::vector<uint32_t> & modelIDs) const {
+    m_assetManager.getModelManager().getNonAnimatedModels(models, nModels);
+    getModelIDs(modelIDs, false);
 }
+
+void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
+                              size_t & nModels, prt::vector<uint32_t> & modelIDs) {
+    m_assetManager.getModelManager().getAnimatedModels(models, boneOffsets, nModels);
+    getModelIDs(modelIDs, true);
+}
+
+void Scene::getSampledAnimation(float t, prt::vector<glm::mat4> & transforms) {
+    m_assetManager.getModelManager().getSampledAnimation(t, transforms);
+}
+
 
 void Scene::updatePlayerInput() {
     m_playerEntity.direction = {0.0f, 0.0f, 0.0f};

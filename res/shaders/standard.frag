@@ -47,7 +47,7 @@ layout(push_constant) uniform MATERIAL {
 
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
-    //vec3 normal;
+    // vec3 normal;
     vec2 fragTexCoord;
     //float t;
     //vec3 viewDir;
