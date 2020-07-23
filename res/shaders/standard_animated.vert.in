@@ -62,16 +62,16 @@ layout(location = 0) out VS_OUT {
 } vs_out;
 
 void main() {
-    mat4 boneTransform = ubo.bones[inBoneIDs[0]] * inBoneWeights[0];
-    boneTransform += ubo.bones[inBoneIDs[1] + pc.boneOffset] * inBoneWeights[1];
-    boneTransform += ubo.bones[inBoneIDs[2] + pc.boneOffset] * inBoneWeights[2];
-    boneTransform += ubo.bones[inBoneIDs[3] + pc.boneOffset] * inBoneWeights[3];
+    mat4 boneTransform = mat4(1.0);
+    float weightSum = inBoneWeights[0] + inBoneWeights[1] + inBoneWeights[2] + inBoneWeights[3];
+    if (weightSum > 0.0) { 
+        boneTransform  = ubo.bones[inBoneIDs[0]] * inBoneWeights[0];
+        boneTransform += ubo.bones[inBoneIDs[1] + pc.boneOffset] * inBoneWeights[1];
+        boneTransform += ubo.bones[inBoneIDs[2] + pc.boneOffset] * inBoneWeights[2];
+        boneTransform += ubo.bones[inBoneIDs[3] + pc.boneOffset] * inBoneWeights[3];
+    }
 
     vec4 bonedPos = boneTransform * vec4(inPosition, 1.0);
-
-    if (inBoneWeights[0] + inBoneWeights[1] + inBoneWeights[2] + inBoneWeights[3] > 1.0) {
-        bonedPos.z = 0;
-    }
 
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * bonedPos);
 
