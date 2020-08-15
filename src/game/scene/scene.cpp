@@ -11,11 +11,11 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
     resetTransforms();
 
     uint32_t islandID; 
-    char const *islandStr = "waterside/waterside.dae";
+    char const *islandStr = "docks/docks.dae";
     m_assetManager.loadModels(&islandStr, 1, &islandID, false);
 
     m_staticSolidEntities.modelIDs[0] = islandID;
-    m_staticSolidEntities.transforms[0].position = { -100.0f, -20.0f, 0.0f };
+    m_staticSolidEntities.transforms[0].position = { 0.0f, -50.0f, 0.0f };
     m_staticSolidEntities.transforms[0].scale = { 2.0f, 2.0f, 2.0f };
     m_staticSolidEntities.size = 1;
 
@@ -48,8 +48,10 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
 }
 
 void Scene::initPlayer() {
-    char const *monkeyStr = "test/Character Running.dae";
+    char const *monkeyStr = "duck/duck.dae";
     m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, true);
+
+    m_playerEntity.transform.scale = {0.5f, 0.5f, 0.5f};
 
     m_playerEntity.acceleration = 1.0f;
     m_playerEntity.friction = 0.1f;

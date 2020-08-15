@@ -13,82 +13,6 @@ PhysicsSystem::PhysicsSystem(ModelManager & modelManager)
 {
 }
 
-void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
-                                        Transform const *transforms,
-                                        size_t count) {
-    for (auto & meshCollider : m_meshColliders) {
-        meshCollider.hasMoved = false;
-    }
-    prt::vector<int32_t> treeIndices;
-    for (size_t i = 0; i< count; ++i) {
-        size_t currIndex = m_modelColliders[colliderIDs[i]].startIndex;
-        size_t endIndex = currIndex + m_modelColliders[colliderIDs[i]].numIndices;
-        glm::mat4 mat = transforms[i].transformMatrix();
-        while (currIndex < endIndex) {
-            MeshCollider & curr = m_meshColliders[currIndex];
-            curr.hasMoved = true;
-            curr.transform = transforms[i];
-
-            // update geometry cache
-            size_t currIndex = curr.startIndex;
-            size_t endIndex = currIndex + curr.numIndices;
-            glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
-            glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
-            while (currIndex < endIndex) {
-                m_geometry_cache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
-                min = glm::min(min, m_geometry_cache[currIndex]);
-                max = glm::max(max, m_geometry_cache[currIndex]);
-                ++currIndex;
-            }
-            m_aabbs[currIndex].lowerBound = min;
-            m_aabbs[currIndex].upperBound = max;
-
-            treeIndices.push_back(m_treeIndices[currIndex]);
-            ++currIndex;
-        }
-    }
-    
-    m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
-}
-
-void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
-                                            Transform* ellipsoidTransforms,
-                                            glm::vec3* ellipsoidVelocities,
-                                            bool* ellipsoidsAreGrounded,
-                                            glm::vec3* ellipsoidGroundNormals,
-                                            size_t const nEllipsoids,
-                                            // uint32_t const * colliderIDs,
-                                            // size_t const nColliderIDs,
-                                            float /*deltaTime*/){
-    // this is currently O(m*n), which is pretty bad.
-    // Spatial partitioning will be necessary for bigger scenes
-    for (size_t i = 0; i < nEllipsoids; i++) {
-        Transform& eT = ellipsoidTransforms[i];
-        glm::vec3 const & eCol = ellipsoids[ellipsoidIDs[i]];
-        glm::vec3& eVel = ellipsoidVelocities[i];
-        bool & eIsGround = ellipsoidsAreGrounded[i];
-        eIsGround = false;
-        glm::vec3& eGroundN = ellipsoidGroundNormals[i];
-
-        static constexpr size_t max_iter = 5;
-        size_t iter = 0;
-        while (iter < max_iter) {
-            AABB eAABB = { eT.position - eCol, eT.position + eCol };
-            eAABB += { eT.position + eVel - eCol, eT.position +eVel + eCol };
-            prt::vector<uint32_t> colIDs; 
-            m_aabbTree.query(eAABB, colIDs);
-
-            glm::vec3 intersectionPoint;
-            float intersectionTime;
-            collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
-                                           colIDs, intersectionPoint, intersectionTime);
-            ++iter;
-        }
-        eT.position += eVel;
-        ellipsoidVelocities[i] = eVel;
-    }    
-}
-
 void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const * transforms, 
                                       size_t count, uint32_t * ids) {
     for (size_t i = 0; i < count; ++i) {
@@ -148,14 +72,84 @@ uint32_t PhysicsSystem::addModelCollider(Model const & model, Transform const & 
     return modelIndex;
 }
 
+void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
+                                        Transform const *transforms,
+                                        size_t count) {
+    for (auto & meshCollider : m_meshColliders) {
+        meshCollider.hasMoved = false;
+    }
+    prt::vector<int32_t> treeIndices;
+    for (size_t i = 0; i< count; ++i) {
+        size_t currIndex = m_modelColliders[colliderIDs[i]].startIndex;
+        size_t endIndex = currIndex + m_modelColliders[colliderIDs[i]].numIndices;
+        glm::mat4 mat = transforms[i].transformMatrix();
+        while (currIndex < endIndex) {
+            MeshCollider & curr = m_meshColliders[currIndex];
+            curr.hasMoved = true;
+            curr.transform = transforms[i];
 
+            // update geometry cache
+            size_t currIndex = curr.startIndex;
+            size_t endIndex = currIndex + curr.numIndices;
+            glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
+            glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
+            while (currIndex < endIndex) {
+                m_geometry_cache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
+                min = glm::min(min, m_geometry_cache[currIndex]);
+                max = glm::max(max, m_geometry_cache[currIndex]);
+                ++currIndex;
+            }
+            m_aabbs[currIndex].lowerBound = min;
+            m_aabbs[currIndex].upperBound = max;
+
+            treeIndices.push_back(m_treeIndices[currIndex]);
+            ++currIndex;
+        }
+    }
+    
+    m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
+}
+
+void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
+                                            Transform* ellipsoidTransforms,
+                                            glm::vec3* ellipsoidVelocities,
+                                            bool* ellipsoidsAreGrounded,
+                                            glm::vec3* ellipsoidGroundNormals,
+                                            size_t const nEllipsoids,
+                                            float /*deltaTime*/){
+    for (size_t i = 0; i < nEllipsoids; i++) {
+        Transform& eT = ellipsoidTransforms[i];
+        glm::vec3 const & eCol = ellipsoids[ellipsoidIDs[i]];
+        glm::vec3& eVel = ellipsoidVelocities[i];
+        bool & eIsGround = ellipsoidsAreGrounded[i];
+        eIsGround = false;
+        glm::vec3& eGroundN = ellipsoidGroundNormals[i];
+
+        static constexpr size_t max_iter = 5;
+        size_t iter = 0;
+
+        AABB eAABB = { eT.position - eCol, eT.position + eCol };
+        eAABB += { eT.position + eVel - eCol, eT.position +eVel + eCol };
+        prt::vector<uint32_t> colIDs; 
+        m_aabbTree.query(eAABB, colIDs);
+
+        while (iter < max_iter) {
+            glm::vec3 intersectionPoint;
+            float intersectionTime;
+            collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
+                                           colIDs, intersectionPoint, intersectionTime);
+            ++iter;
+        }
+        eT.position += eVel;
+        ellipsoidVelocities[i] = eVel;
+    }    
+}
 
 bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid, 
                                                    Transform & ellipsoidTransform,
                                                    glm::vec3 & ellipsoidVel,
                                                    bool & ellipsoidIsGrounded,
                                                    glm::vec3& ellipsoidGroundNormal,
-                                                //    MeshCollider const & meshCollider,
                                                    prt::vector<uint32_t> const & colliderIDs,
                                                    glm::vec3 & intersectionPoint,
                                                    float & intersectionTime) {

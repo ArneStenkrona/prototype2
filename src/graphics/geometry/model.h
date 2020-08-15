@@ -90,7 +90,6 @@ struct Model::Mesh {
     size_t startIndex;
     size_t numIndices;
     int32_t materialIndex = 0;
-    // prt::vector<Bone> bones;
     char name[256];
 };
 

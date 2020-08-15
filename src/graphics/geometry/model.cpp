@@ -76,7 +76,7 @@ void Model::load(char const * path, bool loadAnimation) {
         aiNode *node = nodes.back().node;
         int32_t parentIndex = nodes.back().parentIndex;
         aiMatrix4x4 & nodeTform = node->mTransformation;
-        aiMatrix4x4 &tform = nodes.back().tform;
+        aiMatrix4x4 tform = nodes.back().tform;
         aiMatrix3x3 invtpos = aiMatrix3x3(tform);
         invtpos.Inverse().Transpose();
         nodes.pop_back();
@@ -116,7 +116,6 @@ void Model::load(char const * path, bool loadAnimation) {
                 vertexBuffer[vert].pos.x = pos.x;
                 vertexBuffer[vert].pos.y = pos.y;
                 vertexBuffer[vert].pos.z = pos.z;
-                vertexBuffer[vert].pos = vertexBuffer[vert].pos;
 
                 aiVector3D norm = (invtpos * aiMesh->mNormals[j]).Normalize();
                 vertexBuffer[vert].normal.x = norm.x;
