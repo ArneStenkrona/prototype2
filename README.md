@@ -1,5 +1,6 @@
 ## Prototype 2
 Prototype 2 is a simple game engine. It is a successor to [Prototype](https://github.com/ArneStenkrona/Prototype).
+It is developed only as a learning experience. Therefore there is nothing to expect in terms of usability. I keep it hosted open source just to document its progress.
 
 <img src="images/prt2_screen.png" width="500">
 
