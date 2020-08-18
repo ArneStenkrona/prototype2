@@ -9,20 +9,20 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
     player.state = Player::State::IDLE;
     glm::vec3 moveInput = {0.0f, 0.0f, 0.0f};
     if (m_input.getKeyPress(INPUT_KEY::KEY_W)) {
-        player.state = Player::State::WALKING;
         moveInput += glm::vec3{1.0f,0.0f,0.0f};
     }
     if (m_input.getKeyPress(INPUT_KEY::KEY_S)) {
-        player.state = Player::State::WALKING;
         moveInput -= glm::vec3{1.0f,0.0f,0.0f};
     }
     if (m_input.getKeyPress(INPUT_KEY::KEY_A)) {
-        player.state = Player::State::WALKING;
         moveInput -= glm::vec3{0.0f,0.0f,1.0f};
     }
     if (m_input.getKeyPress(INPUT_KEY::KEY_D)) {
-        player.state = Player::State::WALKING;
         moveInput += glm::vec3{0.0f,0.0f,1.0f};    
+    }
+
+    if (glm::length2(moveInput) > 0.0f) {
+        player.state = Player::State::WALKING;
     }
 
     if (player.state == Player::State::WALKING &&
@@ -30,6 +30,7 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         player.state = Player::State::RUNNING;
     }
     
+
     player.jump = false;
     if (player.isGrounded && m_input.getKeyDown(INPUT_KEY::KEY_SPACE)) {
         player.jump = true;
@@ -43,7 +44,7 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
     
     glm::vec3 moveDir;
     // if player performed any movement input
-    if (player.state == Player::State::WALKING ||
+    if (player.state == Player::State::WALKING || 
         player.state == Player::State::RUNNING) {
         // compute look direction
         glm::vec3 cF = m_camera.getFront();
