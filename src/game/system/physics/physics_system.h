@@ -78,6 +78,8 @@ public:
                  glm::vec3 const& direction,
                  float maxDistance,
                  glm::vec3 & hit);
+
+    float getGravity() const { return m_gravity; }
         
 private:
     static constexpr float verySmallDistance = 0.005f;
@@ -96,6 +98,8 @@ private:
     prt::vector<AABB> m_aabbs;
     prt::vector<int32_t> m_treeIndices;
     DynamicAABBTree m_aabbTree;
+
+    float m_gravity = 1.0f;
 
     uint32_t addModelCollider(Model const & model, Transform const & transform);
 

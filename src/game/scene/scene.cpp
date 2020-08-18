@@ -6,8 +6,7 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
       m_physicsSystem(physicsSystem),
       m_input(input),
       m_camera(camera),
-      m_gravityConstant({0.0f,-1.0f,0.0f}),
-      m_gravity(1.0f) {
+      m_playerSystem(m_input, camera, physicsSystem) {
     resetTransforms();
 
     uint32_t islandID; 
@@ -51,14 +50,16 @@ void Scene::initPlayer() {
     char const *monkeyStr = "duck/duck.dae";
     m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, true);
 
-    m_playerEntity.transform.scale = {0.5f, 0.5f, 0.5f};
+    m_playerEntity.transform.scale = {0.6f, 0.6f, 0.6f};
 
-    m_playerEntity.acceleration = 1.0f;
-    m_playerEntity.friction = 0.1f;
     m_playerEntity.velocity = {0.0f, 0.0f, 0.0f};
     m_playerEntity.gravityVelocity = {0.0f, 0.0f, 0.0f};
     m_playerEntity.ellipsoidColliderID = m_physicsSystem.addEllipsoidCollider({1.0f, 1.0f, 1.0f});
     m_playerEntity.isGrounded = false;
+
+    m_playerEntity.animationIdleIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "idle");
+    m_playerEntity.animationWalkIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "walk");
+    m_playerEntity.animationRunIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "run");
 
 }
 
@@ -74,10 +75,10 @@ void Scene::getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const {
         modelIDs.resize(m_staticEntities.size + 
                         m_staticSolidEntities.size);
         size_t iID = 0;
-        for (size_t i = 0; i <  m_staticEntities.size; i++) {
+        for (size_t i = 0; i <  m_staticEntities.size; ++i) {
             modelIDs[iID++] = m_staticEntities.modelIDs[i];
         }
-        for (size_t i = 0; i <  m_staticSolidEntities.size; i++) {
+        for (size_t i = 0; i <  m_staticSolidEntities.size; ++i) {
             modelIDs[iID++] = m_staticSolidEntities.modelIDs[i];
         }
     }
@@ -116,38 +117,11 @@ void Scene::resetTransforms() {
     m_playerEntity.transform = {};
 }
 
-glm::quat safeQuatLookAt(
-    glm::vec3 const& lookFrom,
-    glm::vec3 const& lookTo,
-    glm::vec3 const& up,
-    glm::vec3 const& alternativeUp)
-{
-    glm::vec3  direction       = lookTo - lookFrom;
-    float      directionLength = glm::length(direction);
-
-    // Check if the direction is valid; Also deals with NaN
-    if(!(directionLength > 0.0001))
-        return glm::quat(1, 0, 0, 0); // Just return identity
-
-    // Normalize direction
-    direction /= directionLength;
-
-    // Is the normal up (nearly) parallel to direction?
-    if(glm::abs(glm::dot(direction, up)) > .9999f) {
-        // Use alternative up
-        return glm::quatLookAt(direction, alternativeUp);
-    }
-    else {
-        return glm::quatLookAt(direction, up);
-    }
-}
-
 void Scene::update(float deltaTime) {
     static float t = 0;
 
     t+=deltaTime;
-    updatePlayerInput();
-    updatePlayerPhysics(deltaTime);
+    m_playerSystem.updatePlayer(m_playerEntity, deltaTime);
     updatePhysics(deltaTime);
     updateCamera();
 }
@@ -165,76 +139,15 @@ void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOff
 }
 
 void Scene::getSampledAnimation(float t, prt::vector<glm::mat4> & transforms) {
-    m_assetManager.getModelManager().getSampledAnimation(t, transforms);
-}
+    prt::vector<uint32_t> modelIndices;
+    prt::vector<uint32_t> animationIndices;
 
-
-void Scene::updatePlayerInput() {
-    m_playerEntity.direction = {0.0f, 0.0f, 0.0f};
-    if (m_input.getKeyPress(INPUT_KEY::KEY_W)) {
-        m_playerEntity.direction += glm::vec3{1.0f,0.0f,0.0f};
-    }
-    if (m_input.getKeyPress(INPUT_KEY::KEY_S)) {
-        m_playerEntity.direction -= glm::vec3{1.0f,0.0f,0.0f};
-    }
-    if (m_input.getKeyPress(INPUT_KEY::KEY_A)) {
-        m_playerEntity.direction -= glm::vec3{0.0f,0.0f,1.0f};
-    }
-    if (m_input.getKeyPress(INPUT_KEY::KEY_D)) {
-        m_playerEntity.direction += glm::vec3{0.0f,0.0f,1.0f};    
-    }
-    m_playerEntity.jump = false;
-    if (m_playerEntity.isGrounded && m_input.getKeyDown(INPUT_KEY::KEY_SPACE)) {
-        m_playerEntity.jump = true;
-    }    
-}
-void Scene::updatePlayerPhysics(float deltaTime) {
-    // reference player fields with shorthands
-    glm::vec3& dir = m_playerEntity.direction;
-    glm::vec3& vel = m_playerEntity.velocity;
-    glm::vec3& gVel = m_playerEntity.gravityVelocity;
-    bool& grounded = m_playerEntity.isGrounded;
-    glm::vec3& groundNormal = m_playerEntity.groundNormal;
-    bool& jump = m_playerEntity.jump;
-    // if player performed any movement input
-    if (glm::length(glm::vec3{dir.x, 0.0f, dir.z}) > 0.001f) {
-        // compute look direction
-        glm::vec3 cF = m_camera.getFront();
-        glm::vec3 cR = m_camera.getRight();
-        glm::vec3 lookDir = glm::normalize(dir.x * glm::vec3(cF.x, 0.0f, cF.z) + dir.z * glm::vec3(cR.x, 0.0f, cR.z));
-        // rotate player model
-        m_playerEntity.transform.rotation = 
-                            safeQuatLookAt({0.0f,0.0f,0.0f}, lookDir, 
-                            glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
-        // compute movement direction
-        glm::vec3 moveNormal = m_playerEntity.isGrounded ? m_playerEntity.groundNormal : glm::vec3{0.0f, 1.0f, 0.0f};
-
-        glm::vec3 moveDir = glm::normalize(glm::cross(moveNormal, 
-                                glm::cross(lookDir, moveNormal)));
-        // add acceleration to velocity
-        float acc = m_playerEntity.acceleration * deltaTime;
-        vel += moveDir * acc;
-    }
-
-    // add friction
-    vel *= glm::pow(m_playerEntity.friction, deltaTime);
-
-    float gnDotUp = glm::dot(groundNormal, glm::vec3{0.0f,1.0f,0.0f});
-    if (grounded && gnDotUp < 0.72f) {
-        float slideFactor = 5.0f;
-        gVel += slideFactor * (1.0f - gnDotUp) * deltaTime * glm::normalize(glm::cross(groundNormal, 
-                                                glm::cross(glm::vec3{0.0f,-1.0f,0.0f}, groundNormal)));
-    } else if (!grounded) {
-        float gAcc = m_gravity * deltaTime;
-        gVel += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
-    } else {
-        gVel -= m_playerEntity.groundNormal * deltaTime;
-    }
-
-    // jump
-    if (jump) {
-        gVel += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
-    }
+    modelIndices.push_back(m_playerEntity.modelID);
+    animationIndices.push_back(m_playerEntity.currentAnimation);
+    m_assetManager.getModelManager().getSampledAnimation(t, 
+                                                         modelIndices,
+                                                         animationIndices,
+                                                         transforms);
 }
 
 void Scene::updatePhysics(float deltaTime) {

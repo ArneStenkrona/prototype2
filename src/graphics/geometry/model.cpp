@@ -193,6 +193,9 @@ void Model::load(char const * path, bool loadAnimation) {
         animations.resize(scene->mNumAnimations);
         for (size_t i = 0; i < scene->mNumAnimations; ++i) {
             aiAnimation const * aiAnim = scene->mAnimations[i];
+
+            nameToAnimation.insert(aiAnim->mName, i);
+
             Animation & anim = animations[i];
             anim.duration = aiAnim->mDuration;
             anim.ticksPerSecond = aiAnim->mTicksPerSecond;
@@ -232,6 +235,11 @@ void Model::load(char const * path, bool loadAnimation) {
     // release assimp resources
     mLoaded = true;
     calcTangentSpace();
+}
+
+uint32_t Model::getAnimationIndex(char const * name) const {
+    assert(nameToAnimation.find(aiString(name)) != nameToAnimation.end() && "animation does not exist");
+    return nameToAnimation.find(aiString(name))->value();
 }
 
 void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const {

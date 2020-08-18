@@ -8,6 +8,7 @@
 #include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
 #include "src/game/system/physics/physics_system.h"
+#include "src/game/system/player/player.h"
 #include "src/graphics/vulkan/game_renderer.h"
 
 #include "src/container/vector.h"
@@ -59,28 +60,14 @@ private:
     };
     StaticSolidEntities<10> m_staticSolidEntities;
 
-    struct {
-        uint32_t modelID;
-        Transform transform;
-        glm::vec3 velocity;
-        glm::vec3 direction;
-        float acceleration;
-        float friction;
-        glm::vec3 gravityVelocity;
-        uint32_t ellipsoidColliderID;
-        bool isGrounded;
-        glm::vec3 groundNormal;
-        bool jump;
-    } m_playerEntity;
+    Player m_playerEntity;
 
     AssetManager& m_assetManager;
     PhysicsSystem& m_physicsSystem;
     Input& m_input;
     Camera& m_camera;
+    PlayerSystem m_playerSystem;
 
-    glm::vec3 m_gravityConstant;
-    float m_gravity;
-    
     void resetTransforms();
     void getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const;
 
@@ -92,8 +79,6 @@ private:
     void initColliders();
 
     void initPlayer();
-    void updatePlayerInput();
-    void updatePlayerPhysics(float deltaTime);
     void updatePhysics(float deltaTime);
     void updateCamera();
 };

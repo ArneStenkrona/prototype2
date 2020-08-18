@@ -27,7 +27,6 @@ void ModelManager::getAnimatedModels(Model const * & models, uint32_t const * & 
     nModels = m_loadedAnimatedModels.models.size();
 }
 
-
 // void ModelManager::getBoneOffsets(prt::vector<uint32_t> offsets) {
 //     offsets.resize(m_loadedAnimatedModels.size());
 //     size_t currentOffset = 0;
@@ -37,17 +36,20 @@ void ModelManager::getAnimatedModels(Model const * & models, uint32_t const * & 
 //     }
 // }
 
-void ModelManager::getSampledAnimation(float t, /*size_t animationIndex,*/ prt::vector<glm::mat4> & transforms) {
+void ModelManager::getSampledAnimation(float t, 
+                                       prt::vector<uint32_t> const & modelIndices,
+                                       prt::vector<uint32_t> const & animationIndices, 
+                                       prt::vector<glm::mat4> & transforms) {
     size_t numBones = 0;
-    for (auto & model : m_loadedAnimatedModels.models) {
-        numBones += model.bones.size();
+    for (auto & index : modelIndices) {
+        numBones += m_loadedAnimatedModels.models[index].bones.size();
     }
 
     transforms.resize(numBones);
     size_t tIndex = 0;
-    for (size_t i = 0; i < m_loadedAnimatedModels.models.size(); ++i) {
-        auto const & model = m_loadedAnimatedModels.models[i];
-        model.sampleAnimation(t, 0, &transforms[tIndex]);
+    for (size_t i = 0; i < modelIndices.size(); ++i) {
+        auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
+        model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
         tIndex += model.bones.size();
     }
 }
@@ -86,4 +88,8 @@ void ModelManager::loadModels(char const * paths[], size_t count,
             ids[i] = m_pathToModelID.find(paths[i])->value();
         }
     }
+}
+
+uint32_t ModelManager::getAnimationIndex(uint32_t modelIndex, char const * name) {
+    return m_loadedAnimatedModels.models[modelIndex].getAnimationIndex(name);
 }

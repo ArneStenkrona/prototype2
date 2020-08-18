@@ -22,6 +22,25 @@
 
 #include <assimp/scene.h>
 
+namespace std {
+    // thanks, Basile Starynkevitch!
+    template<> struct hash<aiString> {
+        size_t operator()(aiString const& str) const {
+            static constexpr int A = 54059; /* a prime */
+            static constexpr int B = 76963; /* another prime */
+            // static constexpr int C = 86969; /* yet another prime */
+            static constexpr int FIRSTH = 37; /* also prime */
+            unsigned h = FIRSTH;
+            char const *s = str.C_Str();
+            while (*s) {
+                h = (h * A) ^ (s[0] * B);
+                s++;
+            }
+            return h; // or return h % C;
+        }
+    };
+}
+
 struct Model {
     struct Mesh;
     struct Material;
@@ -34,9 +53,8 @@ struct Model {
     struct AnimationKey;
     struct AnimationNode;
     struct Node;
-    // Consider making these private
-    // and making gameRenderer friend for
-    // easy access
+    // TODO: rewrite model as
+    // proper RAII class
     prt::vector<Mesh> meshes;
     prt::vector<Animation> animations;
     prt::vector<Material> materials;
@@ -49,6 +67,7 @@ struct Model {
 
     void load(char const * path, bool loadAnimation);
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
+    uint32_t getAnimationIndex(char const * name) const;
 
 private:
     void calcTangentSpace();
@@ -59,7 +78,11 @@ private:
     glm::mat4 mGlobalInverseTransform;
 
     bool mLoaded = false;
+
     bool mAnimated = false;
+    // maps animation names to animations
+    // TODO replace with own string type
+    prt::hash_map<aiString, uint32_t> nameToAnimation;
 };
 
 struct Model::Node {
@@ -147,24 +170,5 @@ struct Model::BonedVertex {
     static prt::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 
 };
-
-namespace std {
-    // thanks, Basile Starynkevitch!
-    template<> struct hash<aiString> {
-        size_t operator()(aiString const& str) const {
-            static constexpr int A = 54059; /* a prime */
-            static constexpr int B = 76963; /* another prime */
-            // static constexpr int C = 86969; /* yet another prime */
-            static constexpr int FIRSTH = 37; /* also prime */
-            unsigned h = FIRSTH;
-            char const *s = str.C_Str();
-            while (*s) {
-                h = (h * A) ^ (s[0] * B);
-                s++;
-            }
-            return h; // or return h % C;
-        }
-    };
-}
 
 #endif

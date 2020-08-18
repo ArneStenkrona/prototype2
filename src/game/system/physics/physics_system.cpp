@@ -306,8 +306,8 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
             // for some errors where collider was
             // erroneously pushed inside triangle mesh
             // the previous frame
-            t0 = glm::clamp(t0, -0.1f, 1.0f);
-            t1 = glm::clamp(t1, -0.1f, 1.0f);
+            t0 = glm::clamp(t0, -0.0f, 1.0f);
+            t1 = glm::clamp(t1, -0.0f, 1.0f);
         }
         
         if (!embeddedInPlane) {
