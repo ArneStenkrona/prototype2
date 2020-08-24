@@ -19,6 +19,15 @@ namespace math_util {
                              glm::vec3 const & lookTo,
                              glm::vec3 const & up,
                              glm::vec3 const & alternativeUp);
+
+    /**
+     * Calculate linear interpolation
+     * @param a to interpolate from
+     * @param b to interpolate to
+     * @param t interpolation factor
+     * @return interpolated value
+     */
+    inline float lerp(float a, float b, float t) { return (1.0f - t) * a + t * b; }
 };
 
 #endif

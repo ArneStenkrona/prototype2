@@ -55,11 +55,12 @@ void Scene::initPlayer() {
     m_playerEntity.velocity = {0.0f, 0.0f, 0.0f};
     m_playerEntity.gravityVelocity = {0.0f, 0.0f, 0.0f};
     m_playerEntity.ellipsoidColliderID = m_physicsSystem.addEllipsoidCollider({1.0f, 1.0f, 1.0f});
+    m_playerEntity.groundNormal = {0.0f, 0.0f, 0.0f};
     m_playerEntity.isGrounded = false;
 
-    m_playerEntity.animationIdleIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "idle");
-    m_playerEntity.animationWalkIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "walk");
-    m_playerEntity.animationRunIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "run");
+    m_playerEntity.idleAnimationIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "idle");
+    m_playerEntity.walkAnimationIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "walk");
+    m_playerEntity.runAnimationIndex = m_assetManager.getModelManager().getAnimationIndex(m_playerEntity.modelID, "run");
 
 }
 
@@ -140,14 +141,16 @@ void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOff
 
 void Scene::getSampledAnimation(float t, prt::vector<glm::mat4> & transforms) {
     prt::vector<uint32_t> modelIndices;
-    prt::vector<uint32_t> animationIndices;
+    prt::vector<ModelManager::AnimationBlend> animationBlends;
 
     modelIndices.push_back(m_playerEntity.modelID);
-    animationIndices.push_back(m_playerEntity.currentAnimation);
-    m_assetManager.getModelManager().getSampledAnimation(t, 
-                                                         modelIndices,
-                                                         animationIndices,
-                                                         transforms);
+    animationBlends.push_back({m_playerEntity.animationA,
+                               m_playerEntity.animationB,
+                               m_playerEntity.animationBlendFactor});
+    m_assetManager.getModelManager().getSampledBlendedAnimation(t, 
+                                                                modelIndices,
+                                                                animationBlends,
+                                                                transforms);
 }
 
 void Scene::updatePhysics(float deltaTime) {

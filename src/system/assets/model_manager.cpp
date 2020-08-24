@@ -27,15 +27,6 @@ void ModelManager::getAnimatedModels(Model const * & models, uint32_t const * & 
     nModels = m_loadedAnimatedModels.models.size();
 }
 
-// void ModelManager::getBoneOffsets(prt::vector<uint32_t> offsets) {
-//     offsets.resize(m_loadedAnimatedModels.size());
-//     size_t currentOffset = 0;
-//     for (size_t i = 0; i < m_loadedAnimatedModels.size(); ++i) {
-//         offsets[i] = currentOffset;
-//         currentOffset += m_loadedAnimatedModels[i].bones.size();
-//     }
-// }
-
 void ModelManager::getSampledAnimation(float t, 
                                        prt::vector<uint32_t> const & modelIndices,
                                        prt::vector<uint32_t> const & animationIndices, 
@@ -50,6 +41,28 @@ void ModelManager::getSampledAnimation(float t,
     for (size_t i = 0; i < modelIndices.size(); ++i) {
         auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
         model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
+        tIndex += model.bones.size();
+    }
+}
+
+void ModelManager::getSampledBlendedAnimation(float t, 
+                                              prt::vector<uint32_t> const & modelIndices,
+                                              prt::vector<AnimationBlend> const & animationBlends, 
+                                              prt::vector<glm::mat4> & transforms) {
+    size_t numBones = 0;
+    for (auto & index : modelIndices) {
+        numBones += m_loadedAnimatedModels.models[index].bones.size();
+    }
+
+    transforms.resize(numBones);
+    size_t tIndex = 0;
+    for (size_t i = 0; i < modelIndices.size(); ++i) {
+        auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
+        model.blendAnimation(t, 
+                             animationBlends[i].blendFactor, 
+                             animationBlends[i].animationIndexA, 
+                             animationBlends[i].animationIndexB, 
+                             &transforms[tIndex]);
         tIndex += model.bones.size();
     }
 }

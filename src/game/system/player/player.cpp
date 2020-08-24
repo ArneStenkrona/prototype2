@@ -2,11 +2,12 @@
 
 #include "src/util/math_util.h"
 
+#include "glm/gtx/euler_angles.hpp"
+
 PlayerSystem::PlayerSystem(Input & input, Camera & camera, PhysicsSystem & physicsSystem) 
     : m_input(input), m_camera(camera), m_physicsSystem(physicsSystem) {}
 
 void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
-    player.state = Player::State::IDLE;
     glm::vec3 moveInput = {0.0f, 0.0f, 0.0f};
     if (m_input.getKeyPress(INPUT_KEY::KEY_W)) {
         moveInput += glm::vec3{1.0f,0.0f,0.0f};
@@ -21,16 +22,6 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         moveInput += glm::vec3{0.0f,0.0f,1.0f};    
     }
 
-    if (glm::length2(moveInput) > 0.0f) {
-        player.state = Player::State::WALKING;
-    }
-
-    if (player.state == Player::State::WALKING &&
-        m_input.getKeyPress(INPUT_KEY::KEY_LEFT_SHIFT)) {
-        player.state = Player::State::RUNNING;
-    }
-    
-
     player.jump = false;
     if (player.isGrounded && m_input.getKeyDown(INPUT_KEY::KEY_SPACE)) {
         player.jump = true;
@@ -41,11 +32,12 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
     bool& grounded = player.isGrounded;
     glm::vec3& groundNormal = player.groundNormal;
     bool& jump = player.jump;
+
+    glm::vec3 targetVelocity{0.0f};
     
-    glm::vec3 moveDir;
+    glm::vec3 moveDir{0.0f};
     // if player performed any movement input
-    if (player.state == Player::State::WALKING || 
-        player.state == Player::State::RUNNING) {
+    if (glm::length2(moveInput) > 0.0f) {
         // compute look direction
         glm::vec3 cF = m_camera.getFront();
         glm::vec3 cR = m_camera.getRight();
@@ -60,6 +52,11 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         moveDir = glm::normalize(glm::cross(moveNormal, 
                                  glm::cross(lookDir, moveNormal)));
 
+        if (m_input.getKeyPress(INPUT_KEY::KEY_LEFT_SHIFT)) {
+            targetVelocity = 0.2f * moveDir;
+        } else {
+            targetVelocity = 0.1f * moveDir;
+        }
     }
 
     // add friction
@@ -80,21 +77,16 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         gVel += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
     }
 
-    // handle states
-    switch (player.state) {
-        case Player::State::IDLE:
-            player.velocity = 0.0f * moveDir;
-            player.currentAnimation = player.animationIdleIndex;
-            break;
-        case Player::State::WALKING:
-            player.velocity = 0.1f * moveDir;
-            player.currentAnimation = player.animationWalkIndex;
-            break;
-        case Player::State::RUNNING:
-            player.velocity = 0.2f * moveDir;
-            player.currentAnimation = player.animationRunIndex;
-            break;
-        default:
-        break;
+    player.velocity = glm::lerp(player.velocity, targetVelocity, 10.0f * deltaTime);
+    // TODO: sync walk and run animation
+    float vmag = glm::length(player.velocity);
+    if (vmag > 0.1f) {
+        player.animationA = player.walkAnimationIndex;
+        player.animationB = player.runAnimationIndex;
+        player.animationBlendFactor = (vmag - 0.1f) / 0.1f;
+    } else {
+        player.animationA = player.idleAnimationIndex;
+        player.animationB = player.walkAnimationIndex;
+        player.animationBlendFactor = vmag / 0.1f;
     }
 };

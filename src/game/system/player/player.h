@@ -10,26 +10,21 @@
 
 struct Player {
     uint32_t modelID;
-    uint32_t currentAnimation;
+    uint32_t animationA;
+    uint32_t animationB;
     Transform transform;
     glm::vec3 velocity;
-    glm::vec3 direction;
     glm::vec3 gravityVelocity;
     uint32_t ellipsoidColliderID;
     bool isGrounded;
     glm::vec3 groundNormal;
     bool jump;
 
-    enum class State {
-        IDLE,
-        WALKING,
-        RUNNING
-    };
-    State state = State::IDLE;
+    float animationBlendFactor = 0.0f;
 
-    uint32_t animationIdleIndex = 0;
-    uint32_t animationWalkIndex = 0;
-    uint32_t animationRunIndex = 0;
+    uint32_t idleAnimationIndex;
+    uint32_t walkAnimationIndex;
+    uint32_t runAnimationIndex;
 };
 
 class PlayerSystem {

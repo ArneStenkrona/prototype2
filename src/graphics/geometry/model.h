@@ -67,6 +67,12 @@ struct Model {
 
     void load(char const * path, bool loadAnimation);
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
+    void blendAnimation(float clipTime, 
+                        float blendFactor,
+                        size_t animationIndexA, 
+                        size_t animationIndexB,
+                        glm::mat4 * transforms) const;
+
     uint32_t getAnimationIndex(char const * name) const;
 
 private:

@@ -20,6 +20,16 @@ public:
                              prt::vector<uint32_t> const & animationIndices, 
                              prt::vector<glm::mat4> & transforms);
 
+    struct AnimationBlend {
+        uint32_t animationIndexA;
+        uint32_t animationIndexB;
+        float blendFactor;
+    };
+    void getSampledBlendedAnimation(float t, 
+                                    prt::vector<uint32_t> const & modelIndices,
+                                    prt::vector<AnimationBlend> const & animationBlends, 
+                                    prt::vector<glm::mat4> & transforms);
+
     inline Model const & getNonAnimatedModel(uint32_t modelID) const { return m_loadedNonAnimatedModels[modelID]; } 
     Model const & getAnimatedModel(uint32_t modelID, uint32_t & boneOffset) const;
 

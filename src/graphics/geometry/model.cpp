@@ -301,6 +301,97 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
     }
 }
 
+void Model::blendAnimation(float clipTime, 
+                           float blendFactor,
+                           size_t animationIndexA, 
+                           size_t animationIndexB,
+                           glm::mat4 * transforms) const {
+    assert(mAnimated);
+    auto const & animationA = animations[animationIndexA];
+    auto const & animationB = animations[animationIndexB];
+
+    // calculate prev and next frame for clip A
+    size_t numFramesA = animationA.channels[0].keys.size();
+    float fracFrameA = clipTime * numFramesA;
+    uint32_t prevFrameA = static_cast<uint32_t>(fracFrameA);
+    float fracA = fracFrameA - prevFrameA;
+    prevFrameA = prevFrameA % numFramesA;
+    uint32_t nextFrameA = (prevFrameA + 1) % numFramesA;
+
+        // calculate prev and next frame for clip B
+    size_t numFramesB = animationB.channels[0].keys.size();
+    float fracFrameB = clipTime * numFramesB;
+    uint32_t prevFrameB = static_cast<uint32_t>(fracFrameB);
+    float fracB = fracFrameB - prevFrameB;
+    prevFrameB = prevFrameB % numFramesB;
+    uint32_t nextFrameB = (prevFrameB + 1) % numFramesB;
+
+    struct IndexedTForm {
+        int32_t index;
+        glm::mat4 tform;
+    };
+
+    prt::vector<IndexedTForm> nodeIndices;
+    nodeIndices.push_back({0, glm::mat4(1.0f)});
+    while (!nodeIndices.empty()) {
+        auto index = nodeIndices.back().index;
+        auto parentTForm = nodeIndices.back().tform;
+        nodeIndices.pop_back();
+
+        glm::mat4 tform = mNodes[index].transform;
+        int32_t boneIndex = mNodes[index].boneIndex;
+        int32_t channelIndex = mNodes[index].channelIndex;
+        if (channelIndex != -1) {
+            auto & channelA = animationA.channels[channelIndex];
+            auto & channelB = animationB.channels[channelIndex];
+            // clip A
+            glm::vec3 const & prevPosA = channelA.keys[prevFrameA].position;
+            glm::vec3 const & nextPosA = channelA.keys[nextFrameA].position;
+
+            glm::quat const & prevRotA = channelA.keys[prevFrameA].rotation;
+            glm::quat const & nextRotA = channelA.keys[nextFrameA].rotation;
+
+            glm::vec3 const & prevScaleA = channelA.keys[prevFrameA].scaling;
+            glm::vec3 const & nextScaleA = channelA.keys[nextFrameA].scaling;
+
+            glm::vec3 posA = glm::lerp(prevPosA, nextPosA, fracA);
+            glm::quat rotA = glm::slerp(prevRotA, nextRotA, fracA);
+            glm::vec3 scaleA = glm::lerp(prevScaleA, nextScaleA, fracA);
+
+            // clip B
+            glm::vec3 const & prevPosB = channelB.keys[prevFrameB].position;
+            glm::vec3 const & nextPosB = channelB.keys[nextFrameB].position;
+
+            glm::quat const & prevRotB = channelB.keys[prevFrameB].rotation;
+            glm::quat const & nextRotB = channelB.keys[nextFrameB].rotation;
+
+            glm::vec3 const & prevScaleB = channelB.keys[prevFrameB].scaling;
+            glm::vec3 const & nextScaleB = channelB.keys[nextFrameB].scaling;
+
+            glm::vec3 posB = glm::lerp(prevPosB, nextPosB, fracB);
+            glm::quat rotB = glm::slerp(prevRotB, nextRotB, fracB);
+            glm::vec3 scaleB = glm::lerp(prevScaleB, nextScaleB, fracB);
+
+            // blend
+            glm::vec3 pos = glm::lerp(posA, posB, blendFactor);
+            glm::quat rot = glm::slerp(rotA, rotB, blendFactor);
+            glm::vec3 scale = glm::lerp(scaleA, scaleB, blendFactor); // TODO: better scaling interpolation
+
+            tform = glm::translate(pos) * glm::toMat4(rot) * glm::scale(scale);
+        }
+        // pose matrix
+        glm::mat4 poseMatrix = parentTForm * tform;
+
+        if (boneIndex != -1) {
+            transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
+        }
+
+        for (auto & childIndex : mNodes[index].childIndices) {
+            nodeIndices.push_back({childIndex, poseMatrix});
+        }
+    }                            
+}
+
 void Model::getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
                        prt::hash_map<aiString, size_t> &map, const char * modelPath) {
     aiString texPath;
