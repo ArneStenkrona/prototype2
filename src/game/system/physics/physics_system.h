@@ -25,6 +25,15 @@ public:
                               Transform const * transforms,
                               size_t count);
 
+    void collisionDetection(glm::vec3 & ellipsoidPosition,
+                            glm::vec3 & ellipsoidVelocity,
+                            glm::vec3 const & ellipsoidRadii);
+
+    void collideWithWorld(glm::vec3 & sourcePoint, 
+                          glm::vec3 & velocityVector, 
+                          glm::vec3 ellipsoidRadii,
+                          prt::vector<uint32_t> const & colliderIDs);
+
     void resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
                                  Transform* ellipsoidTransforms,
                                  glm::vec3* ellipsoidVelocities,
@@ -103,21 +112,41 @@ private:
 
     uint32_t addModelCollider(Model const & model, Transform const & transform);
 
-    bool collideEllipsoidMesh(glm::vec3 const& ellipsoid, 
-                              glm::vec3 const& ellipsoidPos,
-                              glm::vec3 const& ellipsoidVel,
+    bool collideEllipsoidMesh(glm::vec3 const & ellipsoid, 
+                              glm::vec3 const & ellipsoidPos,
+                              glm::vec3 const & ellipsoidVel,
                               bool& ellipsoidIsGrounded,
                               glm::vec3& ellipsoidGroundNormal,
                               prt::vector<glm::vec3> const& triangles,
-                              glm::vec3 const& trianglesPos,
-                              glm::vec3 const& trianglesVel,
-                              glm::vec3& intersectionPoint,
-                              float& intersectionTime);
+                              glm::vec3 const & trianglesPos,
+                              glm::vec3 const & trianglesVel,
+                              glm::vec3 & intersectionPoint,
+                              float & intersectionTime);
+
+    // consider moving the below functions to a utility namespace
+    glm::vec3 closestPointOnTrianglePerimeter(glm::vec3 const & a,
+                                              glm::vec3 const & b,
+                                              glm::vec3 const & c,
+                                              glm::vec3 const & p);
+
+    glm::vec3 closestPointOnLine(glm::vec3 const & a,
+                                 glm::vec3 const & b,
+                                 glm::vec3 const & p);
                                    
-    void respondEllipsoidMesh(glm::vec3& ellipsoidPos,
-                              glm::vec3& ellipsoidVel,
-                              glm::vec3& intersectionPoint,
-                              const float intersectionTime);
+    void respondEllipsoidMesh(glm::vec3 & ellipsoidPos,
+                              glm::vec3 & ellipsoidVel,
+                              glm::vec3 & intersectionPoint,
+                              float const intersectionTime);
+
+    float intersectRayPlane(glm::vec3 const & planeOrigin, 
+                            glm::vec3 const & planeNormal,
+                            glm::vec3 const & rayOrigin,
+                            glm::vec3 const & rayVector);
+
+    float intersectSphere(glm::vec3 const & rO, 
+                          glm::vec3 const & rV, 
+                          glm::vec3 const & sO, 
+                          float sR);
 
     bool intersectLineSegmentTriangle(glm::vec3 const & origin, 
                                       glm::vec3 const & end, 
@@ -125,6 +154,11 @@ private:
                                       glm::vec3 const & b,
                                       glm::vec3 const & c,
                                       float &t);
+
+    glm::vec3 barycentric(glm::vec3 const & p, 
+                          glm::vec3 const & a, 
+                          glm::vec3 const & b, 
+                          glm::vec3 const & c);
 };
 
 #endif

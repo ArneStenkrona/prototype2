@@ -110,6 +110,171 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
     m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
 }
 
+// The collision detection entry point
+void PhysicsSystem::collisionDetection(glm::vec3 & ellipsoidPosition,
+                                       glm::vec3 & ellipsoidVelocity,
+                                       glm::vec3 const & ellipsoidRadii) {
+    // We need to do any pre-collision detection work here. Such as adding // gravity to our velocity vector. We want to do it in this
+    // separate routine because the following routine is recursive, and we // don't want to recursively add gravity.
+    // Add gravity
+    glm::vec3 velocityVector = m_gravity + ellipsoidVelocity;
+    // At this point, we’ll scale our inputs to the collision routine
+    glm::vec3 sourcePoint = ellipsoidPosition / ellipsoidRadii; 
+    velocityVector /= ellipsoidRadii;
+
+    // Whom might we collide with?
+    AABB eAABB = { ellipsoidPosition - ellipsoidRadii, ellipsoidPosition + ellipsoidRadii };
+    eAABB += { ellipsoidPosition + ellipsoidVelocity - ellipsoidRadii, 
+               ellipsoidPosition + ellipsoidVelocity + ellipsoidRadii };
+    prt::vector<uint32_t> colIDs; 
+    m_aabbTree.query(eAABB, colIDs);
+
+    // Okay! Time to do some collisions
+    collideWithWorld(sourcePoint, velocityVector, ellipsoidRadii, colIDs); 
+    // Our collisions are complete, un-scale the output 
+    ellipsoidPosition = sourcePoint * ellipsoidRadii;
+    ellipsoidVelocity = velocityVector * ellipsoidRadii;
+}
+
+// The collision detection’s recursive routine
+void PhysicsSystem::collideWithWorld(glm::vec3 & sourcePoint, 
+                                     glm::vec3 & velocityVector, 
+                                     glm:: vec3 ellipsoidRadii,
+                                     prt::vector<uint32_t> const & colliderIDs) {
+    // Check if list of potential colliders is empty
+    if (colliderIDs.empty()) {
+        sourcePoint += velocityVector;
+        return;
+    }
+        
+    // How far do we need to go?
+    float distanceToTravel = glm::length(velocityVector);
+    // Do we need to bother?
+    if (distanceToTravel == 0.0f) return;
+    // You’ll need to write this routine to deal with your specific data scale_potential_colliders_to_ellipsoid_space(radiusVector);
+    // Determine the nearest collider from the list potentialColliders
+    bool collisionFound = false;
+    float nearestDistance = -1.0f;
+    glm::vec3 nearestIntersectionPoint;
+    glm::vec3 nearestPolygonIntersectionPoint;
+
+    // construct all polygons
+    struct Polygon {
+        glm::vec3 a;
+        glm::vec3 b;
+        glm::vec3 c;
+    };
+    // count all indices
+    size_t nIndices = 0;
+    for (uint32_t colliderID : colliderIDs) {
+        nIndices += m_meshColliders[colliderID].numIndices;
+        
+    }
+    // fill vector with polygons in ellipsoid space
+    prt::vector<Polygon> polygons;
+    polygons.resize(nIndices / 3);
+    for (uint32_t colliderID : colliderIDs) {
+        MeshCollider & meshCollider = m_meshColliders[colliderID];
+        
+        size_t endIndex = meshCollider.startIndex + meshCollider.numIndices;
+        glm::vec3* pStart = &polygons[0].a;
+        for (size_t i = meshCollider.startIndex; i < endIndex; ++i) {
+            *pStart = m_geometry_cache[i] / ellipsoidRadii;
+            ++pStart;
+        }
+    }
+    
+    for (Polygon p : polygons) {
+        // Plane origin/normal
+        glm::vec3 pOrigin = p.a;
+        glm::vec3 pNormal = glm::cross((p.b - p.a), (p.c - p.a));
+        if (glm::length2(pNormal) == 0) {
+            continue;
+        } else {
+            pNormal = glm::normalize(pNormal);
+        }
+        // Determine the distance from the plane to the source
+        float pDist = intersectRayPlane(pOrigin, pNormal, sourcePoint, -pNormal); 
+        glm::vec3 sphereIntersectionPoint;
+        glm::vec3 planeIntersectionPoint;
+        // Is the source point behind the plane? 
+        //
+        // [note that you can remove this condition if your visuals are not
+        // using backface culling]
+        if (pDist < 0.0f) {
+            continue;
+        }
+        // Is the plane embedded (i.e. within the distance of 1.0 for our
+        // unit sphere)?
+        else if (pDist <= 1.0f) {
+            // Calculate the plane intersection point
+            glm::vec3 temp = -pNormal * pDist; 
+            planeIntersectionPoint = sourcePoint + temp;
+        } else {
+            // Calculate the sphere intersection point 
+            sphereIntersectionPoint = sourcePoint - pNormal; // Calculate the plane intersection point
+            float t = intersectRayPlane(pOrigin, pNormal, sphereIntersectionPoint, glm::normalize(velocityVector));
+            // Are we traveling away from this polygon?
+            if (t < 0.0) continue;
+            // Calculate the plane intersection point
+            glm::vec3 v = velocityVector * t; 
+            planeIntersectionPoint = sphereIntersectionPoint + v;
+        }
+        // Unless otherwise noted, our polygonIntersectionPoint is the 
+        // same point as planeIntersectionPoint
+        glm::vec3 polygonIntersectionPoint = planeIntersectionPoint;
+        glm::vec3 bary = barycentric(planeIntersectionPoint, p.a, p.b, p.c);
+        // check if plane intersection is within triangle
+        if (!(0.0f < bary.x && bary.x < 1.0f &&
+              0.0f < bary.y && bary.y < 1.0f &&
+              0.0f < bary.z && bary.z < 1.0f)) {
+            polygonIntersectionPoint = closestPointOnTrianglePerimeter(p.a, p.b, p.c, planeIntersectionPoint);
+        }
+        // Invert the velocity vector
+        glm::vec3 negativeVelocityVector = -velocityVector;
+
+        // Using the polygonIntersectionPoint, we need to reverse-intersect 
+        // with the sphere (note: the 1.0 below is the unit-sphere’s radius)
+        float t = intersectSphere(polygonIntersectionPoint, negativeVelocityVector, sourcePoint, 1.0f);
+        // Was there an intersection with the sphere? 
+        if (t >= 0.0 && t <= distanceToTravel) {
+            // Where did we intersect the sphere?
+            glm::vec3 v = negativeVelocityVector * t; 
+            glm::vec3 intersectionPoint = polygonIntersectionPoint + v;
+            // Closest intersection thus far?
+            if (!collisionFound || t < nearestDistance) {
+                nearestDistance = t;
+                nearestIntersectionPoint = intersectionPoint; nearestPolygonIntersectionPoint =
+                polygonIntersectionPoint; collisionFound = true;
+            }
+        }
+    }
+    // If we never found a collision, we can safely move to the destination // and bail
+    if (!collisionFound) {
+        sourcePoint += velocityVector;
+        return; 
+    }
+    // Move to the nearest collision
+    glm::vec3 v = glm::normalize(velocityVector) * (nearestDistance - /*EPSILON*/ 0.00001f); 
+    sourcePoint += v;
+    // What's our destination (relative to the point of contact)?
+    v = glm::normalize(v) * (distanceToTravel - nearestDistance);
+    glm::vec3 destinationPoint = nearestPolygonIntersectionPoint + v;
+    // Determine the sliding plane
+    glm::vec3 slidePlaneOrigin = nearestPolygonIntersectionPoint;
+    glm::vec3 slidePlaneNormal = nearestPolygonIntersectionPoint - sourcePoint;
+    // We now project the destination point onto the sliding plane
+    float time = intersectRayPlane(slidePlaneOrigin, slidePlaneNormal, destinationPoint, slidePlaneNormal);
+    slidePlaneNormal = glm::normalize(slidePlaneNormal) * time;
+    glm::vec3 destinationProjectionNormal = slidePlaneNormal;
+    glm::vec3 newDestinationPoint = destinationPoint + destinationProjectionNormal;
+    // Generate the slide vector, which will become our new velocity vector // for the next iteration
+    // glm::vec3 newVelocityVector = newDestinationPoint - nearestPolygonIntersectionPoint;
+    velocityVector = newDestinationPoint - nearestPolygonIntersectionPoint;
+    // Recursively slide (without adding gravity) 
+    //collideWithWorld(sourcePoint, newVelocityVector);
+}
+
 void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
                                             Transform* ellipsoidTransforms,
                                             glm::vec3* ellipsoidVelocities,
@@ -160,8 +325,8 @@ bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid,
     for (auto const & id : colliderIDs) {
         MeshCollider & meshCollider = m_meshColliders[id];
         glm::vec3 cbm = glm::vec3{ 1.0f / ellipsoid.x,
-                                1.0f / ellipsoid.y,
-                                1.0f / ellipsoid.z };
+                                   1.0f / ellipsoid.y,
+                                   1.0f / ellipsoid.z };
         
         prt::vector<glm::vec3> geometry;
         geometry.resize(meshCollider.numIndices);
@@ -404,6 +569,7 @@ void PhysicsSystem::respondEllipsoidMesh(glm::vec3& ellipsoidPos,
                               glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal));
 }
 
+// From "Realtime Collision Detection" by Christer Ericson
 bool PhysicsSystem::raycast(glm::vec3 const& origin,
                             glm::vec3 const& direction,
                             float maxDistance,
@@ -437,6 +603,78 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
     return intersect;
 }
 
+// from Generic Collision Detection for Games Using Ellipsoids
+// by Paul Nettle
+glm::vec3 PhysicsSystem::closestPointOnTrianglePerimeter(glm::vec3 const & a,
+                                                         glm::vec3 const & b,
+                                                         glm::vec3 const & c,
+                                                         glm::vec3 const & p) {
+    glm::vec3 rab = closestPointOnLine(a, b, p); 
+    glm::vec3 rbc = closestPointOnLine(b, c, p); 
+    glm::vec3 rca = closestPointOnLine(c, a, p);
+    float distAB2 = glm::distance2(rab, p);
+    float distBC2 = glm::distance2(rbc, p);
+    float distCA2 = glm::distance2(rca, p);
+
+    float minDist = distAB2;
+    glm::vec3 minPoint = rab;
+    if (distBC2 < minDist) {
+        minDist = distBC2;
+        minPoint = rbc;
+    }
+    if (distCA2 < minDist) {
+        // minDist = distCA2;
+        minPoint = rca;
+    }
+    return minPoint;
+}
+
+
+// from Generic Collision Detection for Games Using Ellipsoids
+// by Paul Nettle
+glm::vec3 PhysicsSystem::closestPointOnLine(glm::vec3 const & a,
+                                            glm::vec3 const & b,
+                                            glm::vec3 const & p) {
+    // Determine t (the length of the vector from ‘a’ to ‘p’)
+    glm::vec3 c = p - a;
+    glm::vec3 v = glm::normalize(b - a); 
+    float d = glm::distance(a, b);
+    float t = glm::dot(v, c);
+    // Check to see if ‘t’ is beyond the extents of the line segment
+    if (t < 0) return a; 
+    if (t > d) return b;
+    // Return the point between ‘a’ and ‘b’
+    v = v * t; 
+    return a + v;
+}
+
+// from Generic Collision Detection for Games Using Ellipsoids
+// by Paul Nettle
+float PhysicsSystem::intersectRayPlane(glm::vec3 const & planeOrigin, 
+                                       glm::vec3 const & planeNormal,
+                                       glm::vec3 const & rayOrigin,
+                                       glm::vec3 const & rayVector) {
+    float d = -glm::dot(planeNormal, planeOrigin); 
+    float numer = glm::dot(planeNormal, rayOrigin) + d; 
+    float denom = glm::dot(planeNormal, rayVector); 
+    return -(numer / denom);
+}
+
+// from Generic Collision Detection for Games Using Ellipsoids
+// by Paul Nettle
+float PhysicsSystem::intersectSphere(glm::vec3 const & rO, 
+                                     glm::vec3 const & rV, 
+                                     glm::vec3 const & sO, 
+                                     float sR) {
+    glm::vec3 q = sO - rO;
+    float c = glm::length(q);
+    float v = glm::dot(q, rV);
+    float d = sR*sR - (c * c - v * v);
+    // If there was no intersection, return -1
+    if (d < 0.0) return -1.0;
+    // Return the distance to the [first] intersecting point 
+    return v - sqrt(d);
+}
 
 // From "Realtime Collision Detection" by Christer Ericson
 bool PhysicsSystem::intersectLineSegmentTriangle(glm::vec3 const & origin, 
@@ -470,8 +708,29 @@ bool PhysicsSystem::intersectLineSegmentTriangle(glm::vec3 const & origin,
     // Segment/ray intersects triangle. Perform delayed division and // compute the last barycentric coordinate component
     float ood = 1.0f / d;
     t *= ood;
-    v *= ood;
-    w *= ood;
+    // v *= ood;
+    // w *= ood;
     //float u = 1.0f - v - w;
     return true;
+}
+
+// Compute barycentric coordinates (u, v, w) for
+// point p with respect to triangle (a, b, c)
+// From "Realtime Collision Detection" by Christer Ericson
+glm::vec3 PhysicsSystem::barycentric(glm::vec3 const & p, 
+                                     glm::vec3 const & a, 
+                                     glm::vec3 const & b, 
+                                     glm::vec3 const & c) {
+    glm::vec3 bary{};
+    glm::vec3 v0 = b - a, v1 = c - a, v2 = p - a;
+    float d00 = glm::dot(v0, v0);
+    float d01 = glm::dot(v0, v1);
+    float d11 = glm::dot(v1, v1);
+    float d20 = glm::dot(v2, v0);
+    float d21 = glm::dot(v2, v1);
+    float denom = d00 * d11 - d01 * d01;
+    bary.y = (d11 * d20 - d01 * d21) / denom;
+    bary.z = (d00 * d21 - d01 * d20) / denom;
+    bary.x = 1.0f - bary.y - bary.z;
+    return bary;
 }
