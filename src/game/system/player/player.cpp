@@ -55,7 +55,7 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         if (m_input.getKeyPress(INPUT_KEY::KEY_LEFT_SHIFT)) {
             targetVelocity = 0.2f * moveDir;
         } else {
-            targetVelocity = 0.1f * moveDir;
+            targetVelocity = 0.05f * moveDir;
         }
     }
 
@@ -78,15 +78,20 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
     }
 
     player.velocity = glm::lerp(player.velocity, targetVelocity, 10.0f * deltaTime);
-    // TODO: sync walk and run animation
+    
+    float animationDelta = 0.0f;
     float vmag = glm::length(player.velocity);
-    if (vmag > 0.1f) {
+    if (vmag > 0.05f) {
         player.animationA = player.walkAnimationIndex;
         player.animationB = player.runAnimationIndex;
-        player.animationBlendFactor = (vmag - 0.1f) / 0.1f;
+        player.animationBlendFactor = (vmag - 0.05f) / 0.15f;
+
+        animationDelta = math_util::lerp(0.75f, 1.5f, player.animationBlendFactor) * deltaTime;
     } else {
         player.animationA = player.idleAnimationIndex;
         player.animationB = player.walkAnimationIndex;
-        player.animationBlendFactor = vmag / 0.1f;
+        player.animationBlendFactor = vmag / 0.05f;
+        animationDelta = math_util::lerp(0.6f, 0.75f, player.animationBlendFactor) * deltaTime;
     }
+    player.animationTimer += animationDelta;
 };

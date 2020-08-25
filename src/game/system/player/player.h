@@ -21,6 +21,7 @@ struct Player {
     bool jump;
 
     float animationBlendFactor = 0.0f;
+    float animationTimer = 0.0f;
 
     uint32_t idleAnimationIndex;
     uint32_t walkAnimationIndex;

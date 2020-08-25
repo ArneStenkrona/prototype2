@@ -21,12 +21,12 @@ public:
                              prt::vector<glm::mat4> & transforms);
 
     struct AnimationBlend {
+        float time;
         uint32_t animationIndexA;
         uint32_t animationIndexB;
         float blendFactor;
     };
-    void getSampledBlendedAnimation(float t, 
-                                    prt::vector<uint32_t> const & modelIndices,
+    void getSampledBlendedAnimation(prt::vector<uint32_t> const & modelIndices,
                                     prt::vector<AnimationBlend> const & animationBlends, 
                                     prt::vector<glm::mat4> & transforms);
 

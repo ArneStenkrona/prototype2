@@ -45,8 +45,7 @@ void ModelManager::getSampledAnimation(float t,
     }
 }
 
-void ModelManager::getSampledBlendedAnimation(float t, 
-                                              prt::vector<uint32_t> const & modelIndices,
+void ModelManager::getSampledBlendedAnimation(prt::vector<uint32_t> const & modelIndices,
                                               prt::vector<AnimationBlend> const & animationBlends, 
                                               prt::vector<glm::mat4> & transforms) {
     size_t numBones = 0;
@@ -58,7 +57,7 @@ void ModelManager::getSampledBlendedAnimation(float t,
     size_t tIndex = 0;
     for (size_t i = 0; i < modelIndices.size(); ++i) {
         auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
-        model.blendAnimation(t, 
+        model.blendAnimation(animationBlends[i].time, 
                              animationBlends[i].blendFactor, 
                              animationBlends[i].animationIndexA, 
                              animationBlends[i].animationIndexB, 

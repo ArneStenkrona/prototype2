@@ -139,16 +139,16 @@ void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOff
     getModelIDs(modelIDs, true);
 }
 
-void Scene::getSampledAnimation(float t, prt::vector<glm::mat4> & transforms) {
+void Scene::getSampledAnimation(float /*t*/, prt::vector<glm::mat4> & transforms) {
     prt::vector<uint32_t> modelIndices;
     prt::vector<ModelManager::AnimationBlend> animationBlends;
 
     modelIndices.push_back(m_playerEntity.modelID);
-    animationBlends.push_back({m_playerEntity.animationA,
+    animationBlends.push_back({m_playerEntity.animationTimer,
+                               m_playerEntity.animationA,
                                m_playerEntity.animationB,
                                m_playerEntity.animationBlendFactor});
-    m_assetManager.getModelManager().getSampledBlendedAnimation(t, 
-                                                                modelIndices,
+    m_assetManager.getModelManager().getSampledBlendedAnimation(modelIndices,
                                                                 animationBlends,
                                                                 transforms);
 }
