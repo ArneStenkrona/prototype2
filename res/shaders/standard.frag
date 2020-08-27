@@ -114,7 +114,6 @@ void main() {
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo, specularity);
-    // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = material.normalIndex >= 0 ? vec4(1,1,1,1) : vec4(res, 1.0);
 }
 
