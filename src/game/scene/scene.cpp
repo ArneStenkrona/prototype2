@@ -51,10 +51,11 @@ void Scene::initPlayer() {
     m_assetManager.loadModels(&monkeyStr, 1, &m_playerEntity.modelID, true);
 
     m_playerEntity.transform.scale = {0.6f, 0.6f, 0.6f};
+    m_playerEntity.transform.position = {0.6f, -20.0f, 0.6f};
 
     m_playerEntity.velocity = {0.0f, 0.0f, 0.0f};
     m_playerEntity.gravityVelocity = {0.0f, 0.0f, 0.0f};
-    m_playerEntity.ellipsoidColliderID = m_physicsSystem.addEllipsoidCollider({1.0f, 1.0f, 1.0f});
+    m_playerEntity.ellipsoidColliderID = m_physicsSystem.addEllipsoidCollider({0.5f, 1.0f, 0.5f});
     m_playerEntity.groundNormal = {0.0f, 0.0f, 0.0f};
     m_playerEntity.isGrounded = false;
 
@@ -123,7 +124,7 @@ void Scene::update(float deltaTime) {
 
     t+=deltaTime;
     m_playerSystem.updatePlayer(m_playerEntity, deltaTime);
-    updatePhysics(deltaTime);
+    updatePhysics();
     updateCamera();
 }
 
@@ -153,24 +154,14 @@ void Scene::getSampledAnimation(float /*t*/, prt::vector<glm::mat4> & transforms
                                                                 transforms);
 }
 
-void Scene::updatePhysics(float deltaTime) {
-    m_physicsSystem.resolveEllipsoidsModels(&m_playerEntity.ellipsoidColliderID,
-                                            &m_playerEntity.transform,
-                                            &m_playerEntity.velocity,
-                                            &m_playerEntity.isGrounded,
-                                            &m_playerEntity.groundNormal,
-                                            1,
-                                            deltaTime);
-
-    // if (m_applyGravity) {
-        m_physicsSystem.resolveEllipsoidsModels(&m_playerEntity.ellipsoidColliderID,
-                                                &m_playerEntity.transform,
-                                                &m_playerEntity.gravityVelocity,
-                                                &m_playerEntity.isGrounded,
-                                                &m_playerEntity.groundNormal,
-                                                1,
-                                                deltaTime);   
-    // }
+void Scene::updatePhysics() {
+    m_physicsSystem.updateCharacterPhysics(&m_playerEntity.ellipsoidColliderID,
+                                           &m_playerEntity.transform.position,
+                                           &m_playerEntity.velocity,
+                                           &m_playerEntity.gravityVelocity,
+                                           &m_playerEntity.groundNormal,
+                                           &m_playerEntity.isGrounded,
+                                           1);
 }
 
 void Scene::updateCamera() {

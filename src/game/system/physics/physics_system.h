@@ -24,56 +24,28 @@ public:
     void updateModelColliders(uint32_t const * colliderIDs,
                               Transform const * transforms,
                               size_t count);
-
-    void collisionDetection(glm::vec3 & ellipsoidPosition,
-                            glm::vec3 & ellipsoidVelocity,
-                            glm::vec3 const & ellipsoidRadii);
-
-    void collideWithWorld(glm::vec3 & sourcePoint, 
-                          glm::vec3 & velocityVector, 
-                          glm::vec3 ellipsoidRadii,
-                          prt::vector<uint32_t> const & colliderIDs);
-
-    void resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
-                                 Transform* ellipsoidTransforms,
-                                 glm::vec3* ellipsoidVelocities,
-                                 bool* ellipsoidsAreGrounded,
-                                 glm::vec3* ellipsoidGroundNormals,
-                                 size_t const nEllipsoids,
-                                //  uint32_t const * colliderIDs,
-                                 // Transform const * triangleTransforms,
-                                //  size_t const nColliderIDs,
-                                 float deltaTime);
+    /**
+     * Updates physics for character entities
+     * 
+     * @param colliderIDs base pointer to character collider IDs
+     * @param positions base pointer to character positions
+     * @param velocities base pointer to character velocities
+     * @param gravityVelocities base pointer to character gravity velocities
+     * @param groundNormals base pointer to character groundNormals
+     * @param areGrounded base pointer to character isGrounded flags
+     * @param n number of character entities
+     */
+    void updateCharacterPhysics(uint32_t * colliderIDs,
+                                glm::vec3 * positions,
+                                glm::vec3 * velocities,
+                                glm::vec3 * gravityVelocities,
+                                glm::vec3 * groundNormals,
+                                bool * areGrounded,
+                                size_t n);
 
     uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);
     void addModelColliders(uint32_t const * modelIDs, Transform const * transforms,
                            size_t count, uint32_t * ids);
-    /**
-     * Checks for collision between an ellipsoid and a triangle mesh.
-     * 
-     * @param ellipsoid axes of the ellipsoid collider
-     * @param ellipsoidPos position of the ellipsoid collider
-     * @param ellipsoidVel velocity of the ellipsoid collider
-     * @param triangles triangles of the collision mesh as a position list
-     * @param trianglesPos position of the collision mesh
-     * @param trianglesVel velocity of the triangle mesh
-     * 
-     * @param intersectionPoint intersection point in ellipsoid space, 
-     *                          returned by reference
-     * @param intersectionDistance intersection time,
-     *                             returned by reference
-     * @param collisionNormals list of collision normals
-     * @return true if collision, false otherwise
-     */
-    bool collideAndRespondEllipsoidMesh(glm::vec3 const& ellipsoid, 
-                                        Transform & ellipsoidTransform,
-                                        glm::vec3 & ellipsoidVel,
-                                        bool & ellipsoidIsGrounded,
-                                        glm::vec3 & ellipsoidGroundNormal,
-                                        // MeshCollider const & meshCollider,
-                                        prt::vector<uint32_t> const & colliderIDs,
-                                        glm::vec3& intersectionPoint,
-                                        float& intersectionTime);
 
     /**
      * Checks hit between ray and active colliders
@@ -112,16 +84,19 @@ private:
 
     uint32_t addModelCollider(Model const & model, Transform const & transform);
 
-    bool collideEllipsoidMesh(glm::vec3 const & ellipsoid, 
-                              glm::vec3 const & ellipsoidPos,
-                              glm::vec3 const & ellipsoidVel,
-                              bool& ellipsoidIsGrounded,
-                              glm::vec3& ellipsoidGroundNormal,
-                              prt::vector<glm::vec3> const& triangles,
-                              glm::vec3 const & trianglesPos,
-                              glm::vec3 const & trianglesVel,
-                              glm::vec3 & intersectionPoint,
-                              float & intersectionTime);
+    void collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
+                                   glm::vec3 & ellipsoidVelocity,
+                                   glm::vec3 const & ellipsoidRadii,
+                                   glm::vec3 & groundNormal,
+                                   bool & isGrounded);
+
+    bool collideCharacterWithIDs(glm::vec3 & sourcePoint, 
+                                 glm::vec3 & velocityVector, 
+                                 glm::vec3 const & ellipsoidRadii,
+                                 prt::vector<uint32_t> const & colliderIDs,
+                                 glm::vec3 & intersectionPoint,
+                                 float & intersectionTime,
+                                 glm::vec3 & collisionNormal);
 
     // consider moving the below functions to a utility namespace
     glm::vec3 closestPointOnTrianglePerimeter(glm::vec3 const & a,
@@ -133,32 +108,34 @@ private:
                                  glm::vec3 const & b,
                                  glm::vec3 const & p);
                                    
-    void respondEllipsoidMesh(glm::vec3 & ellipsoidPos,
-                              glm::vec3 & ellipsoidVel,
-                              glm::vec3 & intersectionPoint,
-                              float const intersectionTime);
+    void respondCharacter(glm::vec3 & ellipsoidPos,
+                          glm::vec3 & ellipsoidVel,
+                          glm::vec3 & intersectionPoint,
+                          float const intersectionTime);
 
-    float intersectRayPlane(glm::vec3 const & planeOrigin, 
-                            glm::vec3 const & planeNormal,
-                            glm::vec3 const & rayOrigin,
-                            glm::vec3 const & rayVector);
+    bool intersectRayPlane(glm::vec3 const & planeOrigin, 
+                           glm::vec3 const & planeNormal,
+                           glm::vec3 const & rayOrigin,
+                           glm::vec3 const & rayVector,
+                           float & t);
 
-    float intersectSphere(glm::vec3 const & rO, 
-                          glm::vec3 const & rV, 
-                          glm::vec3 const & sO, 
-                          float sR);
+    bool intersectRaySphere(glm::vec3 const & rayOrigin, 
+                            glm::vec3 const & rayDirection, 
+                            glm::vec3 const & sphereOrigin, 
+                            float sphereRadius,
+                            float & t);
 
     bool intersectLineSegmentTriangle(glm::vec3 const & origin, 
                                       glm::vec3 const & end, 
                                       glm::vec3 const & a,
                                       glm::vec3 const & b,
                                       glm::vec3 const & c,
-                                      float &t);
+                                      float & t);
 
-    glm::vec3 barycentric(glm::vec3 const & p, 
-                          glm::vec3 const & a, 
-                          glm::vec3 const & b, 
-                          glm::vec3 const & c);
+    bool checkPointInTriangle(glm::vec3 const & point,
+                              glm::vec3 const & pa, 
+                              glm::vec3 const & pb, 
+                              glm::vec3 const & pc);
 };
 
 #endif

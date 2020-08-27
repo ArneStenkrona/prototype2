@@ -110,59 +110,98 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
     m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
 }
 
-// The collision detection entry point
-void PhysicsSystem::collisionDetection(glm::vec3 & ellipsoidPosition,
-                                       glm::vec3 & ellipsoidVelocity,
-                                       glm::vec3 const & ellipsoidRadii) {
-    // We need to do any pre-collision detection work here. Such as adding // gravity to our velocity vector. We want to do it in this
-    // separate routine because the following routine is recursive, and we // don't want to recursively add gravity.
-    // Add gravity
-    glm::vec3 velocityVector = m_gravity + ellipsoidVelocity;
-    // At this point, we’ll scale our inputs to the collision routine
-    glm::vec3 sourcePoint = ellipsoidPosition / ellipsoidRadii; 
-    velocityVector /= ellipsoidRadii;
-
-    // Whom might we collide with?
-    AABB eAABB = { ellipsoidPosition - ellipsoidRadii, ellipsoidPosition + ellipsoidRadii };
-    eAABB += { ellipsoidPosition + ellipsoidVelocity - ellipsoidRadii, 
-               ellipsoidPosition + ellipsoidVelocity + ellipsoidRadii };
-    prt::vector<uint32_t> colIDs; 
-    m_aabbTree.query(eAABB, colIDs);
-
-    // Okay! Time to do some collisions
-    collideWithWorld(sourcePoint, velocityVector, ellipsoidRadii, colIDs); 
-    // Our collisions are complete, un-scale the output 
-    ellipsoidPosition = sourcePoint * ellipsoidRadii;
-    ellipsoidVelocity = velocityVector * ellipsoidRadii;
+void PhysicsSystem::updateCharacterPhysics(uint32_t * colliderIDs,
+                                           glm::vec3 * positions,
+                                           glm::vec3 * velocities,
+                                           glm::vec3 * gravityVelocities,
+                                           glm::vec3 * groundNormals,
+                                           bool * areGrounded,
+                                           size_t n) {
+    size_t i = 0;
+    while (i < n) {
+        collideCharacterwithWorld(positions[i], velocities[i], ellipsoids[colliderIDs[i]], groundNormals[i], areGrounded[i]);
+        collideCharacterwithWorld(positions[i], gravityVelocities[i], ellipsoids[colliderIDs[i]], groundNormals[i], areGrounded[i]);
+        ++i;
+    }
 }
 
-// The collision detection’s recursive routine
-void PhysicsSystem::collideWithWorld(glm::vec3 & sourcePoint, 
-                                     glm::vec3 & velocityVector, 
-                                     glm:: vec3 ellipsoidRadii,
-                                     prt::vector<uint32_t> const & colliderIDs) {
-    // Check if list of potential colliders is empty
-    if (colliderIDs.empty()) {
-        sourcePoint += velocityVector;
-        return;
+// The collision detection entry point
+void PhysicsSystem::collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
+                                              glm::vec3 & ellipsoidVelocity,
+                                              glm::vec3 const & ellipsoidRadii,
+                                              glm::vec3 & groundNormal,
+                                              bool & isGrounded) {
+    // convert input to ellipsoid space
+    glm::vec3 velocityVector = ellipsoidVelocity / ellipsoidRadii;
+    // At this point, we’ll scale our inputs to the collision routine
+    glm::vec3 sourcePoint = ellipsoidPosition / ellipsoidRadii; 
+    // declare inpedendent ground normal, as ground normal from previous frame is unimportant
+    glm::vec3 groundN;
+    bool grounded = false;
+
+    // how many iterations?
+    unsigned int iterations = 5;
+    while (iterations != 0 && glm::length2(ellipsoidVelocity) > 0.0f) {
+        // broad-phase query
+        AABB eAABB = { ellipsoidPosition - ellipsoidRadii, ellipsoidPosition + ellipsoidRadii };
+        eAABB += { ellipsoidPosition + ellipsoidVelocity - ellipsoidRadii, 
+                   ellipsoidPosition + ellipsoidVelocity + ellipsoidRadii };
+        prt::vector<uint32_t> colIDs; 
+        m_aabbTree.query(eAABB, colIDs);
+        // prepare output variables
+        glm::vec3 intersectionPoint;
+        float intersectionTime;
+        glm::vec3 collisionNormal;
+        // collide
+        if (!colIDs.empty() && 
+            collideCharacterWithIDs(sourcePoint, velocityVector, ellipsoidRadii, colIDs, 
+                                    intersectionPoint, intersectionTime, collisionNormal)) {
+            // respond to collision
+            respondCharacter(sourcePoint, velocityVector,
+                             intersectionPoint, intersectionTime);
+            bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
+            grounded = grounded || groundCollision;
+
+            if (groundCollision) {
+                groundN = collisionNormal;
+            }
+
+        } else {
+            // no collision
+            // apply velocity as normal and skip further iterations
+            sourcePoint += velocityVector;
+            break;
+        }
+        --iterations;
     }
-        
-    // How far do we need to go?
-    float distanceToTravel = glm::length(velocityVector);
-    // Do we need to bother?
-    if (distanceToTravel == 0.0f) return;
-    // You’ll need to write this routine to deal with your specific data scale_potential_colliders_to_ellipsoid_space(radiusVector);
-    // Determine the nearest collider from the list potentialColliders
-    bool collisionFound = false;
-    float nearestDistance = -1.0f;
-    glm::vec3 nearestIntersectionPoint;
-    glm::vec3 nearestPolygonIntersectionPoint;
+    // un-scale the output 
+    ellipsoidPosition = sourcePoint * ellipsoidRadii;
+    ellipsoidVelocity = velocityVector * ellipsoidRadii;
+    // normals need to be transformed with the inverse transpose
+    groundNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * groundN);
+    isGrounded = grounded;
+}
+
+/**
+ * based on "Improved Collision detection and Response" by
+ * Kasper Fauerby.
+ * Link: http://www.peroxide.dk/papers/collision/collision.pdf
+ */
+bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint, 
+                                            glm::vec3 & velocityVector, 
+                                            glm::vec3 const & ellipsoidRadii,
+                                            prt::vector<uint32_t> const & colliderIDs,
+                                            glm::vec3 & intersectionPoint,
+                                            float & intersectionTime,
+                                            glm::vec3 & collisionNormal) {
 
     // construct all polygons
     struct Polygon {
         glm::vec3 a;
         glm::vec3 b;
         glm::vec3 c;
+        glm::vec3 & operator[](size_t i) {  return *(&a + i); };
+        glm::vec3 const & operator[](size_t i) const {  return *(&a + i); };
     };
     // count all indices
     size_t nIndices = 0;
@@ -173,276 +212,36 @@ void PhysicsSystem::collideWithWorld(glm::vec3 & sourcePoint,
     // fill vector with polygons in ellipsoid space
     prt::vector<Polygon> polygons;
     polygons.resize(nIndices / 3);
+    glm::vec3* pCurr = &polygons[0].a;
     for (uint32_t colliderID : colliderIDs) {
         MeshCollider & meshCollider = m_meshColliders[colliderID];
         
         size_t endIndex = meshCollider.startIndex + meshCollider.numIndices;
-        glm::vec3* pStart = &polygons[0].a;
         for (size_t i = meshCollider.startIndex; i < endIndex; ++i) {
-            *pStart = m_geometry_cache[i] / ellipsoidRadii;
-            ++pStart;
+            *pCurr = m_geometry_cache[i] / ellipsoidRadii;
+            ++pCurr;
         }
     }
     
+    intersectionTime = std::numeric_limits<float>::max();
     for (Polygon p : polygons) {
-        // Plane origin/normal
-        glm::vec3 pOrigin = p.a;
-        glm::vec3 pNormal = glm::cross((p.b - p.a), (p.c - p.a));
-        if (glm::length2(pNormal) == 0) {
-            continue;
-        } else {
-            pNormal = glm::normalize(pNormal);
-        }
-        // Determine the distance from the plane to the source
-        float pDist = intersectRayPlane(pOrigin, pNormal, sourcePoint, -pNormal); 
-        glm::vec3 sphereIntersectionPoint;
-        glm::vec3 planeIntersectionPoint;
-        // Is the source point behind the plane? 
-        //
-        // [note that you can remove this condition if your visuals are not
-        // using backface culling]
-        if (pDist < 0.0f) {
-            continue;
-        }
-        // Is the plane embedded (i.e. within the distance of 1.0 for our
-        // unit sphere)?
-        else if (pDist <= 1.0f) {
-            // Calculate the plane intersection point
-            glm::vec3 temp = -pNormal * pDist; 
-            planeIntersectionPoint = sourcePoint + temp;
-        } else {
-            // Calculate the sphere intersection point 
-            sphereIntersectionPoint = sourcePoint - pNormal; // Calculate the plane intersection point
-            float t = intersectRayPlane(pOrigin, pNormal, sphereIntersectionPoint, glm::normalize(velocityVector));
-            // Are we traveling away from this polygon?
-            if (t < 0.0) continue;
-            // Calculate the plane intersection point
-            glm::vec3 v = velocityVector * t; 
-            planeIntersectionPoint = sphereIntersectionPoint + v;
-        }
-        // Unless otherwise noted, our polygonIntersectionPoint is the 
-        // same point as planeIntersectionPoint
-        glm::vec3 polygonIntersectionPoint = planeIntersectionPoint;
-        glm::vec3 bary = barycentric(planeIntersectionPoint, p.a, p.b, p.c);
-        // check if plane intersection is within triangle
-        if (!(0.0f < bary.x && bary.x < 1.0f &&
-              0.0f < bary.y && bary.y < 1.0f &&
-              0.0f < bary.z && bary.z < 1.0f)) {
-            polygonIntersectionPoint = closestPointOnTrianglePerimeter(p.a, p.b, p.c, planeIntersectionPoint);
-        }
-        // Invert the velocity vector
-        glm::vec3 negativeVelocityVector = -velocityVector;
-
-        // Using the polygonIntersectionPoint, we need to reverse-intersect 
-        // with the sphere (note: the 1.0 below is the unit-sphere’s radius)
-        float t = intersectSphere(polygonIntersectionPoint, negativeVelocityVector, sourcePoint, 1.0f);
-        // Was there an intersection with the sphere? 
-        if (t >= 0.0 && t <= distanceToTravel) {
-            // Where did we intersect the sphere?
-            glm::vec3 v = negativeVelocityVector * t; 
-            glm::vec3 intersectionPoint = polygonIntersectionPoint + v;
-            // Closest intersection thus far?
-            if (!collisionFound || t < nearestDistance) {
-                nearestDistance = t;
-                nearestIntersectionPoint = intersectionPoint; nearestPolygonIntersectionPoint =
-                polygonIntersectionPoint; collisionFound = true;
-            }
-        }
-    }
-    // If we never found a collision, we can safely move to the destination // and bail
-    if (!collisionFound) {
-        sourcePoint += velocityVector;
-        return; 
-    }
-    // Move to the nearest collision
-    glm::vec3 v = glm::normalize(velocityVector) * (nearestDistance - /*EPSILON*/ 0.00001f); 
-    sourcePoint += v;
-    // What's our destination (relative to the point of contact)?
-    v = glm::normalize(v) * (distanceToTravel - nearestDistance);
-    glm::vec3 destinationPoint = nearestPolygonIntersectionPoint + v;
-    // Determine the sliding plane
-    glm::vec3 slidePlaneOrigin = nearestPolygonIntersectionPoint;
-    glm::vec3 slidePlaneNormal = nearestPolygonIntersectionPoint - sourcePoint;
-    // We now project the destination point onto the sliding plane
-    float time = intersectRayPlane(slidePlaneOrigin, slidePlaneNormal, destinationPoint, slidePlaneNormal);
-    slidePlaneNormal = glm::normalize(slidePlaneNormal) * time;
-    glm::vec3 destinationProjectionNormal = slidePlaneNormal;
-    glm::vec3 newDestinationPoint = destinationPoint + destinationProjectionNormal;
-    // Generate the slide vector, which will become our new velocity vector // for the next iteration
-    // glm::vec3 newVelocityVector = newDestinationPoint - nearestPolygonIntersectionPoint;
-    velocityVector = newDestinationPoint - nearestPolygonIntersectionPoint;
-    // Recursively slide (without adding gravity) 
-    //collideWithWorld(sourcePoint, newVelocityVector);
-}
-
-void PhysicsSystem::resolveEllipsoidsModels(uint32_t const * ellipsoidIDs,
-                                            Transform* ellipsoidTransforms,
-                                            glm::vec3* ellipsoidVelocities,
-                                            bool* ellipsoidsAreGrounded,
-                                            glm::vec3* ellipsoidGroundNormals,
-                                            size_t const nEllipsoids,
-                                            float /*deltaTime*/){
-    for (size_t i = 0; i < nEllipsoids; i++) {
-        Transform& eT = ellipsoidTransforms[i];
-        glm::vec3 const & eCol = ellipsoids[ellipsoidIDs[i]];
-        glm::vec3& eVel = ellipsoidVelocities[i];
-        bool & eIsGround = ellipsoidsAreGrounded[i];
-        eIsGround = false;
-        glm::vec3& eGroundN = ellipsoidGroundNormals[i];
-
-        static constexpr size_t max_iter = 5;
-        size_t iter = 0;
-
-        AABB eAABB = { eT.position - eCol, eT.position + eCol };
-        eAABB += { eT.position + eVel - eCol, eT.position +eVel + eCol };
-        prt::vector<uint32_t> colIDs; 
-        m_aabbTree.query(eAABB, colIDs);
-
-        while (iter < max_iter) {
-            glm::vec3 intersectionPoint;
-            float intersectionTime;
-            collideAndRespondEllipsoidMesh(eCol, eT, eVel, eIsGround, eGroundN,
-                                           colIDs, intersectionPoint, intersectionTime);
-            ++iter;
-        }
-        eT.position += eVel;
-        ellipsoidVelocities[i] = eVel;
-    }    
-}
-
-bool PhysicsSystem::collideAndRespondEllipsoidMesh(glm::vec3 const & ellipsoid, 
-                                                   Transform & ellipsoidTransform,
-                                                   glm::vec3 & ellipsoidVel,
-                                                   bool & ellipsoidIsGrounded,
-                                                   glm::vec3& ellipsoidGroundNormal,
-                                                   prt::vector<uint32_t> const & colliderIDs,
-                                                   glm::vec3 & intersectionPoint,
-                                                   float & intersectionTime) {
-    bool collision = false;
-    bool eGrounded = false;
-    glm::vec3 eGroundN;
-    intersectionTime = std::numeric_limits<float>::infinity();
-    for (auto const & id : colliderIDs) {
-        MeshCollider & meshCollider = m_meshColliders[id];
-        glm::vec3 cbm = glm::vec3{ 1.0f / ellipsoid.x,
-                                   1.0f / ellipsoid.y,
-                                   1.0f / ellipsoid.z };
-        
-        prt::vector<glm::vec3> geometry;
-        geometry.resize(meshCollider.numIndices);
-        size_t index = meshCollider.startIndex;
-        for (size_t i = 0; i < meshCollider.numIndices; ++i) {
-            geometry[i] = cbm * m_geometry_cache[index];
-            ++index;
-        }
-
-        // glm::vec3 tPos = { cbm.x * meshTransform.position.x, cbm.y * meshTransform.position.y, cbm.z * meshTransform.position.z };
-        glm::vec3 tPos = { cbm.x * 0.0f, cbm.y * 0.0f, cbm.z * 0.0f };
-        // glm::vec3 tVel = { cbm.x * trianglesVel.x, cbm.y * trianglesVel.y, cbm.z * trianglesVel.z };
-        glm::vec3 tVel = { cbm.x * 0.0f, cbm.y * 0.0f, cbm.z * 0.0f };
-
-        // ellipsoidIsGrounded = false;
-        // ellipsoidGroundNormal = glm::vec3{0.0f,-1.0f,0.0f};
-        float iTime;
-        bool grounded;
-        glm::vec3 groundNormal;
-        bool res = collideEllipsoidMesh(ellipsoid, ellipsoidTransform.position, ellipsoidVel, 
-                                        grounded, groundNormal,
-                                        geometry, tPos, tVel,
-                                        intersectionPoint, iTime);
-
-        if (res && iTime < intersectionTime) {
-            collision = true;
-            eGrounded = grounded;
-            eGroundN = groundNormal;
-            intersectionTime = iTime;
-        }
-    }
-        
-    if (!collision) {
-        return false;
-    } else {
-        respondEllipsoidMesh(ellipsoidTransform.position, ellipsoidVel,
-                             intersectionPoint, intersectionTime);
-        ellipsoidIsGrounded = ellipsoidIsGrounded || eGrounded;
-        if (eGrounded) {
-            ellipsoidGroundNormal = eGroundN;
-            // ellipsoidGroundNormal = glm::dot(eGroundN, glm::vec3{0.0f,1.0f,0.0f}) >
-            //                         glm::dot(ellipsoidGroundNormal, glm::vec3{0.0f,1.0f,0.0f}) ?
-            //                         eGroundN : ellipsoidGroundNormal;
-        }
-        return true;
-    }
-}
-
-// thank you Gene for this concise implementation
-// https://stackoverflow.com/a/25516767
-bool checkPointInTriangle(const glm::vec3& point,
-                          const glm::vec3& pa, const glm::vec3& pb, const glm::vec3& pc)
-{
-    glm::vec3 ba = pb - pa;
-    glm::vec3 cb = pc - pb;
-    glm::vec3 ac = pa - pc;
-    glm::vec3 n = glm::cross(ac, ba);
-
-    glm::vec3 px = point - pa;
-    glm::vec3 nx = glm::cross(ba, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
-
-    px = point - pb;
-    nx = glm::cross(cb, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
-
-    px = point - pc;
-    nx = glm::cross(ac, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
-
-    return true;
-}
-/**
- * based on "Improved Collision detection and Response" by
- * Kasper Fauerby.
- * Link: http://www.peroxide.dk/papers/collision/collision.pdf
- */
-bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/, 
-                                         const glm::vec3& ellipsoidPos,
-                                         const glm::vec3& ellipsoidVel,
-                                         bool& isGrounded,
-                                         glm::vec3& ellipsoidGroundNormal,
-                                         const prt::vector<glm::vec3>& triangles,
-                                         const glm::vec3& trianglesPos,
-                                         const glm::vec3& trianglesVel,
-                                         glm::vec3& intersectionPoint,
-                                         float& intersectionTime) {
-    const prt::vector<glm::vec3>& tris = triangles;
-    glm::vec3 pos = ellipsoidPos - trianglesPos;
-    glm::vec3 vel = ellipsoidVel - trianglesVel;
-
-    // results of the collision test
-    intersectionTime = std::numeric_limits<float>::infinity();
-    glm::vec3 normal;
-    for (size_t i = 0; i < tris.size(); i+=3) {
-        // find the triangle plane
-        const glm::vec3& p1 = tris[i];
-        const glm::vec3& p2 = tris[i+1];
-        const glm::vec3& p3 = tris[i+2];
         // plane normal
-        glm::vec3 n = glm::cross((p2-p1),(p3-p1));
+        glm::vec3 n = glm::cross((p.b-p.a), (p.c-p.a));
         if (glm::length(n) == 0.0f) continue;
         n = glm::normalize(n);
 
         // skip triangle if relative velocity is not towards the triangle
-        if (glm::length(vel) > 0.0f && glm::dot(glm::normalize(vel), n) > 0.0f) {
+        if (glm::length(velocityVector) > 0.0f && 
+            glm::dot(glm::normalize(velocityVector), n) > 0.0f) {
             continue;
         }
-
         // plane constant
-        float c = -glm::dot(n, p1);
+        float c = -glm::dot(n, p.a);
 
         float t0;
         float t1;
-        float ndotv = glm::dot(n, vel);
-        float sigDist = glm::dot(pos, n) + c;
+        float ndotv = glm::dot(n, velocityVector);
+        float sigDist = glm::dot(sourcePoint, n) + c;
         bool embeddedInPlane = false;
         // check distance to plane and set t0,t1
         if (ndotv == 0.0f) {
@@ -467,26 +266,22 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
                 // collision occurs outside velocity range
                 continue;
             }
-            // by clamping with -0.1f we can correct
-            // for some errors where collider was
-            // erroneously pushed inside triangle mesh
-            // the previous frame
-            t0 = glm::clamp(t0, -0.0f, 1.0f);
-            t1 = glm::clamp(t1, -0.0f, 1.0f);
+            t0 = glm::clamp(t0, 0.0f, 1.0f);
+            t1 = glm::clamp(t1, 0.0f, 1.0f);
         }
         
         if (!embeddedInPlane) {
             // calculate plane intersection point;
-            glm::vec3 pip = pos - n + t0 * vel;
+            glm::vec3 pip = sourcePoint - n + t0 * velocityVector;
             // check if we are colliding inside the triangle
-            if (checkPointInTriangle(pip, p1, p2, p3)) {
+            if (checkPointInTriangle(pip, p.a, p.b, p.c)) {
                 float t = t0;
                 if (t < intersectionTime) {
                     intersectionTime = t;
-                    intersectionPoint = pip + trianglesPos;
+                    intersectionPoint = pip;
                     
-                    glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
-                    normal = glm::normalize(futurePos - intersectionPoint);
+                    glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
+                    collisionNormal = glm::normalize(futurePos - intersectionPoint);
                 }
                 // collision inside triangle
                 continue;
@@ -495,11 +290,11 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
         
         // sweep against vertices and edges
         // vertex;
-        float av = glm::length2(vel);
+        float av = glm::length2(velocityVector);
         if (av > 0.0f) {
             for (size_t j = 0; j < 3; j++) {
-                float bv = 2.0f * glm::dot(vel, pos - tris[i + j]);
-                float cv = glm::length2(tris[i + j] - pos) - 1.0f;
+                float bv = 2.0f * glm::dot(velocityVector, sourcePoint - p[j]);
+                float cv = glm::length2(p[j] - sourcePoint) - 1.0f;
 
                 float sqrterm = (bv * bv) - (4.0f * av * cv);
                 if (sqrterm >= 0.0f) {
@@ -508,24 +303,24 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
                     float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
                     if (t >= 0.0f && t <= 1.0f && t < intersectionTime) {
                         intersectionTime = t;
-                        intersectionPoint = tris[i + j] + trianglesPos;
+                        intersectionPoint = p[j];
 
-                        glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
-                        normal = glm::normalize(futurePos - intersectionPoint);
+                        glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
+                        collisionNormal = glm::normalize(futurePos - intersectionPoint);
                     }
                 }
             }
         
             // edges
-            glm::vec3 edges[3] = { p2 - p1, p3 - p2, p1 - p3 };
-            glm::vec3 btv[3] = { p1 - pos, p2 - pos, p3 - pos }; // base to vertex
-            for (size_t j = 0; j < 3; j++) {
+            glm::vec3 edges[3] = { p.b - p.a, p.c - p.b, p.a - p.c };
+            glm::vec3 btv[3] = { p.a - sourcePoint, p.b - sourcePoint, p.c - sourcePoint }; // base to vertex
+            for (size_t j = 0; j < 3; ++j) {
                 float edge2 = glm::length2(edges[j]);
 
-                float ae = edge2 * (-glm::length2(vel)) +
-                        glm::pow(glm::dot(edges[j], vel), 2.0f);
-                float be = edge2 * 2.0f * glm::dot(vel, btv[j]) -
-                        2.0f * (glm::dot(edges[j], vel) * glm::dot(edges[j], btv[j]));
+                float ae = edge2 * (-glm::length2(velocityVector)) +
+                        glm::pow(glm::dot(edges[j], velocityVector), 2.0f);
+                float be = edge2 * 2.0f * glm::dot(velocityVector, btv[j]) -
+                        2.0f * (glm::dot(edges[j], velocityVector) * glm::dot(edges[j], btv[j]));
                 float ce = edge2 * (1.0f - glm::length2(btv[j])) + 
                         glm::pow(glm::dot(edges[j], btv[j]), 2.0f);
 
@@ -535,31 +330,73 @@ bool PhysicsSystem::collideEllipsoidMesh(const glm::vec3& /*ellipsoid*/,
                     float x2 = (-be + std::sqrt(sqrterm)) / (2.0f * ae);
                     float t = std::abs(x1) < std::abs(x2) ? x1 : x2;
                     if (t >= 0.0f && t <= 1.0f) {
-                        float f0 = (glm::dot(edges[j], vel) * t - glm::dot(edges[j], btv[j])) /
+                        float f0 = (glm::dot(edges[j], velocityVector) * t - glm::dot(edges[j], btv[j])) /
                                     glm::length2(edges[j]);
                         if (f0 >= 0.0f && f0 <= 1.0f && t < intersectionTime) {
                             intersectionTime = t;
-                            intersectionPoint = tris[i + j] + f0 * edges[j] + trianglesPos;
+                            intersectionPoint = p[j] + f0 * edges[j];
 
-                            glm::vec3 futurePos = ellipsoidPos + (intersectionTime * ellipsoidVel);
-                            normal = glm::normalize(futurePos - intersectionPoint);
+                            glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
+                            collisionNormal = glm::normalize(futurePos - intersectionPoint);
                         }
                     }
                 }
             }
         }
     }
-    // isGrounded if slope is less than approx 45 degrees
-    bool intersect = intersectionTime <= 1.0f;
-    isGrounded = intersect && glm::dot(normal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
-    ellipsoidGroundNormal = normal;
-    return intersect;
+    return /*0.0f <= intersectionTime &&*/ intersectionTime <= 1.0f;
 }
 
-void PhysicsSystem::respondEllipsoidMesh(glm::vec3& ellipsoidPos,
-                                         glm::vec3& ellipsoidVel,
-                                         glm::vec3& intersectionPoint,
-                                         const float intersectionTime) {
+// thank you Gene for this concise implementation
+// https://stackoverflow.com/a/25516767
+bool PhysicsSystem::checkPointInTriangle(glm::vec3 const & point,
+                                         glm::vec3 const & pa, 
+                                         glm::vec3 const & pb, 
+                                         glm::vec3 const & pc) {
+    glm::vec3 ba = pb - pa;
+    glm::vec3 cb = pc - pb;
+    glm::vec3 ac = pa - pc;
+    glm::vec3 n = glm::cross(ac, ba);
+
+    glm::vec3 px = point - pa;
+    glm::vec3 nx = glm::cross(ba, px);
+    if (glm::dot(nx, n) < 0.0f) return false;
+
+    px = point - pb;
+    nx = glm::cross(cb, px);
+    if (glm::dot(nx, n) < 0.0f) return false;
+
+    px = point - pc;
+    nx = glm::cross(ac, px);
+    if (glm::dot(nx, n) < 0.0f) return false;
+
+    return true;
+
+    // craigs solution: https://gamedev.stackexchange.com/a/152476
+    // u=P2−P1
+    // glm::vec3 u = pb - pa;
+    // // v=P3−P1
+    // glm::vec3 v = pc - pa;
+    // // n=u×v
+    // glm::vec3 n = glm::cross(u, v);
+    // // w=P−P1
+    // glm::vec3 w = point - pa;
+    // // Barycentric coordinates of the projection P′of P onto T:
+    // // γ=[(u×w)⋅n]/n²
+    // float gamma = glm::dot(glm::cross(u, w), n) / glm::dot(n, n);
+    // // β=[(w×v)⋅n]/n²
+    // float beta = glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
+    // float alpha = 1 - gamma - beta;
+    // // The point P′ lies inside T if:
+    // return ((0 <= alpha) && (alpha <= 1) &&
+    //         (0 <= beta)  && (beta  <= 1) &&
+    //         (0 <= gamma) && (gamma <= 1));
+}
+
+void PhysicsSystem::respondCharacter(glm::vec3& ellipsoidPos,
+                                     glm::vec3& ellipsoidVel,
+                                     glm::vec3& intersectionPoint,
+                                     const float intersectionTime) {
     ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
     glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
 
@@ -650,30 +487,41 @@ glm::vec3 PhysicsSystem::closestPointOnLine(glm::vec3 const & a,
 
 // from Generic Collision Detection for Games Using Ellipsoids
 // by Paul Nettle
-float PhysicsSystem::intersectRayPlane(glm::vec3 const & planeOrigin, 
+bool PhysicsSystem::intersectRayPlane(glm::vec3 const & planeOrigin, 
                                        glm::vec3 const & planeNormal,
                                        glm::vec3 const & rayOrigin,
-                                       glm::vec3 const & rayVector) {
+                                       glm::vec3 const & rayVector,
+                                       float & t) {
     float d = -glm::dot(planeNormal, planeOrigin); 
     float numer = glm::dot(planeNormal, rayOrigin) + d; 
     float denom = glm::dot(planeNormal, rayVector); 
-    return -(numer / denom);
+    if (denom == 0.0f) return false;
+    t = -(numer / denom);
+    return true;
 }
 
-// from Generic Collision Detection for Games Using Ellipsoids
-// by Paul Nettle
-float PhysicsSystem::intersectSphere(glm::vec3 const & rO, 
-                                     glm::vec3 const & rV, 
-                                     glm::vec3 const & sO, 
-                                     float sR) {
-    glm::vec3 q = sO - rO;
-    float c = glm::length(q);
-    float v = glm::dot(q, rV);
-    float d = sR*sR - (c * c - v * v);
-    // If there was no intersection, return -1
-    if (d < 0.0) return -1.0;
-    // Return the distance to the [first] intersecting point 
-    return v - sqrt(d);
+// Intersects ray r = p + td, |d| = 1, with sphere s and, if intersecting, 
+// returns t value of intersection
+// From "Realtime Collision Detection" by Christer Ericson
+bool PhysicsSystem::intersectRaySphere(glm::vec3 const & rayOrigin, 
+                                       glm::vec3 const & rayDirection, 
+                                       glm::vec3 const & sphereOrigin, 
+                                       float sphereRadius,
+                                       float & t) {
+    glm::vec3 m = rayOrigin - sphereOrigin;
+    float b = glm::dot(m, rayDirection);
+    float c = glm::dot(m, m) - (sphereRadius * sphereRadius);
+    // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
+    if (c > 0.0f && b > 0.0f) return false;
+    float discr = b*b - c;
+    // A negative discriminant corresponds to ray missing sphere
+    if (discr < 0.0f) return false;
+    // Ray now found to intersect sphere, compute smallest t value of intersection 
+    t = -b - glm::sqrt(discr);
+    // If t is negative, ray started inside sphere so clamp t to zero
+    if (t < 0.0f) t = 0.0f;
+    //q = rayOrigin + t * rayDirection;
+    return true;
 }
 
 // From "Realtime Collision Detection" by Christer Ericson
@@ -712,25 +560,4 @@ bool PhysicsSystem::intersectLineSegmentTriangle(glm::vec3 const & origin,
     // w *= ood;
     //float u = 1.0f - v - w;
     return true;
-}
-
-// Compute barycentric coordinates (u, v, w) for
-// point p with respect to triangle (a, b, c)
-// From "Realtime Collision Detection" by Christer Ericson
-glm::vec3 PhysicsSystem::barycentric(glm::vec3 const & p, 
-                                     glm::vec3 const & a, 
-                                     glm::vec3 const & b, 
-                                     glm::vec3 const & c) {
-    glm::vec3 bary{};
-    glm::vec3 v0 = b - a, v1 = c - a, v2 = p - a;
-    float d00 = glm::dot(v0, v0);
-    float d01 = glm::dot(v0, v1);
-    float d11 = glm::dot(v1, v1);
-    float d20 = glm::dot(v2, v0);
-    float d21 = glm::dot(v2, v1);
-    float denom = d00 * d11 - d01 * d01;
-    bary.y = (d11 * d20 - d01 * d21) / denom;
-    bary.z = (d00 * d21 - d01 * d20) / denom;
-    bary.x = 1.0f - bary.y - bary.z;
-    return bary;
 }
