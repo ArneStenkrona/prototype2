@@ -106,8 +106,8 @@ private:
                                  glm::vec3 const & b,
                                  glm::vec3 const & p);
                                    
-    void respondCharacter(glm::vec3 & ellipsoidPos,
-                          glm::vec3 & ellipsoidVel,
+    void respondCharacter(glm::vec3 & position,
+                          glm::vec3 & velocity,
                           glm::vec3 & intersectionPoint,
                           float const intersectionTime);
 

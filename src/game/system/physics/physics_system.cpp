@@ -392,19 +392,26 @@ bool PhysicsSystem::checkPointInTriangle(glm::vec3 const & point,
             (0 <= gamma) && (gamma <= 1));
 }
 
-void PhysicsSystem::respondCharacter(glm::vec3& ellipsoidPos,
-                                     glm::vec3& ellipsoidVel,
+void PhysicsSystem::respondCharacter(glm::vec3& position,
+                                     glm::vec3& velocity,
                                      glm::vec3& intersectionPoint,
                                      const float intersectionTime) {
     static constexpr float verySmallDistance = 0.005f;
 
-    ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
-    glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
+    position += intersectionTime * velocity;
+    glm::vec3 slideNormal = glm::normalize(position - intersectionPoint);
 
-    if (intersectionTime < 0.0f) slideNormal = -slideNormal;
-    ellipsoidPos += verySmallDistance * slideNormal;
-    ellipsoidVel = glm::cross(slideNormal, 
-                              glm::cross(ellipsoidVel * (1.0f - intersectionTime), slideNormal));
+    // by pushing out the character along the slide normal we gain
+    // tolerance against small numerical errors
+    position += verySmallDistance * slideNormal;
+    // character should not slide on certain conditons
+    // TODO: create a more robust condition for excluding slide
+    if (glm::dot(glm::normalize(velocity), glm::vec3{0.0f,-1.0f,0.0f}) > 0.95f) {
+        velocity = glm::vec3{0.0f};
+    } else {
+        velocity = glm::cross(slideNormal, 
+                                glm::cross(velocity * (1.0f - intersectionTime), slideNormal));
+    }
 }
 
 // From "Realtime Collision Detection" by Christer Ericson
