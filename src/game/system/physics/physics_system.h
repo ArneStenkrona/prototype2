@@ -63,8 +63,6 @@ public:
     float getGravity() const { return m_gravity; }
         
 private:
-    static constexpr float verySmallDistance = 0.005f;
-
     prt::vector<glm::vec3> ellipsoids;
 
     ModelManager & m_modelManager;

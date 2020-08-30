@@ -178,7 +178,7 @@ void PhysicsSystem::collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
     ellipsoidPosition = sourcePoint * ellipsoidRadii;
     ellipsoidVelocity = velocityVector * ellipsoidRadii;
     // normals need to be transformed with the inverse transpose
-    groundNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * groundN);
+    if (grounded) groundNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * groundN);
     isGrounded = grounded;
 }
 
@@ -344,59 +344,60 @@ bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint,
             }
         }
     }
-    return /*0.0f <= intersectionTime &&*/ intersectionTime <= 1.0f;
+    return 0.0f <= intersectionTime && intersectionTime <= 1.0f;
 }
 
-// thank you Gene for this concise implementation
-// https://stackoverflow.com/a/25516767
 bool PhysicsSystem::checkPointInTriangle(glm::vec3 const & point,
                                          glm::vec3 const & pa, 
                                          glm::vec3 const & pb, 
                                          glm::vec3 const & pc) {
-    glm::vec3 ba = pb - pa;
-    glm::vec3 cb = pc - pb;
-    glm::vec3 ac = pa - pc;
-    glm::vec3 n = glm::cross(ac, ba);
+    // Gene's solution: https://stackoverflow.com/a/25516767 
+    // glm::vec3 ba = pb - pa;
+    // glm::vec3 cb = pc - pb;
+    // glm::vec3 ac = pa - pc;
+    // glm::vec3 n = glm::cross(ac, ba);
 
-    glm::vec3 px = point - pa;
-    glm::vec3 nx = glm::cross(ba, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
+    // glm::vec3 px = point - pa;
+    // glm::vec3 nx = glm::cross(ba, px);
+    // if (glm::dot(nx, n) < 0.0f) return false;
 
-    px = point - pb;
-    nx = glm::cross(cb, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
+    // px = point - pb;
+    // nx = glm::cross(cb, px);
+    // if (glm::dot(nx, n) < 0.0f) return false;
 
-    px = point - pc;
-    nx = glm::cross(ac, px);
-    if (glm::dot(nx, n) < 0.0f) return false;
+    // px = point - pc;
+    // nx = glm::cross(ac, px);
+    // if (glm::dot(nx, n) < 0.0f) return false;
 
-    return true;
+    // return true;
 
-    // craigs solution: https://gamedev.stackexchange.com/a/152476
+    // Craig's solution: https://gamedev.stackexchange.com/a/152476
     // u=P2−P1
-    // glm::vec3 u = pb - pa;
-    // // v=P3−P1
-    // glm::vec3 v = pc - pa;
-    // // n=u×v
-    // glm::vec3 n = glm::cross(u, v);
-    // // w=P−P1
-    // glm::vec3 w = point - pa;
-    // // Barycentric coordinates of the projection P′of P onto T:
-    // // γ=[(u×w)⋅n]/n²
-    // float gamma = glm::dot(glm::cross(u, w), n) / glm::dot(n, n);
-    // // β=[(w×v)⋅n]/n²
-    // float beta = glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
-    // float alpha = 1 - gamma - beta;
-    // // The point P′ lies inside T if:
-    // return ((0 <= alpha) && (alpha <= 1) &&
-    //         (0 <= beta)  && (beta  <= 1) &&
-    //         (0 <= gamma) && (gamma <= 1));
+    glm::vec3 u = pb - pa;
+    // v=P3−P1
+    glm::vec3 v = pc - pa;
+    // n=u×v
+    glm::vec3 n = glm::cross(u, v);
+    // w=P−P1
+    glm::vec3 w = point - pa;
+    // Barycentric coordinates of the projection P′of P onto T:
+    // γ=[(u×w)⋅n]/n²
+    float gamma = glm::dot(glm::cross(u, w), n) / glm::dot(n, n);
+    // β=[(w×v)⋅n]/n²
+    float beta = glm::dot(glm::cross(w, v), n) / glm::dot(n, n);
+    float alpha = 1 - gamma - beta;
+    // The point P′ lies inside T if:
+    return ((0 <= alpha) && (alpha <= 1) &&
+            (0 <= beta)  && (beta  <= 1) &&
+            (0 <= gamma) && (gamma <= 1));
 }
 
 void PhysicsSystem::respondCharacter(glm::vec3& ellipsoidPos,
                                      glm::vec3& ellipsoidVel,
                                      glm::vec3& intersectionPoint,
                                      const float intersectionTime) {
+    static constexpr float verySmallDistance = 0.005f;
+
     ellipsoidPos = ellipsoidPos + (intersectionTime * ellipsoidVel);
     glm::vec3 slideNormal = glm::normalize(ellipsoidPos - intersectionPoint);
 

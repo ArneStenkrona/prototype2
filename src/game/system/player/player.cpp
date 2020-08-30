@@ -27,12 +27,6 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         player.jump = true;
     }
 
-        // reference player fields with shorthands
-    glm::vec3& gVel = player.gravityVelocity;
-    bool& grounded = player.isGrounded;
-    glm::vec3& groundNormal = player.groundNormal;
-    bool& jump = player.jump;
-
     glm::vec3 targetVelocity{0.0f};
     
     glm::vec3 moveDir{0.0f};
@@ -59,22 +53,24 @@ void PlayerSystem::updatePlayer(Player & player, float deltaTime) {
         }
     }
 
-    // add friction
-    float gnDotUp = glm::dot(groundNormal, glm::vec3{0.0f,1.0f,0.0f});
-    if (grounded && gnDotUp < 0.72f) {
-        float slideFactor = 5.0f;
-        gVel += slideFactor * (1.0f - gnDotUp) * deltaTime * glm::normalize(glm::cross(groundNormal, 
-                                                glm::cross(glm::vec3{0.0f,-1.0f,0.0f}, groundNormal)));
-    } else if (!grounded) {
-        float gAcc = m_physicsSystem.getGravity() * deltaTime;
-        gVel += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
-    } else {
-        gVel -= player.groundNormal * deltaTime;
-    }
+    // float gnDotUp = glm::dot(player.groundNormal, glm::vec3{0.0f,1.0f,0.0f});
+    // if (player.isGrounded && gnDotUp < 0.72f) {
+    //     float slideFactor = 5.0f;
+    //     player.gravityVelocity += slideFactor * (1.0f - gnDotUp) * deltaTime * glm::normalize(glm::cross(player.groundNormal, 
+    //                                             glm::cross(glm::vec3{0.0f,-1.0f,0.0f}, player.groundNormal)));
+    // } else if (!player.isGrounded) {
+    //     float gAcc = m_physicsSystem.getGravity() * deltaTime;
+    //     player.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
+    // } else {
+    //     player.gravityVelocity -= player.groundNormal * deltaTime;
+    // }
+    
+    float gAcc = m_physicsSystem.getGravity() * deltaTime;
+    player.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
 
     // jump
-    if (jump) {
-        gVel += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
+    if (player.jump) {
+        player.gravityVelocity += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
     }
 
     player.velocity = glm::lerp(player.velocity, targetVelocity, 10.0f * deltaTime);
