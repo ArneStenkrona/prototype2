@@ -43,7 +43,6 @@ private:
         
         BlendedAnimation animation[N];
         CharacterAnimationClips animationClips[N];
-
     };
     Characters<10> m_characters;
     static constexpr size_t PLAYER_ID = 0;

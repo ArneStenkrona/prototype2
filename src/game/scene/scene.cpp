@@ -33,16 +33,18 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
     uint32_t const * animatedModelIDs;
     size_t nAnimatedModelIDs;
     Model const * animatedModels;
-    uint32_t const * boneOffsets;
     size_t nAnimatedModels;
-    getAnimatedModels(animatedModels, boneOffsets, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs);
+    getAnimatedModels(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs);
 
+    prt::vector<uint32_t> boneOffsets;
+    boneOffsets.resize(nAnimatedModelIDs);
+    m_assetManager.getModelManager().getBoneOffsets(animatedModelIDs, boneOffsets.data(), nAnimatedModelIDs);
 
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
 
     gameRenderer.bindAssets(models, nModels, modelIDs, nModelIDs,
-                            animatedModels, boneOffsets, nAnimatedModels, 
+                            animatedModels, boneOffsets.data(), nAnimatedModels, 
                             animatedModelIDs, nAnimatedModelIDs,
                             skybox);
 }
@@ -99,9 +101,9 @@ void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
     modelIDs = getModelIDs(nModelIDs, false);
 }
 
-void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
-                              size_t & nModels, uint32_t const * & modelIDs, size_t & nModelIDs) {
-    m_assetManager.getModelManager().getAnimatedModels(models, boneOffsets, nModels);
+void Scene::getAnimatedModels(Model const * & models, size_t & nModels, 
+                              uint32_t const * & modelIDs, size_t & nModelIDs) {
+    m_assetManager.getModelManager().getAnimatedModels(models, nModels);
     modelIDs = getModelIDs(nModelIDs, true);
 }
 

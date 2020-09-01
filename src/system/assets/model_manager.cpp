@@ -21,10 +21,21 @@ bool is_file_exist(const char *fileName)
 ModelManager::ModelManager(const char* modelDirectory) {
     strcpy(m_modelDirectory, modelDirectory);
 }
-void ModelManager::getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets, size_t & nModels) {
-    models = m_loadedAnimatedModels.models.data();
-    boneOffsets = m_loadedAnimatedModels.boneOffsets.data();
-    nModels = m_loadedAnimatedModels.models.size();
+
+void ModelManager::getAnimatedModels(Model const * & models, size_t & nModels) {
+    models = m_loadedAnimatedModels.data();
+    nModels = m_loadedAnimatedModels.size();
+}
+
+
+void ModelManager::getBoneOffsets(uint32_t const * modelIndices,
+                                  uint32_t * boneOffsets,
+                                  size_t n) {
+    size_t numBones = 0;
+    for (size_t i = 0; i < n; ++i) {
+        boneOffsets[i] = numBones;
+        numBones += m_loadedAnimatedModels[modelIndices[i]].bones.size();
+    }
 }
 
 void ModelManager::getSampledAnimation(float t, 
@@ -33,13 +44,13 @@ void ModelManager::getSampledAnimation(float t,
                                        prt::vector<glm::mat4> & transforms) {
     size_t numBones = 0;
     for (auto & index : modelIndices) {
-        numBones += m_loadedAnimatedModels.models[index].bones.size();
+        numBones += m_loadedAnimatedModels[index].bones.size();
     }
 
     transforms.resize(numBones);
     size_t tIndex = 0;
     for (size_t i = 0; i < modelIndices.size(); ++i) {
-        auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
+        auto const & model = m_loadedAnimatedModels[modelIndices[i]];
         model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
         tIndex += model.bones.size();
     }
@@ -51,13 +62,13 @@ void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
                                               size_t n) {
     size_t numBones = 0;
     for (size_t i = 0; i < n; ++i) {
-        numBones += m_loadedAnimatedModels.models[modelIndices[i]].bones.size();
+        numBones += m_loadedAnimatedModels[modelIndices[i]].bones.size();
     }
     transforms.resize(numBones);
 
     size_t tIndex = 0;
     for (size_t i = 0; i < n; ++i) {
-        auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
+        auto const & model = m_loadedAnimatedModels[modelIndices[i]];
         model.blendAnimation(animationBlends[i].time, 
                              animationBlends[i].blendFactor, 
                              animationBlends[i].clipA, 
@@ -67,15 +78,9 @@ void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
     }
 }
 
-Model const & ModelManager::getAnimatedModel(uint32_t modelID, uint32_t & boneOffset) const {
-    boneOffset = m_loadedAnimatedModels.boneOffsets[modelID];
-    return m_loadedAnimatedModels.models[modelID];
-}
-
-
 void ModelManager::loadModels(char const * paths[], size_t count,
                               uint32_t * ids, bool animated) {
-    auto & models = animated ? m_loadedAnimatedModels.models : m_loadedNonAnimatedModels;
+    auto & models = animated ? m_loadedAnimatedModels : m_loadedNonAnimatedModels;
     
     char path[256];
     size_t dirLen = strlen(m_modelDirectory);
@@ -91,12 +96,6 @@ void ModelManager::loadModels(char const * paths[], size_t count,
             models.push_back({});
             Model & model = models.back();
             model.load(path, animated);
-
-            if (animated) { 
-                // save the bone offset
-                uint32_t offset = id > 0 ? models[id - 1].bones.size() : 0;
-                m_loadedAnimatedModels.boneOffsets.push_back(offset);
-            }
         } else {
             ids[i] = m_pathToModelID.find(paths[i])->value();
         }
@@ -104,5 +103,5 @@ void ModelManager::loadModels(char const * paths[], size_t count,
 }
 
 uint32_t ModelManager::getAnimationIndex(uint32_t modelIndex, char const * name) {
-    return m_loadedAnimatedModels.models[modelIndex].getAnimationIndex(name);
+    return m_loadedAnimatedModels[modelIndex].getAnimationIndex(name);
 }

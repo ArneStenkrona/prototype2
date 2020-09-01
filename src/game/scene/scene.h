@@ -62,9 +62,7 @@ private:
 
     void getNonAnimatedModels(Model const * & models, size_t & nModels, 
                               uint32_t const * & modelIDs, size_t & nModelIDs) const;
-    void getAnimatedModels(Model const * & models, 
-                           uint32_t const * & boneOffsets,
-                           size_t & nModels, 
+    void getAnimatedModels(Model const * & models, size_t & nModels, 
                            uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();

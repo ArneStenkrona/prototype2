@@ -28,7 +28,6 @@ void CharacterSystem::addCharacter(uint32_t modelID) {
     assert(index < m_characters.maxSize && "Character amount exceeded!");
     ++m_characters.size;
 
-
     m_characters.modelIDs[index] = modelID;
 
     m_characters.transforms[index].scale = {0.6f, 0.6f, 0.6f};
@@ -142,7 +141,6 @@ void CharacterSystem::sampleAnimation(prt::vector<glm::mat4> & bones) {
                                                                 m_characters.animation,
                                                                 bones,
                                                                 m_characters.size);
-    
 }
 
 void CharacterSystem::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) const {
@@ -151,4 +149,3 @@ void CharacterSystem::getTransformMatrices(prt::vector<glm::mat4>& transformMatr
         transformMatrices[i] = m_characters.transforms[i].transformMatrix();
     } 
 }
-
