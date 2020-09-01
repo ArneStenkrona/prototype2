@@ -24,24 +24,26 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
 }
 
 void Scene::bindToRenderer(GameRenderer & gameRenderer) {
-    prt::vector<uint32_t> modelIDs;
+    uint32_t const * modelIDs;
+    size_t nModelIDs;
     Model const * models;
     size_t nModels = 0;
-    getNonAnimatedModels(models, nModels, modelIDs);
+    getNonAnimatedModels(models, nModels, modelIDs, nModelIDs);
 
-    prt::vector<uint32_t> animatedModelIDs;
+    uint32_t const * animatedModelIDs;
+    size_t nAnimatedModelIDs;
     Model const * animatedModels;
     uint32_t const * boneOffsets;
     size_t nAnimatedModels;
-    getAnimatedModels(animatedModels, boneOffsets, nAnimatedModels, animatedModelIDs);
+    getAnimatedModels(animatedModels, boneOffsets, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs);
 
 
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
 
-    gameRenderer.bindAssets(models, nModels, modelIDs,
+    gameRenderer.bindAssets(models, nModels, modelIDs, nModelIDs,
                             animatedModels, boneOffsets, nAnimatedModels, 
-                            animatedModelIDs,
+                            animatedModelIDs, nAnimatedModelIDs,
                             skybox);
 }
 
@@ -49,15 +51,12 @@ void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
     m_assetManager.loadCubeMap("default", cubeMap);
 }
 
-void Scene::getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const {
+uint32_t const * Scene::getModelIDs(size_t & nModelIDs, bool animated) const {
     if (animated) {
-        m_characterSystem.getModelIDs(modelIDs);
+        return m_characterSystem.getModelIDs(nModelIDs);
     } else {
-        modelIDs.resize(m_staticSolidEntities.size);
-        size_t iID = 0;
-        for (size_t i = 0; i <  m_staticSolidEntities.size; ++i) {
-            modelIDs[iID++] = m_staticSolidEntities.modelIDs[i];
-        }
+        nModelIDs = m_staticSolidEntities.size;
+        return m_staticSolidEntities.modelIDs;
     }
 }
 
@@ -95,15 +94,15 @@ void Scene::update(float deltaTime) {
 }
 
 void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
-                      prt::vector<uint32_t> & modelIDs) const {
+                                 uint32_t const * & modelIDs, size_t & nModelIDs) const {
     m_assetManager.getModelManager().getNonAnimatedModels(models, nModels);
-    getModelIDs(modelIDs, false);
+    modelIDs = getModelIDs(nModelIDs, false);
 }
 
 void Scene::getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
-                              size_t & nModels, prt::vector<uint32_t> & modelIDs) {
+                              size_t & nModels, uint32_t const * & modelIDs, size_t & nModelIDs) {
     m_assetManager.getModelManager().getAnimatedModels(models, boneOffsets, nModels);
-    getModelIDs(modelIDs, true);
+    modelIDs = getModelIDs(nModelIDs, true);
 }
 
 void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {

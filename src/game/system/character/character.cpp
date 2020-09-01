@@ -145,13 +145,6 @@ void CharacterSystem::sampleAnimation(prt::vector<glm::mat4> & bones) {
     
 }
 
-void CharacterSystem::getModelIDs(prt::vector<uint32_t> & modelIDs) const {
-    modelIDs.resize(m_characters.size);
-    for (size_t i = 0; i < m_characters.size; ++i) {
-        modelIDs[i] = m_characters.modelIDs[i];
-    } 
-}
-
 void CharacterSystem::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) const {
     transformMatrices.resize(m_characters.size);
     for (size_t i = 0; i < m_characters.size; ++i) {

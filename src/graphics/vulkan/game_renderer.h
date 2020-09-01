@@ -24,11 +24,13 @@ public:
      * @param scene : scene to bind
      */
     void bindAssets(Model const * models, size_t nModels,
-                    prt::vector<uint32_t> const & modelIDs,
+                    uint32_t const * modelIDs,
+                    size_t nModelIDs,
                     Model const * animatedModels,
                     uint32_t const * boneOffsets,
                     size_t nAnimatedModels,
-                    prt::vector<uint32_t> const & animatedModelIDs,
+                    uint32_t const * animatedModelIDs,
+                    size_t nAnimatedModelIDs,
                     prt::array<Texture, 6> const & skybox);
 
     /**

@@ -58,12 +58,14 @@ private:
 
     // TODO: remove this
     void resetTransforms();
-    void getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const;
+    uint32_t const * getModelIDs(size_t & nModelIDs, bool animated) const;
 
     void getNonAnimatedModels(Model const * & models, size_t & nModels, 
-                              prt::vector<uint32_t> & modelIDs) const;
-    void getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
-                           size_t & nModels, prt::vector<uint32_t> & modelIDs);
+                              uint32_t const * & modelIDs, size_t & nModelIDs) const;
+    void getAnimatedModels(Model const * & models, 
+                           uint32_t const * & boneOffsets,
+                           size_t & nModels, 
+                           uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();
 

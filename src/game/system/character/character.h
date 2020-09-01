@@ -25,8 +25,7 @@ public:
 
     void sampleAnimation(prt::vector<glm::mat4> & bones);
 
-    // TODO: REMOVE THIS IN FAVOR OF A PATTERN THAT DOES NOT COPY UNNECESSARILY
-    void getModelIDs(prt::vector<uint32_t> & modelIDs) const;
+    uint32_t const * getModelIDs(size_t & nModelIDs) const { nModelIDs = m_characters.size; return m_characters.modelIDs; }
     void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) const;
 
 private:
