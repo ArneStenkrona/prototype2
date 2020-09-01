@@ -4,6 +4,8 @@
 #include "src/container/hash_map.h"
 #include "src/container/vector.h"
 
+#include "src/game/component/component.h"
+
 #include "src/graphics/geometry/model.h"
 
 class ModelManager {
@@ -20,15 +22,10 @@ public:
                              prt::vector<uint32_t> const & animationIndices, 
                              prt::vector<glm::mat4> & transforms);
 
-    struct AnimationBlend {
-        float time;
-        uint32_t animationIndexA;
-        uint32_t animationIndexB;
-        float blendFactor;
-    };
-    void getSampledBlendedAnimation(prt::vector<uint32_t> const & modelIndices,
-                                    prt::vector<AnimationBlend> const & animationBlends, 
-                                    prt::vector<glm::mat4> & transforms);
+    void getSampledBlendedAnimation(uint32_t const * modelIndices,
+                                    BlendedAnimation const * animationBlends, 
+                                    prt::vector<glm::mat4> & transforms,
+                                    size_t n);
 
     inline Model const & getNonAnimatedModel(uint32_t modelID) const { return m_loadedNonAnimatedModels[modelID]; } 
     Model const & getAnimatedModel(uint32_t modelID, uint32_t & boneOffset) const;

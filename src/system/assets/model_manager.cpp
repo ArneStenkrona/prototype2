@@ -45,22 +45,23 @@ void ModelManager::getSampledAnimation(float t,
     }
 }
 
-void ModelManager::getSampledBlendedAnimation(prt::vector<uint32_t> const & modelIndices,
-                                              prt::vector<AnimationBlend> const & animationBlends, 
-                                              prt::vector<glm::mat4> & transforms) {
+void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
+                                              BlendedAnimation const * animationBlends, 
+                                              prt::vector<glm::mat4> & transforms,
+                                              size_t n) {
     size_t numBones = 0;
-    for (auto & index : modelIndices) {
-        numBones += m_loadedAnimatedModels.models[index].bones.size();
+    for (size_t i = 0; i < n; ++i) {
+        numBones += m_loadedAnimatedModels.models[modelIndices[i]].bones.size();
     }
-
     transforms.resize(numBones);
+
     size_t tIndex = 0;
-    for (size_t i = 0; i < modelIndices.size(); ++i) {
+    for (size_t i = 0; i < n; ++i) {
         auto const & model = m_loadedAnimatedModels.models[modelIndices[i]];
         model.blendAnimation(animationBlends[i].time, 
                              animationBlends[i].blendFactor, 
-                             animationBlends[i].animationIndexA, 
-                             animationBlends[i].animationIndexB, 
+                             animationBlends[i].clipA, 
+                             animationBlends[i].clipB, 
                              &transforms[tIndex]);
         tIndex += model.bones.size();
     }

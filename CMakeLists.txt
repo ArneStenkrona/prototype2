@@ -100,7 +100,7 @@ file(GLOB SOURCES
     "src/game/scene/*.cpp"
     "src/game/system/*.cpp"
     "src/game/system/physics/*.cpp"
-    "src/game/system/player/*.cpp"
+    "src/game/system/character/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
     "src/graphics/vulkan/*.cpp"

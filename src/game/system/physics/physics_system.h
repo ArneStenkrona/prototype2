@@ -27,20 +27,12 @@ public:
     /**
      * Updates physics for character entities
      * 
-     * @param colliderIDs base pointer to character collider IDs
-     * @param positions base pointer to character positions
-     * @param velocities base pointer to character velocities
-     * @param gravityVelocities base pointer to character gravity velocities
-     * @param groundNormals base pointer to character groundNormals
-     * @param areGrounded base pointer to character isGrounded flags
+     * @param physics base pointer to character physics component
+     * @param transforms base pointer to character transforms
      * @param n number of character entities
      */
-    void updateCharacterPhysics(uint32_t * colliderIDs,
-                                glm::vec3 * positions,
-                                glm::vec3 * velocities,
-                                glm::vec3 * gravityVelocities,
-                                glm::vec3 * groundNormals,
-                                bool * areGrounded,
+    void updateCharacterPhysics(CharacterPhysics * physics,
+                                Transform * transforms,
                                 size_t n);
 
     uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);

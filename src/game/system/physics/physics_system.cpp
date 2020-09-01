@@ -110,17 +110,14 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
     m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
 }
 
-void PhysicsSystem::updateCharacterPhysics(uint32_t * colliderIDs,
-                                           glm::vec3 * positions,
-                                           glm::vec3 * velocities,
-                                           glm::vec3 * gravityVelocities,
-                                           glm::vec3 * groundNormals,
-                                           bool * areGrounded,
+void PhysicsSystem::updateCharacterPhysics(CharacterPhysics * physics,
+                                           Transform * transforms,
                                            size_t n) {
     size_t i = 0;
     while (i < n) {
-        collideCharacterwithWorld(positions[i], velocities[i], ellipsoids[colliderIDs[i]], groundNormals[i], areGrounded[i]);
-        collideCharacterwithWorld(positions[i], gravityVelocities[i], ellipsoids[colliderIDs[i]], groundNormals[i], areGrounded[i]);
+        // movement
+        collideCharacterwithWorld(transforms[i].position, physics[i].velocity, ellipsoids[physics[i].colliderID], physics[i].groundNormal, physics[i].isGrounded);
+        collideCharacterwithWorld(transforms[i].position, physics[i].gravityVelocity, ellipsoids[physics[i].colliderID], physics[i].groundNormal, physics[i].isGrounded);
         ++i;
     }
 }
