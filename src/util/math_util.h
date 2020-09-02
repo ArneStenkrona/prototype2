@@ -28,6 +28,16 @@ namespace math_util {
      * @return interpolated value
      */
     inline float lerp(float a, float b, float t) { return (1.0f - t) * a + t * b; }
+
+    /**
+     * returns a diagonalizing matrix Q
+     * such that D = Q * A * Transpose(Q) is
+     * a diagonal matrix
+     * @param matrix A
+     * @return diagonalizing matrix
+     */
+    glm::mat3 diagonalizer(glm::mat3 const & A);
+
 };
 
 #endif

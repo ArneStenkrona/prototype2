@@ -21,6 +21,7 @@ void CharacterSystem::initPlayer() {
     uint32_t modelID;
     m_assetManager.loadModels(&monkeyStr, 1, &modelID, true);
     addCharacter(modelID);
+    addCharacter(modelID);
 }
 
 void CharacterSystem::addCharacter(uint32_t modelID) {
@@ -43,6 +44,10 @@ void CharacterSystem::addCharacter(uint32_t modelID) {
 void CharacterSystem::updateCharacters(float deltaTime) {
     // player input
     m_playerController.updateInput(m_characters.input[PLAYER_ID]);
+
+    // JUST FOR FUN, WILL REMOVE LATER
+    glm::vec3 dir = m_characters.transforms[0].position - m_characters.transforms[1].position;
+    m_characters.input[1].move = glm::normalize(glm::vec2(dir.x,dir.z));
 
     for (size_t index = 0; index < m_characters.size; ++index) {
         updateCharacter(index, deltaTime);

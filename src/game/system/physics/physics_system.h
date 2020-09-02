@@ -88,6 +88,25 @@ private:
                                  float & intersectionTime,
                                  glm::vec3 & collisionNormal);
                    
+    bool FindContact(glm::vec3 const & ellipsoid0,
+                     glm::vec3 const & sourcePoint0, 
+                     glm::vec3 const & velocity0, 
+                     glm::vec3 const & ellipsoid1, 
+                     glm::vec3 const & sourcePoint1, 
+                     glm::vec3 const & velocity1,
+                     float & intersectionTime, 
+                     glm::vec3 & contactPoint);
+
+    bool ComputeContact(glm::mat3 const & D, 
+                        glm::vec3 const & K, 
+                        glm::vec3 const & W, 
+                        float & intersectionTime, 
+                        glm::vec3 & zContact);
+
+    float ComputeClosestPoint(glm::mat3 const & D, 
+                              glm::vec3 const & K, 
+                              glm::vec3 & closestPoint);
+
     void respondCharacter(glm::vec3 & position,
                           glm::vec3 & velocity,
                           glm::vec3 & intersectionPoint,

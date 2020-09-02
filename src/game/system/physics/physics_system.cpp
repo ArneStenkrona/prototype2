@@ -3,9 +3,11 @@
 #include "src/game/scene/scene.h"
 
 #include "src/util/physics_util.h"
+#include "src/util/math_util.h"
 
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/component_wise.hpp>
+#include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include <dirent.h>
@@ -344,6 +346,166 @@ bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint,
         }
     }
     return 0.0f <= intersectionTime && intersectionTime <= 1.0f;
+}
+
+// thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
+bool PhysicsSystem::FindContact(glm::vec3 const & ellipsoid0, 
+                                glm::vec3 const & sourcePoint0, 
+                                glm::vec3 const & velocity0, 
+                                glm::vec3 const & ellipsoid1, 
+                                glm::vec3 const & sourcePoint1, 
+                                glm::vec3 const & velocity1,
+                                float & intersectionTime, 
+                                glm::vec3 & contactPoint) {
+    // Get the parameters of ellipsoid0. 
+    glm::vec3 K0 = sourcePoint0; 
+    glm::mat3 R0(1.0f); // axis aligned => axis is identity matrix
+    // glm::mat3 D0 = glm::diagonal3x3(glm::vec3(1.0f / (ellipsoid0[0] * ellipsoid0[0]), 
+    //                                           1.0f / (ellipsoid0[1] * ellipsoid0[1]), 
+    //                                           1.0f / (ellipsoid0[2] * ellipsoid0[2])));
+
+    // Get the parameters of ellipsoid1. 
+    glm::vec3 K1 = sourcePoint1; 
+    glm::mat3 R1(1.0f); // axis aligned => axis is identity matrix
+    glm::mat3 D1 = glm::diagonal3x3(glm::vec3(1.0f / (ellipsoid1[0] * ellipsoid1[0]), 
+                                              1.0f / (ellipsoid1[1] * ellipsoid1[1]), 
+                                              1.0f / (ellipsoid1[2] * ellipsoid1[2])));
+
+    // Compute K2.
+    glm::mat3 D0NegHalf = glm::diagonal3x3(glm::vec3(ellipsoid0[0], 
+                                                     ellipsoid0[1],
+                                                     ellipsoid0[2]));
+
+    glm::mat3 D0Half = glm::diagonal3x3(glm::vec3(1.0f/ellipsoid0[0], 
+                                                  1.0f/ellipsoid0[1],
+                                                  1.0f/ellipsoid0[2]));
+
+    glm::vec3 K2 = D0Half*((K1 - K0)*R0);
+    // Compute M2.
+    glm::mat3 R1TR0D0NegHalf = glm::transpose(R1) * (R0 * D0NegHalf); 
+    glm::mat3 M2 = glm::transpose(R1TR0D0NegHalf) * (D1) * R1TR0D0NegHalf;
+    // Factor M2 = R*D*R^T. 
+    glm::mat3 Q = math_util::diagonalizer(M2);
+    glm::mat3 D = glm::transpose(Q * M2 * glm::transpose(Q));
+    glm::mat3 R = glm::transpose(Q);
+    // Compute K. 
+    glm::vec3 K = K2 * R;
+    // Compute W.
+    glm::vec3 W = (D0Half  * ((velocity1 - velocity0) * R0)) * R;
+    // Transformed ellipsoid0 is Z^T*Z = 1 and transformed ellipsoid1 is 
+    // (Z-K)^T*D*(Z-K) = 0.
+
+    // Compute the initial closest point. 
+    glm::vec3 P0;
+    if (ComputeClosestPoint(D, K, P0) >= 0.0f) {
+        // The ellipsoid contains the origin, so the ellipsoids were not 
+        // separated.
+        return false;
+    }
+    
+    double dist0 = glm::dot(P0, P0) - 1.0f;
+    if (dist0 < 0.0) {
+        // The ellipsoids are not separated.
+        return false;
+    }
+    glm::vec3 zContact;
+    if (!ComputeContact(D, K, W, intersectionTime, zContact)) {
+        return false; 
+    }
+    // Transform contactPoint back to original space
+    contactPoint = K0 + R0 * D0NegHalf * R * zContact;
+    return true;
+}
+
+// thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
+bool PhysicsSystem::ComputeContact(glm::mat3 const & D, 
+                                   glm::vec3 const & K, 
+                                   glm::vec3 const & W, 
+                                   float & intersectionTime, 
+                                   glm::vec3 & zContact) {
+    float d0 = D[0][0], d1 = D[1][1], d2 = D[2][2];
+    // float k0 = K[0], k1 = K[1], k2 = K[2]; 
+    float w0 = W[0], w1 = W[1], w2 = W[2];
+
+    static constexpr int maxIterations = 128; 
+    static constexpr float epsilon = 1e-08f;
+    intersectionTime = 0.0;
+    for (int i = 0; i < maxIterations; ++i) {
+        D[2][2];
+        // Compute h(t).
+        glm::vec3 Kmove = K + intersectionTime * W;
+        float s = ComputeClosestPoint(D, Kmove, zContact); 
+        float tmp0 = d0 * Kmove[0] * s / (d0 * s - 1.0f);
+        float tmp1 = d1 * Kmove[1] * s / (d1 * s - 1.0f);
+        float tmp2 = d2 * Kmove[2] * s / (d2 * s - 1.0f);
+        float h = tmp0 * tmp0 + tmp1 * tmp1 + tmp2 * tmp2 - 1.0f;
+        if (fabs(h) < epsilon) {
+            // We have found a root.
+            return true; 
+        }
+        // Compute h’(t).
+        float hder = 4.0f * tmp0 * w0 + 4.0f * tmp1 * w1 + 4.0f * tmp2 * w2; 
+        if (hder > 0.0f) {
+            // The ellipsoid cannot intersect the sphere.
+            return false; 
+        }
+        // Compute the next iterate tNext = t - h(t)/h’(t).
+        intersectionTime -= h/hder; 
+    }
+    ComputeClosestPoint(D, K + intersectionTime * W, zContact);
+    return true; 
+}
+
+// thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
+float PhysicsSystem::ComputeClosestPoint(glm::mat3 const & D, 
+                                         glm::vec3 const & K, 
+                                         glm::vec3 & closestPoint) {
+    float d0 = D[0][0], d1 = D[1][1], d2 = D[2][2];
+    float k0 = K[0], k1 = K[1], k2 = K[2];
+    float d0k0 = d0 * k0; 
+    float d1k1 = d1 * k1; 
+    float d2k2 = d2 * k2; 
+    float d0k0k0 = d0k0 * k0; 
+    float d1k1k1 = d1k1 * k1; 
+    float d2k2k2 = d2k2 * k2;
+
+    if (d0k0k0 + d1k1k1 + d2k2k2 - 1.0f < 0.0f) {
+        // The ellipsoid contains the origin, so the ellipsoid and sphere are 
+        // overlapping.
+        return FLT_MAX;
+    }
+
+    static constexpr int maxIterations = 128; 
+    static constexpr float epsilon = 1e-08f;
+
+    float s = 0.0; 
+    int i;
+    for (i = 0; i < maxIterations; ++i) {
+        // Compute f(s).
+        float tmp0 = d0 * s - 1.0f;
+        float tmp1 = d1 * s - 1.0f;
+        float tmp2 = d2 * s - 1.0f;
+        float tmp0sqr = tmp0 * tmp0;
+        float tmp1sqr = tmp1 * tmp1;
+        float tmp2sqr = tmp2 * tmp2;
+        float f = d0k0k0 / tmp0sqr + d1k1k1 / tmp1sqr + d2k2k2 / tmp2sqr - 1.0f;
+        if (fabs(f) < epsilon) {
+            // We have found a root.
+            break; 
+        }
+        // Compute f’(s).
+        float tmp0cub = tmp0 * tmp0sqr;
+        float tmp1cub = tmp1 * tmp1sqr;
+        float tmp2cub = tmp2 * tmp2sqr;
+        float fder = -2.0*(d0 * d0k0k0/tmp0cub + d1 * d1k1k1 / tmp1cub
+                            + d2 * d2k2k2 / tmp2cub);
+        // Compute the next iterate sNext = s - f(s)/f’(s).
+        s -= f/fder;
+    }
+    closestPoint[0] = d0k0*s/(d0*s - 1.0); 
+    closestPoint[1] = d1k1*s/(d1*s - 1.0); 
+    closestPoint[2] = d2k2*s/(d2*s - 1.0); 
+    return s;
 }
 
 void PhysicsSystem::respondCharacter(glm::vec3& position,
