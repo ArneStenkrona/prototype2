@@ -87,45 +87,11 @@ private:
                                  glm::vec3 & intersectionPoint,
                                  float & intersectionTime,
                                  glm::vec3 & collisionNormal);
-
-    // consider moving the below functions to a utility namespace
-    glm::vec3 closestPointOnTrianglePerimeter(glm::vec3 const & a,
-                                              glm::vec3 const & b,
-                                              glm::vec3 const & c,
-                                              glm::vec3 const & p);
-
-    glm::vec3 closestPointOnLine(glm::vec3 const & a,
-                                 glm::vec3 const & b,
-                                 glm::vec3 const & p);
-                                   
+                   
     void respondCharacter(glm::vec3 & position,
                           glm::vec3 & velocity,
                           glm::vec3 & intersectionPoint,
                           float const intersectionTime);
-
-    bool intersectRayPlane(glm::vec3 const & planeOrigin, 
-                           glm::vec3 const & planeNormal,
-                           glm::vec3 const & rayOrigin,
-                           glm::vec3 const & rayVector,
-                           float & t);
-
-    bool intersectRaySphere(glm::vec3 const & rayOrigin, 
-                            glm::vec3 const & rayDirection, 
-                            glm::vec3 const & sphereOrigin, 
-                            float sphereRadius,
-                            float & t);
-
-    bool intersectLineSegmentTriangle(glm::vec3 const & origin, 
-                                      glm::vec3 const & end, 
-                                      glm::vec3 const & a,
-                                      glm::vec3 const & b,
-                                      glm::vec3 const & c,
-                                      float & t);
-
-    bool checkPointInTriangle(glm::vec3 const & point,
-                              glm::vec3 const & pa, 
-                              glm::vec3 const & pb, 
-                              glm::vec3 const & pc);
 };
 
 #endif
