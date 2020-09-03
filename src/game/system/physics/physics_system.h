@@ -25,6 +25,19 @@ public:
                               Transform const * transforms,
                               size_t count);
     /**
+     * Checks hit between ray and active colliders
+     * 
+     * @param origin ray origin
+     * @param direction ray direction
+     * @param maxDistance maximum distance ray may travel from origin
+     * @param hit point of raycast hit, return by reference
+     */
+    bool raycast(glm::vec3 const& origin,
+                 glm::vec3 const& direction,
+                 float maxDistance,
+                 glm::vec3 & hit);
+
+    /**
      * Updates physics for character entities
      * 
      * @param physics base pointer to character physics component
@@ -39,23 +52,10 @@ public:
     void addModelColliders(uint32_t const * modelIDs, Transform const * transforms,
                            size_t count, uint32_t * ids);
 
-    /**
-     * Checks hit between ray and active colliders
-     * 
-     * @param origin ray origin
-     * @param direction ray direction
-     * @param maxDistance maximum distance ray may travel from origin
-     * @param hit point of raycast hit, return by reference
-     */
-    bool raycast(glm::vec3 const& origin,
-                 glm::vec3 const& direction,
-                 float maxDistance,
-                 glm::vec3 & hit);
-
     float getGravity() const { return m_gravity; }
         
 private:
-    prt::vector<glm::vec3> ellipsoids;
+    prt::vector<glm::vec3> m_ellipsoids;
 
     ModelManager & m_modelManager;
 
@@ -74,43 +74,60 @@ private:
 
     uint32_t addModelCollider(Model const & model, Transform const & transform);
 
-    void collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
-                                   glm::vec3 & ellipsoidVelocity,
-                                   glm::vec3 const & ellipsoidRadii,
-                                   glm::vec3 & groundNormal,
-                                   bool & isGrounded);
+    void collideCharacterwithWorld(CharacterPhysics * physics,
+                                   Transform * transforms,
+                                   size_t n,
+                                   uint32_t characterIndex,
+                                   bool gravity);
 
-    bool collideCharacterWithIDs(glm::vec3 & sourcePoint, 
-                                 glm::vec3 & velocityVector, 
-                                 glm::vec3 const & ellipsoidRadii,
-                                 prt::vector<uint32_t> const & colliderIDs,
-                                 glm::vec3 & intersectionPoint,
-                                 float & intersectionTime,
-                                 glm::vec3 & collisionNormal);
+    bool collideCharacterWithMeshes(glm::vec3 const & position, 
+                                    glm::vec3 const & velocity, 
+                                    glm::vec3 const & ellipsoidRadii,
+                                    prt::vector<uint32_t> const & colliderIDs,
+                                    glm::vec3 & intersectionPoint,
+                                    float & intersectionTime,
+                                    glm::vec3 & collisionNormal);
+
+    bool collideCharacterWithCharacters(CharacterPhysics * physics,
+                                        Transform * transforms,
+                                        size_t n,
+                                        uint32_t characterIndex,
+                                        glm::vec3 & intersectionPoint,
+                                        float & intersectionTime,
+                                        glm::vec3 & collisionNormal,
+                                        uint32_t & otherCharacterIndex);
                    
-    bool FindContact(glm::vec3 const & ellipsoid0,
-                     glm::vec3 const & sourcePoint0, 
-                     glm::vec3 const & velocity0, 
-                     glm::vec3 const & ellipsoid1, 
-                     glm::vec3 const & sourcePoint1, 
-                     glm::vec3 const & velocity1,
-                     float & intersectionTime, 
-                     glm::vec3 & contactPoint);
+    bool collideEllipsoids(glm::vec3 const & ellipsoid0,
+                           glm::vec3 const & sourcePoint0, 
+                           glm::vec3 const & velocity0, 
+                           glm::vec3 const & ellipsoid1, 
+                           glm::vec3 const & sourcePoint1, 
+                           glm::vec3 const & velocity1,
+                           float & intersectionTime, 
+                           glm::vec3 & intersectionPoint,
+                           glm::vec3 & collisionNormal);
 
-    bool ComputeContact(glm::mat3 const & D, 
-                        glm::vec3 const & K, 
-                        glm::vec3 const & W, 
-                        float & intersectionTime, 
-                        glm::vec3 & zContact);
+    bool computeContactEllipsoids(glm::mat3 const & D, 
+                                  glm::vec3 const & K, 
+                                  glm::vec3 const & W, 
+                                  float & intersectionTime, 
+                                  glm::vec3 & zContact);
 
-    float ComputeClosestPoint(glm::mat3 const & D, 
-                              glm::vec3 const & K, 
-                              glm::vec3 & closestPoint);
+    float computeClosestPointEllipsoids(glm::mat3 const & D, 
+                                        glm::vec3 const & K, 
+                                        glm::vec3 & closestPoint);
 
     void respondCharacter(glm::vec3 & position,
                           glm::vec3 & velocity,
-                          glm::vec3 & intersectionPoint,
+                          glm::vec3 const & intersectionPoint,
                           float const intersectionTime);
+
+    void collisionResponse(bool collision,
+                           glm::vec3 & position,
+                           glm::vec3 & velocity,
+                           glm::vec3 const & intersectionPoint,
+                           glm::vec3 const & collisionNormal,
+                           float const intersectionTime);
 };
 
 #endif

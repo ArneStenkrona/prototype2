@@ -34,8 +34,8 @@ void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const
 }
 
 uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
-    uint32_t id = ellipsoids.size();
-    ellipsoids.push_back(ellipsoid);
+    uint32_t id = m_ellipsoids.size();
+    m_ellipsoids.push_back(ellipsoid);
     return id;
 }
 
@@ -114,73 +114,140 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
     m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
 }
 
+// From "Realtime Collision Detection" by Christer Ericson
+bool PhysicsSystem::raycast(glm::vec3 const& origin,
+                            glm::vec3 const& direction,
+                            float maxDistance,
+                            glm::vec3 & hit) {
+    prt::vector<uint32_t> colIDs; 
+    m_aabbTree.queryRaycast(origin, direction, maxDistance, colIDs);
+
+    float intersectionTime = std::numeric_limits<float>::max();
+    bool intersect = false;
+    for (auto id : colIDs) {
+        MeshCollider & meshCollider = m_meshColliders[id];
+        size_t index = meshCollider.startIndex;
+        for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
+            float t;
+            bool in = physics_util::intersectLineSegmentTriangle(origin, origin + direction * maxDistance,
+                                                                 m_geometry_cache[index],
+                                                                 m_geometry_cache[index+1],
+                                                                 m_geometry_cache[index+2],
+                                                                 t);
+            intersect |= in;
+            if (in) {
+                intersectionTime = std::min(intersectionTime, t);
+            }
+            
+            index += 3;
+        }
+    }
+    if (intersect) {
+        hit = origin + direction * intersectionTime * maxDistance;
+    }
+    return intersect;
+}
+
+
 void PhysicsSystem::updateCharacterPhysics(CharacterPhysics * physics,
                                            Transform * transforms,
                                            size_t n) {
     size_t i = 0;
     while (i < n) {
         // movement
-        collideCharacterwithWorld(transforms[i].position, physics[i].velocity, ellipsoids[physics[i].colliderID], physics[i].groundNormal, physics[i].isGrounded);
-        collideCharacterwithWorld(transforms[i].position, physics[i].gravityVelocity, ellipsoids[physics[i].colliderID], physics[i].groundNormal, physics[i].isGrounded);
+        collideCharacterwithWorld(physics, transforms, n, i, false);
+        collideCharacterwithWorld(physics, transforms, n, i, true);
         ++i;
     }
 }
 
-// The collision detection entry point
-void PhysicsSystem::collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
-                                              glm::vec3 & ellipsoidVelocity,
-                                              glm::vec3 const & ellipsoidRadii,
-                                              glm::vec3 & groundNormal,
-                                              bool & isGrounded) {
-    // convert input to ellipsoid space
-    glm::vec3 velocityVector = ellipsoidVelocity / ellipsoidRadii;
-    // At this point, we’ll scale our inputs to the collision routine
-    glm::vec3 sourcePoint = ellipsoidPosition / ellipsoidRadii; 
-    // declare inpedendent ground normal, as ground normal from previous frame is unimportant
-    glm::vec3 groundN;
-    bool grounded = false;
+void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
+                                              Transform * transforms,
+                                              size_t n,
+                                              uint32_t characterIndex,
+                                              bool gravity) {
+    // unpack variables
+    glm::vec3 & position = transforms[characterIndex].position;
+    glm::vec3 & velocity = gravity ? physics[characterIndex].gravityVelocity : physics[characterIndex].velocity ;
+    glm::vec3 const & radii = m_ellipsoids[physics[characterIndex].colliderID];
+    glm::vec3 & groundNormal = physics[characterIndex].groundNormal;
+    bool & isGrounded = physics[characterIndex].isGrounded;
 
-    // how many iterations?
+    isGrounded = false;
+
     unsigned int iterations = 5;
-    while (iterations != 0 && glm::length2(ellipsoidVelocity) > 0.0f) {
-        // broad-phase query
-        AABB eAABB = { ellipsoidPosition - ellipsoidRadii, ellipsoidPosition + ellipsoidRadii };
-        eAABB += { ellipsoidPosition + ellipsoidVelocity - ellipsoidRadii, 
-                   ellipsoidPosition + ellipsoidVelocity + ellipsoidRadii };
-        prt::vector<uint32_t> colIDs; 
-        m_aabbTree.query(eAABB, colIDs);
+    while (iterations != 0) {
+        --iterations;
         // prepare output variables
         glm::vec3 intersectionPoint;
-        float intersectionTime;
+        float intersectionTime = std::numeric_limits<float>::max();
         glm::vec3 collisionNormal;
-        // collide
-        if (!colIDs.empty() && 
-            collideCharacterWithIDs(sourcePoint, velocityVector, ellipsoidRadii, colIDs, 
-                                    intersectionPoint, intersectionTime, collisionNormal)) {
-            // respond to collision
-            respondCharacter(sourcePoint, velocityVector,
-                             intersectionPoint, intersectionTime);
-            bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
-            grounded = grounded || groundCollision;
+        bool collision = false;
+        uint32_t otherCharacterIndex = -1; // = 2,147,483,647
 
-            if (groundCollision) {
-                groundN = collisionNormal;
+        // only check collision if there is any velocity
+        if (glm::length2(velocity) > 0.0f) {
+            // collide with meshes
+            // broad-phase query
+            AABB eAABB = { position - radii, position + radii };
+            eAABB += { position + velocity - radii, 
+                    position + velocity + radii };
+            prt::vector<uint32_t> colIDs; 
+            m_aabbTree.query(eAABB, colIDs);
+            if (!colIDs.empty()) {                
+                glm::vec3 ip;
+                float t;
+                glm::vec3 cn;
+                if (collideCharacterWithMeshes(position, velocity, radii, colIDs, 
+                                            ip, t, cn)) {
+                    collision = true;
+                    intersectionPoint = ip * radii;
+                    intersectionTime = t;
+                    collisionNormal = cn;
+                }
             }
 
+            // collide with other characters
+            float t;
+            glm::vec3 ip;
+            glm::vec3 cn;
+            uint32_t oci;
+            // collide with other characters
+            if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ip, t, cn, oci) &&
+                t < intersectionTime) {
+                collision = true;
+                intersectionTime = t;
+                intersectionPoint = ip;
+                collisionNormal = cn;
+
+                otherCharacterIndex = oci;
+            }
+        }
+        // respond
+        collisionResponse(collision, position, velocity, 
+                          intersectionPoint, collisionNormal, intersectionTime);
+        if (collision) { 
+            // if collision with other character, we need to update that as well
+            if (otherCharacterIndex != uint32_t(-1)) {
+                collisionResponse(collision, 
+                                transforms[otherCharacterIndex].position,
+                                physics[otherCharacterIndex].velocity,
+                                intersectionPoint,
+                                -collisionNormal, // temporary hack: technically we need to compute the actual collision normal
+                                intersectionTime);
+            }
+            // set grounded
+            bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
+            isGrounded = isGrounded || groundCollision;
+
+            if (groundCollision) {
+                groundNormal = collisionNormal;
+            }
         } else {
-            // no collision
-            // apply velocity as normal and skip further iterations
-            sourcePoint += velocityVector;
+            // no collision ths iteration, we can end collision detection
             break;
         }
-        --iterations;
     }
-    // un-scale the output 
-    ellipsoidPosition = sourcePoint * ellipsoidRadii;
-    ellipsoidVelocity = velocityVector * ellipsoidRadii;
-    // normals need to be transformed with the inverse transpose
-    if (grounded) groundNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * groundN);
-    isGrounded = grounded;
 }
 
 /**
@@ -188,13 +255,18 @@ void PhysicsSystem::collideCharacterwithWorld(glm::vec3 & ellipsoidPosition,
  * Kasper Fauerby.
  * Link: http://www.peroxide.dk/papers/collision/collision.pdf
  */
-bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint, 
-                                            glm::vec3 & velocityVector, 
-                                            glm::vec3 const & ellipsoidRadii,
-                                            prt::vector<uint32_t> const & colliderIDs,
-                                            glm::vec3 & intersectionPoint,
-                                            float & intersectionTime,
-                                            glm::vec3 & collisionNormal) {
+bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position, 
+                                               glm::vec3 const & velocity, 
+                                               glm::vec3 const & ellipsoidRadii,
+                                               prt::vector<uint32_t> const & colliderIDs,
+                                               glm::vec3 & intersectionPoint,
+                                               float & intersectionTime,
+                                               glm::vec3 & collisionNormal) {
+    // convert input to ellipsoid space
+    glm::vec3 sourcePoint = position / ellipsoidRadii; 
+    glm::vec3 velocityVector = velocity / ellipsoidRadii;
+    // collisioin normal in ellipsoid space
+    glm::vec3 cn{1.0f};
 
     // construct all polygons
     struct Polygon {
@@ -282,7 +354,7 @@ bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint,
                     intersectionPoint = pip;
                     
                     glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
-                    collisionNormal = glm::normalize(futurePos - intersectionPoint);
+                    cn = glm::normalize(futurePos - intersectionPoint);
                 }
                 // collision inside triangle
                 continue;
@@ -307,7 +379,7 @@ bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint,
                         intersectionPoint = p[j];
 
                         glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
-                        collisionNormal = glm::normalize(futurePos - intersectionPoint);
+                        cn = glm::normalize(futurePos - intersectionPoint);
                     }
                 }
             }
@@ -338,25 +410,65 @@ bool PhysicsSystem::collideCharacterWithIDs(glm::vec3 & sourcePoint,
                             intersectionPoint = p[j] + f0 * edges[j];
 
                             glm::vec3 futurePos = sourcePoint + (intersectionTime * velocityVector);
-                            collisionNormal = glm::normalize(futurePos - intersectionPoint);
+                            cn = glm::normalize(futurePos - intersectionPoint);
                         }
                     }
                 }
             }
         }
     }
+    // convert collision normal to original space
+    collisionNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * cn);
     return 0.0f <= intersectionTime && intersectionTime <= 1.0f;
 }
 
+bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
+                                                   Transform * transforms,
+                                                   size_t n,
+                                                   uint32_t characterIndex,
+                                                   glm::vec3 & intersectionPoint,
+                                                   float & intersectionTime,
+                                                   glm::vec3 & collisionNormal,
+                                                   uint32_t & otherCharacterIndex) {
+    bool collision = false;
+    // TODO: implement a breadth first so that we can avoid
+    // O(n^2) when collision is checked for all characters
+    intersectionTime = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < n; ++i) {
+        if (i == characterIndex) continue;
+        float t;
+        glm::vec3 ip;
+        glm::vec3 cn;
+        if (collideEllipsoids(m_ellipsoids[physics[characterIndex].colliderID],
+                          transforms[characterIndex].position,
+                          physics[characterIndex].velocity,
+                          m_ellipsoids[physics[i].colliderID],
+                          transforms[i].position,
+                          physics[i].velocity,
+                          t,
+                          ip,
+                          cn) && t < intersectionTime) {
+            intersectionTime = t;
+            intersectionPoint = ip;
+            collisionNormal = cn;
+            otherCharacterIndex = i;
+            collision = true;
+        }
+
+    }
+    return collision;
+}
+
 // thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
-bool PhysicsSystem::FindContact(glm::vec3 const & ellipsoid0, 
-                                glm::vec3 const & sourcePoint0, 
-                                glm::vec3 const & velocity0, 
-                                glm::vec3 const & ellipsoid1, 
-                                glm::vec3 const & sourcePoint1, 
-                                glm::vec3 const & velocity1,
-                                float & intersectionTime, 
-                                glm::vec3 & contactPoint) {
+bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0, 
+                                      glm::vec3 const & sourcePoint0, 
+                                      glm::vec3 const & velocity0, 
+                                      glm::vec3 const & ellipsoid1, 
+                                      glm::vec3 const & sourcePoint1, 
+                                      glm::vec3 const & velocity1,
+                                      float & intersectionTime, 
+                                      glm::vec3 & intersectionPoint,
+                                      glm::vec3 & collisionNormal) {
     // Get the parameters of ellipsoid0. 
     glm::vec3 K0 = sourcePoint0; 
     glm::mat3 R0(1.0f); // axis aligned => axis is identity matrix
@@ -397,7 +509,7 @@ bool PhysicsSystem::FindContact(glm::vec3 const & ellipsoid0,
 
     // Compute the initial closest point. 
     glm::vec3 P0;
-    if (ComputeClosestPoint(D, K, P0) >= 0.0f) {
+    if (computeClosestPointEllipsoids(D, K, P0) >= 0.0f) {
         // The ellipsoid contains the origin, so the ellipsoids were not 
         // separated.
         return false;
@@ -409,20 +521,22 @@ bool PhysicsSystem::FindContact(glm::vec3 const & ellipsoid0,
         return false;
     }
     glm::vec3 zContact;
-    if (!ComputeContact(D, K, W, intersectionTime, zContact)) {
+    if (!computeContactEllipsoids(D, K, W, intersectionTime, zContact)) {
         return false; 
     }
     // Transform contactPoint back to original space
-    contactPoint = K0 + R0 * D0NegHalf * R * zContact;
-    return true;
+    intersectionPoint = K0 + R0 * D0NegHalf * R * zContact;
+    // collision normal is the gradient 2D(P - K)
+    collisionNormal = glm::normalize(D1 * (intersectionPoint - K1));
+    return intersectionTime <= 1.0f;//true;
 }
 
 // thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
-bool PhysicsSystem::ComputeContact(glm::mat3 const & D, 
-                                   glm::vec3 const & K, 
-                                   glm::vec3 const & W, 
-                                   float & intersectionTime, 
-                                   glm::vec3 & zContact) {
+bool PhysicsSystem::computeContactEllipsoids(glm::mat3 const & D, 
+                                             glm::vec3 const & K, 
+                                             glm::vec3 const & W, 
+                                             float & intersectionTime, 
+                                             glm::vec3 & zContact) {
     float d0 = D[0][0], d1 = D[1][1], d2 = D[2][2];
     // float k0 = K[0], k1 = K[1], k2 = K[2]; 
     float w0 = W[0], w1 = W[1], w2 = W[2];
@@ -434,7 +548,7 @@ bool PhysicsSystem::ComputeContact(glm::mat3 const & D,
         D[2][2];
         // Compute h(t).
         glm::vec3 Kmove = K + intersectionTime * W;
-        float s = ComputeClosestPoint(D, Kmove, zContact); 
+        float s = computeClosestPointEllipsoids(D, Kmove, zContact); 
         float tmp0 = d0 * Kmove[0] * s / (d0 * s - 1.0f);
         float tmp1 = d1 * Kmove[1] * s / (d1 * s - 1.0f);
         float tmp2 = d2 * Kmove[2] * s / (d2 * s - 1.0f);
@@ -452,14 +566,14 @@ bool PhysicsSystem::ComputeContact(glm::mat3 const & D,
         // Compute the next iterate tNext = t - h(t)/h’(t).
         intersectionTime -= h/hder; 
     }
-    ComputeClosestPoint(D, K + intersectionTime * W, zContact);
+    computeClosestPointEllipsoids(D, K + intersectionTime * W, zContact);
     return true; 
 }
 
 // thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
-float PhysicsSystem::ComputeClosestPoint(glm::mat3 const & D, 
-                                         glm::vec3 const & K, 
-                                         glm::vec3 & closestPoint) {
+float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D, 
+                                                   glm::vec3 const & K, 
+                                                   glm::vec3 & closestPoint) {
     float d0 = D[0][0], d1 = D[1][1], d2 = D[2][2];
     float k0 = K[0], k1 = K[1], k2 = K[2];
     float d0k0 = d0 * k0; 
@@ -510,8 +624,8 @@ float PhysicsSystem::ComputeClosestPoint(glm::mat3 const & D,
 
 void PhysicsSystem::respondCharacter(glm::vec3& position,
                                      glm::vec3& velocity,
-                                     glm::vec3& intersectionPoint,
-                                     const float intersectionTime) {
+                                     glm::vec3 const & intersectionPoint,
+                                     float const intersectionTime) {
     static constexpr float verySmallDistance = 0.005f;
 
     position += intersectionTime * velocity;
@@ -530,36 +644,32 @@ void PhysicsSystem::respondCharacter(glm::vec3& position,
     }
 }
 
-// From "Realtime Collision Detection" by Christer Ericson
-bool PhysicsSystem::raycast(glm::vec3 const& origin,
-                            glm::vec3 const& direction,
-                            float maxDistance,
-                            glm::vec3 & hit) {
-    prt::vector<uint32_t> colIDs; 
-    m_aabbTree.queryRaycast(origin, direction, maxDistance, colIDs);
+void PhysicsSystem::collisionResponse(bool collision,
+                                      glm::vec3 & position,
+                                      glm::vec3 & velocity,
+                                      glm::vec3 const & /*intersectionPoint*/,
+                                      glm::vec3 const & collisionNormal,
+                                      float const intersectionTime) {
+    if (glm::length2(velocity) == 0.0f) return;
+        
+    if (collision) {
+        static constexpr float verySmallDistance = 0.005f;
 
-    float intersectionTime = std::numeric_limits<float>::max();
-    bool intersect = false;
-    for (auto id : colIDs) {
-        MeshCollider & meshCollider = m_meshColliders[id];
-        size_t index = meshCollider.startIndex;
-        for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
-            float t;
-            bool in = physics_util::intersectLineSegmentTriangle(origin, origin + direction * maxDistance,
-                                                                 m_geometry_cache[index],
-                                                                 m_geometry_cache[index+1],
-                                                                 m_geometry_cache[index+2],
-                                                                 t);
-            intersect |= in;
-            if (in) {
-                intersectionTime = std::min(intersectionTime, t);
-            }
-            
-            index += 3;
+        position += intersectionTime * velocity;
+        glm::vec3 slideNormal = collisionNormal;//glm::normalize(position - intersectionPoint);
+
+        // by pushing out the character along the slide normal we gain
+        // tolerance against small numerical errors
+        position += verySmallDistance * slideNormal;
+        // character should not slide on certain conditons
+        // TODO: create a more robust condition for excluding slide
+        if (glm::dot(glm::normalize(velocity), glm::vec3{0.0f,-1.0f,0.0f}) > 0.95f) {
+            velocity = glm::vec3{0.0f};
+        } else {
+            velocity = glm::cross(slideNormal, 
+                                    glm::cross(velocity * (1.0f - intersectionTime), slideNormal));
         }
+    } else {
+        position += velocity;
     }
-    if (intersect) {
-        hit = origin + direction * intersectionTime * maxDistance;
-    }
-    return intersect;
 }
