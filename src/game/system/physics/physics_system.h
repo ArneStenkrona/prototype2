@@ -95,7 +95,8 @@ private:
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,
-                                        uint32_t & otherCharacterIndex);
+                                        uint32_t & otherCharacterIndex,
+                                        bool gravity);
                    
     bool collideEllipsoids(glm::vec3 const & ellipsoid0,
                            glm::vec3 const & sourcePoint0, 
@@ -116,11 +117,6 @@ private:
     float computeClosestPointEllipsoids(glm::mat3 const & D, 
                                         glm::vec3 const & K, 
                                         glm::vec3 & closestPoint);
-
-    void respondCharacter(glm::vec3 & position,
-                          glm::vec3 & velocity,
-                          glm::vec3 const & intersectionPoint,
-                          float const intersectionTime);
 
     void collisionResponse(bool collision,
                            glm::vec3 & position,

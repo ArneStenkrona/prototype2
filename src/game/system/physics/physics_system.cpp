@@ -213,7 +213,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             glm::vec3 cn;
             uint32_t oci;
             // collide with other characters
-            if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ip, t, cn, oci) &&
+            if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ip, t, cn, oci, gravity) &&
                 t < intersectionTime) {
                 collision = true;
                 intersectionTime = t;
@@ -229,12 +229,13 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
         if (collision) { 
             // if collision with other character, we need to update that as well
             if (otherCharacterIndex != uint32_t(-1)) {
+                glm::vec3 & otherVelocity = gravity ? physics[otherCharacterIndex].gravityVelocity : physics[otherCharacterIndex].velocity;
                 collisionResponse(collision, 
-                                transforms[otherCharacterIndex].position,
-                                physics[otherCharacterIndex].velocity,
-                                intersectionPoint,
-                                -collisionNormal, // temporary hack: technically we need to compute the actual collision normal
-                                intersectionTime);
+                                  transforms[otherCharacterIndex].position,
+                                  otherVelocity,
+                                  intersectionPoint,
+                                  -collisionNormal, // temporary hack: technically we need to compute the actual collision normal
+                                  intersectionTime);
             }
             // set grounded
             bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
@@ -429,7 +430,8 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
                                                    glm::vec3 & intersectionPoint,
                                                    float & intersectionTime,
                                                    glm::vec3 & collisionNormal,
-                                                   uint32_t & otherCharacterIndex) {
+                                                   uint32_t & otherCharacterIndex,
+                                                   bool gravity) {
     bool collision = false;
     // TODO: implement a breadth first so that we can avoid
     // O(n^2) when collision is checked for all characters
@@ -439,15 +441,16 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
         float t;
         glm::vec3 ip;
         glm::vec3 cn;
+        glm::vec3 const & otherVelocity = gravity ? physics[i].gravityVelocity : physics[i].velocity;
         if (collideEllipsoids(m_ellipsoids[physics[characterIndex].colliderID],
-                          transforms[characterIndex].position,
-                          physics[characterIndex].velocity,
-                          m_ellipsoids[physics[i].colliderID],
-                          transforms[i].position,
-                          physics[i].velocity,
-                          t,
-                          ip,
-                          cn) && t < intersectionTime) {
+                              transforms[characterIndex].position,
+                              physics[characterIndex].velocity,
+                              m_ellipsoids[physics[i].colliderID],
+                              transforms[i].position,
+                              otherVelocity,
+                              t,
+                              ip,
+                            cn) && t < intersectionTime) {
             intersectionTime = t;
             intersectionPoint = ip;
             collisionNormal = cn;
@@ -512,13 +515,13 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
     if (computeClosestPointEllipsoids(D, K, P0) >= 0.0f) {
         // The ellipsoid contains the origin, so the ellipsoids were not 
         // separated.
-        return false;
+        // return false;
     }
     
     double dist0 = glm::dot(P0, P0) - 1.0f;
     if (dist0 < 0.0) {
         // The ellipsoids are not separated.
-        return false;
+        // return false;
     }
     glm::vec3 zContact;
     if (!computeContactEllipsoids(D, K, W, intersectionTime, zContact)) {
@@ -559,7 +562,8 @@ bool PhysicsSystem::computeContactEllipsoids(glm::mat3 const & D,
         }
         // Compute h’(t).
         float hder = 4.0f * tmp0 * w0 + 4.0f * tmp1 * w1 + 4.0f * tmp2 * w2; 
-        if (hder > 0.0f) {
+        // if (hder > 0.0f) { // this would result in division by zero
+        if (hder >= 0.0f) {
             // The ellipsoid cannot intersect the sphere.
             return false; 
         }
@@ -586,7 +590,7 @@ float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D,
     if (d0k0k0 + d1k1k1 + d2k2k2 - 1.0f < 0.0f) {
         // The ellipsoid contains the origin, so the ellipsoid and sphere are 
         // overlapping.
-        return FLT_MAX;
+        // return FLT_MAX;
     }
 
     static constexpr int maxIterations = 128; 
@@ -614,34 +618,13 @@ float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D,
         float fder = -2.0*(d0 * d0k0k0/tmp0cub + d1 * d1k1k1 / tmp1cub
                             + d2 * d2k2k2 / tmp2cub);
         // Compute the next iterate sNext = s - f(s)/f’(s).
+        if (fder == 0.0f) break;
         s -= f/fder;
     }
     closestPoint[0] = d0k0*s/(d0*s - 1.0); 
     closestPoint[1] = d1k1*s/(d1*s - 1.0); 
     closestPoint[2] = d2k2*s/(d2*s - 1.0); 
     return s;
-}
-
-void PhysicsSystem::respondCharacter(glm::vec3& position,
-                                     glm::vec3& velocity,
-                                     glm::vec3 const & intersectionPoint,
-                                     float const intersectionTime) {
-    static constexpr float verySmallDistance = 0.005f;
-
-    position += intersectionTime * velocity;
-    glm::vec3 slideNormal = glm::normalize(position - intersectionPoint);
-
-    // by pushing out the character along the slide normal we gain
-    // tolerance against small numerical errors
-    position += verySmallDistance * slideNormal;
-    // character should not slide on certain conditons
-    // TODO: create a more robust condition for excluding slide
-    if (glm::dot(glm::normalize(velocity), glm::vec3{0.0f,-1.0f,0.0f}) > 0.95f) {
-        velocity = glm::vec3{0.0f};
-    } else {
-        velocity = glm::cross(slideNormal, 
-                                glm::cross(velocity * (1.0f - intersectionTime), slideNormal));
-    }
 }
 
 void PhysicsSystem::collisionResponse(bool collision,

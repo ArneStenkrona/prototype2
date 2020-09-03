@@ -47,7 +47,8 @@ void CharacterSystem::updateCharacters(float deltaTime) {
 
     // JUST FOR FUN, WILL REMOVE LATER
     glm::vec3 dir = m_characters.transforms[0].position - m_characters.transforms[1].position;
-    if (glm::length2(dir) > 0.0f) m_characters.input[1].move = glm::normalize(glm::vec2(dir.x,dir.z));
+    m_characters.input[1].move = glm::vec2(dir.x,dir.z);
+    if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
 
     for (size_t index = 0; index < m_characters.size; ++index) {
         updateCharacter(index, deltaTime);
