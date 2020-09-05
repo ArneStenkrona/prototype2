@@ -339,11 +339,13 @@ int32_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t 
 }
 
 void GameRenderer::bindAssets(Model const * models, size_t nModels,
-                              prt::vector<uint32_t> const & modelIDs,
+                              uint32_t const * modelIDs,
+                              size_t nModelIDs,
                               Model const * animatedModels,
                               uint32_t const * boneOffsets,
                               size_t nAnimatedModels,
-                              prt::vector<uint32_t> const & animatedModelIDs,
+                              uint32_t const * animatedModelIDs,
+                              size_t nAnimatedModelIDs,
                               prt::array<Texture, 6> const & skybox) {
     /* skybox */
     size_t skyboxAssetIndex = pushBackAssets();
@@ -388,7 +390,7 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                                                  Model::Vertex::getAttributeDescriptions(),
                                                  standardPipelineIndex,
                                                  shadowmapPipelineIndex);
-        createStandardDrawCalls(models, nModels, modelIDs.data(), modelIDs.size(), 
+        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs, 
                                 nullptr, 0,
                                 standardPipelineIndex);
         createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
@@ -405,7 +407,7 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                                                  animatedStandardPipelineIndex,
                                                  animatedShadowmapPipelineIndex);
 
-        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs.data(), animatedModelIDs.size(), 
+        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs, 
                                 boneOffsets, sizeof(boneOffsets[0]),
                                 animatedStandardPipelineIndex);
         createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);

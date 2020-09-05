@@ -8,7 +8,7 @@
 #include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
 #include "src/game/system/physics/physics_system.h"
-#include "src/game/system/player/player.h"
+#include "src/game/system/character/character.h"
 #include "src/graphics/vulkan/game_renderer.h"
 
 #include "src/container/vector.h"
@@ -28,7 +28,7 @@ public:
 
     void update(float deltaTime);
 
-    void getSampledAnimation(float t, prt::vector<glm::mat4> & transforms);
+    void sampleAnimation(prt::vector<glm::mat4> & bones);
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
 
@@ -39,16 +39,6 @@ private:
     struct Lights {
         DirLight sun;
     } m_lights;
-    
-    template<size_t N>
-    struct StaticEntities {
-        enum { maxSize = N };
-        size_t size = 0;
-
-        uint32_t modelIDs[N];
-        Transform transforms[N];
-    };
-    StaticEntities<10> m_staticEntities;
 
     template<size_t N>
     struct StaticSolidEntities {
@@ -60,25 +50,23 @@ private:
     };
     StaticSolidEntities<10> m_staticSolidEntities;
 
-    Player m_playerEntity;
-
     AssetManager& m_assetManager;
     PhysicsSystem& m_physicsSystem;
     Input& m_input;
-    Camera& m_camera;
-    PlayerSystem m_playerSystem;
+    // Camera& m_camera;
+    CharacterSystem m_characterSystem;
 
+    // TODO: remove this
     void resetTransforms();
-    void getModelIDs(prt::vector<uint32_t> & modelIDs, bool animated) const;
+    uint32_t const * getModelIDs(size_t & nModelIDs, bool animated) const;
 
     void getNonAnimatedModels(Model const * & models, size_t & nModels, 
-                              prt::vector<uint32_t> & modelIDs) const;
-    void getAnimatedModels(Model const * & models, uint32_t const * & boneOffsets,
-                           size_t & nModels, prt::vector<uint32_t> & modelIDs);
+                              uint32_t const * & modelIDs, size_t & nModelIDs) const;
+    void getAnimatedModels(Model const * & models, size_t & nModels, 
+                           uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();
 
-    void initPlayer();
     void updatePhysics();
     void updateCamera();
 };

@@ -74,7 +74,7 @@ void Game::updateGraphics(float /*deltaTime*/) {
     m_scene.getTransformMatrices(animatedModelMatrices, true);
 
     prt::vector<glm::mat4> bones; 
-    m_scene.getSampledAnimation(m_time, bones);
+    m_scene.sampleAnimation(bones);
 
     auto const & sun = m_scene.getSun();
 

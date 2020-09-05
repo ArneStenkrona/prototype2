@@ -65,7 +65,7 @@ void main() {
     mat4 boneTransform = mat4(1.0);
     float weightSum = inBoneWeights[0] + inBoneWeights[1] + inBoneWeights[2] + inBoneWeights[3];
     if (weightSum > 0.0) { 
-        boneTransform  = ubo.bones[inBoneIDs[0]] * inBoneWeights[0];
+        boneTransform  = ubo.bones[inBoneIDs[0] + pc.boneOffset] * inBoneWeights[0];
         boneTransform += ubo.bones[inBoneIDs[1] + pc.boneOffset] * inBoneWeights[1];
         boneTransform += ubo.bones[inBoneIDs[2] + pc.boneOffset] * inBoneWeights[2];
         boneTransform += ubo.bones[inBoneIDs[3] + pc.boneOffset] * inBoneWeights[3];
