@@ -48,7 +48,7 @@ public:
                                 Transform * transforms,
                                 size_t n);
 
-    uint32_t addEllipsoidCollider(glm::vec3 const & ellipsoid);
+    uint16_t addEllipsoidCollider(glm::vec3 const & ellipsoid, int32_t characterIndex);
     void addModelColliders(uint32_t const * modelIDs, Transform const * transforms,
                            size_t count, uint32_t * ids);
 
@@ -63,11 +63,16 @@ private:
     prt::vector<MeshCollider> m_meshColliders;
 
     // caches geometry after applying transforms
-    prt::vector<glm::vec3> m_geometry_cache;
+    prt::vector<glm::vec3> m_geometryCache;
     prt::vector<glm::vec3> m_geometry;
 
-    prt::vector<AABB> m_aabbs;
-    prt::vector<int32_t> m_treeIndices;
+    // collider meta data
+    prt::vector<AABB> m_meshAABBs;
+    prt::vector<int32_t> m_meshTreeIndices;
+    prt::vector<AABB> m_ellipsoidAABBs;
+    prt::vector<int32_t> m_ellipsoidTreeIndices;
+    prt::vector<uint32_t> m_ellipsoidCharacterIndices;
+    // aabb tree
     DynamicAABBTree m_aabbTree;
 
     float m_gravity = 1.0f;
@@ -92,6 +97,7 @@ private:
                                         Transform * transforms,
                                         size_t n,
                                         uint32_t characterIndex,
+                                        prt::vector<uint16_t> const & colliderIDs,
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,

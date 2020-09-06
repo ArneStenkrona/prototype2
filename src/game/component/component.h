@@ -41,7 +41,7 @@ struct CharacterPhysics {
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
     glm::vec3 gravityVelocity = {0.0f, 0.0f, 0.0f};
     glm::vec3 groundNormal;
-    uint32_t colliderID;
+    uint16_t colliderID;
     bool isGrounded = false;
 };
 

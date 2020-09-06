@@ -36,7 +36,7 @@ void CharacterSystem::addCharacter(uint32_t modelID) {
     m_characters.transforms[index].scale = {0.6f, 0.6f, 0.6f};
     m_characters.transforms[index].position = {0.6f, -20.0f, 0.6f};
 
-    m_characters.physics[index].colliderID = m_physicsSystem.addEllipsoidCollider({0.5f, 1.0f, 0.5f});
+    m_characters.physics[index].colliderID = m_physicsSystem.addEllipsoidCollider({0.5f, 1.0f, 0.5f}, index);
 
     m_characters.animationClips[index].idle = m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
     m_characters.animationClips[index].walk = m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");

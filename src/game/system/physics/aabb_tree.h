@@ -16,14 +16,14 @@ public:
      * @param aabb aabb of query object
      * @param tags vector to store collider tags of nodes
      */
-    void query(AABB const & aabb, prt::vector<ColliderTag> & tags);
+    void query(ColliderTag caller, AABB const & aabb, prt::vector<ColliderTag> & tags);
     /**
      * Finds all intersecting nodes for aabb
      * @param aabb aabb of query object
      * @param meshIndices vector to store mesh indices
      * @param ellipsoidIndices vector to store ellipsoid indices
      */
-    void query(AABB const & aabb, 
+    void query(ColliderTag caller, AABB const & aabb, 
                prt::vector<uint16_t> & meshIndices,
                prt::vector<uint16_t> & ellipsoidIndices);
 

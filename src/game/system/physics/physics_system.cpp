@@ -23,20 +23,29 @@ void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const
         ids[i] = addModelCollider(m_modelManager.getNonAnimatedModel(modelIDs[i]),
                                  transforms[i]);
     }
-    size_t prevSize = m_treeIndices.size();
+    size_t prevSize = m_meshTreeIndices.size();
     size_t numMesh = m_meshColliders.size() - prevSize;
-    m_treeIndices.resize(prevSize + numMesh);
+    m_meshTreeIndices.resize(prevSize + numMesh);
     prt::vector<ColliderTag> tags;
     for (size_t i = prevSize; i < prevSize + numMesh; ++i) {
-        assert(i < std::numeric_limits<uint16_t>::max() && "Too many colliders!");
+        assert(i < std::numeric_limits<uint16_t>::max() && "Too many mesh colliders!");
         tags.push_back({uint16_t(i), ColliderType::MESH});
     }
-    m_aabbTree.insert(tags.data(), m_aabbs.data() + prevSize, numMesh, m_treeIndices.data() + prevSize);
+    m_aabbTree.insert(tags.data(), m_meshAABBs.data() + prevSize, numMesh, m_meshTreeIndices.data() + prevSize);
 }
 
-uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
-    uint32_t id = m_ellipsoids.size();
+uint16_t PhysicsSystem::addEllipsoidCollider(glm::vec3 const & ellipsoid, int32_t characterIndex) {
+    assert(m_ellipsoids.size() < std::numeric_limits<uint16_t>::max() && "Too many ellipsoid colliders!");
+    uint16_t id = m_ellipsoids.size();
     m_ellipsoids.push_back(ellipsoid);
+    m_ellipsoidTreeIndices.push_back({});
+    m_ellipsoidCharacterIndices.push_back(characterIndex);
+
+    m_ellipsoidAABBs.push_back({glm::vec3{0.0f}, ellipsoid});
+
+    ColliderTag tag = { uint16_t(id), ColliderType::ELLIPSOID };
+    m_aabbTree.insert(&tag, &m_ellipsoidAABBs[id], 1, &m_ellipsoidTreeIndices[id]);
+
     return id;
 }
 
@@ -48,7 +57,7 @@ uint32_t PhysicsSystem::addModelCollider(Model const & model, Transform const & 
     m_modelColliders.push_back({m_meshColliders.size(), model.meshes.size()});
     // resize geometry container
     m_geometry.resize(m_geometry.size() + model.indexBuffer.size());
-    m_geometry_cache.resize(m_geometry.size() + model.indexBuffer.size());
+    m_geometryCache.resize(m_geometry.size() + model.indexBuffer.size());
     // create colliders from meshes
     for (auto const & mesh : model.meshes) {
         size_t index = mesh.startIndex;
@@ -66,13 +75,13 @@ uint32_t PhysicsSystem::addModelCollider(Model const & model, Transform const & 
         glm::mat4 mat = transform.transformMatrix();
         while (index < endIndex) {
             m_geometry[i] = model.vertexBuffer[model.indexBuffer[index]].pos;
-            m_geometry_cache[i] = mat * glm::vec4(m_geometry[i], 1.0f);
-            min = glm::min(min, m_geometry_cache[i]);
-            max = glm::max(max, m_geometry_cache[i]);
+            m_geometryCache[i] = mat * glm::vec4(m_geometry[i], 1.0f);
+            min = glm::min(min, m_geometryCache[i]);
+            max = glm::max(max, m_geometryCache[i]);
             ++i;
             ++index;
         }
-        m_aabbs.push_back({min, max});
+        m_meshAABBs.push_back({min, max});
     }
     return modelIndex;
 }
@@ -99,20 +108,20 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
             glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
             glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
             while (currIndex < endIndex) {
-                m_geometry_cache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
-                min = glm::min(min, m_geometry_cache[currIndex]);
-                max = glm::max(max, m_geometry_cache[currIndex]);
+                m_geometryCache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
+                min = glm::min(min, m_geometryCache[currIndex]);
+                max = glm::max(max, m_geometryCache[currIndex]);
                 ++currIndex;
             }
-            m_aabbs[currIndex].lowerBound = min;
-            m_aabbs[currIndex].upperBound = max;
+            m_meshAABBs[currIndex].lowerBound = min;
+            m_meshAABBs[currIndex].upperBound = max;
 
-            treeIndices.push_back(m_treeIndices[currIndex]);
+            treeIndices.push_back(m_meshTreeIndices[currIndex]);
             ++currIndex;
         }
     }
     
-    m_aabbTree.update(treeIndices.data(), m_aabbs.data(), count);
+    m_aabbTree.update(treeIndices.data(), m_meshAABBs.data(), count);
 }
 
 // From "Realtime Collision Detection" by Christer Ericson
@@ -131,9 +140,9 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
         for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
             float t;
             bool in = physics_util::intersectLineSegmentTriangle(origin, origin + direction * maxDistance,
-                                                                 m_geometry_cache[index],
-                                                                 m_geometry_cache[index+1],
-                                                                 m_geometry_cache[index+2],
+                                                                 m_geometryCache[index],
+                                                                 m_geometryCache[index+1],
+                                                                 m_geometryCache[index+2],
                                                                  t);
             intersect |= in;
             if (in) {
@@ -153,7 +162,22 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
 void PhysicsSystem::updateCharacterPhysics(CharacterPhysics * physics,
                                            Transform * transforms,
                                            size_t n) {
-    size_t i = 0;
+    // update character aabb's
+    size_t i = 0;    
+    while (i < n) {
+        AABB & eAABB = m_ellipsoidAABBs[physics[i].colliderID];
+        // bounds = radii extents
+        eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderID], 
+                  transforms[i].position + m_ellipsoids[physics[i].colliderID] };
+        // bounds += velocity extents
+        eAABB += { transforms[i].position + physics[i].gravityVelocity + physics[i].velocity - m_ellipsoids[physics[i].colliderID], 
+                   transforms[i].position + physics[i].gravityVelocity + physics[i].velocity + m_ellipsoids[physics[i].colliderID] };
+        ++i;
+    }
+    m_aabbTree.update(m_ellipsoidTreeIndices.data(), m_ellipsoidAABBs.data(), m_ellipsoids.size());
+    
+    // collide
+    i = 0;
     while (i < n) {
         // movement
         collideCharacterwithWorld(physics, transforms, n, i, false);
@@ -172,6 +196,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
     glm::vec3 & velocity = gravity ? physics[characterIndex].gravityVelocity : physics[characterIndex].velocity ;
     glm::vec3 const & radii = m_ellipsoids[physics[characterIndex].colliderID];
     glm::vec3 & groundNormal = physics[characterIndex].groundNormal;
+    ColliderTag const tag = { physics[characterIndex].colliderID, ColliderType::ELLIPSOID };
     bool & isGrounded = physics[characterIndex].isGrounded;
 
     isGrounded = false;
@@ -194,7 +219,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                     position + velocity + radii };
             prt::vector<uint16_t> meshColIDs; 
             prt::vector<uint16_t> ellipsoidColIDs; 
-            m_aabbTree.query(eAABB, meshColIDs, ellipsoidColIDs);
+            m_aabbTree.query(tag, eAABB, meshColIDs, ellipsoidColIDs);
 
             // collide with meshes
             if (!meshColIDs.empty()) {                
@@ -216,7 +241,8 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             glm::vec3 cn;
             uint32_t oci;
             // collide with other characters
-            if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ip, t, cn, oci, gravity) &&
+            if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ellipsoidColIDs, 
+                                               ip, t, cn, oci, gravity) &&
                 t < intersectionTime) {
                 collision = true;
                 intersectionTime = t;
@@ -295,7 +321,7 @@ bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position,
         
         size_t endIndex = meshCollider.startIndex + meshCollider.numIndices;
         for (size_t i = meshCollider.startIndex; i < endIndex; ++i) {
-            *pCurr = m_geometry_cache[i] / ellipsoidRadii;
+            *pCurr = m_geometryCache[i] / ellipsoidRadii;
             ++pCurr;
         }
     }
@@ -428,8 +454,9 @@ bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position,
 
 bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
                                                    Transform * transforms,
-                                                   size_t n,
+                                                   size_t /*n*/,
                                                    uint32_t characterIndex,
+                                                   prt::vector<uint16_t> const & colliderIDs,
                                                    glm::vec3 & intersectionPoint,
                                                    float & intersectionTime,
                                                    glm::vec3 & collisionNormal,
@@ -439,7 +466,8 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
     // TODO: implement a breadth first so that we can avoid
     // O(n^2) when collision is checked for all characters
     intersectionTime = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < n; ++i) {
+    for (uint16_t id : colliderIDs) {
+        auto i = m_ellipsoidCharacterIndices[id];
         if (i == characterIndex) continue;
         float t;
         glm::vec3 ip;
@@ -521,7 +549,7 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
         // return false;
     }
     
-    double dist0 = glm::dot(P0, P0) - 1.0f;
+    float dist0 = glm::dot(P0, P0) - 1.0f;
     if (dist0 < 0.0) {
         // The ellipsoids are not separated.
         // return false;

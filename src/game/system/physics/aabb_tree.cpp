@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cassert>
 
-void DynamicAABBTree::query(AABB const & aabb, prt::vector<ColliderTag> & tags) {
+void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, prt::vector<ColliderTag> & tags) {
     if (m_size == 0) {
         return;
     }
@@ -20,7 +20,9 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<ColliderTag> & tags) 
         Node const & node = m_nodes[index];
         if (AABB::intersect(node.aabb, aabb)) {
             if (node.isLeaf()) {
-                tags.push_back(node.colliderTag);
+                if (caller != node.colliderTag) {
+                    tags.push_back(node.colliderTag);
+                }
             } else {
                 nodeStack.push_back(node.left);
                 nodeStack.push_back(node.right);
@@ -29,12 +31,13 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<ColliderTag> & tags) 
     }
 }
 
-void DynamicAABBTree::query(AABB const & aabb, 
+void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, 
                             prt::vector<uint16_t> & meshIndices,
                             prt::vector<uint16_t> & ellipsoidIndices) {
     if (m_size == 0) {
         return;
     }
+
     
     prt::vector<int32_t> nodeStack;
     nodeStack.push_back(rootIndex);
@@ -44,15 +47,17 @@ void DynamicAABBTree::query(AABB const & aabb,
         Node const & node = m_nodes[index];
         if (AABB::intersect(node.aabb, aabb)) {
             if (node.isLeaf()) {
-                switch (node.colliderTag.type) {
-                    case ColliderType::MESH: 
-                        meshIndices.push_back(node.colliderTag.index);
-                        break;
-                    case ColliderType::ELLIPSOID:
-                        ellipsoidIndices.push_back(node.colliderTag.index);
-                        break;
-                    default:
-                        break;
+                if (caller != node.colliderTag) {
+                    switch (node.colliderTag.type) {
+                        case ColliderType::MESH: 
+                            meshIndices.push_back(node.colliderTag.index);
+                            break;
+                        case ColliderType::ELLIPSOID:
+                            ellipsoidIndices.push_back(node.colliderTag.index);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             } else {
                 nodeStack.push_back(node.left);
@@ -98,9 +103,9 @@ void DynamicAABBTree::update(int32_t * treeIndices, AABB const * aabbs, size_t n
     for (size_t i = 0; i < n; ++i) {
         Node & node = m_nodes[treeIndices[i]];
         if (!node.aabb.contains(aabbs[i])) {
-            ColliderTag objectIndex = node.colliderTag;
+            ColliderTag tag = node.colliderTag;
             remove(treeIndices[i]);
-            treeIndices[i] = insertLeaf(objectIndex, aabbs[i]);
+            treeIndices[i] = insertLeaf(tag, aabbs[i]);
         }
     }
 }
@@ -159,13 +164,6 @@ int32_t DynamicAABBTree::insertLeaf(ColliderTag tag, AABB const & aabb) {
     m_nodes[siblingIndex].parent = newParentIndex;
     m_nodes[leafIndex].parent = newParentIndex;
 
-    // newParent.height = std::max(m_nodes[newParent.left].left, m_nodes[newParent.right].height) + 1;
-    // // std::cout << "new parent height: " << newParent.height << std::endl;
-    // if (oldParentIndex != Node::nullIndex) {
-    //     Node & oldParent = m_nodes[oldParentIndex];
-    //     oldParent.height = std::max(m_nodes[oldParent.left].left, m_nodes[oldParent.right].height) + 1;
-    // }
-
     // stage 3: walk back up the tree refitting AABBs and applying rotations
     synchHierarchy(m_nodes[leafIndex].parent);
 
@@ -182,7 +180,6 @@ void DynamicAABBTree::remove(int32_t index) {
     } else {
         siblingIndex = parent.left;
     }
-    
     Node & grandParent = m_nodes[parent.parent];
     if (grandParent.left == n.parent) {
         grandParent.left = siblingIndex;
@@ -193,7 +190,7 @@ void DynamicAABBTree::remove(int32_t index) {
 
     n.height = -1;
     parent.height = -1;
-
+    
     parent.next = freeHead;
     n.next = n.parent;
     freeHead = index;
@@ -208,8 +205,8 @@ int32_t DynamicAABBTree::allocateNode() {
         m_nodes.push_back({});
     } else {
         index = freeHead;
-        m_nodes[freeHead] = {};
         freeHead = m_nodes[freeHead].next;
+        m_nodes[index] = {};
     }
     // m_nodes[index].height = 0;
     return index;

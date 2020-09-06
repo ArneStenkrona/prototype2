@@ -20,6 +20,13 @@ enum ColliderType : uint16_t {
 struct ColliderTag {
     uint16_t index;
     ColliderType type;
+    friend bool operator== (ColliderTag const & c1, ColliderTag const & c2) {
+        return (c1.index == c2.index &&
+                c1.type == c2.type);
+    }
+    friend bool operator!= (ColliderTag const & c1, ColliderTag const & c2)  {
+        return !(c1 == c2);
+    }
 };
 
 struct MeshCollider {
