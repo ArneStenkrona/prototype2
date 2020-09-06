@@ -11,6 +11,17 @@
 
 #include <glm/glm.hpp>
 
+enum ColliderType : uint16_t {
+    MESH,
+    ELLIPSOID,
+    TOTAL_NUM_COLLIDER_TYPES
+};
+
+struct ColliderTag {
+    uint16_t index;
+    ColliderType type;
+};
+
 struct MeshCollider {
     Transform transform;
 

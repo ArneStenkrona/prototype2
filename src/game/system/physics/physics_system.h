@@ -83,7 +83,7 @@ private:
     bool collideCharacterWithMeshes(glm::vec3 const & position, 
                                     glm::vec3 const & velocity, 
                                     glm::vec3 const & ellipsoidRadii,
-                                    prt::vector<uint32_t> const & colliderIDs,
+                                    prt::vector<uint16_t> const & colliderIDs,
                                     glm::vec3 & intersectionPoint,
                                     float & intersectionTime,
                                     glm::vec3 & collisionNormal);

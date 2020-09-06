@@ -14,31 +14,40 @@ public:
     /**
      * Finds all intersecting nodes for aabb
      * @param aabb aabb of query object
-     * @param objectIndices vector to store object indices of nodes
+     * @param tags vector to store collider tags of nodes
      */
-    void query(AABB const & aabb, prt::vector<uint32_t> & objectIndices);
+    void query(AABB const & aabb, prt::vector<ColliderTag> & tags);
+    /**
+     * Finds all intersecting nodes for aabb
+     * @param aabb aabb of query object
+     * @param meshIndices vector to store mesh indices
+     * @param ellipsoidIndices vector to store ellipsoid indices
+     */
+    void query(AABB const & aabb, 
+               prt::vector<uint16_t> & meshIndices,
+               prt::vector<uint16_t> & ellipsoidIndices);
 
     /**
      * Finds all intersecting nodes for raycast
      * @param origin origin of the ray
      * @param direction direction of the ray
      * @param maxDistance maximum length of the ray
-     * @param objectIndices vector to store object indices of nodes
+     * @param tags vector to store collider tags of nodes
      */
     void queryRaycast(glm::vec3 const& origin,
                       glm::vec3 const& direction,
                       float maxDistance,
-                      prt::vector<uint32_t> & objectIndices);
+                      prt::vector<ColliderTag> & tags);
     
     /**
-     * Inserts aabbs along with their object indices into the tree
-     * @param objectIndices address of the start of the range of object indices
+     * Inserts aabbs along with their collider tags into the tree
+     * @param tags address of the start of the range of collider tags
      * @param aabbs address of the start of the range of aabbs
      * @param n number of aabbs to be inserted
      * @param treeIndices address to the start of the range that will 
      *                    recieve the resulting indices in the tree
      */
-    void insert(uint32_t const * objectIndices, AABB const * aabbs, size_t n,
+    void insert(ColliderTag const * tags, AABB const * aabbs, size_t n,
                 int32_t * treeIndices);
 
     /**
@@ -68,7 +77,7 @@ private:
     int32_t m_size = 0;
     prt::vector<Node> m_nodes;
 
-    int32_t insertLeaf(uint32_t objectIndex, AABB const & aabb);
+    int32_t insertLeaf(ColliderTag tag, AABB const & aabb);
     void remove(int32_t index);
 
     int32_t allocateNode();
@@ -102,7 +111,7 @@ private:
                 int32_t right = nullIndex;
             // };
             // struct {
-                uint32_t objectIndex = -1;
+                ColliderTag colliderTag;
                 // int32_t notUsed;
             // };
             // void *userData;

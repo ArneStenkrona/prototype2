@@ -26,11 +26,12 @@ void PhysicsSystem::addModelColliders(uint32_t const * modelIDs, Transform const
     size_t prevSize = m_treeIndices.size();
     size_t numMesh = m_meshColliders.size() - prevSize;
     m_treeIndices.resize(prevSize + numMesh);
-    prt::vector<uint32_t> colliderIDs;
+    prt::vector<ColliderTag> tags;
     for (size_t i = prevSize; i < prevSize + numMesh; ++i) {
-        colliderIDs.push_back(i);
+        assert(i < std::numeric_limits<uint16_t>::max() && "Too many colliders!");
+        tags.push_back({uint16_t(i), ColliderType::MESH});
     }
-    m_aabbTree.insert(colliderIDs.data(), m_aabbs.data() + prevSize, numMesh, m_treeIndices.data() + prevSize);
+    m_aabbTree.insert(tags.data(), m_aabbs.data() + prevSize, numMesh, m_treeIndices.data() + prevSize);
 }
 
 uint32_t PhysicsSystem::addEllipsoidCollider(const glm::vec3& ellipsoid) {
@@ -119,13 +120,13 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
                             glm::vec3 const& direction,
                             float maxDistance,
                             glm::vec3 & hit) {
-    prt::vector<uint32_t> colIDs; 
-    m_aabbTree.queryRaycast(origin, direction, maxDistance, colIDs);
+    prt::vector<ColliderTag> tags; 
+    m_aabbTree.queryRaycast(origin, direction, maxDistance, tags);
 
     float intersectionTime = std::numeric_limits<float>::max();
     bool intersect = false;
-    for (auto id : colIDs) {
-        MeshCollider & meshCollider = m_meshColliders[id];
+    for (auto tag : tags) {
+        MeshCollider & meshCollider = m_meshColliders[tag.index];
         size_t index = meshCollider.startIndex;
         for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
             float t;
@@ -187,18 +188,20 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
 
         // only check collision if there is any velocity
         if (glm::length2(velocity) > 0.0f) {
-            // collide with meshes
             // broad-phase query
             AABB eAABB = { position - radii, position + radii };
             eAABB += { position + velocity - radii, 
                     position + velocity + radii };
-            prt::vector<uint32_t> colIDs; 
-            m_aabbTree.query(eAABB, colIDs);
-            if (!colIDs.empty()) {                
+            prt::vector<uint16_t> meshColIDs; 
+            prt::vector<uint16_t> ellipsoidColIDs; 
+            m_aabbTree.query(eAABB, meshColIDs, ellipsoidColIDs);
+
+            // collide with meshes
+            if (!meshColIDs.empty()) {                
                 glm::vec3 ip;
                 float t;
                 glm::vec3 cn;
-                if (collideCharacterWithMeshes(position, velocity, radii, colIDs, 
+                if (collideCharacterWithMeshes(position, velocity, radii, meshColIDs, 
                                             ip, t, cn)) {
                     collision = true;
                     intersectionPoint = ip * radii;
@@ -259,7 +262,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
 bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position, 
                                                glm::vec3 const & velocity, 
                                                glm::vec3 const & ellipsoidRadii,
-                                               prt::vector<uint32_t> const & colliderIDs,
+                                               prt::vector<uint16_t> const & colliderIDs,
                                                glm::vec3 & intersectionPoint,
                                                float & intersectionTime,
                                                glm::vec3 & collisionNormal) {

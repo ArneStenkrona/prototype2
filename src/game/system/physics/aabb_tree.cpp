@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cassert>
 
-void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectIndices) {
+void DynamicAABBTree::query(AABB const & aabb, prt::vector<ColliderTag> & tags) {
     if (m_size == 0) {
         return;
     }
@@ -20,7 +20,40 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectInd
         Node const & node = m_nodes[index];
         if (AABB::intersect(node.aabb, aabb)) {
             if (node.isLeaf()) {
-                objectIndices.push_back(node.objectIndex);
+                tags.push_back(node.colliderTag);
+            } else {
+                nodeStack.push_back(node.left);
+                nodeStack.push_back(node.right);
+            }
+        }
+    }
+}
+
+void DynamicAABBTree::query(AABB const & aabb, 
+                            prt::vector<uint16_t> & meshIndices,
+                            prt::vector<uint16_t> & ellipsoidIndices) {
+    if (m_size == 0) {
+        return;
+    }
+    
+    prt::vector<int32_t> nodeStack;
+    nodeStack.push_back(rootIndex);
+    while (!nodeStack.empty()) {
+        int32_t index = nodeStack.back();
+        nodeStack.pop_back();
+        Node const & node = m_nodes[index];
+        if (AABB::intersect(node.aabb, aabb)) {
+            if (node.isLeaf()) {
+                switch (node.colliderTag.type) {
+                    case ColliderType::MESH: 
+                        meshIndices.push_back(node.colliderTag.index);
+                        break;
+                    case ColliderType::ELLIPSOID:
+                        ellipsoidIndices.push_back(node.colliderTag.index);
+                        break;
+                    default:
+                        break;
+                }
             } else {
                 nodeStack.push_back(node.left);
                 nodeStack.push_back(node.right);
@@ -32,7 +65,7 @@ void DynamicAABBTree::query(AABB const & aabb, prt::vector<uint32_t> & objectInd
 void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
                                    glm::vec3 const& direction,
                                    float maxDistance,
-                                   prt::vector<uint32_t> & objectIndices) {
+                                   prt::vector<ColliderTag> & tags) {
     if (m_size == 0) {
         return;
     }
@@ -45,7 +78,7 @@ void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
         Node const & node = m_nodes[index];
         if (AABB::intersectRay(node.aabb, origin, direction, maxDistance)) {
             if (node.isLeaf()) {
-                objectIndices.push_back(node.objectIndex);
+                tags.push_back(node.colliderTag);
             } else {
                 nodeStack.push_back(node.left);
                 nodeStack.push_back(node.right);
@@ -54,10 +87,10 @@ void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
     }
 }
 
-void DynamicAABBTree::insert(uint32_t const * objectIndices, AABB const * aabbs, size_t n,
+void DynamicAABBTree::insert(ColliderTag const * tags, AABB const * aabbs, size_t n,
                              int32_t * treeIndices) {
     for (size_t i = 0; i < n; ++i) {
-        treeIndices[i] = insertLeaf(objectIndices[i], aabbs[i]);
+        treeIndices[i] = insertLeaf(tags[i], aabbs[i]);
     }
 }
 
@@ -65,7 +98,7 @@ void DynamicAABBTree::update(int32_t * treeIndices, AABB const * aabbs, size_t n
     for (size_t i = 0; i < n; ++i) {
         Node & node = m_nodes[treeIndices[i]];
         if (!node.aabb.contains(aabbs[i])) {
-            int32_t objectIndex = node.objectIndex;
+            ColliderTag objectIndex = node.colliderTag;
             remove(treeIndices[i]);
             treeIndices[i] = insertLeaf(objectIndex, aabbs[i]);
         }
@@ -80,7 +113,7 @@ float DynamicAABBTree::cost() const {
     return cost;
 }
 
-int32_t DynamicAABBTree::insertLeaf(uint32_t objectIndex, AABB const & aabb) {
+int32_t DynamicAABBTree::insertLeaf(ColliderTag tag, AABB const & aabb) {
     // insert new node into vector
     int32_t leafIndex = allocateNode();
     ++m_size;
@@ -88,7 +121,7 @@ int32_t DynamicAABBTree::insertLeaf(uint32_t objectIndex, AABB const & aabb) {
     // Node & leaf = m_nodes[leafIndex];
     // add objectIndex to user data
     // *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
-    m_nodes[leafIndex].objectIndex = objectIndex;
+    m_nodes[leafIndex].colliderTag = tag;
     // add buffer to aabb 
     m_nodes[leafIndex].aabb.lowerBound = aabb.lowerBound - buffer;
     m_nodes[leafIndex].aabb.upperBound = aabb.upperBound + buffer;
