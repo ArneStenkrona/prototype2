@@ -26,7 +26,7 @@ glm::quat math_util::safeQuatLookAt(glm::vec3 const & lookFrom,
 // thank you Joachim Kopp: http://www.mpi-hd.mpg.de/personalhomes/globes/3x3/
 glm::mat3 math_util::diagonalizer(glm::mat3 const & A) {
 	// A must be a symmetric matrix.
-	// returns quaternion q such that its corresponding matrix Q 
+	// returns matrix Q 
 	// can be used to Diagonalize A
 	// Diagonal matrix D = Q * A * Transpose(Q);  and  A = QT*D*Q
 	// The rows of q are the eigenvectors D's diagonal is the eigenvalues
@@ -36,7 +36,7 @@ glm::mat3 math_util::diagonalizer(glm::mat3 const & A) {
 	glm::quat q(0.0f,0.0f,0.0f,1.0f);
 	for(i = 0;i < maxsteps; ++i) {
 		glm::mat3 Q  = glm::toMat3(q); // v*Q == q*v*conj(q)
-		glm::mat3 D  = Q * A * glm::transpose(Q);  // A = Q^T*D*Q
+		glm::mat3 D  = A * glm::transpose(Q) * Q;  // A = Q^T*D*Q
 		glm::vec3 offdiag(D[1][2],D[0][2],D[0][1]); // elements not on the diagonal
 		glm::vec3 om(fabsf(offdiag.x),fabsf(offdiag.y),fabsf(offdiag.z)); // mag of each offdiag elem
 		int k = (om.x > om.y && om.x > om.z) ? 0 : (om.y > om.z)? 1 : 2; // index of largest element of offdiag
