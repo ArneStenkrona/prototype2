@@ -22,8 +22,8 @@ void CharacterSystem::initPlayer() {
     m_assetManager.loadModels(&monkeyStr, 1, &modelID, true);
     addCharacter(modelID);
     addCharacter(modelID);
-    // addCharacter(modelID);
-    // addCharacter(modelID);
+    addCharacter(modelID);
+    addCharacter(modelID);
 }
 
 void CharacterSystem::addCharacter(uint32_t modelID) {

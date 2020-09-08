@@ -545,7 +545,8 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
     }
     
     float dist0 = glm::dot(P0, P0) - 1.0f;
-    if (dist0 < 0.0) {
+    // if (dist0 < 0.0f) {
+    if (dist0 < -1.0f) { // tolerance for overlap allows collider to be pushed out
         // The ellipsoids are not separated.
         return false;
     }
@@ -644,7 +645,7 @@ float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D,
         float fder = -2.0f*(d0 * d0k0k0/tmp0cub + d1 * d1k1k1 / tmp1cub
                             + d2 * d2k2k2 / tmp2cub);
         // Compute the next iterate sNext = s - f(s)/f’(s).
-        if (fder == 0.0f) break;
+        if (fder == 0.0f) return std::numeric_limits<float>::max();;
         s -= f/fder;
     }
     closestPoint[0] = d0k0*s/(d0*s - 1.0f); 
@@ -656,16 +657,16 @@ float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D,
 void PhysicsSystem::collisionResponse(bool collision,
                                       glm::vec3 & position,
                                       glm::vec3 & velocity,
-                                      glm::vec3 const & /*intersectionPoint*/,
-                                      glm::vec3 const & collisionNormal,
+                                      glm::vec3 const & intersectionPoint,
+                                      glm::vec3 const & /*collisionNormal*/,
                                       float const intersectionTime) {
     if (glm::length2(velocity) == 0.0f) return;
-        
     if (collision) {
         static constexpr float verySmallDistance = 0.005f;
 
+
         position += intersectionTime * velocity;
-        glm::vec3 slideNormal = collisionNormal;//glm::normalize(position - intersectionPoint);
+        glm::vec3 slideNormal = glm::normalize(position - intersectionPoint);
 
         // by pushing out the character along the slide normal we gain
         // tolerance against small numerical errors
