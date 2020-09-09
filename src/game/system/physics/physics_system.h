@@ -129,8 +129,10 @@ private:
                            glm::vec3 const & intersectionPoint,
                            glm::vec3 const & collisionNormal,
                            float const intersectionTime,
-                           glm::vec3 & position,
-                           glm::vec3 & velocity);
+                           CharacterPhysics * physics,
+                           Transform * transforms,
+                           uint32_t characterIndex,
+                           uint32_t otherCharacterIndex);
 };
 
 #endif
