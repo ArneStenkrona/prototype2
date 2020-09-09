@@ -113,11 +113,6 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
         }
     }
     
-    // TODO: make gravity and jump the responsibility of
-    // the physics system?
-    // float gAcc = m_physicsSystem.getGravity() * deltaTime;
-    // physics.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
-    
     physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 10.0f * deltaTime);
     // jump
     if (input.jump && physics.isGrounded) {

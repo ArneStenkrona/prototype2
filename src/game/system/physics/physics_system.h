@@ -85,7 +85,6 @@ private:
                                    Transform * transforms,
                                    size_t n,
                                    uint32_t characterIndex,
-                                   bool gravity,
                                    bool & grounded);
 
     bool collideCharacterWithMeshes(glm::vec3 const & position, 
@@ -104,8 +103,7 @@ private:
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,
-                                        uint32_t & otherCharacterIndex,
-                                        bool gravity);
+                                        uint32_t & otherCharacterIndex);
                    
     bool collideEllipsoids(glm::vec3 const & ellipsoid0,
                            glm::vec3 const & sourcePoint0, 

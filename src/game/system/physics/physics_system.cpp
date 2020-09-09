@@ -171,8 +171,8 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderID], 
                   transforms[i].position + m_ellipsoids[physics[i].colliderID] };
         // bounds += velocity extents
-        eAABB += { transforms[i].position + physics[i].gravityVelocity + physics[i].velocity - m_ellipsoids[physics[i].colliderID], 
-                   transforms[i].position + physics[i].gravityVelocity + physics[i].velocity + m_ellipsoids[physics[i].colliderID] };
+        eAABB += { transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - m_ellipsoids[physics[i].colliderID], 
+                   transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + m_ellipsoids[physics[i].colliderID] };
         ++i;
     }
     m_aabbTree.update(m_ellipsoidTreeIndices.data(), m_ellipsoidAABBs.data(), m_ellipsoids.size());
@@ -182,9 +182,9 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     while (i < n) {
         // movement
         bool grounded = false;
-        collideCharacterwithWorld(physics, transforms, n, i, false, grounded);
+        collideCharacterwithWorld(physics, transforms, n, i, grounded);
         physics[i].velocity += glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime;
-        collideCharacterwithWorld(physics, transforms, n, i, false, grounded);
+        collideCharacterwithWorld(physics, transforms, n, i, grounded);
 
         // collideCharacterwithWorld(physics, transforms, n, i, true, grounded);
         physics[i].isGrounded = grounded;
@@ -196,11 +196,10 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                                               Transform * transforms,
                                               size_t n,
                                               uint32_t characterIndex,
-                                              bool gravity,
                                               bool & grounded) {
     // unpack variables
     glm::vec3 & position = transforms[characterIndex].position;
-    glm::vec3 & velocity = gravity ? physics[characterIndex].gravityVelocity : physics[characterIndex].velocity ;
+    glm::vec3 & velocity = physics[characterIndex].velocity;
     glm::vec3 const & radii = m_ellipsoids[physics[characterIndex].colliderID];
     glm::vec3 & groundNormal = physics[characterIndex].groundNormal;
     ColliderTag const tag = { physics[characterIndex].colliderID, ColliderType::ELLIPSOID };
@@ -246,7 +245,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             uint32_t oci;
             // collide with other characters
             if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ellipsoidColIDs, 
-                                               ip, t, cn, oci, gravity) &&
+                                               ip, t, cn, oci) &&
                 t < intersectionTime) {
                 collision = true;
                 intersectionTime = t;
@@ -262,14 +261,12 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
         if (collision) { 
             // if collision with other character, we need to update that as well
             if (otherCharacterIndex != uint32_t(-1)) {
-                glm::vec3 fakePos = transforms[otherCharacterIndex].position;
-                glm::vec3 & otherVelocity = gravity ? physics[otherCharacterIndex].gravityVelocity : physics[otherCharacterIndex].velocity;
                 collisionResponse(collision, 
                                   intersectionPoint,
                                   -collisionNormal, // temporary hack: technically we need to compute the actual collision normal
                                   intersectionTime,
-                                  fakePos,
-                                  otherVelocity);
+                                  transforms[otherCharacterIndex].position,
+                                  physics[otherCharacterIndex].velocity);
             }
             // set grounded
             bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
@@ -465,8 +462,7 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
                                                    glm::vec3 & intersectionPoint,
                                                    float & intersectionTime,
                                                    glm::vec3 & collisionNormal,
-                                                   uint32_t & otherCharacterIndex,
-                                                   bool gravity) {
+                                                   uint32_t & otherCharacterIndex) {
     bool collision = false;
     // TODO: implement a breadth first so that we can avoid
     // O(n^2) when collision is checked for all characters
@@ -478,13 +474,9 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
         glm::vec3 ip;
         glm::vec3 cn;
 
-        glm::vec3 const & velocity = gravity ? 
-                                     physics[characterIndex].gravityVelocity :
-                                     physics[characterIndex].velocity;
+        glm::vec3 const & velocity = physics[characterIndex].velocity;
         // glm::vec3 const & otherVelocity = gravity ? physics[i].gravityVelocity : physics[i].velocity;
-        glm::vec3 const & otherVelocity = gravity ? 
-                                          physics[i].gravityVelocity :
-                                          physics[i].velocity;
+        glm::vec3 const & otherVelocity = physics[i].velocity;
 
         if (collideEllipsoids(m_ellipsoids[physics[characterIndex].colliderID],
                               transforms[characterIndex].position,
