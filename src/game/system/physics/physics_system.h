@@ -83,7 +83,8 @@ private:
                                    Transform * transforms,
                                    size_t n,
                                    uint32_t characterIndex,
-                                   bool gravity);
+                                   bool gravity,
+                                   bool & grounded);
 
     bool collideCharacterWithMeshes(glm::vec3 const & position, 
                                     glm::vec3 const & velocity, 
@@ -125,11 +126,11 @@ private:
                                         glm::vec3 & closestPoint);
 
     void collisionResponse(bool collision,
-                           glm::vec3 & position,
-                           glm::vec3 & velocity,
                            glm::vec3 const & intersectionPoint,
                            glm::vec3 const & collisionNormal,
-                           float const intersectionTime);
+                           float const intersectionTime,
+                           glm::vec3 & position,
+                           glm::vec3 & velocity);
 };
 
 #endif

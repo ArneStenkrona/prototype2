@@ -90,7 +90,7 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
     auto & animation = m_characters.animation[index];
     auto const & clips = m_characters.animationClips[index];
     
-    glm::vec3 targetVelocity{0.0f};
+    glm::vec3 targetMovement{0.0f};
 
     // if player performed any movement input
     if (glm::length2(input.move) > 0.0f) {
@@ -106,37 +106,37 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
         glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(lookDir, moveNormal)));
 
         if (input.run) {
-            targetVelocity = 0.2f * moveDir;
+            targetMovement = 0.1f * moveDir;
         } else {
-            targetVelocity = 0.05f * moveDir;
+            targetMovement = 0.025f * moveDir;
         }
     }
     
     // TODO: make gravity and jump the responsibility of
     // the physics system?
-    float gAcc = m_physicsSystem.getGravity() * deltaTime;
-    physics.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
-
+    // float gAcc = m_physicsSystem.getGravity() * deltaTime;
+    // physics.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
+    
+    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 50.0f * deltaTime);
     // jump
     if (input.jump && physics.isGrounded) {
-        physics.gravityVelocity += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
+        physics.velocity += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
     }
+    physics.velocity = physics.movementVector + glm::vec3{ 0.0f, physics.velocity.y, 0.0f };
 
-    physics.velocity = glm::lerp(physics.velocity, targetVelocity, 10.0f * deltaTime);
-    
     // animation
     float animationDelta = 0.0f;
-    float const vmag = glm::length(physics.velocity);
+    float const vmag = glm::length(physics.movementVector);
     if (vmag > 0.05f) {
         animation.clipA = clips.walk;
         animation.clipB = clips.run;
-        animation.blendFactor = (vmag - 0.05f) / 0.15f;
+        animation.blendFactor = (vmag - 0.025f) / 0.1f;
 
         animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor) * deltaTime;
     } else {
         animation.clipA = clips.idle;
         animation.clipB = clips.walk;
-        animation.blendFactor = vmag / 0.05f;
+        animation.blendFactor = vmag / 0.025f;
         animationDelta = math_util::lerp(0.6f, 0.75f, animation.blendFactor) * deltaTime;
     }
 
