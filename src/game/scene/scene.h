@@ -67,7 +67,7 @@ private:
 
     void initColliders();
 
-    void updatePhysics();
+    void updatePhysics(float deltaTime);
     void updateCamera();
 };
 

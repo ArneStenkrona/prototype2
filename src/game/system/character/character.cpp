@@ -57,8 +57,9 @@ void CharacterSystem::updateCharacters(float deltaTime) {
     }
 }
 
-void CharacterSystem::updatePhysics() {
-    m_physicsSystem.updateCharacterPhysics(m_characters.physics,
+void CharacterSystem::updatePhysics(float deltaTime) {
+    m_physicsSystem.updateCharacterPhysics(deltaTime,
+                                           m_characters.physics,
                                            m_characters.transforms,
                                            m_characters.size);
 }
@@ -106,7 +107,7 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
         glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(lookDir, moveNormal)));
 
         if (input.run) {
-            targetMovement = 0.1f * moveDir;
+            targetMovement = 0.08f * moveDir;
         } else {
             targetMovement = 0.025f * moveDir;
         }
@@ -117,10 +118,10 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
     // float gAcc = m_physicsSystem.getGravity() * deltaTime;
     // physics.gravityVelocity += glm::vec3{0.0f, -1.0f, 0.0f} * gAcc;
     
-    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 50.0f * deltaTime);
+    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 10.0f * deltaTime);
     // jump
     if (input.jump && physics.isGrounded) {
-        physics.velocity += 0.5f * glm::vec3{0.0f, 1.0f, 0.0f};
+        physics.velocity += 0.25f * glm::vec3{0.0f, 1.0f, 0.0f};
     }
     physics.velocity = physics.movementVector + glm::vec3{ 0.0f, physics.velocity.y, 0.0f };
 
@@ -130,7 +131,7 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
     if (vmag > 0.05f) {
         animation.clipA = clips.walk;
         animation.clipB = clips.run;
-        animation.blendFactor = (vmag - 0.025f) / 0.1f;
+        animation.blendFactor = (vmag - 0.025f) / 0.08f;
 
         animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor) * deltaTime;
     } else {

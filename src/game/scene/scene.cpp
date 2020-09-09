@@ -91,7 +91,7 @@ void Scene::update(float deltaTime) {
 
     t+=deltaTime;
     m_characterSystem.updateCharacters(deltaTime);
-    updatePhysics();
+    updatePhysics(deltaTime);
     updateCamera();
 }
 
@@ -111,8 +111,8 @@ void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {
     m_characterSystem.sampleAnimation(bones);
 }
 
-void Scene::updatePhysics() {
-    m_characterSystem.updatePhysics();
+void Scene::updatePhysics(float deltaTime) {
+    m_characterSystem.updatePhysics(deltaTime);
 }
 
 void Scene::updateCamera() {

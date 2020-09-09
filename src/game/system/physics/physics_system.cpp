@@ -159,7 +159,8 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
 }
 
 
-void PhysicsSystem::updateCharacterPhysics(CharacterPhysics * physics,
+void PhysicsSystem::updateCharacterPhysics(float deltaTime,
+                                           CharacterPhysics * physics,
                                            Transform * transforms,
                                            size_t n) {
     // update character aabb's
@@ -182,7 +183,7 @@ void PhysicsSystem::updateCharacterPhysics(CharacterPhysics * physics,
         // movement
         bool grounded = false;
         collideCharacterwithWorld(physics, transforms, n, i, false, grounded);
-        physics[i].velocity += glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * (0.0167f);
+        physics[i].velocity += glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime;
         collideCharacterwithWorld(physics, transforms, n, i, false, grounded);
 
         // collideCharacterwithWorld(physics, transforms, n, i, true, grounded);

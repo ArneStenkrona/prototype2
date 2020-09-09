@@ -20,7 +20,7 @@ public:
     void addCharacter(uint32_t modelID);
     void updateCharacters(float deltaTime);
 
-    void updatePhysics();
+    void updatePhysics(float deltaTime);
     void updateCamera();
 
     void sampleAnimation(prt::vector<glm::mat4> & bones);

@@ -40,11 +40,13 @@ public:
     /**
      * Updates physics for character entities
      * 
+     * @param deltaTime delta time
      * @param physics base pointer to character physics component
      * @param transforms base pointer to character transforms
      * @param n number of character entities
      */
-    void updateCharacterPhysics(CharacterPhysics * physics,
+    void updateCharacterPhysics(float deltaTime,
+                                CharacterPhysics * physics,
                                 Transform * transforms,
                                 size_t n);
 
