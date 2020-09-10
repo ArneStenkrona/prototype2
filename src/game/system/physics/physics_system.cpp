@@ -442,7 +442,7 @@ bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position,
     }
     // convert collision normal to original space
     collisionNormal = glm::normalize(glm::mat3(glm::inverse(glm::transpose(glm::scale(ellipsoidRadii)))) * cn);
-    return 0.0f <= intersectionTime && intersectionTime <= 1.0f;
+    return /*0.0f <= intersectionTime &&*/ intersectionTime <= 1.0f;
 }
 
 bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,

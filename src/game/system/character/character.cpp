@@ -123,10 +123,10 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
     // animation
     float animationDelta = 0.0f;
     float const vmag = glm::length(physics.movementVector);
-    if (vmag > 0.05f) {
+    if (vmag > 0.025f) {
         animation.clipA = clips.walk;
         animation.clipB = clips.run;
-        animation.blendFactor = (vmag - 0.025f) / 0.08f;
+        animation.blendFactor = (vmag - 0.025f) / 0.055f;
 
         animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor) * deltaTime;
     } else {
