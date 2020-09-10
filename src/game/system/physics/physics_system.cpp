@@ -487,7 +487,6 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
         glm::vec3 cn;
 
         glm::vec3 const & velocity = physics[characterIndex].velocity;
-        // glm::vec3 const & otherVelocity = gravity ? physics[i].gravityVelocity : physics[i].velocity;
         glm::vec3 const & otherVelocity = physics[i].velocity;
 
         if (collideEllipsoids(m_ellipsoids[physics[characterIndex].colliderID],
@@ -663,9 +662,9 @@ float PhysicsSystem::computeClosestPointEllipsoids(glm::mat3 const & D,
         if (fder == 0.0f) return std::numeric_limits<float>::max();;
         s -= f/fder;
     }
-    closestPoint[0] = d0k0*s/(d0*s - 1.0f); 
-    closestPoint[1] = d1k1*s/(d1*s - 1.0f); 
-    closestPoint[2] = d2k2*s/(d2*s - 1.0f); 
+    closestPoint[0] = d0k0 * s / ( d0 * s - 1.0f); 
+    closestPoint[1] = d1k1 * s / ( d1 * s - 1.0f); 
+    closestPoint[2] = d2k2 * s / ( d2 * s - 1.0f); 
     return s;
 }
 
