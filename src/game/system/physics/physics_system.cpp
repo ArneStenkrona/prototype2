@@ -163,7 +163,7 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
                                            CharacterPhysics * physics,
                                            Transform * transforms,
                                            size_t n) {
-    // update character aabb's
+     // update character aabb's
     size_t i = 0;    
     while (i < n) {
         AABB & eAABB = m_ellipsoidAABBs[physics[i].colliderID];
@@ -171,44 +171,24 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderID], 
                   transforms[i].position + m_ellipsoids[physics[i].colliderID] };
         // bounds += velocity extents
-        eAABB += { transforms[i].position + physics[i].velocity - m_ellipsoids[physics[i].colliderID], 
-                   transforms[i].position + physics[i].velocity + m_ellipsoids[physics[i].colliderID] };
+        eAABB += { transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - m_ellipsoids[physics[i].colliderID], 
+                   transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + m_ellipsoids[physics[i].colliderID] };
         ++i;
     }
     m_aabbTree.update(m_ellipsoidTreeIndices.data(), m_ellipsoidAABBs.data(), m_ellipsoids.size());
     
-    // collide before adding gravity
+    // collide
     i = 0;
     while (i < n) {
+        // movement
         bool grounded = false;
         collideCharacterwithWorld(physics, transforms, n, i, grounded);
-        physics[i].isGrounded = grounded;
-        ++i;
-    }
-
-    // add gravity and update character aabb's
-    i = 0;    
-    while (i < n) {
         // add gravity
         physics[i].velocity += glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime;
 
-        AABB & eAABB = m_ellipsoidAABBs[physics[i].colliderID];
-        // bounds = radii extents
-        eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderID], 
-                  transforms[i].position + m_ellipsoids[physics[i].colliderID] };
-        // bounds += velocity extents
-        eAABB += { transforms[i].position + physics[i].velocity - m_ellipsoids[physics[i].colliderID], 
-                   transforms[i].position + physics[i].velocity + m_ellipsoids[physics[i].colliderID] };
-        ++i;
-    }
-    m_aabbTree.update(m_ellipsoidTreeIndices.data(), m_ellipsoidAABBs.data(), m_ellipsoids.size());
-    
-    // collide after adding gravity
-    i = 0;
-    while (i < n) {
-        bool grounded = false;
         collideCharacterwithWorld(physics, transforms, n, i, grounded);
-        physics[i].isGrounded |= grounded;
+
+        physics[i].isGrounded = grounded;
         ++i;
     }
 }
