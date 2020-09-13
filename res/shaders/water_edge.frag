@@ -6,7 +6,7 @@
 //layout(location = 0) in vec3 fragNormal;
 //layout(location = 1) in vec2 fragTexCoord;
 
-layout(set = 0, binding = 1) uniform texture2D textures[32];
+layout(set = 0, binding = 1) uniform texture2D textures[64];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(push_constant) uniform PER_OBJECT

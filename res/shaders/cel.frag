@@ -29,7 +29,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     PointLight pointLights[4];
 } ubo;
 
-layout(set = 0, binding = 1) uniform texture2D textures[32];
+layout(set = 0, binding = 1) uniform texture2D textures[64];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 
