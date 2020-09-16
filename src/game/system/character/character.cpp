@@ -13,7 +13,7 @@ CharacterSystem::CharacterSystem(Input & input,
       m_playerController{input, camera}, 
       m_physicsSystem{physicsSystem},
       m_assetManager{assetManager} {
-    initPlayer();
+    // initPlayer();
 }
 
 void CharacterSystem::initPlayer() {

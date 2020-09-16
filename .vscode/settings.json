@@ -1,5 +1,7 @@
 {
     "files.associations": {
+        "*.frag.in": "glsl",
+        "*.vert.in": "glsl",
         "iostream": "cpp",
         "__bit_reference": "cpp",
         "__config": "cpp",
@@ -79,7 +81,8 @@
         "valarray": "cpp",
         "complex": "cpp",
         "gzstream.C": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "*.prt": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

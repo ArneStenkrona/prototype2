@@ -1,6 +1,6 @@
 #include "string_util.h"
 
-prt::vector<std::string> string_util::splitString(const std::string& input, char c) {
+prt::vector<std::string> string_util::splitString(std::string const & input, char c) {
     prt::vector<std::string> vec;
     std::string buffer;
 

@@ -5,20 +5,18 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
     : m_assetManager(assetManager),
       m_physicsSystem(physicsSystem),
       m_input(input),
-    //   m_camera(camera),
       m_characterSystem(m_input, camera, physicsSystem, assetManager) {
-    resetTransforms();
+    SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
+    // uint32_t islandID; 
+    // char const *islandStr = "docks/docks.dae";
+    // m_assetManager.loadModels(&islandStr, 1, &islandID, false);
 
-    uint32_t islandID; 
-    char const *islandStr = "docks/docks.dae";
-    m_assetManager.loadModels(&islandStr, 1, &islandID, false);
+    // m_staticSolidEntities.modelIDs[0] = islandID;
+    // m_staticSolidEntities.transforms[0].position = { 0.0f, -50.0f, 0.0f };
+    // m_staticSolidEntities.transforms[0].scale = { 1.5f, 1.5f, 1.5f };
+    // m_staticSolidEntities.size = 1;
 
-    m_staticSolidEntities.modelIDs[0] = islandID;
-    m_staticSolidEntities.transforms[0].position = { 0.0f, -50.0f, 0.0f };
-    m_staticSolidEntities.transforms[0].scale = { 1.5f, 1.5f, 1.5f };
-    m_staticSolidEntities.size = 1;
-
-    m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };
+    // m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };
 
     initColliders();
 }
@@ -77,12 +75,6 @@ void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool
         for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
             transformMatrices[iMatrix++] = m_staticSolidEntities.transforms[i].transformMatrix();
         }
-    }
-}
-
-void Scene::resetTransforms() {
-    for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-        m_staticSolidEntities.transforms[i] = {};
     }
 }
 

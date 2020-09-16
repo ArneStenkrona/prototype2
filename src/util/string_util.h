@@ -10,7 +10,7 @@ namespace string_util {
  * @param input input string
  * @return vector containing splits
  */ 
-prt::vector<std::string> splitString(const std::string& input, char c);
+prt::vector<std::string> splitString(std::string const & input, char c);
 
 /**
  * splits null terminated string by delimiter

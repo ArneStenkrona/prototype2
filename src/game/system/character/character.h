@@ -1,13 +1,14 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
-#include <cstdint>
-
+#include "src/game/scene/scene_serialization.h"
 #include "player.h"
 #include "src/system/assets/asset_manager.h"
 #include "src/game/system/physics/physics_system.h"
 #include "src/game/component/component.h"
 #include "src/container/vector.h"
+
+#include <cstdint>
 
 class CharacterSystem {
 public:
@@ -55,6 +56,7 @@ private:
 
     void updateCharacter(size_t index, float deltaTime);
 
+    friend class SceneSerialization;
 };
 
 #endif
