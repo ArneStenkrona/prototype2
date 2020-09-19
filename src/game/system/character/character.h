@@ -16,9 +16,6 @@ public:
                     Camera & camera, 
                     PhysicsSystem & physicsSystem, 
                     AssetManager & assetManager);
-
-    void initPlayer();
-    void addCharacter(uint32_t modelID);
     void updateCharacters(float deltaTime);
 
     void updatePhysics(float deltaTime);

@@ -1,4 +1,4 @@
-StaticSolidEntity[model<"docks/docks.dae">position<0.0,-50.0,0.0>rotation<1.0,0.0,0.0,0.0>scale<1.5,1.5,1.5>]
+StaticSolidEntity[model<"docks/docks.dae">position<0.0,-50.0,0.0>rotation<0.7071068,0,0.7071068,0>scale<1.5,1.5,1.5>]
 Sun[direction<0.0,-1.0,-1.0>color<1.0,1.0,1.0>]
 Character[model<"duck/duck.dae">position<0.6,-20.0,0.6>rotation<1.0,0.0,0.0,0.0>scale<0.6,0.6,0.6>collider<0.5,1.0,0.5>]
 Character[model<"duck/duck.dae">position<1.6,-20.0,0.6>rotation<1.0,0.0,0.0,0.0>scale<0.6,0.6,0.6>collider<0.5,1.0,0.5>]

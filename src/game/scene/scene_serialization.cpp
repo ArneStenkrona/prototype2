@@ -138,13 +138,6 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     characters.animationClips[index].run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
 }
 
-/*
-StaticSolidEntity[model<"docks/docks.dae">position<0.0f,-50.0f,0.0f>rotation<1.0f,0.0f,0.0f,0.0f>scale<1.0f,1.0f,1.0f>]
-Sun[direction<0.0f,-1.0f,-1.0f>color<1.0f,1.0f,1.0f>]
-//PointLight[position<0.0f,0.0f,0.0f>color<1.0f,1.0f,1.0f>a<1.0f>b<1.0f>c<1.0f>]
-Character[model<"duck/duck.dae">position<0.6f,-20.0f,0.6f>rotation<1.0f,0.0f,0.0f,0.0f>scale<0.6f,0.6f,0.6f>collider<0.5f,1.0f,0.5f>]
-Character[model<"duck/duck.dae">position<0.6f,-20.0f,0.6f>rotation<1.0f,0.0f,0.0f,0.0f>scale<0.6f,0.6f,0.6f>collider<0.5f,1.0f,0.5f>]
-*/
 void SceneSerialization::parseString(char const *& buf, char * dest) {
     while (*buf != '"') {
         ++buf;
@@ -187,5 +180,5 @@ glm::quat SceneSerialization::parseQuat(char const *& buf) {
     if (ret != 4) {
         assert(false && "Failed to parse quat");
     }
-    return quat;
+    return glm::normalize(quat);
 }

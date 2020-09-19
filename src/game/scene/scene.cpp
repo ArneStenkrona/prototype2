@@ -7,17 +7,6 @@ Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem,
       m_input(input),
       m_characterSystem(m_input, camera, physicsSystem, assetManager) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
-    // uint32_t islandID; 
-    // char const *islandStr = "docks/docks.dae";
-    // m_assetManager.loadModels(&islandStr, 1, &islandID, false);
-
-    // m_staticSolidEntities.modelIDs[0] = islandID;
-    // m_staticSolidEntities.transforms[0].position = { 0.0f, -50.0f, 0.0f };
-    // m_staticSolidEntities.transforms[0].scale = { 1.5f, 1.5f, 1.5f };
-    // m_staticSolidEntities.size = 1;
-
-    // m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };
-
     initColliders();
 }
 
