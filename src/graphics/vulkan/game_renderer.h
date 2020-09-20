@@ -43,7 +43,8 @@ public:
                 prt::vector<glm::mat4> const & bones,
                 Camera & camera,
                 DirLight const & sun,
-                prt::vector<PointLight> const & pointLights);
+                prt::vector<PointLight> const & pointLights,
+                prt::vector<PackedBoxLight> const & boxLights);
 
 private:
     float nearPlane = 0.03f;
@@ -104,7 +105,9 @@ private:
                     prt::vector<glm::mat4> const & bones,
                     Camera & camera,
                     DirLight const & sun,
-                    prt::vector<PointLight> const & pointLights);
+                    prt::vector<PointLight> const & pointLights,
+                    prt::vector<PackedBoxLight> const & boxLights);
+                    
     void updateSkyboxUBO(Camera const & camera);
 
     void updateCascades(glm::mat4 const & projectionMatrix,

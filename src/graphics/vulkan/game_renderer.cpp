@@ -421,13 +421,15 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           prt::vector<glm::mat4> const & bones,
                           Camera & camera,
                           DirLight  const & sun,
-                          prt::vector<PointLight> const & pointLights) {      
+                          prt::vector<PointLight> const & pointLights,
+                          prt::vector<PackedBoxLight> const & boxLights) {      
     updateUBOs(modelMatrices, 
                animatedModelMatrices,
                bones,
                camera,
                sun,
-               pointLights);
+               pointLights,
+               boxLights);
     VulkanApplication::update();   
 }
 
@@ -436,7 +438,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
                               prt::vector<glm::mat4> const & bones,
                               Camera & camera,
                               DirLight  const & sun,
-                              prt::vector<PointLight> const & pointLights) {
+                              prt::vector<PointLight> const & pointLights,
+                              prt::vector<PackedBoxLight> const & boxLights) {
     glm::mat4 viewMatrix = camera.getViewMatrix();
     int w,h = 0;
     getWindowSize(w, h);
@@ -476,6 +479,10 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         for (unsigned int i = 0; i < standardUBO.lighting.noPointLights; ++i) {
             standardUBO.lighting.pointLights[i] = pointLights[i];
         }
+        standardUBO.lighting.noBoxLights = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), boxLights.size());
+        for (unsigned int i = 0; i < standardUBO.lighting.noBoxLights; ++i) {
+            standardUBO.lighting.boxLights[i] = boxLights[i];
+        }
 
         for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
             standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
@@ -511,6 +518,10 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         animatedStandardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < animatedStandardUBO.lighting.noPointLights; ++i) {
             animatedStandardUBO.lighting.pointLights[i] = pointLights[i];
+        }
+        animatedStandardUBO.lighting.noBoxLights = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), boxLights.size());
+        for (unsigned int i = 0; i < animatedStandardUBO.lighting.noBoxLights; ++i) {
+            animatedStandardUBO.lighting.boxLights[i] = boxLights[i];
         }
 
         for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {

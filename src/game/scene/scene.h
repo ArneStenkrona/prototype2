@@ -38,6 +38,7 @@ public:
 private:
     struct Lights {
         prt::vector<PointLight> pointLights;
+        prt::vector<BoxLight> boxLights;
         DirLight sun;
     } m_lights;
 
@@ -68,6 +69,7 @@ private:
     void initColliders();
     
     prt::vector<PointLight> getPointLights();
+    prt::vector<PackedBoxLight> getBoxLights();
     
     void updatePhysics(float deltaTime);
     void updateCamera(float deltaTime);

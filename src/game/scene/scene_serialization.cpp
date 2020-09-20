@@ -50,6 +50,9 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
             case POINT_LIGHT :
             parsePointLight(data, scene);
                 break;
+            case BOX_LIGHT :
+            parseBoxLight(data, scene);
+                break;
             case CHARACTER :
                 parseCharacter(data, scene);
                 break;
@@ -83,6 +86,8 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
         type = TokenType::SUN;
     } else if (strcmp(tokenStr, "PointLight") == 0) {
         type = TokenType::POINT_LIGHT;
+    } else if (strcmp(tokenStr, "BoxLight") == 0) {
+        type = TokenType::BOX_LIGHT;
     } else if (strcmp(tokenStr, "Character") == 0) {
         type = TokenType::CHARACTER;
     }
@@ -120,6 +125,17 @@ void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
     light.a = parseFloat(buf);
     light.b = parseFloat(buf);
     light.c = parseFloat(buf);
+}
+
+void SceneSerialization::parseBoxLight(char const *& buf, Scene & scene) {
+    scene.m_lights.boxLights.push_back({});
+    BoxLight & light = scene.m_lights.boxLights.back();
+    light.min = parseVec3(buf);
+    light.max = parseVec3(buf);
+    light.color = parseVec3(buf);
+    light.position = parseVec3(buf);
+    light.rotation = parseQuat(buf);
+    light.scale = parseVec3(buf);
 }
 
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {

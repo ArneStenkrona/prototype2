@@ -48,12 +48,14 @@ void Scene::renderScene() {
     sampleAnimation(bones);
 
     prt::vector<PointLight> pointLights = getPointLights();
+    prt::vector<PackedBoxLight> boxLights = getBoxLights();
     m_gameRenderer.update(modelMatrices, 
                           animatedModelMatrices,
                           bones,
                           m_camera, 
                           m_lights.sun,
-                          pointLights);
+                          pointLights,
+                          boxLights);
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
@@ -107,6 +109,32 @@ prt::vector<PointLight> Scene::getPointLights() {
     }
     return ret;
 }
+
+prt::vector<PackedBoxLight> Scene::getBoxLights() {
+    prt::vector<PackedBoxLight> ret;
+    
+    prt::vector<IndexedDistance> distances;
+    distances.resize(m_lights.boxLights.size());
+
+    for (size_t i = 0; i < distances.size(); ++i) {
+        distances[i].index = i;
+        distances[i].distance = glm::distance2(m_lights.boxLights[i].position, m_camera.getPosition());
+    }
+    // sort lights by distance to camera
+    qsort(distances.data(), distances.size(), sizeof(distances[0]), compLightsToCamera);
+
+    size_t size = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), m_lights.boxLights.size());
+    ret.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        auto const & l = m_lights.boxLights[distances[i].index];
+        ret[i].min = l.min;
+        ret[i].max = l.max;
+        ret[i].color = l.color;
+        ret[i].invtransform = l.inverseTransform();
+    }
+    return ret; 
+}
+
 
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const {
     if (animated) {
