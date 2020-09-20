@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float t;
     /* Lights */
     float ambientLight;
-    int noPointLights;
+    uint noPointLights;
     DirLight sun;
     vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
     mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
@@ -44,17 +44,12 @@ layout(location = 4) in vec3 inBinormal;
 
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
-    // vec3 normal;
     vec2 fragTexCoord;
-    //float t;
-    //vec3 viewDir;
-    // vec3 viewPos;
     vec3 shadowPos;
-    //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
-    // vec4 sunShadowCoord;
+    mat3 invtbn;
 } vs_out;
 
 void main() {
@@ -63,6 +58,7 @@ void main() {
     vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inBinormal);
     vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inNormal);
 
+    vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));
     
     vs_out.fragTexCoord = inTexCoord;

@@ -47,9 +47,9 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
             case SUN :
                 parseSun(data, scene);
                 break;
-            // case POINT_LIGHT :
-            // parsePointLight(data, scene);
-            //     break;
+            case POINT_LIGHT :
+            parsePointLight(data, scene);
+                break;
             case CHARACTER :
                 parseCharacter(data, scene);
                 break;
@@ -81,9 +81,9 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
         type = TokenType::STATIC_SOLID_ENTITY;
     } else if (strcmp(tokenStr, "Sun") == 0) {
         type = TokenType::SUN;
-    } /*else if (strcmp(tokenStr, "PointLight") == 0) {
-        type = TokenType::POINT_LIGHT
-    } */else if (strcmp(tokenStr, "Character") == 0) {
+    } else if (strcmp(tokenStr, "PointLight") == 0) {
+        type = TokenType::POINT_LIGHT;
+    } else if (strcmp(tokenStr, "Character") == 0) {
         type = TokenType::CHARACTER;
     }
 
@@ -112,7 +112,16 @@ void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
 
 }
 
-// SceneSerialization::void parsePointLight(char const *& buf, Scene & scene) {}
+void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
+    scene.m_lights.pointLights.push_back({});
+    PointLight & light = scene.m_lights.pointLights.back();
+    light.pos = parseVec3(buf);
+    light.color = parseVec3(buf);
+    light.a = parseFloat(buf);
+    light.b = parseFloat(buf);
+    light.c = parseFloat(buf);
+}
+
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     auto & characters = scene.m_characterSystem.m_characters;
     size_t index = characters.size;
@@ -150,6 +159,22 @@ void SceneSerialization::parseString(char const *& buf, char * dest) {
         ++i;
         ++buf;
     }
+}
+
+float SceneSerialization::parseFloat(char const *& buf) {
+    float f;
+    while (*buf != '<') {
+        ++buf;
+    }
+    ++buf;
+
+    int ret = sscanf(buf, "%f",
+                     &f);
+
+    if (ret != 1) {
+        assert(false && "Failed to parse float");
+    }
+    return f;
 }
 
 glm::vec3 SceneSerialization::parseVec3(char const *& buf) {

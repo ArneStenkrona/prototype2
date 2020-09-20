@@ -24,7 +24,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float t;
     /* Lights */
     float ambientLight;
-    int noPointLights;
+    uint noPointLights;
     DirLight sun;
     vec4 splitDepths[(4 + 4) / 4];
     mat4 cascadeSpace[4];
@@ -47,17 +47,12 @@ layout(push_constant) uniform MATERIAL {
 
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
-    // vec3 normal;
     vec2 fragTexCoord;
-    //float t;
-    //vec3 viewDir;
-    // vec3 viewPos;
     vec3 shadowPos;
-    //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
-    // vec4 sunShadowCoord;
+    mat3 invtbn;
 } fs_in;
 
 const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
@@ -97,8 +92,9 @@ void main() {
     // light
     vec3 res = ubo.ambientLight * albedo;;
     // Point lights
+    vec3 worldNormal = fs_in.invtbn * normal;
     for (int i = 0; i < ubo.noPointLights; ++i) {
-        res += CalcPointLight(ubo.pointLights[i], normal, viewDir,
+        res += CalcPointLight(ubo.pointLights[i], worldNormal, viewDir,
                               albedo, specularity);
     }
 
@@ -133,13 +129,13 @@ void transparencyDither(float alpha) {
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = fs_in.tangentFragPos - light.pos;
-    vec3 reflectDir = reflect(-lightDir, normal); // phong
+    vec3 lightDir = fs_in.fragPos - light.pos;
+    // vec3 reflectDir = reflect(-lightDir, normal); // phong
     vec3 halfwayDir = normalize(lightDir + viewDir); // blinn-phong
     // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
+    float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
-    float shininess = 32;
+    float shininess = 32.0;
     float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess); 
     // attenuation
     float distance = length(light.pos - fs_in.fragPos);

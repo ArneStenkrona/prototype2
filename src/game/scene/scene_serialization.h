@@ -15,7 +15,7 @@ private:
     enum TokenType {
         STATIC_SOLID_ENTITY,
         SUN,
-        // POINT_LIGHT,
+        POINT_LIGHT,
         CHARACTER,
         ERROR
     };
@@ -23,10 +23,11 @@ private:
 
     static void parseStaticSolidEntity(char const *& buf, Scene & scene);
     static void parseSun(char const *& buf, Scene & scene);
-    // static void parsePointLight(char const *& buf, Scene & scene);
+    static void parsePointLight(char const *& buf, Scene & scene);
     static void parseCharacter(char const *& buf, Scene & scene);
 
     static void parseString(char const *& buf, char * dest);
+    static float parseFloat(char const *& buf);
     static glm::vec3 parseVec3(char const *& buf);
     static glm::quat parseQuat(char const *& buf);
 };

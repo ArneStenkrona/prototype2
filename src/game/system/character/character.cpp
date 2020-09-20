@@ -4,6 +4,8 @@
 
 #include "glm/gtx/euler_angles.hpp"
 
+#include "glm/gtx/string_cast.hpp"
+
 
 CharacterSystem::CharacterSystem(Input & input, 
                                  Camera & camera, 
@@ -25,7 +27,7 @@ void CharacterSystem::updateCharacters(float deltaTime) {
         m_characters.input[1].move = glm::vec2(dir.x,dir.z);
         if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
     }
-    
+
     for (size_t index = 0; index < m_characters.size; ++index) {
         updateCharacter(index, deltaTime);
     }

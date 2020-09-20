@@ -20,8 +20,10 @@
 
 class Scene {
 public:
-    Scene(AssetManager &assetManager, PhysicsSystem& physicsSystem,
-          Input& input, Camera& camera);
+    Scene(GameRenderer & gameRenderer, 
+          AssetManager & assetManager, 
+          PhysicsSystem & physicsSystem,
+          Input & input);
 
     void bindToRenderer(GameRenderer & gameRenderer);
 
@@ -32,12 +34,10 @@ public:
     void sampleAnimation(prt::vector<glm::mat4> & bones);
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
-
-
-    DirLight const & getSun() const { return m_lights.sun; }
     
 private:
     struct Lights {
+        prt::vector<PointLight> pointLights;
         DirLight sun;
     } m_lights;
 
@@ -51,9 +51,11 @@ private:
     };
     StaticSolidEntities<10> m_staticSolidEntities;
 
+    GameRenderer & m_gameRenderer;
     AssetManager& m_assetManager;
     PhysicsSystem& m_physicsSystem;
     Input& m_input;
+    Camera m_camera;
     CharacterSystem m_characterSystem;
 
     uint32_t const * getModelIDs(size_t & nModelIDs, bool animated) const;
@@ -64,9 +66,12 @@ private:
                            uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();
-
+    
+    prt::vector<PointLight> getPointLights();
+    
     void updatePhysics(float deltaTime);
-    void updateCamera();
+    void updateCamera(float deltaTime);
+    void renderScene();
 
     friend class SceneSerialization;
 };
