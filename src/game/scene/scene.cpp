@@ -1,25 +1,14 @@
 #include "scene.h"
 
-Scene::Scene(AssetManager & assetManager, PhysicsSystem & physicsSystem, 
-             Input & input, Camera & camera)
-    : m_assetManager(assetManager),
+Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSystem & physicsSystem, 
+             Input & input)
+    : m_gameRenderer(gameRenderer),
+      m_assetManager(assetManager),
       m_physicsSystem(physicsSystem),
       m_input(input),
-    //   m_camera(camera),
-      m_characterSystem(m_input, camera, physicsSystem, assetManager) {
-    resetTransforms();
-
-    uint32_t islandID; 
-    char const *islandStr = "docks/docks.dae";
-    m_assetManager.loadModels(&islandStr, 1, &islandID, false);
-
-    m_staticSolidEntities.modelIDs[0] = islandID;
-    m_staticSolidEntities.transforms[0].position = { 0.0f, -50.0f, 0.0f };
-    m_staticSolidEntities.transforms[0].scale = { 1.5f, 1.5f, 1.5f };
-    m_staticSolidEntities.size = 1;
-
-    m_lights.sun = { glm::normalize(glm::vec3{0.0f, -1.0f, -1.0f}), {1.0f, 1.0f, 1.0f} };
-
+      m_camera(m_input),
+      m_characterSystem(m_input, m_camera, physicsSystem, assetManager) {
+    SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
     initColliders();
 }
 
@@ -49,6 +38,26 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
                             skybox);
 }
 
+void Scene::renderScene() {
+    prt::vector<glm::mat4> modelMatrices; 
+    getTransformMatrices(modelMatrices, false);
+    prt::vector<glm::mat4> animatedModelMatrices; 
+    getTransformMatrices(animatedModelMatrices, true);
+
+    prt::vector<glm::mat4> bones; 
+    sampleAnimation(bones);
+
+    prt::vector<PointLight> pointLights = getPointLights();
+    prt::vector<PackedBoxLight> boxLights = getBoxLights();
+    m_gameRenderer.update(modelMatrices, 
+                          animatedModelMatrices,
+                          bones,
+                          m_camera, 
+                          m_lights.sun,
+                          pointLights,
+                          boxLights);
+}
+
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
     m_assetManager.loadCubeMap("default", cubeMap);
 }
@@ -68,6 +77,65 @@ void Scene::initColliders() {
                                       m_staticSolidEntities.colliderIDs);
 }
 
+struct IndexedDistance {
+    unsigned int index;
+    float distance;
+};
+int compLightsToCamera(const void * elem1, const void * elem2) {
+    IndexedDistance f = *((IndexedDistance*)elem1);
+    IndexedDistance s = *((IndexedDistance*)elem2);
+    if (f.distance > s.distance) return  1;
+    if (f.distance < s.distance) return -1;
+    return 0;
+}
+
+prt::vector<PointLight> Scene::getPointLights() {
+    prt::vector<PointLight> ret;
+    
+    prt::vector<IndexedDistance> distances;
+    distances.resize(m_lights.pointLights.size());
+
+    for (size_t i = 0; i < distances.size(); ++i) {
+        distances[i].index = i;
+        distances[i].distance = glm::distance2(m_lights.pointLights[i].pos, m_camera.getPosition());
+    }
+    // sort lights by distance to camera
+    qsort(distances.data(), distances.size(), sizeof(distances[0]), compLightsToCamera);
+
+    size_t size = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), m_lights.pointLights.size());
+    ret.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        ret[i] = m_lights.pointLights[distances[i].index];
+    }
+    return ret;
+}
+
+prt::vector<PackedBoxLight> Scene::getBoxLights() {
+    prt::vector<PackedBoxLight> ret;
+    
+    prt::vector<IndexedDistance> distances;
+    distances.resize(m_lights.boxLights.size());
+
+    for (size_t i = 0; i < distances.size(); ++i) {
+        distances[i].index = i;
+        distances[i].distance = glm::distance2(m_lights.boxLights[i].position, m_camera.getPosition());
+    }
+    // sort lights by distance to camera
+    qsort(distances.data(), distances.size(), sizeof(distances[0]), compLightsToCamera);
+
+    size_t size = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), m_lights.boxLights.size());
+    ret.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        auto const & l = m_lights.boxLights[distances[i].index];
+        ret[i].min = l.min;
+        ret[i].max = l.max;
+        ret[i].color = l.color;
+        ret[i].invtransform = l.inverseTransform();
+    }
+    return ret; 
+}
+
+
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const {
     if (animated) {
         m_characterSystem.getTransformMatrices(transformMatrices);
@@ -80,19 +148,14 @@ void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool
     }
 }
 
-void Scene::resetTransforms() {
-    for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-        m_staticSolidEntities.transforms[i] = {};
-    }
-}
-
 void Scene::update(float deltaTime) {
     static float t = 0;
 
     t+=deltaTime;
     m_characterSystem.updateCharacters(deltaTime);
     updatePhysics(deltaTime);
-    updateCamera();
+    updateCamera(deltaTime);
+    renderScene();
 }
 
 void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
@@ -115,6 +178,9 @@ void Scene::updatePhysics(float deltaTime) {
     m_characterSystem.updatePhysics(deltaTime);
 }
 
-void Scene::updateCamera() {
+void Scene::updateCamera(float deltaTime) {
+    m_camera.update(deltaTime);
     m_characterSystem.updateCamera();
+    // move camera light to camera
+    m_lights.pointLights[0].pos = m_camera.getPosition();
 }

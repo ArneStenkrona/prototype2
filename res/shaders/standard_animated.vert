@@ -14,6 +14,13 @@ struct PointLight {
     float c; // constant term
 };
 
+struct BoxLight {
+    vec3 min;
+    vec3 max;
+    vec3 color;
+    mat4 invtransform;
+};
+
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[100];
@@ -24,11 +31,13 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float t;
     /* Lights */
     float ambientLight;
-    int noPointLights;
+    uint noPointLights;
+    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(4 + 4) / 4];
     mat4 cascadeSpace[4];
     PointLight pointLights[4];
+    BoxLight boxLights[20];
     /*Bones*/
     mat4 bones[500];
 } ubo;
@@ -48,17 +57,12 @@ layout(location = 6) in vec4 inBoneWeights;
 
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
-    // vec3 normal;
     vec2 fragTexCoord;
-    //float t;
-    //vec3 viewDir;
-    // vec3 viewPos;
     vec3 shadowPos;
-    //mat3 tbn;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
     vec3 tangentFragPos;
-    // vec4 sunShadowCoord;
+    mat3 invtbn;
 } vs_out;
 
 void main() {
@@ -83,6 +87,7 @@ void main() {
     vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * boneB);
     vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * boneN);
 
+    vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));
     
     vs_out.fragTexCoord = inTexCoord;

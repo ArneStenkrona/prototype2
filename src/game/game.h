@@ -24,7 +24,6 @@ private:
 
     AssetManager m_assetManager;
 
-    Camera m_camera;
     PhysicsSystem m_physicsSystem;
     Scene m_scene;
 
@@ -35,7 +34,6 @@ private:
     float m_time;
 
     void update(float deltaTime);
-    void updateGraphics(float deltaTime);
 
     void loadScene();
 };

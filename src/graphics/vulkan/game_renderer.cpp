@@ -421,13 +421,15 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           prt::vector<glm::mat4> const & bones,
                           Camera & camera,
                           DirLight  const & sun,
-                          float time) {      
+                          prt::vector<PointLight> const & pointLights,
+                          prt::vector<PackedBoxLight> const & boxLights) {      
     updateUBOs(modelMatrices, 
                animatedModelMatrices,
                bones,
                camera,
                sun,
-               time);
+               pointLights,
+               boxLights);
     VulkanApplication::update();   
 }
 
@@ -436,13 +438,13 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
                               prt::vector<glm::mat4> const & bones,
                               Camera & camera,
                               DirLight  const & sun,
-                              float time) {
+                              prt::vector<PointLight> const & pointLights,
+                              prt::vector<PackedBoxLight> const & boxLights) {
     glm::mat4 viewMatrix = camera.getViewMatrix();
     int w,h = 0;
     getWindowSize(w, h);
     camera.setProjection(w, h, nearPlane, farPlane);
     glm::mat4 projectionMatrix = camera.getProjectionMatrix();
-    // glm::mat4 skyProjectionMatrix = camera.getProjectionMatrix(nearPlane, 1000.0f);
     glm::vec3 viewPosition = camera.getPosition();
 
     // skybox ubo
@@ -469,12 +471,18 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         standardUBO.model.proj = projectionMatrix;
         standardUBO.model.proj[1][1] *= -1;
         standardUBO.model.viewPosition = viewPosition;
-        standardUBO.model.t = time;
 
         // lights
         standardUBO.lighting.sun = sun;
         standardUBO.lighting.ambientLight = 0.2f;
-        standardUBO.lighting.noPointLights = 0;
+        standardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
+        for (unsigned int i = 0; i < standardUBO.lighting.noPointLights; ++i) {
+            standardUBO.lighting.pointLights[i] = pointLights[i];
+        }
+        standardUBO.lighting.noBoxLights = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), boxLights.size());
+        for (unsigned int i = 0; i < standardUBO.lighting.noBoxLights; ++i) {
+            standardUBO.lighting.boxLights[i] = boxLights[i];
+        }
 
         for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
             standardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];
@@ -504,11 +512,17 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         animatedStandardUBO.model.proj = projectionMatrix;
         animatedStandardUBO.model.proj[1][1] *= -1;
         animatedStandardUBO.model.viewPosition = viewPosition;
-        animatedStandardUBO.model.t = time;
         // lights
         animatedStandardUBO.lighting.sun = sun;
         animatedStandardUBO.lighting.ambientLight = 0.2f;
-        animatedStandardUBO.lighting.noPointLights = 0;
+        animatedStandardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
+        for (unsigned int i = 0; i < animatedStandardUBO.lighting.noPointLights; ++i) {
+            animatedStandardUBO.lighting.pointLights[i] = pointLights[i];
+        }
+        animatedStandardUBO.lighting.noBoxLights = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), boxLights.size());
+        for (unsigned int i = 0; i < animatedStandardUBO.lighting.noBoxLights; ++i) {
+            animatedStandardUBO.lighting.boxLights[i] = boxLights[i];
+        }
 
         for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
             animatedStandardUBO.lighting.cascadeSpace[i] = cascadeSpace[i];

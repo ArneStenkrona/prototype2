@@ -4,6 +4,8 @@
 
 #include "glm/gtx/euler_angles.hpp"
 
+#include "glm/gtx/string_cast.hpp"
+
 
 CharacterSystem::CharacterSystem(Input & input, 
                                  Camera & camera, 
@@ -13,34 +15,6 @@ CharacterSystem::CharacterSystem(Input & input,
       m_playerController{input, camera}, 
       m_physicsSystem{physicsSystem},
       m_assetManager{assetManager} {
-    initPlayer();
-}
-
-void CharacterSystem::initPlayer() {
-    char const *monkeyStr = "duck/duck.dae";
-    uint32_t modelID;
-    m_assetManager.loadModels(&monkeyStr, 1, &modelID, true);
-    addCharacter(modelID);
-    addCharacter(modelID);
-    addCharacter(modelID);
-    addCharacter(modelID);
-}
-
-void CharacterSystem::addCharacter(uint32_t modelID) {
-    size_t index = m_characters.size;
-    assert(index < m_characters.maxSize && "Character amount exceeded!");
-    ++m_characters.size;
-
-    m_characters.modelIDs[index] = modelID;
-
-    m_characters.transforms[index].scale = {0.6f, 0.6f, 0.6f};
-    m_characters.transforms[index].position = {0.6f, -20.0f, 0.6f};
-
-    m_characters.physics[index].colliderID = m_physicsSystem.addEllipsoidCollider({0.5f, 1.0f, 0.5f}, index);
-
-    m_characters.animationClips[index].idle = m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
-    m_characters.animationClips[index].walk = m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
-    m_characters.animationClips[index].run = m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
 }
 
 void CharacterSystem::updateCharacters(float deltaTime) {
@@ -48,9 +22,11 @@ void CharacterSystem::updateCharacters(float deltaTime) {
     m_playerController.updateInput(m_characters.input[PLAYER_ID]);
 
     // JUST FOR FUN, WILL REMOVE LATER
-    glm::vec3 dir = m_characters.transforms[0].position - m_characters.transforms[1].position;
-    m_characters.input[1].move = glm::vec2(dir.x,dir.z);
-    if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
+    if (m_characters.size > 1) {
+        glm::vec3 dir = m_characters.transforms[0].position - m_characters.transforms[1].position;
+        m_characters.input[1].move = glm::vec2(dir.x,dir.z);
+        if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
+    }
 
     for (size_t index = 0; index < m_characters.size; ++index) {
         updateCharacter(index, deltaTime);

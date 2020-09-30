@@ -21,7 +21,6 @@ public:
 
     /**
      * binds a scene to the graphics pipeline
-     * @param scene : scene to bind
      */
     void bindAssets(Model const * models, size_t nModels,
                     uint32_t const * modelIDs,
@@ -38,14 +37,14 @@ public:
      * @param modelMatrices : model matrices
      * @param camera : scene camera
      * @param sun : sun light
-     * @param time : simulation time in seconds
      */
     void update(prt::vector<glm::mat4> const & modelMatrices, 
                 prt::vector<glm::mat4> const & animatedModelMatrices,
                 prt::vector<glm::mat4> const & bones,
                 Camera & camera,
-                DirLight  const & sun,
-                float time);
+                DirLight const & sun,
+                prt::vector<PointLight> const & pointLights,
+                prt::vector<PackedBoxLight> const & boxLights);
 
 private:
     float nearPlane = 0.03f;
@@ -106,7 +105,9 @@ private:
                     prt::vector<glm::mat4> const & bones,
                     Camera & camera,
                     DirLight const & sun,
-                    float time);
+                    prt::vector<PointLight> const & pointLights,
+                    prt::vector<PackedBoxLight> const & boxLights);
+                    
     void updateSkyboxUBO(Camera const & camera);
 
     void updateCascades(glm::mat4 const & projectionMatrix,

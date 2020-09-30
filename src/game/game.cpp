@@ -12,9 +12,8 @@ Game::Game()
 : m_input(),
   m_gameRenderer(800, 600),
   m_assetManager(RESOURCE_PATH),
-  m_camera(m_input),
   m_physicsSystem(m_assetManager.getModelManager()),
-  m_scene(m_assetManager, m_physicsSystem, m_input, m_camera),
+  m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
   m_frameRate(FRAME_RATE),
   m_microsecondsPerFrame(1000000 / m_frameRate),
   m_currentFrame(0),
@@ -62,26 +61,5 @@ void Game::run() {
 void Game::update(float deltaTime) {
     m_time += deltaTime;
     m_input.update();
-    m_camera.update(deltaTime);
     m_scene.update(deltaTime);
-    updateGraphics(deltaTime);
-}
-
-void Game::updateGraphics(float /*deltaTime*/) {
-    prt::vector<glm::mat4> modelMatrices; 
-    m_scene.getTransformMatrices(modelMatrices, false);
-    prt::vector<glm::mat4> animatedModelMatrices; 
-    m_scene.getTransformMatrices(animatedModelMatrices, true);
-
-    prt::vector<glm::mat4> bones; 
-    m_scene.sampleAnimation(bones);
-
-    auto const & sun = m_scene.getSun();
-
-    m_gameRenderer.update(modelMatrices, 
-                          animatedModelMatrices,
-                          bones,
-                          m_camera, 
-                          sun,
-                          m_time);
 }

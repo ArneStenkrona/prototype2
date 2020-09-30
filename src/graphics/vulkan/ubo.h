@@ -22,11 +22,14 @@ struct ModelUBO {
 
 struct LightUBO {
     alignas(4)  float ambientLight;
-    alignas(4)  int32_t noPointLights;
+    alignas(4)  uint32_t noPointLights;
+    alignas(4)  uint32_t noBoxLights;
     alignas(16) DirLight sun;
     alignas(16) glm::vec4 splitDepths[(NUMBER_SHADOWMAP_CASCADES + 4)/ 4];
     alignas(16) glm::mat4 cascadeSpace[NUMBER_SHADOWMAP_CASCADES];
     alignas(16) PointLight pointLights[NUMBER_SUPPORTED_POINTLIGHTS];
+    alignas(16) PackedBoxLight boxLights[NUMBER_SUPPORTED_BOXLIGHTS];
+
 };
 
 struct BoneUBO {

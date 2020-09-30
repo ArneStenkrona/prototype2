@@ -527,6 +527,8 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
     glm::vec3 K = K2 * glm::transpose(R);
     // Compute W.
     glm::vec3 W = D0Half * (velocity1 - velocity0) * R0 * R;
+    // relative velocity is stationary
+    if (glm::length(W) == 0.0f) return false;
     // Transformed ellipsoid0 is Z^T*Z = 1 and transformed ellipsoid1 is 
     // (Z-K)^T*D*(Z-K) = 0.
 
