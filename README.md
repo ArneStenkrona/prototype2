@@ -3,6 +3,7 @@ Prototype 2 is a simple game engine. It is a successor to [Prototype](https://gi
 It is developed only as a learning experience. Therefore there is nothing to expect in terms of usability. I keep it hosted open source just to document its progress.
 
 <img src="images/prt2_screen.png" width="500">
+<img src="https://media.giphy.com/media/ZcOWpBzhycBpBke2Ui/giphy.gif" width ="200">
 
 ## Dependencies
 [CMake]()  
