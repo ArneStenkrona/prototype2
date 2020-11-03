@@ -58,6 +58,17 @@ struct StandardPushConstants {
     alignas(16) unsigned char additionalData[32];
 };
 
+struct TransparentPushConstants {
+    alignas(4)  int32_t modelMatrixIdx;
+	alignas(4)  int32_t albedoIndex;
+	alignas(4)  int32_t normalIndex;
+	alignas(4)  int32_t specularIndex;
+    alignas(16) glm::vec4 baseColor;
+    alignas(4)  float baseSpecularity;
+    // use if more data is needed
+    alignas(16) unsigned char additionalData[32];
+};
+
 struct SkyboxUBO {
 		alignas(16) glm::mat4 projection;
 		alignas(16) glm::mat4 model;

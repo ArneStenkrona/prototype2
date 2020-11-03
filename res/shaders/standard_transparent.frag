@@ -50,8 +50,8 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 4) int albedoIndex;
 	layout(offset = 8) int normalIndex;
 	layout(offset = 12) int specularIndex;
-    layout(offset = 16) vec3 baseColor;
-    layout(offset = 28) float baseSpecularity;
+    layout(offset = 16) vec4 baseColor;
+    layout(offset = 32) float baseSpecularity;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -69,8 +69,8 @@ const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
                           0.0, 0.0, 1.0, 0.0,
                           0.5, 0.5, 0.0, 1.0);
 
-
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 accumColor;
+layout(location = 1) out float revealColor;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
@@ -85,9 +85,9 @@ void transparencyDither(float alpha);
 
 void main() {
     // get albedo
-    vec3 albedo = material.albedoIndex < 0 ? material.baseColor :
+    vec4 albedo = material.albedoIndex < 0 ? material.baseColor :
                                         //0.5 * (material.baseColor + 2 *
-                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord).rgb) * material.baseColor;
+                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord));
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
@@ -101,20 +101,20 @@ void main() {
     vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
 
     // light
-    vec3 res = ubo.ambientLight * albedo;
+    vec3 res = ubo.ambientLight * albedo.rgb;
     // Point lights
     vec3 worldNormal = fs_in.invtbn * normal;
     for (int i = 0; i < ubo.noPointLights; ++i) {
         res += CalcPointLight(ubo.pointLights[i], worldNormal, viewDir,
-                              albedo, specularity);
+                              albedo.rgb, specularity);
     }
     // box lights
     for (int i = 0; i < ubo.noPointLights; ++i) {
         res += CalcBoxLight(ubo.boxLights[i].min, 
                             ubo.boxLights[i].max, 
                             ubo.boxLights[i].color, 
-                            vec3(ubo.boxLights[i].invtransform * vec4(fs_in.fragPos, 1.0)), 
-                            albedo);
+                            vec3(ubo.boxLights[i].invtransform * vec4(fs_in.fragPos, 1)), 
+                            albedo.rgb);
     }
 
     int cascadeIndex = 0;
@@ -128,9 +128,25 @@ void main() {
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
-                         albedo, specularity);
+                         albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    outColor = vec4(res, 1.0);
+    // outColor = vec4(res, albedo.a);
+    vec4 color = vec4(res, albedo.a);
+
+    // Insert your favorite weighting function here. The color-based factor
+    // avoids color pollution from the edges of wispy clouds. The z-based
+    // factor gives precedence to nearer surfaces.
+    
+    float weight = 
+            max(min(1.0, max( max(color.r, color.g), color.b ) * color.a ) , color.a) *
+            clamp(0.03 / (1e-5 + pow(fs_in.fragPos.z / 200, 4.0)), 1e-2, 3e3);
+
+    // Blend Func: GL_ONE, GL_ONE
+    // Switch to premultiplied alpha and weight
+    accumColor = vec4(color.rgb * color.a, color.a) * weight;
+
+    // Blend Func: GL_ZERO, GL_ONE_MINUS_SRC_ALPHA
+    revealColor = color.a;
 }
 
 // Screen-door transparency: Discard pixel if below threshold.

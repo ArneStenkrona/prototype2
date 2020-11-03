@@ -87,7 +87,7 @@ void main() {
     // get albedo
     vec3 albedo = material.albedoIndex < 0 ? material.baseColor :
                                         //0.5 * (material.baseColor + 2 *
-                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord).rgb);
+                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord).rgb) * material.baseColor;
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
@@ -101,7 +101,7 @@ void main() {
     vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
 
     // light
-    vec3 res = ubo.ambientLight * albedo;;
+    vec3 res = ubo.ambientLight * albedo;
     // Point lights
     vec3 worldNormal = fs_in.invtbn * normal;
     for (int i = 0; i < ubo.noPointLights; ++i) {
@@ -130,7 +130,7 @@ void main() {
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    outColor = material.normalIndex >= 0 ? vec4(1,1,1,1) : vec4(res, 1.0);
+    outColor = vec4(res, 1.0);
 }
 
 // Screen-door transparency: Discard pixel if below threshold.
@@ -140,11 +140,11 @@ const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 1
                                   4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
                                   16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
 
-void transparencyDither(float alpha) {
-    int x = int(gl_FragCoord.x) / 4;
-    int y = int(gl_FragCoord.y) / 4;
-    if (alpha - thresholdMatrix[x % 4][y % 4] < 0) discard;
-}
+// void transparencyDither(float alpha) {
+//     int x = int(gl_FragCoord.x) / 4;
+//     int y = int(gl_FragCoord.y) / 4;
+//     if (alpha - thresholdMatrix[x % 4][y % 4] < 0) discard;
+// }
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {

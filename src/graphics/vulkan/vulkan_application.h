@@ -112,8 +112,10 @@ protected:
     VkCommandPool commandPool;
     prt::vector<VkCommandBuffer> commandBuffers;
     
-    // Sampler
+    // Samplers
     VkSampler textureSampler;
+    // VkSampler accumulationSampler;
+    // VkSampler revealageSampler;
 
     // Swapchain data
     VkSwapchainKHR swapChain;
@@ -124,6 +126,11 @@ protected:
     prt::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass scenePass;
+
+    prt::vector<VkDescriptorImageInfo> accumulationDescriptors;
+    prt::vector<VkDescriptorImageInfo> revealageDescriptors;
+    prt::vector<FrameBufferAttachment> accumulationAttachments;
+    prt::vector<FrameBufferAttachment> revealageAttachments;
 
     struct OffscreenPass {
         VkExtent2D extent;
@@ -140,7 +147,10 @@ protected:
     
     struct {
         prt::vector<GraphicsPipeline> offscreen;
-        prt::vector<GraphicsPipeline> scene;
+        prt::vector<GraphicsPipeline> opaque;
+        prt::vector<GraphicsPipeline> transparent;
+        prt::vector<GraphicsPipeline> composition;
+
     } graphicsPipelines;
 
     void update();
@@ -203,6 +213,8 @@ private:
         
     FrameBufferAttachment colorAttachment;
     FrameBufferAttachment depthAttachment;
+    FrameBufferAttachment accumulationAttachment;
+    FrameBufferAttachment revealageAttachment;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
@@ -239,18 +251,22 @@ private:
     void createImageViews();
     
     void createScenePass();
-    void createScenePassMsaa();
+    // void createScenePassMsaa();
     void createScenePassNoMsaa();
 
     void createOffscreenSampler();
     void createOffscreenRenderPass();
     void createOffscreenFrameBuffer();
 
+    void createTransparencyAttachments();
+
     void prepareGraphicsPipelines();
     
-    void createDescriptorSetLayouts(prt::vector<GraphicsPipeline> const & pipelines);
+    void createDescriptorSetLayouts(prt::vector<GraphicsPipeline> & pipelines);
+    void createDescriptorSetLayout(GraphicsPipeline & pipeline);
 
-    void createPipelineCaches(prt::vector<GraphicsPipeline> const & pipelines);
+    void createPipelineCaches(prt::vector<GraphicsPipeline> & pipelines);
+    void createPipelineCache(GraphicsPipeline & pipeline);
 
     void createShadowMapPipeline();
     void createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines);
@@ -264,10 +280,11 @@ private:
     void createOffscreenCommands(size_t const imageIndex);
     void createSceneCommands(size_t const imageIndex);
     void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
-
-    void createColorResources();
     
+    void createColorResources();
     void createDepthResources();
+    void createAccumulationResources();
+    void createRevealageResources();
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -307,9 +324,13 @@ private:
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
     
-    void createDescriptorPools(prt::vector<GraphicsPipeline> const & pipelines);
+    void createDescriptorPools(prt::vector<GraphicsPipeline> & pipelines);
+    void createDescriptorPool(GraphicsPipeline & pipeline);
     
     void createDescriptorSets();
+    void createDescriptorSetsOffscreen();
+    void createDescriptorSetsGeometry(prt::vector<GraphicsPipeline> & pipelines);
+    void createDescriptorSetsComposition();
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 

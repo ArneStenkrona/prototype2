@@ -88,18 +88,43 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
             targetMovement = 0.025f * moveDir;
         }
     }
+    float animationDelta = 0.0f;
     
     physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 10.0f * deltaTime);
-    // jump
-    if (input.jump && physics.isGrounded) {
-        physics.velocity += 0.25f * glm::vec3{0.0f, 1.0f, 0.0f};
+    if (physics.isGrounded) {
+        physics.isJumping = false;
+        physics.airTime = 0.0f;
+        // jump
+        if (input.jump) {
+            physics.velocity += 0.25f * glm::vec3{0.0f, 1.0f, 0.0f};
+            physics.isJumping = true;
+
+            animation.clipA = clips.jump;
+            animation.blendFactor = 0;
+            animation.time = 0;
+            animationDelta = 1.0 * deltaTime;
+        }
+    } else {
+        physics.airTime += deltaTime;
     }
     physics.velocity = physics.movementVector + glm::vec3{ 0.0f, physics.velocity.y, 0.0f };
-
+    
     // animation
-    float animationDelta = 0.0f;
     float const vmag = glm::length(physics.movementVector);
-    if (vmag > 0.025f) {
+
+    /*if (!physics.isGrounded && physics.airTime > 0.1f && physics.velocity.y < 0.0f) {
+        animationDelta = 1.0 * deltaTime;
+        animation.clipA = clips.jump;
+        animation.clipB = clips.fall;
+        animation.blendFactor = 1;  
+
+    } else if (physics.isJumping) {
+        animationDelta = 1.0 * deltaTime;
+        animation.clipA = clips.jump;
+        animation.clipB = clips.fall;
+        animation.blendFactor = glm::min(1.0f, animation.blendFactor + deltaTime);
+        
+    } else */if (vmag > 0.025f) {
         animation.clipA = clips.walk;
         animation.clipB = clips.run;
         animation.blendFactor = (vmag - 0.025f) / 0.055f;

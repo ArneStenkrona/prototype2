@@ -10,28 +10,160 @@ GameRenderer::~GameRenderer() {
 void GameRenderer::createStandardAndShadowGraphicsPipelines(size_t standardAssetIndex, size_t standardUboIndex,
                                                             size_t shadowmapUboIndex, 
                                                             const char * relativeVert, const char * relativeFrag,
+                                                            const char * relativeTransparentFrag,
                                                             const char * relativeShadowVert,
                                                             VkVertexInputBindingDescription bindingDescription,
                                                             prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                                            int32_t & standardPipeline, int32_t & shadowPipeline) {
+                                                            int32_t & standardPipeline, 
+                                                            int32_t & transparentPipeline,
+                                                            int32_t & shadowPipeline) {
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
+    char transparentFrag[256] = RESOURCE_PATH;
     strcat(vert, relativeVert);
     strcat(frag, relativeFrag);
-    standardPipeline = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag, 
-                                                      bindingDescription, attributeDescription);
+    strcat(transparentFrag, relativeTransparentFrag);
+    standardPipeline = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag,
+                                                      bindingDescription, attributeDescription, false);
+    transparentPipeline = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, transparentFrag,
+                                                         bindingDescription, attributeDescription, true);
 
     vert[0] = '\0';
     strcpy(vert, RESOURCE_PATH);
     strcat(vert, relativeShadowVert);
     shadowPipeline = createShadowmapGraphicsPipeline(standardAssetIndex, shadowmapUboIndex, vert,
                                                      bindingDescription, attributeDescription);
+
+    compositionPipelineIndex = createCompositionPipeline();
+}
+
+int32_t GameRenderer::createCompositionPipeline() {
+    int32_t pipelineIndex = graphicsPipelines.composition.size();
+    graphicsPipelines.composition.push_back(GraphicsPipeline{});
+    GraphicsPipeline& pipeline = graphicsPipelines.composition.back();
+
+    pipeline.type = PIPELINE_TYPE_COMPOSITION;
+    pipeline.subpass = 2;
+
+    pipeline.assetsIndex = pushBackAssets();
+    // Assets const & asset = getAssets(pipeline.assetsIndex);
+
+    // accumulation and revealage for transparency
+    pipeline.descriptorSetLayoutBindings.resize(2);
+
+    pipeline.descriptorSetLayoutBindings[0].descriptorCount = 1;
+    pipeline.descriptorSetLayoutBindings[0].binding = 0;
+    pipeline.descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipeline.descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
+
+    pipeline.descriptorSetLayoutBindings[1].descriptorCount = 1;
+    pipeline.descriptorSetLayoutBindings[1].binding = 1;
+    pipeline.descriptorSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    pipeline.descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
+
+    // Descriptor pools
+    // accumulation and revealage for transparency
+    pipeline.descriptorPoolSizes.resize(2);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+
+    // Descriptor sets
+    pipeline.descriptorSets.resize(swapChainImages.size());
+    pipeline.descriptorWrites.resize(swapChainImages.size());
+    for (size_t i = 0; i < swapChainImages.size(); ++i) {
+        pipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
+        
+        pipeline.descriptorWrites[i][0] = {};
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+        pipeline.descriptorWrites[i][0].pBufferInfo = 0;
+        // pipeline.descriptorWrites[i][0].pImageInfo = &accumulationDescriptors[i];
+
+        pipeline.descriptorWrites[i][1] = {};
+        pipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][1].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][1].dstBinding = 1;
+        pipeline.descriptorWrites[i][1].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][1].descriptorCount = 1;
+        pipeline.descriptorWrites[i][1].pBufferInfo = 0;
+        // pipeline.descriptorWrites[i][1].pImageInfo = &revealageDescriptors[i];
+    }
+
+    // Vertex input
+    pipeline.vertexInputBinding.binding = 0;
+    pipeline.vertexInputBinding.stride = sizeof(glm::vec3);
+    pipeline.vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    pipeline.vertexInputAttributes.resize(1);
+    pipeline.vertexInputAttributes[0].binding = 0;
+    pipeline.vertexInputAttributes[0].location = 0;
+    pipeline.vertexInputAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    pipeline.vertexInputAttributes[0].offset = 0;
+
+    auto & shaderStages = pipeline.shaderStages;
+    shaderStages.resize(2);
+    
+    char vert[256] = RESOURCE_PATH;
+    char frag[256] = RESOURCE_PATH;
+    strcat(vert, "shaders/composition.vert.spv");
+    strcat(frag, "shaders/composition.frag.spv");
+
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, vert);
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, frag);
+
+    pipeline.extent = swapChainExtent;
+    pipeline.renderpass = scenePass;
+    pipeline.useColorAttachment = true;
+    pipeline.enableDepthBias = false;
+
+    prt::vector<glm::vec3> vertices;
+
+    vertices.resize(4);
+    vertices[0] = glm::vec3{-1.0f, -1.0f, 0.0f};
+    vertices[1] = glm::vec3{1.0f, -1.0f, 0.0f};
+    vertices[2] = glm::vec3{1.0f, 1.0f, 0.0f};
+    vertices[3] = glm::vec3{-1.0f, 1.0f, 0.0f};
+
+    VertexData& data = getAssets(pipeline.assetsIndex).vertexData;
+    createAndMapBuffer(vertices.data(), sizeof(glm::vec3) * vertices.size(),
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                       data.vertexBuffer, 
+                       data.vertexBufferMemory);    
+
+    prt::vector<uint32_t> indices = { 0, 2, 1,
+                                      0, 3, 2 };
+    
+    createAndMapBuffer(indices.data(), sizeof(uint32_t) * indices.size(),
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                       data.indexBuffer, 
+                       data.indexBufferMemory);
+    return pipelineIndex;
 }
 
 void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex) {
-    skyboxPipelineIndex = graphicsPipelines.scene.size();
-    graphicsPipelines.scene.push_back(GraphicsPipeline{});
-    GraphicsPipeline& skyboxPipeline = graphicsPipelines.scene.back();
+    skyboxPipelineIndex = graphicsPipelines.opaque.size();
+    graphicsPipelines.opaque.push_back(GraphicsPipeline{});
+    GraphicsPipeline& skyboxPipeline = graphicsPipelines.opaque.back();
+
+    skyboxPipeline.subpass = 0; 
 
     skyboxPipeline.assetsIndex = assetIndex;
     skyboxPipeline.uboIndex = uboIndex;
@@ -128,123 +260,129 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
 int32_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex,
                                                     char const * vertexShader, char const * fragmentShader,
                                                     VkVertexInputBindingDescription bindingDescription,
-                                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
-    int32_t pipelineIndex = graphicsPipelines.scene.size();
-    graphicsPipelines.scene.push_back(GraphicsPipeline{});
-    GraphicsPipeline& modelPipeline = graphicsPipelines.scene.back();
+                                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                                    bool transparent) {
+    auto & pipelines = transparent ? graphicsPipelines.transparent : graphicsPipelines.opaque;
+    int32_t pipelineIndex = pipelines.size();
+    pipelines.push_back(GraphicsPipeline{});
+    GraphicsPipeline& pipeline = pipelines.back();
 
-    modelPipeline.assetsIndex = assetIndex;
-    modelPipeline.uboIndex = uboIndex;
+    pipeline.subpass = transparent ? 1 : 0;
+    pipeline.type = transparent ? PIPELINE_TYPE_TRANSPARENT : PIPELINE_TYPE_OPAQUE;
+
+    pipeline.assetsIndex = assetIndex;
+    pipeline.uboIndex = uboIndex;
     Assets const & asset = getAssets(assetIndex);
     UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
 
-    // Descriptor set layout
+    /* Descriptor set layout */
+    // ubo
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-
+    // textures
     VkDescriptorSetLayoutBinding textureLayoutBinding = {};
     textureLayoutBinding.descriptorCount = NUMBER_SUPPORTED_TEXTURES;
     textureLayoutBinding.binding = 1;
     textureLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     textureLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     textureLayoutBinding.pImmutableSamplers = nullptr;
-
+    // texture sampler
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.descriptorCount = 1;
     samplerLayoutBinding.binding = 2;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
-
+    // shadowmap
     VkDescriptorSetLayoutBinding shadowmapLayoutBinding = {};
     shadowmapLayoutBinding.descriptorCount = 1;
     shadowmapLayoutBinding.binding = 3;
     shadowmapLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     shadowmapLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     shadowmapLayoutBinding.pImmutableSamplers = nullptr;
-
-    modelPipeline.descriptorSetLayoutBindings.resize(4);
-    modelPipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
-    modelPipeline.descriptorSetLayoutBindings[1] = textureLayoutBinding;
-    modelPipeline.descriptorSetLayoutBindings[2] = samplerLayoutBinding;
-    modelPipeline.descriptorSetLayoutBindings[3] = shadowmapLayoutBinding;
+    
+    pipeline.descriptorSetLayoutBindings.resize(4);
+    pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
+    pipeline.descriptorSetLayoutBindings[1] = textureLayoutBinding;
+    pipeline.descriptorSetLayoutBindings[2] = samplerLayoutBinding;
+    pipeline.descriptorSetLayoutBindings[3] = shadowmapLayoutBinding;
 
     // Descriptor pools
-    modelPipeline.descriptorPoolSizes.resize(4);
-    modelPipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    modelPipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    modelPipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    modelPipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_TEXTURES * swapChainImages.size());
-    modelPipeline.descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    modelPipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    modelPipeline.descriptorPoolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    modelPipeline.descriptorPoolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes.resize(4);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_TEXTURES * swapChainImages.size());
+    pipeline.descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    pipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     // Descriptor sets
-    modelPipeline.descriptorSets.resize(swapChainImages.size());
-    modelPipeline.descriptorWrites.resize(swapChainImages.size());
+    pipeline.descriptorSets.resize(swapChainImages.size());
+    pipeline.descriptorWrites.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
-        modelPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        modelPipeline.descriptorBufferInfos[i].offset = 0;
-        modelPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.descriptorBufferInfos[i].offset = 0;
+        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
-        modelPipeline.descriptorWrites[i].resize(4, VkWriteDescriptorSet{});
+        pipeline.descriptorWrites[i].resize(4, VkWriteDescriptorSet{});
         
-        modelPipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // modelPipeline.descriptorWrites[i][0].dstSet = modelPipeline.descriptorSets[i];
-        modelPipeline.descriptorWrites[i][0].dstBinding = 0;
-        modelPipeline.descriptorWrites[i][0].dstArrayElement = 0;
-        modelPipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        modelPipeline.descriptorWrites[i][0].descriptorCount = 1;
-        // modelPipeline.descriptorWrites[i][0].pBufferInfo = &modelPipeline.descriptorBufferInfos[i];
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+        // pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
 
-        modelPipeline.descriptorWrites[i][1] = {};
-        modelPipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // modelPipeline.descriptorWrites[i][1].dstSet = modelPipeline.descriptorSets[i];
-        modelPipeline.descriptorWrites[i][1].dstBinding = 1;
-        modelPipeline.descriptorWrites[i][1].dstArrayElement = 0;
-        modelPipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        modelPipeline.descriptorWrites[i][1].descriptorCount = NUMBER_SUPPORTED_TEXTURES;
-        modelPipeline.descriptorWrites[i][1].pBufferInfo = 0;
-        modelPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+        pipeline.descriptorWrites[i][1] = {};
+        pipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][1].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][1].dstBinding = 1;
+        pipeline.descriptorWrites[i][1].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        pipeline.descriptorWrites[i][1].descriptorCount = NUMBER_SUPPORTED_TEXTURES;
+        pipeline.descriptorWrites[i][1].pBufferInfo = 0;
+        pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
 
         // VkDescriptorImageInfo samplerInfo = {};
         samplerInfo.sampler = textureSampler;
 
-        modelPipeline.descriptorWrites[i][2] = {};
-        modelPipeline.descriptorWrites[i][2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // modelPipeline.descriptorWrites[i][2].dstSet = modelPipeline.descriptorSets[i];
-        modelPipeline.descriptorWrites[i][2].dstBinding = 2;
-        modelPipeline.descriptorWrites[i][2].dstArrayElement = 0;
-        modelPipeline.descriptorWrites[i][2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        modelPipeline.descriptorWrites[i][2].descriptorCount = 1;
-        modelPipeline.descriptorWrites[i][2].pBufferInfo = 0;
-        modelPipeline.descriptorWrites[i][2].pImageInfo = &samplerInfo;
+        pipeline.descriptorWrites[i][2] = {};
+        pipeline.descriptorWrites[i][2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][2].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][2].dstBinding = 2;
+        pipeline.descriptorWrites[i][2].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][2].descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        pipeline.descriptorWrites[i][2].descriptorCount = 1;
+        pipeline.descriptorWrites[i][2].pBufferInfo = 0;
+        pipeline.descriptorWrites[i][2].pImageInfo = &samplerInfo;
 
-        modelPipeline.descriptorWrites[i][3] = {};
-        modelPipeline.descriptorWrites[i][3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // modelPipeline.descriptorWrites[i][3].dstSet = modelPipeline.descriptorSets[i];
-        modelPipeline.descriptorWrites[i][3].dstBinding = 3;
-        modelPipeline.descriptorWrites[i][3].dstArrayElement = 0;
-        modelPipeline.descriptorWrites[i][3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        modelPipeline.descriptorWrites[i][3].descriptorCount = 1;
-        modelPipeline.descriptorWrites[i][3].pBufferInfo = 0;
-        modelPipeline.descriptorWrites[i][3].pImageInfo = &offscreenPass.descriptors[i];
+        pipeline.descriptorWrites[i][3] = {};
+        pipeline.descriptorWrites[i][3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][3].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][3].dstBinding = 3;
+        pipeline.descriptorWrites[i][3].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][3].descriptorCount = 1;
+        pipeline.descriptorWrites[i][3].pBufferInfo = 0;
+        pipeline.descriptorWrites[i][3].pImageInfo = &offscreenPass.descriptors[i];
     }
 
     // Vertex input
-    modelPipeline.vertexInputBinding = bindingDescription;
-    modelPipeline.vertexInputAttributes.resize(attributeDescription.size());
+    pipeline.vertexInputBinding = bindingDescription;
+    pipeline.vertexInputAttributes.resize(attributeDescription.size());
     size_t inIndx = 0;
     for (auto const & att : attributeDescription) {
-        modelPipeline.vertexInputAttributes[inIndx] = att;
+        pipeline.vertexInputAttributes[inIndx] = att;
         ++inIndx;
     }
-    auto & shaderStages = modelPipeline.shaderStages;
+    auto & shaderStages = pipeline.shaderStages;
     shaderStages.resize(2);
 
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -259,10 +397,10 @@ int32_t GameRenderer::createStandardGraphicsPipeline(size_t assetIndex, size_t u
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, fragmentShader);
 
-    modelPipeline.extent = swapChainExtent;
-    modelPipeline.renderpass = scenePass;
-    modelPipeline.useColorAttachment = true;
-    modelPipeline.enableDepthBias = false;
+    pipeline.extent = swapChainExtent;
+    pipeline.renderpass = scenePass;
+    pipeline.useColorAttachment = true;
+    pipeline.enableDepthBias = false;
 
     return pipelineIndex;
 }
@@ -274,6 +412,9 @@ int32_t GameRenderer::createShadowmapGraphicsPipeline(size_t assetIndex, size_t 
     int32_t pipelineIndex = graphicsPipelines.offscreen.size();
     graphicsPipelines.offscreen.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.offscreen.back();
+
+    pipeline.type = PIPELINE_TYPE_OFFSCREEN;
+    pipeline.subpass = 0;
 
     pipeline.assetsIndex = assetIndex;
     pipeline.uboIndex = uboIndex;
@@ -385,14 +526,19 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
         loadModels(models, nModels, standardAssetIndex, false);
         createStandardAndShadowGraphicsPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
                                                  "shaders/standard.vert.spv", "shaders/standard.frag.spv",
+                                                 "shaders/standard_transparent.frag.spv",
                                                  "shaders/shadow_map.vert.spv",
                                                  Model::Vertex::getBindingDescription(),
                                                  Model::Vertex::getAttributeDescriptions(),
                                                  standardPipelineIndex,
+                                                 transparentPipelineIndex,
                                                  shadowmapPipelineIndex);
         createStandardDrawCalls(models, nModels, modelIDs, nModelIDs, 
                                 nullptr, 0,
-                                standardPipelineIndex);
+                                standardPipelineIndex, false);
+        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs, 
+                                nullptr, 0,
+                                transparentPipelineIndex, true);
         createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
     }    
 
@@ -401,17 +547,24 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
         loadModels(animatedModels, nAnimatedModels, animatedStandardAssetIndex, true);
         createStandardAndShadowGraphicsPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
                                                  "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
+                                                 "shaders/standard_transparent.frag.spv",
                                                  "shaders/shadow_map_animated.vert.spv",
                                                  Model::BonedVertex::getBindingDescription(),
                                                  Model::BonedVertex::getAttributeDescriptions(),
                                                  animatedStandardPipelineIndex,
+                                                 animatedTransparentPipelineIndex,
                                                  animatedShadowmapPipelineIndex);
 
         createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs, 
                                 boneOffsets, sizeof(boneOffsets[0]),
-                                animatedStandardPipelineIndex);
+                                animatedStandardPipelineIndex, false);
+        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs, 
+                                boneOffsets, sizeof(boneOffsets[0]),
+                                animatedTransparentPipelineIndex, true);
         createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);
     }
+    
+    createCompositionDrawCalls(compositionPipelineIndex);
 
     completeSwapChain();
 }
@@ -460,7 +613,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     // standard ubo         
     if (standardPipelineIndex !=  -1) {    
         assert(shadowmapPipelineIndex  != -1);     
-        auto standardUboData = getUniformBufferData(graphicsPipelines.scene[standardPipelineIndex].uboIndex).uboData.data();
+        auto standardUboData = getUniformBufferData(graphicsPipelines.opaque[standardPipelineIndex].uboIndex).uboData.data();
         StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
         // model
         for (size_t i = 0; i < modelMatrices.size(); ++i) {
@@ -501,7 +654,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     /* animated*/
     if (animatedStandardPipelineIndex != -1) {
     assert(animatedShadowmapPipelineIndex != -1);
-        auto animatedStandardUboData = getUniformBufferData(graphicsPipelines.scene[animatedStandardPipelineIndex].uboIndex).uboData.data();
+        auto animatedStandardUboData = getUniformBufferData(graphicsPipelines.opaque[animatedStandardPipelineIndex].uboIndex).uboData.data();
         AnimatedStandardUBO & animatedStandardUBO = *reinterpret_cast<AnimatedStandardUBO*>(animatedStandardUboData);
         for (size_t i = 0; i < animatedModelMatrices.size(); ++i) {
             animatedStandardUBO.model.model[i] = animatedModelMatrices[i];
@@ -545,7 +698,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
 }
 
 void GameRenderer::updateSkyboxUBO(Camera const & camera) {
-    auto skyboxUboData = getUniformBufferData(graphicsPipelines.scene[skyboxPipelineIndex].uboIndex).uboData.data();
+    auto skyboxUboData = getUniformBufferData(graphicsPipelines.opaque[skyboxPipelineIndex].uboIndex).uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
     glm::mat4 skyboxViewMatrix = camera.getViewMatrix();
@@ -692,7 +845,7 @@ void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t ass
 }
 
 void GameRenderer::createSkyboxDrawCalls() {
-    GraphicsPipeline & pipeline = graphicsPipelines.scene[skyboxPipelineIndex];
+    GraphicsPipeline & pipeline = graphicsPipelines.opaque[skyboxPipelineIndex];
     DrawCall drawCall;
     drawCall.firstIndex = 0;
     drawCall.indexCount = 36;
@@ -702,8 +855,10 @@ void GameRenderer::createSkyboxDrawCalls() {
 void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nModels,
                                            uint32_t const * modelIDs, size_t nModelIDs,
                                            void const * additionalPushConstants, size_t additionalPushConstantSize,
-                                           size_t pipelineIndex) {
-    GraphicsPipeline & pipeline = graphicsPipelines.scene[pipelineIndex];
+                                           size_t pipelineIndex,
+                                           bool transparent) {
+    auto & pipelines = transparent ? graphicsPipelines.transparent : graphicsPipelines.opaque;
+    GraphicsPipeline & pipeline = pipelines[pipelineIndex];
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
     prt::vector<uint32_t> indexOffsets = { 0 };
     imgIdxOffsets.resize(nModels);
@@ -718,6 +873,8 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
 
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
+            // check if transparent
+            if (material.transparent != transparent) continue; 
             DrawCall drawCall;
             // compute texture indices
             int32_t albedoIndex = material.albedoIndex     < 0 ? -1 : imgIdxOffsets[modelIDs[i]] +  material.albedoIndex;
@@ -747,10 +904,18 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
 }
 void GameRenderer::createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex) {
     GraphicsPipeline & shadowPipeline = graphicsPipelines.offscreen[shadowPipelineIndex];
-    GraphicsPipeline & standardPipeline = graphicsPipelines.scene[pipelineIndex];
+    GraphicsPipeline & standardPipeline = graphicsPipelines.opaque[pipelineIndex];
     for (auto & standardDrawCall : standardPipeline.drawCalls) {
         shadowPipeline.drawCalls.push_back(standardDrawCall);
     }
+}
+
+void GameRenderer::createCompositionDrawCalls(size_t pipelineIndex) {
+    GraphicsPipeline & pipeline = graphicsPipelines.composition[pipelineIndex];
+    DrawCall drawCall;
+    drawCall.firstIndex = 0;
+    drawCall.indexCount = 6;
+    pipeline.drawCalls.push_back(drawCall);
 }
 
 void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,

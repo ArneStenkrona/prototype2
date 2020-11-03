@@ -30,19 +30,14 @@ struct BlendedAnimation {
     float time = 0.0f;
 };
 
-/* Character related */
-struct Character {
-    uint32_t idleAnimationIndex;
-    uint32_t walkAnimationIndex;
-    uint32_t runAnimationIndex;
-};
-
 struct CharacterPhysics {
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
     glm::vec3 movementVector = {0.0f, 0.0f, 0.0f};
     glm::vec3 groundNormal;
     uint16_t colliderID;
     bool isGrounded = false;
+    bool isJumping = false;
+    float airTime = 0.0f;
 };
 
 struct CharacterInput {
@@ -55,7 +50,8 @@ struct CharacterAnimationClips {
     uint32_t idle;
     uint32_t walk;
     uint32_t run;
-    // uint32_t jump;
+    uint32_t jump;
+    uint32_t fall;
 };
 
 #endif

@@ -19,11 +19,19 @@ struct ShaderStage {
     char pName[512];
 };
 
+enum PipelineType {
+    PIPELINE_TYPE_OPAQUE,
+    PIPELINE_TYPE_OFFSCREEN,
+    PIPELINE_TYPE_TRANSPARENT,
+    PIPELINE_TYPE_COMPOSITION
+};
+
 struct GraphicsPipeline {
+    static constexpr size_t NULL_INDEX = -1;
     // Assets handle
     size_t assetsIndex;
     // UBO handle
-    size_t uboIndex;
+    size_t uboIndex = NULL_INDEX;
 
     // Descriptors
     prt::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
@@ -46,6 +54,9 @@ struct GraphicsPipeline {
     prt::vector<ShaderStage> shaderStages;
     bool useColorAttachment;
     bool enableDepthBias;
+    unsigned int subpass;
+
+    PipelineType type;
 
     // Draw calls
     prt::vector<DrawCall> drawCalls;

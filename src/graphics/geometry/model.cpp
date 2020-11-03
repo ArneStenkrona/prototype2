@@ -48,8 +48,18 @@ void Model::load(char const * path, bool loadAnimation) {
  
         aiColor3D color;
         scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+
         materials[i].baseColor = { color.r, color.g, color.b };
         
+        scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].opacity);
+        scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
+        
+        //** REMOVE **//
+        materials[i].opacity = 0.8f;
+        //** REMOVE **//
+
+        materials[i].transparent = materials[i].opacity < 1.0f;
+
         getTexture(materials[i].albedoIndex, *scene->mMaterials[i], aiTextureType_DIFFUSE,
                    albedoPathToIndex, path);
         getTexture(materials[i].normalIndex, *scene->mMaterials[i], aiTextureType_NORMALS,
