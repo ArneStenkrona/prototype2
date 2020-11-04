@@ -112,10 +112,8 @@ protected:
     VkCommandPool commandPool;
     prt::vector<VkCommandBuffer> commandBuffers;
     
-    // Samplers
+    // Sampler
     VkSampler textureSampler;
-    // VkSampler accumulationSampler;
-    // VkSampler revealageSampler;
 
     // Swapchain data
     VkSwapchainKHR swapChain;

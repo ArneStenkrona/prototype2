@@ -535,9 +535,9 @@ void VulkanApplication::createScenePassNoMsaa() {
     // input transparency attachments
     prt::array<VkAttachmentReference, 2> inputTransparencyAttachmentRefs;
     inputTransparencyAttachmentRefs[0].attachment = 2;
-    inputTransparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    inputTransparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     inputTransparencyAttachmentRefs[1].attachment = 3;
-    inputTransparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    inputTransparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     prt::array<VkSubpassDescription, 3> subpasses = {};
     // opaque geometry
@@ -558,25 +558,12 @@ void VulkanApplication::createScenePassNoMsaa() {
     subpasses[2].inputAttachmentCount = inputTransparencyAttachmentRefs.size();
     subpasses[2].pInputAttachments = inputTransparencyAttachmentRefs.data();
 
-    // VkSubpassDescription subpass = {};
-    // subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    // subpass.colorAttachmentCount = 1;
-    // subpass.pColorAttachments = colorAttachmentRefs;
-    // subpass.pDepthStencilAttachment = &depthAttachmentRef;
-
-    // VkSubpassDependency dependency = {};
-    // dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    // dependency.dstSubpass = 0;
-    // dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    // dependency.srcAccessMask = 0;
-    // dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    // dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     // I AM VERY UNSURE ABOUT THESE DEPENDENCIES
     VkSubpassDependency dependencies[3] = {};
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;//VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;//0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
     dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
@@ -584,17 +571,17 @@ void VulkanApplication::createScenePassNoMsaa() {
     dependencies[1].srcSubpass = 0;
     dependencies[1].dstSubpass = 1;
     dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;//0;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;// VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;//VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     dependencies[2].srcSubpass = 1;
     dependencies[2].dstSubpass = 2;
     dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;// | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;//0;
-    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[2].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[2].dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
     dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     prt::array<VkAttachmentDescription, 4> attachments = {colorAttachmentDesc, 
@@ -918,8 +905,8 @@ void VulkanApplication::createTransparencyAttachments() {
             assert(false && "failed to bind memory for revealage image!");
         }
 
-        transitionImageLayout(accumulationAttachments[i].image, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, 1, 1);
-        transitionImageLayout(revealageAttachments[i].image, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, 1, 1);
+        transitionImageLayout(accumulationAttachments[i].image, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
+        transitionImageLayout(revealageAttachments[i].image, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
 
         // accumulation view
         VkImageViewCreateInfo accumulationImageView{};
@@ -938,7 +925,7 @@ void VulkanApplication::createTransparencyAttachments() {
         }
 
         accumulationDescriptors[i].imageView = accumulationAttachments[i].imageView;
-        accumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         // revealage view
         VkImageViewCreateInfo revealageImageView{};
@@ -957,7 +944,7 @@ void VulkanApplication::createTransparencyAttachments() {
         }
 
         revealageDescriptors[i].imageView = revealageAttachments[i].imageView;
-        revealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        revealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     }
 }
 
@@ -1726,13 +1713,6 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     }
-    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_GENERAL) {
-        /*TODO:FIX*/
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    }
     else {
         assert(false && "unsupported layout transition!");
     }
@@ -1905,7 +1885,7 @@ void VulkanApplication::createDescriptorSetsComposition() {
                 pipeline.descriptorWrites[i][1].pImageInfo = &revealageDescriptors[i];
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
-                                    pipeline.descriptorWrites[i].data(), 0, nullptr);
+                                       pipeline.descriptorWrites[i].data(), 0, nullptr);
         }
     }
 }
