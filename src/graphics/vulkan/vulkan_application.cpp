@@ -1091,19 +1091,19 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[0].blendEnable = VK_TRUE;
             colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
             colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 
             colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             colorBlendAttachments[1].blendEnable = VK_TRUE;
             colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;//VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-            colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+            colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
 
             colorBlending.logicOpEnable = VK_FALSE;
             colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
@@ -1117,10 +1117,10 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[0].blendEnable = VK_TRUE;
             colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 
             colorBlending.logicOpEnable = VK_FALSE;
             colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
@@ -1129,7 +1129,6 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             break;
         }
         default: {
-            // colorBlending.attachmentCount = 0;
             colorBlendAttachments.resize(1);
             colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             colorBlendAttachments[0].blendEnable = VK_FALSE;
@@ -2093,8 +2092,8 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     prt::array<VkClearValue, 4> clearValues = {};
     clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
     clearValues[1].depthStencil = { 1.0f, 0 };
-    clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
-    clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
+    clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
+    clearValues[3].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

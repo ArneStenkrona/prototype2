@@ -11,6 +11,7 @@ void main() {
     float reveal = subpassLoad(revealage).r;
 
     // Blend Func: GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA
+    // if (reveal == 0) discard;
     outColor = vec4(accum.rgb / max(accum.a, 1e-5), reveal);
 }
 
