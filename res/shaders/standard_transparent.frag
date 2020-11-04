@@ -86,7 +86,6 @@ void transparencyDither(float alpha);
 void main() {
     // get albedo
     vec4 albedo = material.albedoIndex < 0 ? material.baseColor :
-                                        //0.5 * (material.baseColor + 2 *
                                         (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord));
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :

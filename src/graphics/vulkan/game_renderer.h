@@ -106,9 +106,10 @@ private:
     void createSkyboxDrawCalls();
     void createStandardDrawCalls(Model    const * models,   size_t nModels,
                                  uint32_t const * modelIDs, size_t nModelIDs,
-                                 void const * additionalPushConstants, size_t additionalPushConstantSize,
                                  size_t pipelineIndex,
-                                 bool transparent);
+                                 bool transparent,
+                                 bool animated,
+                                 uint32_t const * boneOffsets);
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
     void createCompositionDrawCalls(size_t pipelineIndex);

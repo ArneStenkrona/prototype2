@@ -533,12 +533,10 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                                                  standardPipelineIndex,
                                                  transparentPipelineIndex,
                                                  shadowmapPipelineIndex);
-        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs, 
-                                nullptr, 0,
-                                standardPipelineIndex, false);
-        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs, 
-                                nullptr, 0,
-                                transparentPipelineIndex, true);
+        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs,
+                                standardPipelineIndex, false, false, nullptr);
+        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs,
+                                transparentPipelineIndex, true, false, nullptr);
         createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
     }    
 
@@ -555,12 +553,10 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                                                  animatedTransparentPipelineIndex,
                                                  animatedShadowmapPipelineIndex);
 
-        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs, 
-                                boneOffsets, sizeof(boneOffsets[0]),
-                                animatedStandardPipelineIndex, false);
-        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs, 
-                                boneOffsets, sizeof(boneOffsets[0]),
-                                animatedTransparentPipelineIndex, true);
+        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
+                                animatedStandardPipelineIndex, false, true, boneOffsets);
+        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
+                                animatedTransparentPipelineIndex, true, true, boneOffsets);
         createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);
     }
     
@@ -854,9 +850,10 @@ void GameRenderer::createSkyboxDrawCalls() {
 
 void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nModels,
                                            uint32_t const * modelIDs, size_t nModelIDs,
-                                           void const * additionalPushConstants, size_t additionalPushConstantSize,
                                            size_t pipelineIndex,
-                                           bool transparent) {
+                                           bool transparent,
+                                           bool animated,
+                                           uint32_t const * boneOffsets) {
     auto & pipelines = transparent ? graphicsPipelines.transparent : graphicsPipelines.opaque;
     GraphicsPipeline & pipeline = pipelines[pipelineIndex];
     prt::vector<uint32_t> imgIdxOffsets = { 0 };
@@ -888,12 +885,10 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
-            // add any additional push constants
-            if (additionalPushConstantSize != 0) {
-                memcpy(pc.additionalData, 
-                       &static_cast<unsigned char const *>(additionalPushConstants)[i * additionalPushConstantSize], 
-                       additionalPushConstantSize);
+            if (animated) {
+                pc.boneOffset = boneOffsets[i];
             }
+
             // geometry
             drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;

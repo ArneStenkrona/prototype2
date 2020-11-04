@@ -50,8 +50,8 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 4) int albedoIndex;
 	layout(offset = 8) int normalIndex;
 	layout(offset = 12) int specularIndex;
-    layout(offset = 16) vec3 baseColor;
-    layout(offset = 28) float baseSpecularity;
+    layout(offset = 16) vec4 baseColor;
+    layout(offset = 32) float baseSpecularity;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -85,9 +85,8 @@ void transparencyDither(float alpha);
 
 void main() {
     // get albedo
-    vec3 albedo = material.albedoIndex < 0 ? material.baseColor :
-                                        //0.5 * (material.baseColor + 2 *
-                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord).rgb) * material.baseColor;
+    vec3 albedo = material.albedoIndex < 0 ? material.baseColor.rgb :
+                                        (texture(sampler2D(textures[material.albedoIndex], samp), fs_in.fragTexCoord).rgb) * material.baseColor.rgb;
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;

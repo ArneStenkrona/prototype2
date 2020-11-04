@@ -571,9 +571,9 @@ void VulkanApplication::createScenePassNoMsaa() {
     dependencies[1].srcSubpass = 0;
     dependencies[1].dstSubpass = 1;
     dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     dependencies[2].srcSubpass = 1;
@@ -958,21 +958,24 @@ void VulkanApplication::prepareGraphicsPipelines() {
     for (auto & pipeline : graphicsPipelines.transparent) {
         pipeline.renderpass = scenePass;
     }
+    for (auto & pipeline : graphicsPipelines.composition) {
+        pipeline.renderpass = scenePass;
+    }
     createDescriptorSetLayouts(graphicsPipelines.offscreen);
     createDescriptorSetLayouts(graphicsPipelines.opaque);
     createDescriptorSetLayouts(graphicsPipelines.transparent);
+    createDescriptorSetLayouts(graphicsPipelines.composition);
 
     createPipelineCaches(graphicsPipelines.offscreen);
     createPipelineCaches(graphicsPipelines.opaque);
     createPipelineCaches(graphicsPipelines.transparent);
+    createPipelineCaches(graphicsPipelines.composition);
 
     createGraphicsPipelines(graphicsPipelines.offscreen);
     createGraphicsPipelines(graphicsPipelines.opaque);
     createGraphicsPipelines(graphicsPipelines.transparent);
-
-    createDescriptorSetLayouts(graphicsPipelines.composition);
-    createPipelineCaches(graphicsPipelines.composition);
     createGraphicsPipelines(graphicsPipelines.composition);
+
 }
 
 void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> & pipelines) {
@@ -1077,24 +1080,9 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
     
-    // VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-    // colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    // colorBlendAttachment.blendEnable = graphicsPipeline.type == PIPELINE_TYPE_TRANSPARENT ? VK_TRUE : VK_FALSE;
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     
-    // if (graphicsPipeline.useColorAttachment) {
-    //     colorBlending.logicOpEnable = VK_FALSE;
-    //     colorBlending.logicOp = VK_LOGIC_OP_COPY;
-    //     colorBlending.attachmentCount = 1;
-    //     colorBlending.pAttachments = &colorBlendAttachment;
-    //     colorBlending.blendConstants[0] = 0.0f;
-    //     colorBlending.blendConstants[1] = 0.0f;
-    //     colorBlending.blendConstants[2] = 0.0f;
-    //     colorBlending.blendConstants[3] = 0.0f;
-    // } else {
-    //     colorBlending.attachmentCount = 0;
-    // }
     prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
     switch (graphicsPipeline.type) {
         case PIPELINE_TYPE_TRANSPARENT: {
@@ -1112,7 +1100,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[1].blendEnable = VK_TRUE;
             colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;//VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
             colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
             colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -1242,8 +1230,6 @@ void VulkanApplication::createFramebuffers() {
             prt::array<VkImageView, 4> attachments = {
                 swapChainImageViews[i],
                 depthAttachment.imageView,
-                // accumulationAttachment.imageView,
-                // revealageAttachment.imageView
                 accumulationAttachments[i].imageView,
                 revealageAttachments[i].imageView,
             };
