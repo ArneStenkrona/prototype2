@@ -161,6 +161,8 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     characters.animationClips[index].idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
     characters.animationClips[index].walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
     characters.animationClips[index].run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
+    characters.animationClips[index].jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
+    characters.animationClips[index].fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
 }
 
 void SceneSerialization::parseString(char const *& buf, char * dest) {
