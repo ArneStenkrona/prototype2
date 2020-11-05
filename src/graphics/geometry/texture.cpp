@@ -22,3 +22,8 @@ void Texture::load(char const * path) {
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     stbi_image_free(pixels);
 }
+
+Texture* Texture::defaultTexture() {
+    static Texture texture = {{0,0,0,1},1,1,4,1};
+    return &texture;
+}

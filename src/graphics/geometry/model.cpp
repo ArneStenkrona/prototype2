@@ -28,6 +28,7 @@ void Model::load(char const * path, bool loadAnimation) {
                                               aiProcess_FindDegenerates          |
                                               aiProcess_JoinIdenticalVertices    |
                                               aiProcess_RemoveRedundantMaterials |
+                                              aiProcess_ImproveCacheLocality     |
                                               aiProcess_SortByPType);
 
     // check if import failed
