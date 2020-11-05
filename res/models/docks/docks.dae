@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.82.7 commit date:2020-02-12, commit time:16:20, hash:77d23b0bd76f</authoring_tool>
     </contributor>
-    <created>2020-09-30T03:12:36</created>
-    <modified>2020-09-30T03:12:36</modified>
+    <created>2020-11-05T16:48:08</created>
+    <modified>2020-11-05T16:48:08</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -7525,7 +7525,7 @@
           </technique_common>
         </source>
         <source id="Circle_003-mesh-map-0">
-          <float_array id="Circle_003-mesh-map-0-array" count="72">1 1 0 0 1 0 1.825393 -0.5606116 1.947448 -0.4385567 1.947448 -0.5606116 0 0 1 0 1 0 1 1 0 1 0 1 1 0 1 1 1 1 0 0 0 1 0 0 1 1 0 1 0 0 1.825393 -0.5606116 1.825393 -0.4385567 1.947448 -0.4385567 0 0 0 0 1 0 1 1 1 1 0 1 1 0 1 0 1 1 0 0 0 1 0 1</float_array>
+          <float_array id="Circle_003-mesh-map-0-array" count="72">1 1 0 0 1 0 0.5753931 0.1503258 0.6974478 0.2723807 0.6974478 0.1503258 0 0 1 0 1 0 1 1 0 1 0 1 1 0 1 1 1 1 0 0 0 1 0 0 1 1 0 1 0 0 0.5753931 0.1503258 0.5753931 0.2723807 0.6974478 0.2723807 0 0 0 0 1 0 1 1 1 1 0 1 1 0 1 0 1 1 0 0 0 1 0 1</float_array>
           <technique_common>
             <accessor source="#Circle_003-mesh-map-0-array" count="36" stride="2">
               <param name="S" type="float"/>
