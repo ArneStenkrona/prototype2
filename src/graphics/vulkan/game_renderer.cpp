@@ -817,10 +817,10 @@ void GameRenderer::loadModels(Model const * models, size_t nModels, size_t asset
     for (size_t i = numTex; i < asset.textureImages.images.size(); ++i) {
         createTextureImage(asset.textureImages.images[i], 
                            asset.textureImages.imageMemories[i], 
-                           models[0].textures.back());
+                           *Texture::defaultTexture());
         createTextureImageView(asset.textureImages.imageViews[i], 
                                asset.textureImages.images[i], 
-                               models[0].textures.back().mipLevels);
+                               Texture::defaultTexture()->mipLevels);
     }
 }
 

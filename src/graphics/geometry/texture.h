@@ -16,6 +16,7 @@ struct Texture {
         int si = texChannels * (sy * texWidth + sx);
         return &pixelBuffer[si];
     }
+    static Texture* defaultTexture();
 };
 
 #endif
