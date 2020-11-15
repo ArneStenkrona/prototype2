@@ -5,7 +5,7 @@ project (prototype2)
 set (CMAKE_CXX_STANDARD 17)
 
 # Set debug mode
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE debug)
 
 # CONFIG VARIABLES
 # Endianness

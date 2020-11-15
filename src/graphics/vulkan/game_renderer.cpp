@@ -54,21 +54,21 @@ int32_t GameRenderer::createCompositionPipeline() {
     pipeline.descriptorSetLayoutBindings[0].descriptorCount = 1;
     pipeline.descriptorSetLayoutBindings[0].binding = 0;
     pipeline.descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    pipeline.descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     pipeline.descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
 
     pipeline.descriptorSetLayoutBindings[1].descriptorCount = 1;
     pipeline.descriptorSetLayoutBindings[1].binding = 1;
     pipeline.descriptorSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    pipeline.descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     pipeline.descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
 
     // Descriptor pools
     // accumulation and revealage for transparency
     pipeline.descriptorPoolSizes.resize(2);
-    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
 
     // Descriptor sets
@@ -82,7 +82,7 @@ int32_t GameRenderer::createCompositionPipeline() {
         // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
         pipeline.descriptorWrites[i][0].dstBinding = 0;
         pipeline.descriptorWrites[i][0].dstArrayElement = 0;
-        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         pipeline.descriptorWrites[i][0].descriptorCount = 1;
         pipeline.descriptorWrites[i][0].pBufferInfo = 0;
         // pipeline.descriptorWrites[i][0].pImageInfo = &accumulationDescriptors[i];
@@ -92,7 +92,7 @@ int32_t GameRenderer::createCompositionPipeline() {
         // pipeline.descriptorWrites[i][1].dstSet = pipeline.descriptorSets[i];
         pipeline.descriptorWrites[i][1].dstBinding = 1;
         pipeline.descriptorWrites[i][1].dstArrayElement = 0;
-        pipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;//VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         pipeline.descriptorWrites[i][1].descriptorCount = 1;
         pipeline.descriptorWrites[i][1].pBufferInfo = 0;
         // pipeline.descriptorWrites[i][1].pImageInfo = &revealageDescriptors[i];

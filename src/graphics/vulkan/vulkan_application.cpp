@@ -501,7 +501,7 @@ void VulkanApplication::createScenePassNoMsaa() {
     VkAttachmentDescription accumulationAttachmentDesc = {};
     accumulationAttachmentDesc.format = VK_FORMAT_R16G16B16A16_SFLOAT;
     accumulationAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    accumulationAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;//VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    accumulationAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     accumulationAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     accumulationAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     accumulationAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -511,12 +511,32 @@ void VulkanApplication::createScenePassNoMsaa() {
     VkAttachmentDescription revealageAttachmentDesc = {};
     revealageAttachmentDesc.format = VK_FORMAT_R8_UNORM;
     revealageAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    revealageAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;//VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    revealageAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     revealageAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     revealageAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     revealageAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     revealageAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     revealageAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentDescription inputAccumulationAttachmentDesc = {};
+    inputAccumulationAttachmentDesc.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    inputAccumulationAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    inputAccumulationAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    inputAccumulationAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    inputAccumulationAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    inputAccumulationAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    inputAccumulationAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    inputAccumulationAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkAttachmentDescription inputRevealageAttachmentDesc = {};
+    inputRevealageAttachmentDesc.format = VK_FORMAT_R8_UNORM;
+    inputRevealageAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
+    inputRevealageAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    inputRevealageAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    inputRevealageAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    inputRevealageAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    inputRevealageAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    inputRevealageAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     // color attachment
     VkAttachmentReference colorAttachmentRef;
@@ -534,10 +554,10 @@ void VulkanApplication::createScenePassNoMsaa() {
     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     // input transparency attachments
     prt::array<VkAttachmentReference, 2> inputTransparencyAttachmentRefs;
-    inputTransparencyAttachmentRefs[0].attachment = 2;
-    inputTransparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    inputTransparencyAttachmentRefs[1].attachment = 3;
-    inputTransparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    inputTransparencyAttachmentRefs[0].attachment = 4;
+    inputTransparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    inputTransparencyAttachmentRefs[1].attachment = 5;
+    inputTransparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     prt::array<VkSubpassDescription, 3> subpasses = {};
     // opaque geometry
@@ -554,12 +574,11 @@ void VulkanApplication::createScenePassNoMsaa() {
     subpasses[2].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpasses[2].colorAttachmentCount = 1;
     subpasses[2].pColorAttachments = &colorAttachmentRef;
-    // subpasses[2].pDepthStencilAttachment = &depthAttachmentRef;
     subpasses[2].inputAttachmentCount = inputTransparencyAttachmentRefs.size();
     subpasses[2].pInputAttachments = inputTransparencyAttachmentRefs.data();
 
     // I AM VERY UNSURE ABOUT THESE DEPENDENCIES
-    VkSubpassDependency dependencies[3] = {};
+    prt::array<VkSubpassDependency,3> dependencies = {};
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
     dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -573,29 +592,31 @@ void VulkanApplication::createScenePassNoMsaa() {
     dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     dependencies[2].srcSubpass = 1;
     dependencies[2].dstSubpass = 2;
     dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    dependencies[2].dstAccessMask = VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
     dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    prt::array<VkAttachmentDescription, 4> attachments = {colorAttachmentDesc, 
-                                                          depthAttachmentDesc,
-                                                          accumulationAttachmentDesc,
-                                                          revealageAttachmentDesc};
+    prt::array<VkAttachmentDescription, 6> attachments = { colorAttachmentDesc, 
+                                                           depthAttachmentDesc,
+                                                           accumulationAttachmentDesc,
+                                                           revealageAttachmentDesc,
+                                                           inputAccumulationAttachmentDesc,
+                                                           inputRevealageAttachmentDesc };
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 3;
     renderPassInfo.pSubpasses = subpasses.data();
-    renderPassInfo.dependencyCount = 3;
-    renderPassInfo.pDependencies = dependencies;
+    renderPassInfo.dependencyCount = dependencies.size();
+    renderPassInfo.pDependencies = dependencies.data();
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &scenePass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
@@ -855,6 +876,9 @@ void VulkanApplication::createTransparencyAttachments() {
     accumulationDescriptors.resize(swapChainImages.size());
     revealageDescriptors.resize(swapChainImages.size());
 
+    inputAccumulationDescriptors.resize(swapChainImages.size());
+    inputRevealageDescriptors.resize(swapChainImages.size());
+
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
         // accumulation image
         VkImageCreateInfo image{};
@@ -927,6 +951,9 @@ void VulkanApplication::createTransparencyAttachments() {
         accumulationDescriptors[i].imageView = accumulationAttachments[i].imageView;
         accumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+        inputAccumulationDescriptors[i].imageView = accumulationAttachments[i].imageView;
+        inputAccumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         // revealage view
         VkImageViewCreateInfo revealageImageView{};
         revealageImageView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -945,6 +972,9 @@ void VulkanApplication::createTransparencyAttachments() {
 
         revealageDescriptors[i].imageView = revealageAttachments[i].imageView;
         revealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        inputRevealageDescriptors[i].imageView = revealageAttachments[i].imageView;
+        inputRevealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 }
 
@@ -1096,7 +1126,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
             colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 
-            colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;// | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             colorBlendAttachments[1].blendEnable = VK_TRUE;
             colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -1104,11 +1134,6 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
             colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-
-            colorBlending.logicOpEnable = VK_FALSE;
-            colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-            colorBlending.attachmentCount = 2;
-            colorBlending.pAttachments = colorBlendAttachments.data();
             break;
         }
         case PIPELINE_TYPE_COMPOSITION: {
@@ -1121,19 +1146,13 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
             colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
             colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-
-            colorBlending.logicOpEnable = VK_FALSE;
-            colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-            colorBlending.attachmentCount = 1;
-            colorBlending.pAttachments = colorBlendAttachments.data();
             break;
         }
         default: {
             colorBlendAttachments.resize(1);
             colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             colorBlendAttachments[0].blendEnable = VK_FALSE;
-            colorBlending.logicOpEnable = VK_FALSE;
-            colorBlending.logicOp = VK_LOGIC_OP_COPY;
+
             colorBlending.blendConstants[0] = 0.0f;
             colorBlending.blendConstants[1] = 0.0f;
             colorBlending.blendConstants[2] = 0.0f;
@@ -1141,6 +1160,8 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
             break;
         }
     }
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
     colorBlending.attachmentCount = colorBlendAttachments.size();
     colorBlending.pAttachments = colorBlendAttachments.data();
     
@@ -1216,21 +1237,24 @@ void VulkanApplication::createFramebuffers() {
         framebufferInfo.layers = 1;
 
         if (enableMsaa) {
-            prt::array<VkImageView, 5> attachments = {
-                colorAttachment.imageView,
-                depthAttachment.imageView,
-                accumulationAttachment.imageView,
-                revealageAttachment.imageView,
-                swapChainImageViews[i]
-            };
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
+            assert(false && "msaa currently not supported!");
+            // prt::array<VkImageView, 5> attachments = {
+            //     colorAttachment.imageView,
+            //     depthAttachment.imageView,
+            //     accumulationAttachment.imageView,
+            //     revealageAttachment.imageView,
+            //     swapChainImageViews[i]
+            // };
+            // framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            // framebufferInfo.pAttachments = attachments.data();
         } else {
-            prt::array<VkImageView, 4> attachments = {
+            prt::array<VkImageView, 6> attachments = {
                 swapChainImageViews[i],
                 depthAttachment.imageView,
                 accumulationAttachments[i].imageView,
                 revealageAttachments[i].imageView,
+                accumulationAttachments[i].imageView,
+                revealageAttachments[i].imageView
             };
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
@@ -1866,8 +1890,8 @@ void VulkanApplication::createDescriptorSetsComposition() {
                     descriptorWrite.dstSet = pipeline.descriptorSets[i];
                 }
 
-                pipeline.descriptorWrites[i][0].pImageInfo = &accumulationDescriptors[i];
-                pipeline.descriptorWrites[i][1].pImageInfo = &revealageDescriptors[i];
+                pipeline.descriptorWrites[i][0].pImageInfo = &inputAccumulationDescriptors[i];
+                pipeline.descriptorWrites[i][1].pImageInfo = &inputRevealageDescriptors[i];
 
                 vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
                                        pipeline.descriptorWrites[i].data(), 0, nullptr);

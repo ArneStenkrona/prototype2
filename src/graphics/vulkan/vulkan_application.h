@@ -127,6 +127,8 @@ protected:
 
     prt::vector<VkDescriptorImageInfo> accumulationDescriptors;
     prt::vector<VkDescriptorImageInfo> revealageDescriptors;
+    prt::vector<VkDescriptorImageInfo> inputAccumulationDescriptors;
+    prt::vector<VkDescriptorImageInfo> inputRevealageDescriptors;
     prt::vector<FrameBufferAttachment> accumulationAttachments;
     prt::vector<FrameBufferAttachment> revealageAttachments;
 
