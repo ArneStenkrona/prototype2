@@ -672,22 +672,6 @@ void FBX::Document::Node::printRecursive(std::ostream & out, size_t indent) cons
 }
 
 void FBX::Document::Property::print(std::ostream & out) const {
-    enum TYPE {
-        CHAR = 0,
-        INT16 = 1,
-        INT32 = 2,
-        INT64 = 3,
-        FLOAT = 4,
-        DOUBLE = 5,
-        STRING = 6,
-        ARRAY_FLOAT = 7,
-        ARRAY_DOUBLE = 8,
-        ARRAY_INT32 = 9,
-        ARRAY_INT64 = 10,
-        ARRAY_BOOL = 11,
-        RAW = 12,
-        TOTAL_NUM_TYPES = 13
-    };
     switch (type) {
         case TYPE::CHAR:
             out << " (Char: \'"
