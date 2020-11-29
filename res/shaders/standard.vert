@@ -63,9 +63,9 @@ layout(location = 0) out VS_OUT {
 
 void main() {
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0));
-    vec3 t = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inTangent);
-    vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inBinormal);
-    vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inNormal);
+    vec3 t = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inTangent, 0.0)));
+    vec3 b = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inBinormal, 0.0)));
+    vec3 n = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inNormal, 0.0)));
 
     vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));

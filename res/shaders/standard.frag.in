@@ -126,7 +126,7 @@ void main() {
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
-           CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
+           CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
@@ -172,13 +172,12 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     // diffuse shading
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
-    // vec3 reflectDir = reflect(-lightDir, normal); // phong
-    vec3 halfwayDir = normalize(-lightDir + viewDir); // blinn-phong
+    vec3 r = reflect(lightDir, normal);
     float shininess = 32.0;
-    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess);
+    float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess);
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
-    vec3 specular = lightColor * spec;
+    vec3 specular = vec3(1) * spec;
     return diffuse + specular;
 }
 

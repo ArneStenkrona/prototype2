@@ -73,6 +73,8 @@ struct StandardPushConstants {
 struct SkyboxUBO {
 		alignas(16) glm::mat4 projection;
 		alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 skyRotation;
+		alignas(16) glm::vec3 sunDirection;
 		//alignas(4) float lodBias = 0.0f;
 };
 

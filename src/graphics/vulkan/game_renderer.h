@@ -42,7 +42,7 @@ public:
                 prt::vector<glm::mat4> const & animatedModelMatrices,
                 prt::vector<glm::mat4> const & bones,
                 Camera & camera,
-                DirLight const & sun,
+                SkyLight const & sun,
                 prt::vector<PointLight> const & pointLights,
                 prt::vector<PackedBoxLight> const & boxLights);
 
@@ -118,11 +118,11 @@ private:
                     prt::vector<glm::mat4> const & animatedModelMatrices,
                     prt::vector<glm::mat4> const & bones,
                     Camera & camera,
-                    DirLight const & sun,
+                    SkyLight const & sun,
                     prt::vector<PointLight> const & pointLights,
                     prt::vector<PackedBoxLight> const & boxLights);
                     
-    void updateSkyboxUBO(Camera const & camera);
+    void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
 
     void updateCascades(glm::mat4 const & projectionMatrix,
                         glm::mat4 const & viewMatrix,

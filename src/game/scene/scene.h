@@ -39,7 +39,7 @@ private:
     struct Lights {
         prt::vector<PointLight> pointLights;
         prt::vector<BoxLight> boxLights;
-        DirLight sun;
+        SkyLight sun;
     } m_lights;
 
     template<size_t N>
@@ -71,6 +71,7 @@ private:
     prt::vector<PointLight> getPointLights();
     prt::vector<PackedBoxLight> getBoxLights();
     
+    void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateCamera(float deltaTime);
     void renderScene();

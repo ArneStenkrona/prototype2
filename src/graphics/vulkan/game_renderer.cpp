@@ -176,7 +176,7 @@ void GameRenderer::createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboInd
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;// | VK_SHADER_STAGE_FRAGMENT_BIT;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutBinding cubeMapSamplerLayoutBinding = {};
     cubeMapSamplerLayoutBinding.descriptorCount = 1;
@@ -569,7 +569,7 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           prt::vector<glm::mat4> const & animatedModelMatrices,
                           prt::vector<glm::mat4> const & bones,
                           Camera & camera,
-                          DirLight  const & sun,
+                          SkyLight  const & sun,
                           prt::vector<PointLight> const & pointLights,
                           prt::vector<PackedBoxLight> const & boxLights) {      
     updateUBOs(modelMatrices, 
@@ -586,7 +586,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
                               prt::vector<glm::mat4> const & animatedModelMatrices,
                               prt::vector<glm::mat4> const & bones,
                               Camera & camera,
-                              DirLight  const & sun,
+                              SkyLight  const & sun,
                               prt::vector<PointLight> const & pointLights,
                               prt::vector<PackedBoxLight> const & boxLights) {
     glm::mat4 viewMatrix = camera.getViewMatrix();
@@ -598,7 +598,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
 
     // skybox ubo
     if (skyboxPipelineIndex != -1) {
-        updateSkyboxUBO(camera);
+        updateSkyboxUBO(camera, sun);
     }
 
     prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> cascadeSpace;
@@ -622,7 +622,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         standardUBO.model.viewPosition = viewPosition;
 
         // lights
-        standardUBO.lighting.sun = sun;
+        standardUBO.lighting.sun.color = sun.color;
+        standardUBO.lighting.sun.direction = sun.direction;
         standardUBO.lighting.ambientLight = 0.2f;
         standardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < standardUBO.lighting.noPointLights; ++i) {
@@ -662,7 +663,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         animatedStandardUBO.model.proj[1][1] *= -1;
         animatedStandardUBO.model.viewPosition = viewPosition;
         // lights
-        animatedStandardUBO.lighting.sun = sun;
+        animatedStandardUBO.lighting.sun.color = sun.color;
+        animatedStandardUBO.lighting.sun.direction = sun.direction;
         animatedStandardUBO.lighting.ambientLight = 0.2f;
         animatedStandardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < animatedStandardUBO.lighting.noPointLights; ++i) {
@@ -693,7 +695,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     }
 }
 
-void GameRenderer::updateSkyboxUBO(Camera const & camera) {
+void GameRenderer::updateSkyboxUBO(Camera const & camera, SkyLight const & sky) {
     auto skyboxUboData = getUniformBufferData(graphicsPipelines.opaque[skyboxPipelineIndex].uboIndex).uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
@@ -705,6 +707,9 @@ void GameRenderer::updateSkyboxUBO(Camera const & camera) {
     skyboxUBO.model = skyboxViewMatrix * glm::mat4(1.0f);
     skyboxUBO.projection = camera.getProjectionMatrix(nearPlane, 1000.0f);
     skyboxUBO.projection[1][1] *= -1;
+
+    skyboxUBO.skyRotation = glm::rotate(glm::mat4(1.0f), -sky.phase, glm::vec3(1.0f,0.0f,0.0f));
+    skyboxUBO.sunDirection = glm::normalize(sky.direction);
 }
 
 void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,

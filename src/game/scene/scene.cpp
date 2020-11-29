@@ -59,7 +59,7 @@ void Scene::renderScene() {
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
-    m_assetManager.loadCubeMap("default", cubeMap);
+    m_assetManager.loadCubeMap("stars", cubeMap);
 }
 
 uint32_t const * Scene::getModelIDs(size_t & nModelIDs, bool animated) const {
@@ -152,6 +152,7 @@ void Scene::update(float deltaTime) {
     static float t = 0;
 
     t+=deltaTime;
+    updateSun(t);
     m_characterSystem.updateCharacters(deltaTime);
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
@@ -173,6 +174,15 @@ void Scene::getAnimatedModels(Model const * & models, size_t & nModels,
 void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {
     m_characterSystem.sampleAnimation(bones);
 }
+
+void Scene::updateSun(float time) {
+    float ph = 0.02f*time;
+    m_lights.sun.phase = ph;
+    m_lights.sun.direction = glm::normalize(glm::vec3(0, glm::cos(ph), glm::sin(ph)));
+    float distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0,1,0))) / glm::pi<float>();
+    m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+}
+
 
 void Scene::updatePhysics(float deltaTime) {
     m_characterSystem.updatePhysics(deltaTime);

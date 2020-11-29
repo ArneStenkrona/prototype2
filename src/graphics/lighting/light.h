@@ -21,6 +21,12 @@ struct DirLight {
     alignas(16) glm::vec3 color;
 };
 
+struct SkyLight {
+    alignas(16) glm::vec3 direction;
+    alignas(16) glm::vec3 color;
+    alignas(4)  float phase;
+};
+
 struct PackedBoxLight {
     alignas(16) glm::vec3 min;
     alignas(16) glm::vec3 max;
