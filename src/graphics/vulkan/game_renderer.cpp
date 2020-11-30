@@ -1,5 +1,7 @@
 #include "game_renderer.h"
 
+#include "src/util/math_util.h"
+
 GameRenderer::GameRenderer(unsigned int width, unsigned int height)
     : VulkanApplication(width, height) {
 }
@@ -884,8 +886,15 @@ void GameRenderer::updateBillboardUBO(Camera const & camera, prt::vector<glm::ve
     ubo.projection = camera.getProjectionMatrix(nearPlane, farPlane);
     ubo.projection[1][1] *= -1;
 
-    ubo.cameraUp_worldspace = camera.getUp();
-    ubo.cameraRight_worldspace = camera.getRight();
+ 
+    for (size_t i = 0; i < billboardPositions.size(); ++i) {   
+        glm::vec3 const up{0.0f, 1.0f, 0.0f}; 
+        glm::vec3 const altUp{0.0f, 0.0f, 1.0f}; 
+        glm::mat4 rot = math_util::safeLookAt(camera.getPosition(), billboardPositions[i], up, altUp);
+
+        ubo.up_vectors[i] = rot * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        ubo.right_vectors[i] = rot * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    }
 
     memcpy(ubo.positions, billboardPositions.data(), sizeof(billboardPositions[0]) * billboardPositions.size());
 }

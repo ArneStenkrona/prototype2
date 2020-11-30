@@ -78,8 +78,8 @@ struct SkyboxUBO {
 
 struct BillboardUBO {
     alignas(16) glm::vec4 positions[NUMBER_SUPPORTED_BILLBOARDS];
-    alignas(16) glm::vec3 cameraRight_worldspace;
-    alignas(16) glm::vec3 cameraUp_worldspace;
+    alignas(16) glm::vec4 up_vectors[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec4 right_vectors[NUMBER_SUPPORTED_BILLBOARDS];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 projection;
 };

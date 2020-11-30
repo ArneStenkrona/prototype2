@@ -23,6 +23,13 @@ glm::quat math_util::safeQuatLookAt(glm::vec3 const & lookFrom,
     }
 }
 
+glm::mat4 math_util::safeLookAt(glm::vec3 const & lookFrom,
+                         		glm::vec3 const & lookTo,
+                         		glm::vec3 const & up,
+                         		glm::vec3 const & alternativeUp) {
+    return glm::toMat4(safeQuatLookAt(lookFrom, lookTo, up, alternativeUp));
+}
+
 // thank you Joachim Kopp: http://www.mpi-hd.mpg.de/personalhomes/globes/3x3/
 glm::mat3 math_util::diagonalizer(glm::mat3 const & A) {
 	// A must be a symmetric matrix.

@@ -3,8 +3,8 @@
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     vec4 positions[200];
-    vec3 cameraRight_worldspace;
-    vec3 cameraUp_worldspace;
+    vec4 up_vectors[200];
+    vec4 right_vectors[200];
     mat4 view;
     mat4 projection;
 } ubo;
@@ -31,8 +31,8 @@ layout(location = 0) out VS_OUT {
 void main() {
     vec3 vertexPosition_worldspace =
         ubo.positions[pc.positionIndex].xyz
-        + ubo.cameraUp_worldspace * inPosition.x * pc.billboardSize.x
-        + ubo.cameraRight_worldspace * inPosition.y * pc.billboardSize.y;
+        + ubo.up_vectors[pc.positionIndex].xyz * inPosition.x * pc.billboardSize.x
+        + ubo.right_vectors[pc.positionIndex].xyz * inPosition.y * pc.billboardSize.y;
 
     vs_out.fragPos = vertexPosition_worldspace;
     vs_out.fragTexCoord = inTexCoord;
