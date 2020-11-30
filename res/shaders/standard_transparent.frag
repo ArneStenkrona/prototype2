@@ -23,8 +23,8 @@ struct BoxLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[100];
-    mat4 invTransposeModel[100];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -129,7 +129,6 @@ void main() {
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    // outColor = vec4(res, albedo.a);
     vec4 color = vec4(res, albedo.a);
 
     // Insert your favorite weighting function here. The color-based factor

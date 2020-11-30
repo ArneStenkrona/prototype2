@@ -59,23 +59,29 @@ struct StandardPushConstants {
     // alignas(16) unsigned char additionalData[32];
 };
 
-// struct TransparentPushConstants {
-//     alignas(4)  int32_t modelMatrixIdx;
-// 	alignas(4)  int32_t albedoIndex;
-// 	alignas(4)  int32_t normalIndex;
-// 	alignas(4)  int32_t specularIndex;
-//     alignas(16) glm::vec4 baseColor;
-//     alignas(4)  float baseSpecularity;
-//     // use if more data is needed
-//     alignas(16) unsigned char additionalData[32];
-// };
+
+struct BillboardPushConstants {
+    alignas(16) glm::vec4 baseColor;
+    alignas(16) glm::vec4 billboardSize;
+    alignas(4) int albedoIndex;
+    alignas(4) int positionIndex;
+};
 
 struct SkyboxUBO {
-		alignas(16) glm::mat4 projection;
-		alignas(16) glm::mat4 model;
-        alignas(16) glm::mat4 skyRotation;
-		alignas(16) glm::vec3 sunDirection;
-		//alignas(4) float lodBias = 0.0f;
+    alignas(16) glm::mat4 projection;
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 skyRotation;
+    alignas(16) glm::vec3 sunDirection;
+    //alignas(4) float lodBias = 0.0f;
+};
+
+
+struct BillboardUBO {
+    alignas(16) glm::vec4 positions[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec3 cameraRight_worldspace;
+    alignas(16) glm::vec3 cameraUp_worldspace;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 projection;
 };
 
 struct ShadowMapUBO  {

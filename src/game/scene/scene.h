@@ -52,6 +52,12 @@ private:
     };
     StaticSolidEntities<10> m_staticSolidEntities;
 
+    struct {
+        Billboard billboard;
+        glm::vec4 position;
+        float distance;
+    } m_moon;
+
     GameRenderer & m_gameRenderer;
     AssetManager& m_assetManager;
     PhysicsSystem& m_physicsSystem;
@@ -67,6 +73,8 @@ private:
                            uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();
+
+    void initSky();
     
     prt::vector<PointLight> getPointLights();
     prt::vector<PackedBoxLight> getBoxLights();

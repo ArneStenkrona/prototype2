@@ -20,6 +20,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include "src/system/assets/texture_manager.h"
+
 #include <assimp/scene.h>
 
 namespace std {
@@ -58,14 +60,14 @@ struct Model {
     prt::vector<Mesh> meshes;
     prt::vector<Animation> animations;
     prt::vector<Material> materials;
-    prt::vector<Texture> textures;
+    // prt::vector<Texture> textures;
     prt::vector<Vertex> vertexBuffer;
     prt::vector<BoneData> vertexBoneBuffer;
     prt::vector<uint32_t> indexBuffer;
     prt::vector<Bone> bones;
     char name[256];
 
-    void load(char const * path, bool loadAnimation);
+    void load(char const * path, bool loadAnimation, TextureManager & textureManager);
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
     void blendAnimation(float clipTime, 
                         float blendFactor,
@@ -77,8 +79,8 @@ struct Model {
 
 private:
     void calcTangentSpace();
-    void getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
-                    prt::hash_map<aiString, size_t> &map, const char * modelPath);
+    int32_t getTexture(aiMaterial &aiMat, aiTextureType type, const char * modelPath, 
+                       TextureManager & textureManager);
 
     prt::vector<Node> mNodes;
     glm::mat4 mGlobalInverseTransform;

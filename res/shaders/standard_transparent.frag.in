@@ -129,7 +129,6 @@ void main() {
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    // outColor = vec4(res, albedo.a);
     vec4 color = vec4(res, albedo.a);
 
     // Insert your favorite weighting function here. The color-based factor

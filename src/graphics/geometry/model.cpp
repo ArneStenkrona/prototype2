@@ -13,7 +13,7 @@
 
 #include <fstream>
 
-void Model::load(char const * path, bool loadAnimation) {
+void Model::load(char const * path, bool loadAnimation, TextureManager & textureManager) {
     assert(!mLoaded && "Model is already loaded!");
     mAnimated = loadAnimation;
 
@@ -39,8 +39,6 @@ void Model::load(char const * path, bool loadAnimation) {
     strcpy(name, strchr(path, '/'));
 
     // parse materials
-    prt::hash_map<aiString, size_t> albedoPathToIndex;
-    prt::hash_map<aiString, size_t> normalPathToIndex;
     materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < materials.size(); ++i) {
         aiString matName;
@@ -57,10 +55,8 @@ void Model::load(char const * path, bool loadAnimation) {
 
         materials[i].transparent = materials[i].baseColor.a < 1.0f;
 
-        getTexture(materials[i].albedoIndex, *scene->mMaterials[i], aiTextureType_DIFFUSE,
-                   albedoPathToIndex, path);
-        getTexture(materials[i].normalIndex, *scene->mMaterials[i], aiTextureType_NORMALS,
-                   normalPathToIndex, path);
+        materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, path, textureManager);
+        materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, path, textureManager);
     }
 
     /* Process node hierarchy */
@@ -399,29 +395,20 @@ void Model::blendAnimation(float clipTime,
     }                            
 }
 
-void Model::getTexture(int32_t &textureIndex, aiMaterial &aiMat, aiTextureType type,
-                       prt::hash_map<aiString, size_t> &map, const char * modelPath) {
+int32_t Model::getTexture(aiMaterial &aiMat, aiTextureType type, const char * modelPath,
+                          TextureManager & textureManager) {
     aiString texPath;
+    int32_t id = -1;
     if (aiMat.GetTexture(type, 0, &texPath) == AI_SUCCESS) {
-        if (type != aiTextureType_DIFFUSE) std::cout << "NORMALS" << std::endl;
         char fullTexPath[256];
         strcpy(fullTexPath, modelPath);
-        auto it = map.find(texPath);
-        if (it != map.end()) {
-            textureIndex = it->value();
-        } else {
-            size_t index = textures.size();
-            map.insert(texPath, index);
-            textures.push_back({});
-            Texture &tex = textures.back();
-            
-            char *ptr = strrchr(fullTexPath, '/');
-            strcpy(++ptr, texPath.C_Str());
-            tex.load(fullTexPath);
 
-            textureIndex = index;
-        }
+        char *ptr = strrchr(fullTexPath, '/');
+        strcpy(++ptr, texPath.C_Str());
+        id = textureManager.loadTexture(fullTexPath, true);
     }
+
+    return id;
 }
 
 void Model::calcTangentSpace() {

@@ -23,8 +23,8 @@ struct BoxLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[100];
-    mat4 invTransposeModel[100];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 view;
     mat4 proj;
     vec3 viewPos;

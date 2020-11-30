@@ -4,7 +4,8 @@
 #include <cstring>
 
 AssetManager::AssetManager(char const * assetDirectory)
-    : m_modelManager((std::string(assetDirectory) + "models/").c_str()) {
+    : m_modelManager((std::string(assetDirectory) + "models/").c_str()),
+      m_textureManager((std::string(assetDirectory) + "textures/").c_str()) {
       strcpy(m_assetDirectory, assetDirectory);
 }
 

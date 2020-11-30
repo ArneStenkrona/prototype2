@@ -38,13 +38,10 @@ void main()
 
     vec3 dir = normalize(fs_in.fragPos);
     float sunDist = acos(dot(-ubo.sunDirection, dir)) / PI;
-    float moonDist = acos(dot(ubo.sunDirection, dir)) / PI;
 
     vec3 color; 
     if (sunDist < sunSize) {
         color = sun;
-    } else if (moonDist < sunSize) {
-        color = moon;
     } else {
         /* angles, converted to [0,1] */
         float theta = (atan(dir.z,dir.x) / (2*PI)) + 0.5;

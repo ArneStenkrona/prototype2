@@ -16,3 +16,9 @@ prt::vector<char> io_util::readFile(const std::string& filename) {
     
     return buffer;
 }
+
+bool io_util::is_file_exist(char const * fileName)
+{
+    std::ifstream infile(fileName);
+    return infile.good();
+}

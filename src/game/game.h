@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "src/entity_component_system/entity/entity_manager.h"
 #include "src/system/assets/model_manager.h"
 #include "src/system/assets/asset_manager.h"
 #include "src/game/scene/scene.h"

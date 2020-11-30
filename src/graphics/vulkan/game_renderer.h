@@ -6,6 +6,7 @@
 
 #include "src/graphics/lighting/light.h"
 #include "src/graphics/camera/camera.h"
+#include "src/graphics/geometry/billboard.h"
 
 #include "src/container/hash_map.h"
 
@@ -30,6 +31,10 @@ public:
                     size_t nAnimatedModels,
                     uint32_t const * animatedModelIDs,
                     size_t nAnimatedModelIDs,
+                    Billboard const * billboards,
+                    size_t nBillboards,
+                    Texture const * textures,
+                    size_t nTextures,
                     prt::array<Texture, 6> const & skybox);
 
     /**
@@ -41,6 +46,7 @@ public:
     void update(prt::vector<glm::mat4> const & modelMatrices, 
                 prt::vector<glm::mat4> const & animatedModelMatrices,
                 prt::vector<glm::mat4> const & bones,
+                prt::vector<glm::vec4> const & billboardPositions,
                 Camera & camera,
                 SkyLight const & sun,
                 prt::vector<PointLight> const & pointLights,
@@ -59,6 +65,7 @@ private:
     int32_t animatedShadowmapPipelineIndex = -1;
     int32_t transparentPipelineIndex = -1;
     int32_t animatedTransparentPipelineIndex = -1;
+    int32_t billboardPipelineIndex = -1; // transparent
 
     VkDescriptorImageInfo samplerInfo;
 
@@ -76,6 +83,8 @@ private:
     int32_t createCompositionPipeline();
 
     void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
+
+    void createBillboardPipeline(size_t assetIndex, size_t uboIndex);
 
     int32_t createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
                                            char const * vertexShader, char const * fragmentShader,
@@ -97,19 +106,30 @@ private:
     void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
 
     void createCubeMapBuffers(size_t assetIndex);
+    void createBillboardBuffers(size_t assetIndex);
+    
+    void loadModels(Model const * models, size_t nModels, 
+                    Texture const * textures, size_t nTextures,
+                    size_t assetIndex,
+                    bool animated,
+                    prt::hash_map<int32_t, int32_t> & textureIndices);
 
-    void loadModels(Model const * models, size_t nModels, size_t assetIndex,
-                    bool animated);
+    void loadBillboards(Billboard const * billboards, size_t nBillboards, 
+                        Texture const * textures, size_t nTextures,
+                        size_t assetIndex,
+                        prt::hash_map<int32_t, int32_t> & textureIndices);
 
     void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
     void createSkyboxDrawCalls();
+    void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
     void createStandardDrawCalls(Model    const * models,   size_t nModels,
                                  uint32_t const * modelIDs, size_t nModelIDs,
                                  size_t pipelineIndex,
                                  bool transparent,
                                  bool animated,
-                                 uint32_t const * boneOffsets);
+                                 uint32_t const * boneOffsets,
+                                 prt::hash_map<int32_t, int32_t> const & textureIndices);
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
     void createCompositionDrawCalls(size_t pipelineIndex);
@@ -117,12 +137,15 @@ private:
     void updateUBOs(prt::vector<glm::mat4> const & nonAnimatedModelMatrices, 
                     prt::vector<glm::mat4> const & animatedModelMatrices,
                     prt::vector<glm::mat4> const & bones,
+                    prt::vector<glm::vec4> const & billboardPositions,
                     Camera & camera,
                     SkyLight const & sun,
                     prt::vector<PointLight> const & pointLights,
                     prt::vector<PackedBoxLight> const & boxLights);
                     
     void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
+
+    void updateBillboardUBO(Camera const & camera, prt::vector<glm::vec4> const & billboardPositions);
 
     void updateCascades(glm::mat4 const & projectionMatrix,
                         glm::mat4 const & viewMatrix,

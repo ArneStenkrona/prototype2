@@ -10,6 +10,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_characterSystem(m_input, m_camera, physicsSystem, assetManager) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
     initColliders();
+    initSky();
 }
 
 void Scene::bindToRenderer(GameRenderer & gameRenderer) {
@@ -32,9 +33,15 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
 
+    Texture const * textures;
+    size_t nTextures;
+    m_assetManager.getTextureManager().getTextures(textures, nTextures);
+
     gameRenderer.bindAssets(models, nModels, modelIDs, nModelIDs,
                             animatedModels, boneOffsets.data(), nAnimatedModels, 
                             animatedModelIDs, nAnimatedModelIDs,
+                            &m_moon.billboard, 1,
+                            textures, nTextures,
                             skybox);
 }
 
@@ -47,11 +54,14 @@ void Scene::renderScene() {
     prt::vector<glm::mat4> bones; 
     sampleAnimation(bones);
 
+    prt::vector<glm::vec4> billboardPositions = { m_moon.position };
+
     prt::vector<PointLight> pointLights = getPointLights();
     prt::vector<PackedBoxLight> boxLights = getBoxLights();
     m_gameRenderer.update(modelMatrices, 
                           animatedModelMatrices,
                           bones,
+                          billboardPositions,
                           m_camera, 
                           m_lights.sun,
                           pointLights,
@@ -181,6 +191,8 @@ void Scene::updateSun(float time) {
     m_lights.sun.direction = glm::normalize(glm::vec3(0, glm::cos(ph), glm::sin(ph)));
     float distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0,1,0))) / glm::pi<float>();
     m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+
+    m_moon.position = glm::vec4(m_camera.getPosition() + (m_moon.distance * m_lights.sun.direction), 1.0f);
 }
 
 
@@ -194,3 +206,11 @@ void Scene::updateCamera(float deltaTime) {
     // move camera light to camera
     m_lights.pointLights[0].pos = m_camera.getPosition();
 }
+
+void Scene::initSky() {
+    m_moon.billboard.color = {1.0f, 1.0f, 1.0f, 1.0f};
+    m_moon.billboard.size = {25.0f, 25.0f};
+    m_moon.billboard.textureIndex = m_assetManager.getTextureManager().loadTexture("moon/moon_albedo.png");
+    m_moon.distance = 200.0f;
+}
+

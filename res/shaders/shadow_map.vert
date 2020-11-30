@@ -3,7 +3,7 @@
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[100];
+    mat4 model[200];
     mat4 depthVP[4];
 } ubo;
 
