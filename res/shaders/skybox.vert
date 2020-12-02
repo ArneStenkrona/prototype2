@@ -8,7 +8,13 @@ layout (binding = 0) uniform UBO
 	mat4 projection;
 	mat4 model;
 	mat4 skyRotation;
-	vec3 sunDirection;
+	vec4 sunDirection;
+	vec4 night;
+    vec4 day;
+    vec4 sunEdge;
+    vec4 sunsetrise;
+    vec4 sun;
+    float distToNoon;
 } ubo;
 
 layout(location = 0) out VS_OUT {

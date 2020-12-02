@@ -25,6 +25,12 @@ struct SkyLight {
     alignas(16) glm::vec3 direction;
     alignas(16) glm::vec3 color;
     alignas(4)  float phase;
+    alignas(16) glm::vec3 nightColor;
+    alignas(16) glm::vec3 dayColor;
+    alignas(16) glm::vec3 sunEdgeColor;
+    alignas(16) glm::vec3 sunsetriseColor;
+    alignas(16) glm::vec3 sunColor;
+    alignas(4) float distToNoon;
 };
 
 struct PackedBoxLight {

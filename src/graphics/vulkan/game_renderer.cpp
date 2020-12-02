@@ -278,7 +278,7 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     uboLayoutBinding.descriptorCount = 1;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;// | VK_SHADER_STAGE_FRAGMENT_BIT;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
     // textures
     VkDescriptorSetLayoutBinding textureLayoutBinding = {};
@@ -727,6 +727,7 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           prt::vector<glm::mat4> const & animatedModelMatrices,
                           prt::vector<glm::mat4> const & bones,
                           prt::vector<glm::vec4> const & billboardPositions,
+                          prt::vector<glm::vec4> const & billboardColors,
                           Camera & camera,
                           SkyLight  const & sun,
                           prt::vector<PointLight> const & pointLights,
@@ -735,6 +736,7 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                animatedModelMatrices,
                bones,
                billboardPositions,
+               billboardColors,
                camera,
                sun,
                pointLights,
@@ -746,6 +748,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
                               prt::vector<glm::mat4> const & animatedModelMatrices,
                               prt::vector<glm::mat4> const & bones,
                               prt::vector<glm::vec4> const & billboardPositions,
+                              prt::vector<glm::vec4> const & billboardColors,
                               Camera & camera,
                               SkyLight  const & sun,
                               prt::vector<PointLight> const & pointLights,
@@ -763,7 +766,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     }
 
     if (billboardPipelineIndex != -1) {
-        updateBillboardUBO(camera, billboardPositions);
+        updateBillboardUBO(camera, billboardPositions, billboardColors);
     }
 
     prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> cascadeSpace;
@@ -874,10 +877,18 @@ void GameRenderer::updateSkyboxUBO(Camera const & camera, SkyLight const & sky) 
     skyboxUBO.projection[1][1] *= -1;
 
     skyboxUBO.skyRotation = glm::rotate(glm::mat4(1.0f), -sky.phase, glm::vec3(1.0f,0.0f,0.0f));
-    skyboxUBO.sunDirection = glm::normalize(sky.direction);
+    skyboxUBO.sunDirection = glm::vec4(glm::normalize(sky.direction), 0.0f);
+    skyboxUBO.dayColor = glm::vec4(sky.dayColor, 1.0f);
+    skyboxUBO.nightColor = glm::vec4(sky.nightColor, 1.0f);
+    skyboxUBO.sunColor = glm::vec4(sky.sunColor, 1.0f);
+    skyboxUBO.sunEdgeColor = glm::vec4(sky.sunEdgeColor, 1.0f);
+    skyboxUBO.sunsetriseColor = glm::vec4(sky.sunsetriseColor, 1.0f);
+    skyboxUBO.distToNoon = sky.distToNoon;
 }
 
-void GameRenderer::updateBillboardUBO(Camera const & camera, prt::vector<glm::vec4> const & billboardPositions) {
+void GameRenderer::updateBillboardUBO(Camera const & camera, 
+                                      prt::vector<glm::vec4> const & billboardPositions,
+                                      prt::vector<glm::vec4> const & billboardColors) {
     auto uboData = getUniformBufferData(graphicsPipelines.transparent[billboardPipelineIndex].uboIndex).uboData.data();
     BillboardUBO & ubo = *reinterpret_cast<BillboardUBO*>(uboData);
 
@@ -897,6 +908,7 @@ void GameRenderer::updateBillboardUBO(Camera const & camera, prt::vector<glm::ve
     }
 
     memcpy(ubo.positions, billboardPositions.data(), sizeof(billboardPositions[0]) * billboardPositions.size());
+    memcpy(ubo.colors, billboardColors.data(), sizeof(billboardColors[0]) * billboardColors.size());
 }
 
 void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
@@ -1120,7 +1132,6 @@ void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
         pipeline.drawCalls[i] = drawCall;
 
         BillboardPushConstants & pc = *reinterpret_cast<BillboardPushConstants*>(pipeline.drawCalls[i].pushConstants.data());
-        pc.baseColor = billboard.color;
         pc.billboardSize.x = billboard.size.x;
         pc.billboardSize.y = billboard.size.y;
         pc.albedoIndex = textureIndices[billboards->textureIndex];

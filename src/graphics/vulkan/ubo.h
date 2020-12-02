@@ -61,7 +61,6 @@ struct StandardPushConstants {
 
 
 struct BillboardPushConstants {
-    alignas(16) glm::vec4 baseColor;
     alignas(16) glm::vec4 billboardSize;
     alignas(4) int albedoIndex;
     alignas(4) int positionIndex;
@@ -71,8 +70,13 @@ struct SkyboxUBO {
     alignas(16) glm::mat4 projection;
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 skyRotation;
-    alignas(16) glm::vec3 sunDirection;
-    //alignas(4) float lodBias = 0.0f;
+    alignas(16) glm::vec4 sunDirection;
+    alignas(16) glm::vec4 nightColor;
+    alignas(16) glm::vec4 dayColor;
+    alignas(16) glm::vec4 sunEdgeColor;
+    alignas(16) glm::vec4 sunsetriseColor;
+    alignas(16) glm::vec4 sunColor;
+    alignas(4) float distToNoon;
 };
 
 
@@ -80,6 +84,7 @@ struct BillboardUBO {
     alignas(16) glm::vec4 positions[NUMBER_SUPPORTED_BILLBOARDS];
     alignas(16) glm::vec4 up_vectors[NUMBER_SUPPORTED_BILLBOARDS];
     alignas(16) glm::vec4 right_vectors[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec4 colors[NUMBER_SUPPORTED_BILLBOARDS];
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 projection;
 };

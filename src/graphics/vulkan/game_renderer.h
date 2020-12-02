@@ -47,6 +47,7 @@ public:
                 prt::vector<glm::mat4> const & animatedModelMatrices,
                 prt::vector<glm::mat4> const & bones,
                 prt::vector<glm::vec4> const & billboardPositions,
+                prt::vector<glm::vec4> const & billboardColors,
                 Camera & camera,
                 SkyLight const & sun,
                 prt::vector<PointLight> const & pointLights,
@@ -138,6 +139,7 @@ private:
                     prt::vector<glm::mat4> const & animatedModelMatrices,
                     prt::vector<glm::mat4> const & bones,
                     prt::vector<glm::vec4> const & billboardPositions,
+                    prt::vector<glm::vec4> const & billboardColors,
                     Camera & camera,
                     SkyLight const & sun,
                     prt::vector<PointLight> const & pointLights,
@@ -145,7 +147,9 @@ private:
                     
     void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
 
-    void updateBillboardUBO(Camera const & camera, prt::vector<glm::vec4> const & billboardPositions);
+    void updateBillboardUBO(Camera const & camera, 
+                            prt::vector<glm::vec4> const & billboardPositions, 
+                            prt::vector<glm::vec4> const & billboardColors);
 
     void updateCascades(glm::mat4 const & projectionMatrix,
                         glm::mat4 const & viewMatrix,

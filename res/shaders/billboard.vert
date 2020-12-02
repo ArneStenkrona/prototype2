@@ -5,16 +5,16 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     vec4 positions[200];
     vec4 up_vectors[200];
     vec4 right_vectors[200];
+    vec4 colors[200];
     mat4 view;
     mat4 projection;
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT
 {
-    layout(offset = 0) vec4 baseColor;
-    layout(offset = 16) vec2 billboardSize;
-    layout(offset = 32) int albedoIndex;
-    layout(offset = 36) int positionIndex;
+    layout(offset = 0) vec4 billboardSize;
+    layout(offset = 16) int albedoIndex;
+    layout(offset = 20) int positionIndex;
 } pc;
 
 layout(location = 0) in vec2 inPosition;
