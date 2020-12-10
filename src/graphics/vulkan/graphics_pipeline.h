@@ -40,7 +40,6 @@ struct GraphicsPipeline {
     VkDescriptorSetLayout descriptorSetLayout;
     prt::vector<VkDescriptorSet> descriptorSets;
     prt::array<VkDescriptorBufferInfo, 3> descriptorBufferInfos;
-    // prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
     prt::vector<prt::vector<VkWriteDescriptorSet> > descriptorWrites;
 
     // Pipeline
@@ -57,6 +56,7 @@ struct GraphicsPipeline {
     unsigned int subpass;
 
     PipelineType type;
+    unsigned int renderGroup = 0;
 
     // Draw calls
     prt::vector<DrawCall> drawCalls;

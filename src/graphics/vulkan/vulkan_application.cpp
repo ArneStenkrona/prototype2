@@ -70,7 +70,15 @@ void VulkanApplication::initVulkan() {
     createDescriptorPools();
 }
 
-void VulkanApplication::render() {
+void VulkanApplication::render(uint16_t renderGroupMask) {
+    if (renderGroupMask != commandBufferRenderGroupMask) {
+        commandBufferRenderGroupMask = renderGroupMask;
+        /* rebuild command buffers */
+        vkDeviceWaitIdle(device); // could perhaps do something more performant than vkDeviceWaitIdle()
+        vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+        createCommandBuffers();
+
+    }
     drawFrame();
 }
     
@@ -1993,6 +2001,7 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
         renderPassBeginInfo.framebuffer = offscreenPass.cascades[imageIndex][i].frameBuffer;
         vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         for (GraphicsPipeline * pipeline : offscreenPipelines) {
+            if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
             // set cascade index push constant (this really should be handled in a prettier way)
             for (auto & drawCall : pipeline->drawCalls) {
                 *reinterpret_cast<int32_t*>(&drawCall.pushConstants[4]) = i;
@@ -2038,18 +2047,21 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     // render opaque geometry
     prt::vector<GraphicsPipeline*> opaque = getPipelinesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
     for (GraphicsPipeline * pipeline : opaque) {
+        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
         createDrawCommands(imageIndex, *pipeline);
     }
     // render transparent geometry
     vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
     prt::vector<GraphicsPipeline*> transparent = getPipelinesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
     for (GraphicsPipeline * pipeline : transparent) {
+        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
         createDrawCommands(imageIndex, *pipeline);
     }
     // composite render data
     vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
     prt::vector<GraphicsPipeline*> composition = getPipelinesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
     for (GraphicsPipeline * pipeline : composition) {
+        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
         createDrawCommands(imageIndex, *pipeline);
     }
     vkCmdEndRenderPass(commandBuffers[imageIndex]);

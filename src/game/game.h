@@ -25,6 +25,7 @@ private:
     };
 
     Mode m_mode = Mode::GAME;
+    uint16_t m_renderMask = RENDER_GROUP_FLAG_ALL;
 
     Input m_input;
     GameRenderer m_gameRenderer;

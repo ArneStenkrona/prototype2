@@ -54,12 +54,17 @@ public:
                 prt::vector<PackedBoxLight> const & boxLights,
                 float t);
 
+    static constexpr unsigned int COMMON_RENDER_GROUP = 0;
+    static constexpr unsigned int GAME_RENDER_GROUP = 1;
+    static constexpr uint16_t GAME_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_1;
+    static constexpr unsigned int EDITOR_RENDER_GROUP = 2;
+    static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
+
 private:
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.95f;
 
-    int32_t compositionPipelineIndex = -1;
     int32_t skyboxPipelineIndex = -1;
     int32_t standardPipelineIndex = -1;
     int32_t animatedStandardPipelineIndex = -1;
@@ -69,6 +74,7 @@ private:
     int32_t animatedTransparentPipelineIndex = -1;
     int32_t waterPipelineIndex = -1;
     int32_t billboardPipelineIndex = -1; // transparent
+    int32_t compositionPipelineIndex = -1;
 
     VkDescriptorImageInfo samplerInfo;
 

@@ -165,12 +165,12 @@ void createGridPipeline(size_t /*assetIndex*/, size_t /*uboIndex*/) {
 void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     skyboxPipelineIndex = graphicsPipelines.size();
     graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& skyboxPipeline = graphicsPipelines.back();
+    GraphicsPipeline& pipeline = graphicsPipelines.back();
 
-    skyboxPipeline.subpass = 0; 
+    pipeline.subpass = 0;
 
-    skyboxPipeline.assetsIndex = assetIndex;
-    skyboxPipeline.uboIndex = uboIndex;
+    pipeline.assetsIndex = assetIndex;
+    pipeline.uboIndex = uboIndex;
     Assets const & asset = getAssets(assetIndex);
     UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
 
@@ -189,56 +189,56 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     cubeMapSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     cubeMapSamplerLayoutBinding.pImmutableSamplers = nullptr;
 
-    skyboxPipeline.descriptorSetLayoutBindings.resize(2);
-    skyboxPipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
-    skyboxPipeline.descriptorSetLayoutBindings[1] = cubeMapSamplerLayoutBinding;
+    pipeline.descriptorSetLayoutBindings.resize(2);
+    pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
+    pipeline.descriptorSetLayoutBindings[1] = cubeMapSamplerLayoutBinding;
     // Descriptor pools
-    skyboxPipeline.descriptorPoolSizes.resize(2);
-    skyboxPipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    skyboxPipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
-    skyboxPipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    skyboxPipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes.resize(2);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
     // Descriptor sets
-    skyboxPipeline.descriptorSets.resize(swapChainImages.size());
-    skyboxPipeline.descriptorWrites.resize(swapChainImages.size());
+    pipeline.descriptorSets.resize(swapChainImages.size());
+    pipeline.descriptorWrites.resize(swapChainImages.size());
     for (size_t i = 0; i < swapChainImages.size(); i++) { 
-        skyboxPipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        skyboxPipeline.descriptorBufferInfos[i].offset = 0;
-        skyboxPipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.descriptorBufferInfos[i].offset = 0;
+        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
-        skyboxPipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
+        pipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
-        skyboxPipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // skyboxPipeline.descriptorWrites[i][0].dstSet = skyboxPipeline.descriptorSets[i];
-        skyboxPipeline.descriptorWrites[i][0].dstBinding = 0;
-        skyboxPipeline.descriptorWrites[i][0].dstArrayElement = 0;
-        skyboxPipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        skyboxPipeline.descriptorWrites[i][0].descriptorCount = 1;
-        // skyboxPipeline.descriptorWrites[i][0].pBufferInfo = &skyboxPipeline.descriptorBufferInfos[i];
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+        // pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
 
-        skyboxPipeline.descriptorWrites[i][1] = {};
-        skyboxPipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // skyboxPipeline.descriptorWrites[i][1].dstSet = skyboxPipeline.descriptorSets[i];
-        skyboxPipeline.descriptorWrites[i][1].dstBinding = 1;
-        skyboxPipeline.descriptorWrites[i][1].dstArrayElement = 0;
-        skyboxPipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        skyboxPipeline.descriptorWrites[i][1].descriptorCount = 1;
-        skyboxPipeline.descriptorWrites[i][1].pBufferInfo = 0;
-        skyboxPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+        pipeline.descriptorWrites[i][1] = {};
+        pipeline.descriptorWrites[i][1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][1].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][1].dstBinding = 1;
+        pipeline.descriptorWrites[i][1].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        pipeline.descriptorWrites[i][1].descriptorCount = 1;
+        pipeline.descriptorWrites[i][1].pBufferInfo = 0;
+        pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
     }
 
     // Vertex input
-    skyboxPipeline.vertexInputBinding.binding = 0;
-    skyboxPipeline.vertexInputBinding.stride = sizeof(glm::vec3);
-    skyboxPipeline.vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    pipeline.vertexInputBinding.binding = 0;
+    pipeline.vertexInputBinding.stride = sizeof(glm::vec3);
+    pipeline.vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    skyboxPipeline.vertexInputAttributes.resize(1);
-    skyboxPipeline.vertexInputAttributes[0].binding = 0;
-    skyboxPipeline.vertexInputAttributes[0].location = 0;
-    skyboxPipeline.vertexInputAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    skyboxPipeline.vertexInputAttributes[0].offset = 0;
+    pipeline.vertexInputAttributes.resize(1);
+    pipeline.vertexInputAttributes[0].binding = 0;
+    pipeline.vertexInputAttributes[0].location = 0;
+    pipeline.vertexInputAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    pipeline.vertexInputAttributes[0].offset = 0;
 
-    auto & shaderStages = skyboxPipeline.shaderStages;
+    auto & shaderStages = pipeline.shaderStages;
     shaderStages.resize(2);
 
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -255,10 +255,10 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 
-    skyboxPipeline.extent = swapChainExtent;
-    skyboxPipeline.renderpass = scenePass;
-    skyboxPipeline.useColorAttachment = false;
-    skyboxPipeline.enableDepthBias = true;
+    pipeline.extent = swapChainExtent;
+    pipeline.renderpass = scenePass;
+    pipeline.useColorAttachment = false;
+    pipeline.enableDepthBias = true;
 }
 
 void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {

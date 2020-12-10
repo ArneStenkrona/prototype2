@@ -89,6 +89,33 @@ struct Cascade {
     VkDescriptorImageInfo descriptors;
 };
 
+enum RenderGroupFlags : uint16_t {
+    RENDER_GROUP_FLAG_0 = 1<<0,
+    RENDER_GROUP_FLAG_1 = 1<<1,
+    RENDER_GROUP_FLAG_2 = 1<<2,
+    RENDER_GROUP_FLAG_3 = 1<<3,
+    RENDER_GROUP_FLAG_4 = 1<<4,
+    RENDER_GROUP_FLAG_5 = 1<<5,
+    RENDER_GROUP_FLAG_6 = 1<<6,
+    RENDER_GROUP_FLAG_7 = 1<<7,
+    RENDER_GROUP_FLAG_8 = 1<<8,
+    RENDER_GROUP_FLAG_9 = 1<<9,
+    RENDER_GROUP_FLAG_10 = 1<<10,
+    RENDER_GROUP_FLAG_11 = 1<<11,
+    RENDER_GROUP_FLAG_12 = 1<<12,
+    RENDER_GROUP_FLAG_13 = 1<<13,
+    RENDER_GROUP_FLAG_14 = 1<<14,
+    RENDER_GROUP_FLAG_15 = 1<<15,
+    RENDER_GROUP_FLAG_ALL = uint16_t(~0),
+    RENDER_GROUP_FLAG_NONE = 0,
+};
+
+template<typename INT_T>
+bool checkMask(uint16_t mask, INT_T i) {
+    assert(i <= sizeof(mask)*CHAR_BIT);
+    return mask & (1 << i);
+}
+
 class VulkanApplication {
 public:
     VulkanApplication(unsigned int width, unsigned int height);
@@ -100,7 +127,7 @@ public:
     void initWindow(unsigned int width, unsigned int height);
     void initVulkan();
 
-    void render();
+    void render(uint16_t renderGroupMask = RENDER_GROUP_FLAG_ALL);
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = _width; h = _height; };
@@ -109,11 +136,7 @@ public:
 protected:
     // command data
     VkCommandPool commandPool;
-    struct DrawBuffer {
-        // One buffer for each swapchain is needed
-        prt::vector<VkCommandBuffer> buffers;
-    };
-    // prt::vector<DrawBuffer> drawBuffers;
+    uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
     prt::vector<VkCommandBuffer> commandBuffers;
     
     // Sampler

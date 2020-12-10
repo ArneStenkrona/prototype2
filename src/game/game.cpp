@@ -48,7 +48,7 @@ void Game::run() {
         lastTime = currentTime;
         update(deltaTime);
 
-        m_gameRenderer.render();   
+        m_gameRenderer.render(m_renderMask);   
 
 
         std::this_thread::sleep_until(deadLine);
@@ -70,9 +70,11 @@ void Game::update(float deltaTime) {
     updateMode();
     switch (m_mode) {
         case Mode::GAME:
+            m_renderMask = GameRenderer::GAME_RENDER_MASK;
             m_scene.update(deltaTime);
             break;
         case Mode::EDITOR:
+            m_renderMask = GameRenderer::EDITOR_RENDER_MASK;
             m_editor.update(deltaTime);
             break;
     }
