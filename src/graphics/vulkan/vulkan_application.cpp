@@ -66,16 +66,11 @@ void VulkanApplication::initVulkan() {
     createRevealageResources();
     createTextureSampler();
     createOffscreenSampler();
-    // createFramebuffers();
     createSyncObjects();
-    createDescriptorPools(graphicsPipelines.offscreen);
-    createDescriptorPools(graphicsPipelines.opaque);
-    createDescriptorPools(graphicsPipelines.transparent);
-    createDescriptorPools(graphicsPipelines.composition);
+    createDescriptorPools();
 }
 
-void VulkanApplication::update() {
-    glfwPollEvents();
+void VulkanApplication::render() {
     drawFrame();
 }
     
@@ -134,24 +129,7 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
-    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
-        vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
-        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
-    }
-    for (auto & graphicsPipeline : graphicsPipelines.opaque) {
-        vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
-        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
-    }
-    
-    for (auto & graphicsPipeline : graphicsPipelines.transparent) {
-        vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
-        vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
-    }
-
-    for (auto & graphicsPipeline : graphicsPipelines.composition) {
+    for (auto & graphicsPipeline : graphicsPipelines) {
         vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
         vkDestroyPipeline(device, graphicsPipeline.pipeline, nullptr);
         vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
@@ -166,19 +144,7 @@ void VulkanApplication::cleanupSwapChain() {
  
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
-        vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
-    }
-    for (auto & graphicsPipeline : graphicsPipelines.opaque) {
-        vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
-    }
-    for (auto & graphicsPipeline : graphicsPipelines.transparent) {
-        vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
-    }
-    for (auto & graphicsPipeline : graphicsPipelines.composition) {
+    for (auto & graphicsPipeline : graphicsPipelines) {
         vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(device, graphicsPipeline.descriptorSetLayout, nullptr);
     }
@@ -268,10 +234,7 @@ void VulkanApplication::completeSwapChain() {
     createAccumulationResources();
     createRevealageResources();
     createFramebuffers();
-    createDescriptorPools(graphicsPipelines.offscreen);
-    createDescriptorPools(graphicsPipelines.opaque);
-    createDescriptorPools(graphicsPipelines.transparent);
-    createDescriptorPools(graphicsPipelines.composition);
+    createDescriptorPools();
     createDescriptorSets();
     createCommandBuffers();
 }
@@ -283,7 +246,7 @@ void VulkanApplication::createInstance() {
  
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "Prototype2";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -979,33 +942,9 @@ void VulkanApplication::createTransparencyAttachments() {
 }
 
 void VulkanApplication::prepareGraphicsPipelines() {
-    for (auto & pipeline : graphicsPipelines.offscreen) {
-        pipeline.renderpass = offscreenPass.renderPass;
-    }
-    for (auto & pipeline : graphicsPipelines.opaque) {
-        pipeline.renderpass = scenePass;
-    }
-    for (auto & pipeline : graphicsPipelines.transparent) {
-        pipeline.renderpass = scenePass;
-    }
-    for (auto & pipeline : graphicsPipelines.composition) {
-        pipeline.renderpass = scenePass;
-    }
-    createDescriptorSetLayouts(graphicsPipelines.offscreen);
-    createDescriptorSetLayouts(graphicsPipelines.opaque);
-    createDescriptorSetLayouts(graphicsPipelines.transparent);
-    createDescriptorSetLayouts(graphicsPipelines.composition);
-
-    createPipelineCaches(graphicsPipelines.offscreen);
-    createPipelineCaches(graphicsPipelines.opaque);
-    createPipelineCaches(graphicsPipelines.transparent);
-    createPipelineCaches(graphicsPipelines.composition);
-
-    createGraphicsPipelines(graphicsPipelines.offscreen);
-    createGraphicsPipelines(graphicsPipelines.opaque);
-    createGraphicsPipelines(graphicsPipelines.transparent);
-    createGraphicsPipelines(graphicsPipelines.composition);
-
+    createDescriptorSetLayouts(graphicsPipelines);
+    createPipelineCaches(graphicsPipelines);
+    createGraphicsPipelines(graphicsPipelines);
 }
 
 void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> & pipelines) {
@@ -1736,8 +1675,6 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
     endSingleTimeCommands(commandBuffer);
 }
 
-
-
 void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image, 
                                           uint32_t width, uint32_t height,
                                           uint32_t layerCount) {
@@ -1771,8 +1708,8 @@ void VulkanApplication::copyBufferToImage(VkBuffer buffer, VkImage image,
     endSingleTimeCommands(commandBuffer);
 }
 
-void VulkanApplication::createDescriptorPools(prt::vector<GraphicsPipeline> & pipelines) {
-    for (auto & pipeline : pipelines) {
+void VulkanApplication::createDescriptorPools() {
+    for (auto & pipeline : graphicsPipelines) {
         createDescriptorPool(pipeline);
     }
 }
@@ -1790,88 +1727,7 @@ void VulkanApplication::createDescriptorPool(GraphicsPipeline & pipeline) {
 }
 
 void VulkanApplication::createDescriptorSets() {
-    createDescriptorSetsOffscreen();
-    createDescriptorSetsGeometry(graphicsPipelines.opaque);
-    createDescriptorSetsGeometry(graphicsPipelines.transparent);
-    createDescriptorSetsComposition();
-}
-
-void VulkanApplication::createDescriptorSetsOffscreen() {
-    for (auto & graphicsPipeline : graphicsPipelines.offscreen) {
-        prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
-
-        VkDescriptorSetAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = graphicsPipeline.descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
-        allocInfo.pSetLayouts = layout.data();
-
-        graphicsPipeline.descriptorSets.resize(swapChainImages.size());
-        if (vkAllocateDescriptorSets(device, &allocInfo, graphicsPipeline.descriptorSets.data()) != VK_SUCCESS) {
-            assert(false && "failed to allocate descriptor sets!");
-        }
-
-        for (size_t i = 0; i < swapChainImages.size(); i++) {
-                // VkDescriptorBufferInfo bufferInfo = {};
-                // UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
-                // bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
-                // bufferInfo.offset = 0;
-                // bufferInfo.range = uniformBufferData.uboData.size();
-                
-                for (auto & descriptorWrite : graphicsPipeline.descriptorWrites[i]) {
-                    descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
-                }
-                graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];             
-
-                vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
-                                        graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);
-        }
-    }
-}
-
-void VulkanApplication::createDescriptorSetsGeometry(prt::vector<GraphicsPipeline> & pipelines) {
-    for (auto & graphicsPipeline : pipelines) {
-        prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), graphicsPipeline.descriptorSetLayout);
-
-        VkDescriptorSetAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = graphicsPipeline.descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
-        allocInfo.pSetLayouts = layout.data();
-
-        graphicsPipeline.descriptorSets.resize(swapChainImages.size());
-        if (vkAllocateDescriptorSets(device, &allocInfo, graphicsPipeline.descriptorSets.data()) != VK_SUCCESS) {
-            assert(false && "failed to allocate descriptor sets!");
-        }
-    
-        for (size_t i = 0; i < swapChainImages.size(); ++i) {
-                // VkDescriptorBufferInfo bufferInfo = {};
-                // UniformBufferData& uniformBufferData = uniformBufferDatas[graphicsPipeline.uboIndex];
-                // bufferInfo.buffer = uniformBufferData.uniformBuffers[i];
-                // bufferInfo.offset = 0;
-                // bufferInfo.range = uniformBufferData.uboData.size();
-                
-                Assets& asset = assets[graphicsPipeline.assetsIndex];
-
-                for (auto & descriptorWrite : graphicsPipeline.descriptorWrites[i]) {
-                    descriptorWrite.dstSet = graphicsPipeline.descriptorSets[i];
-                }
-                graphicsPipeline.descriptorWrites[i][0].pBufferInfo = &graphicsPipeline.descriptorBufferInfos[i];
-                for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
-                    asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-                    asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
-                }
-                graphicsPipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
-
-                vkUpdateDescriptorSets(device, static_cast<uint32_t>(graphicsPipeline.descriptorWrites[i].size()), 
-                                        graphicsPipeline.descriptorWrites[i].data(), 0, nullptr);
-        }
-    }
-}
-
-void VulkanApplication::createDescriptorSetsComposition() {
-    for (auto & pipeline : graphicsPipelines.composition) {
+    for (auto & pipeline : graphicsPipelines) {
         prt::vector<VkDescriptorSetLayout> layout(swapChainImages.size(), pipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
@@ -1885,16 +1741,50 @@ void VulkanApplication::createDescriptorSetsComposition() {
             assert(false && "failed to allocate descriptor sets!");
         }
 
-        for (size_t i = 0; i < swapChainImages.size(); ++i) {
-                for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
-                    descriptorWrite.dstSet = pipeline.descriptorSets[i];
-                }
+        for (size_t i = 0; i < swapChainImages.size(); i++) {     
+                Assets& asset = assets[pipeline.assetsIndex];
+            switch (pipeline.type) {
+                case PipelineType::PIPELINE_TYPE_OFFSCREEN:
+                    /* Offscreen */
+                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
+                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
+                    }
+                    pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];             
 
-                pipeline.descriptorWrites[i][0].pImageInfo = &inputAccumulationDescriptors[i];
-                pipeline.descriptorWrites[i][1].pImageInfo = &inputRevealageDescriptors[i];
+                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
+                                           pipeline.descriptorWrites[i].data(), 0, nullptr);
+                    break;
+                case PipelineType::PIPELINE_TYPE_OPAQUE:
+                case PipelineType::PIPELINE_TYPE_TRANSPARENT:
+                    /* Opaque and transparent */
 
-                vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
-                                       pipeline.descriptorWrites[i].data(), 0, nullptr);
+                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
+                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
+                    }
+                    pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
+                    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
+                        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+                        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+                    }
+                    pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+
+                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
+                                           pipeline.descriptorWrites[i].data(), 0, nullptr);
+                    break;
+                case PipelineType::PIPELINE_TYPE_COMPOSITION:
+                    /* Composition */
+                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
+                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
+                    }
+
+                    pipeline.descriptorWrites[i][0].pImageInfo = &inputAccumulationDescriptors[i];
+                    pipeline.descriptorWrites[i][1].pImageInfo = &inputRevealageDescriptors[i];
+
+                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
+                                        pipeline.descriptorWrites[i].data(), 0, nullptr);
+                    break;
+            }      
         }
     }
 }
@@ -2098,15 +1988,16 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
                     depthBiasConstant,
                     0.0f,
                     depthBiasSlope);
+    prt::vector<GraphicsPipeline*> offscreenPipelines = getPipelinesByType(PipelineType::PIPELINE_TYPE_OFFSCREEN);
     for (unsigned int i = 0; i < NUMBER_SHADOWMAP_CASCADES; ++i) {
         renderPassBeginInfo.framebuffer = offscreenPass.cascades[imageIndex][i].frameBuffer;
         vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        for (auto & pipeline : graphicsPipelines.offscreen) {
+        for (GraphicsPipeline * pipeline : offscreenPipelines) {
             // set cascade index push constant (this really should be handled in a prettier way)
-            for (auto & drawCall : pipeline.drawCalls) {
+            for (auto & drawCall : pipeline->drawCalls) {
                 *reinterpret_cast<int32_t*>(&drawCall.pushConstants[4]) = i;
             }
-            createDrawCommands(imageIndex, pipeline);
+            createDrawCommands(imageIndex, *pipeline);
         }
         vkCmdEndRenderPass(commandBuffers[imageIndex]);
     }
@@ -2145,18 +2036,21 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
     scissor.offset.y = 0;
     vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
     // render opaque geometry
-    for (auto & pipeline : graphicsPipelines.opaque) {
-        createDrawCommands(imageIndex, pipeline);
+    prt::vector<GraphicsPipeline*> opaque = getPipelinesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
+    for (GraphicsPipeline * pipeline : opaque) {
+        createDrawCommands(imageIndex, *pipeline);
     }
     // render transparent geometry
     vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
-    for (auto & pipeline : graphicsPipelines.transparent) {
-        createDrawCommands(imageIndex, pipeline);
+    prt::vector<GraphicsPipeline*> transparent = getPipelinesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
+    for (GraphicsPipeline * pipeline : transparent) {
+        createDrawCommands(imageIndex, *pipeline);
     }
     // composite render data
     vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
-    for (auto & pipeline : graphicsPipelines.composition) {
-        createDrawCommands(imageIndex, pipeline);
+    prt::vector<GraphicsPipeline*> composition = getPipelinesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
+    for (GraphicsPipeline * pipeline : composition) {
+        createDrawCommands(imageIndex, *pipeline);
     }
     vkCmdEndRenderPass(commandBuffers[imageIndex]);
 }
@@ -2281,6 +2175,14 @@ void VulkanApplication::drawFrame() {
     }
     
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
+}
+
+prt::vector<GraphicsPipeline*> VulkanApplication::getPipelinesByType(PipelineType type) {
+    prt::vector<GraphicsPipeline*> pipelines;
+    for (auto & pipeline : graphicsPipelines) {
+        if (pipeline.type == type) pipelines.push_back(&pipeline);
+    }
+    return pipelines;
 }
 
 VkShaderModule VulkanApplication::createShaderModule(const char* filename) {

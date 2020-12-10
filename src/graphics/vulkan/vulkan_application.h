@@ -87,9 +87,6 @@ struct Cascade {
     VkDescriptorSet descriptorSet;
     VkImageView imageView;
     VkDescriptorImageInfo descriptors;
-
-    // float splitDepth;
-    // glm::mat4 viewProjMatrix;
 };
 
 class VulkanApplication {
@@ -102,6 +99,8 @@ public:
 
     void initWindow(unsigned int width, unsigned int height);
     void initVulkan();
+
+    void render();
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = _width; h = _height; };
@@ -110,6 +109,11 @@ public:
 protected:
     // command data
     VkCommandPool commandPool;
+    struct DrawBuffer {
+        // One buffer for each swapchain is needed
+        prt::vector<VkCommandBuffer> buffers;
+    };
+    // prt::vector<DrawBuffer> drawBuffers;
     prt::vector<VkCommandBuffer> commandBuffers;
     
     // Sampler
@@ -134,7 +138,6 @@ protected:
 
     struct OffscreenPass {
         VkExtent2D extent;
-        // prt::vector<VkFramebuffer> frameBuffers;
         prt::vector<FrameBufferAttachment> depths;
         VkRenderPass renderPass;
         VkSampler depthSampler;
@@ -144,16 +147,8 @@ protected:
 
         prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
     } offscreenPass;
-    
-    struct {
-        prt::vector<GraphicsPipeline> offscreen;
-        prt::vector<GraphicsPipeline> opaque;
-        prt::vector<GraphicsPipeline> transparent;
-        prt::vector<GraphicsPipeline> composition;
 
-    } graphicsPipelines;
-
-    void update();
+    prt::vector<GraphicsPipeline> graphicsPipelines;
 
     VkDevice& getDevice() { return device; }
     
@@ -277,6 +272,7 @@ private:
     void createCommandPool(); 
     void createCommandBuffers();
     void createCommandBuffer(size_t const imageIndex);
+
     void createOffscreenCommands(size_t const imageIndex);
     void createSceneCommands(size_t const imageIndex);
     void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
@@ -324,13 +320,10 @@ private:
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
     
-    void createDescriptorPools(prt::vector<GraphicsPipeline> & pipelines);
+    void createDescriptorPools();
     void createDescriptorPool(GraphicsPipeline & pipeline);
     
     void createDescriptorSets();
-    void createDescriptorSetsOffscreen();
-    void createDescriptorSetsGeometry(prt::vector<GraphicsPipeline> & pipelines);
-    void createDescriptorSetsComposition();
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
@@ -350,6 +343,8 @@ private:
     void updateUniformBuffers(uint32_t currentImage);
     
     void drawFrame();
+
+    prt::vector<GraphicsPipeline*> getPipelinesByType(PipelineType type);
     
     VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);

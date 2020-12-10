@@ -72,33 +72,35 @@ private:
 
     VkDescriptorImageInfo samplerInfo;
 
-    void createStandardAndShadowGraphicsPipelines(size_t standardAssetIndex, size_t standardUboIndex,
-                                                  size_t shadowmapUboIndex, 
-                                                  const char * relativeVert, const char * relativeFrag,
-                                                  const char * relativeTransparentFrag,
-                                                  const char * relativeShadowVert,
-                                                  VkVertexInputBindingDescription bindingDescription,
-                                                  prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                                  int32_t & standardPipeline, 
-                                                  int32_t & transparentPipeline,
-                                                  int32_t & shadowPipeline);
+    void createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
+                                          size_t shadowmapUboIndex, 
+                                          const char * relativeVert, const char * relativeFrag,
+                                          const char * relativeTransparentFrag,
+                                          const char * relativeShadowVert,
+                                          VkVertexInputBindingDescription bindingDescription,
+                                          prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                          int32_t & standardPipeline, 
+                                          int32_t & transparentPipeline,
+                                          int32_t & shadowPipeline);
 
     int32_t createCompositionPipeline();
 
-    void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
+    void createGridPipeline(size_t assetIndex, size_t uboIndex);
+
+    void createSkyboxPipeline(size_t assetIndex, size_t uboIndex);
 
     void createBillboardPipeline(size_t assetIndex, size_t uboIndex);
 
-    int32_t createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
-                                           char const * vertexShader, char const * fragmentShader,
-                                           VkVertexInputBindingDescription bindingDescription,
-                                           prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                           bool transparent);
+    int32_t createStandardPipeline(size_t assetIndex, size_t uboIndex, 
+                                   char const * vertexShader, char const * fragmentShader,
+                                   VkVertexInputBindingDescription bindingDescription,
+                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                   bool transparent);
                                           
-    int32_t createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                            char const * vertexShader,
-                                            VkVertexInputBindingDescription bindingDescription,
-                                            prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
+    int32_t createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
+                                    char const * vertexShader,
+                                    VkVertexInputBindingDescription bindingDescription,
+                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);

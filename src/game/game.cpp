@@ -40,11 +40,16 @@ void Game::run() {
     clock::time_point nextSecond = lastTime + std::chrono::seconds(1);
         
     while (m_gameRenderer.isWindowOpen()) {
+        glfwPollEvents();
+
         deadLine = deadLine + std::chrono::microseconds(m_microsecondsPerFrame);
         auto currentTime = clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = currentTime;
         update(deltaTime);
+
+        m_gameRenderer.render();   
+
 
         std::this_thread::sleep_until(deadLine);
 
