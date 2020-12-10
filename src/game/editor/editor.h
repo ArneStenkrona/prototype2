@@ -6,13 +6,14 @@
 class Editor {
 public:
     Editor(Scene & scene, Input & input);
-    void update();
+    void update(float deltaTime);
 private:
-    void updateInput();
-    
+    void updateInput(float deltaTime);
+    void render();
+
     Scene & m_scene;
     Input & m_input;
-    Camera m_camera
+    Camera m_camera;
 };
 
 #endif

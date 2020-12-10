@@ -94,6 +94,7 @@ file(GLOB SOURCES
     "src/container/*.cpp"
     "src/util/*.cpp"
     "src/game/*.cpp"
+    "src/game/editor/*.cpp"
     "src/game/entities/*.cpp"
     "src/game/level/*.cpp"
     "src/game/scene/*.cpp"

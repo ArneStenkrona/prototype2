@@ -31,7 +31,7 @@ public:
                           glm::vec3 & bottomright);
 
     void setTarget(glm::vec3 target);
-    void update(float deltaTime);
+    void update(float deltaTime, bool keyboardMovement = false, bool drag = false);
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
     inline glm::mat4 getViewMatrix() const { return glm::lookAt(m_position, m_position + m_front, m_up); }
@@ -80,7 +80,7 @@ private:
     void processKeyboard(float deltaTime);
 
     // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    void processMouseMovement();
+    void processMouseMovement(bool drag);
 
     // Calculates the front vector from the Camera's (updated) Euler Angles
     void updateCameraVectors();

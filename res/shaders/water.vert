@@ -61,9 +61,17 @@ layout(location = 0) out VS_OUT {
     mat3 invtbn;
 } vs_out;
 
+float getOffset(vec3 pos, float t) {
+    float res = 0.5 * sin(0.03 * pos.z + t);
+    return res;
+}
+
 void main() {
     vec4 worldPos = ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
     worldPos = worldPos / worldPos.w;
+    vec4 waveOffset = vec4(0.0, getOffset(worldPos.xyz, ubo.t), 0.0, 0.0);
+    worldPos += waveOffset;
+
     vs_out.fragPos = worldPos.xyz;
     vec3 t = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inTangent, 0.0)));
     vec3 b = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inBinormal, 0.0)));

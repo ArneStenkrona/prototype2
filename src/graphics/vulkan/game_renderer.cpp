@@ -35,8 +35,6 @@ void GameRenderer::createStandardAndShadowGraphicsPipelines(size_t standardAsset
     strcat(vert, relativeShadowVert);
     shadowPipeline = createShadowmapGraphicsPipeline(standardAssetIndex, shadowmapUboIndex, vert,
                                                      bindingDescription, attributeDescription);
-
-    compositionPipelineIndex = createCompositionPipeline();
 }
 
 int32_t GameRenderer::createCompositionPipeline() {
@@ -631,25 +629,21 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     size_t standardAssetIndex;   
     size_t standardUboIndex;
     size_t shadowMapUboIndex;
-    if (nModels != 0) {
-        // standard
-        standardAssetIndex = pushBackAssets();
-        standardUboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
-        // shadow map
-        shadowMapUboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
-    }
+    // standard
+    standardAssetIndex = pushBackAssets();
+    standardUboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
+    // shadow map
+    shadowMapUboIndex = pushBackUniformBufferData(sizeof(ShadowMapUBO));
 
     /* animated */
     size_t animatedStandardAssetIndex;
     size_t animatedStandardUboIndex;
     size_t animatedShadowMapUboIndex;
-    if (nAnimatedModels != 0) {
-        // standard
-        animatedStandardAssetIndex = pushBackAssets();
-        animatedStandardUboIndex = pushBackUniformBufferData(sizeof(AnimatedStandardUBO));
-        // shadow
-        animatedShadowMapUboIndex = pushBackUniformBufferData(sizeof(AnimatedShadowMapUBO));
-    }
+    // standard
+    animatedStandardAssetIndex = pushBackAssets();
+    animatedStandardUboIndex = pushBackUniformBufferData(sizeof(AnimatedStandardUBO));
+    // shadow
+    animatedShadowMapUboIndex = pushBackUniformBufferData(sizeof(AnimatedShadowMapUBO));
 
     /* billboards */
     size_t billboardAssetIndex;
@@ -668,45 +662,53 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     createSkyboxDrawCalls();
     
     /* non-animated */
-    if (nModels != 0) {
-        prt::hash_map<int32_t, int32_t> textureIndices;
-        loadModels(models, nModels, textures, nTextures, standardAssetIndex, false, textureIndices);
-        createStandardAndShadowGraphicsPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
-                                                 "shaders/standard.vert.spv", "shaders/standard.frag.spv",
-                                                 "shaders/standard_transparent.frag.spv",
-                                                 "shaders/shadow_map.vert.spv",
-                                                 Model::Vertex::getBindingDescription(),
-                                                 Model::Vertex::getAttributeDescriptions(),
-                                                 standardPipelineIndex,
-                                                 transparentPipelineIndex,
-                                                 shadowmapPipelineIndex);
-        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs,
-                                standardPipelineIndex, false, false, nullptr, textureIndices);
-        createStandardDrawCalls(models, nModels, modelIDs, nModelIDs,
-                                transparentPipelineIndex, true, false, nullptr, textureIndices);
-        createShadowDrawCalls(shadowmapPipelineIndex, standardPipelineIndex);
-    }    
+    prt::hash_map<int32_t, int32_t> standardTextureIndices;
+    loadModels(models, nModels, textures, nTextures, standardAssetIndex, false, standardTextureIndices);
+    createStandardAndShadowGraphicsPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
+                                             "shaders/standard.vert.spv", "shaders/standard.frag.spv",
+                                             "shaders/standard_transparent.frag.spv",
+                                             "shaders/shadow_map.vert.spv",
+                                             Model::Vertex::getBindingDescription(),
+                                             Model::Vertex::getAttributeDescriptions(),
+                                             standardPipelineIndex,
+                                             transparentPipelineIndex,
+                                             shadowmapPipelineIndex);
 
     /* animated */
-    if (nAnimatedModels != 0) {
-        prt::hash_map<int32_t, int32_t> textureIndices;
-        loadModels(animatedModels, nAnimatedModels, textures, nTextures, animatedStandardAssetIndex, true, textureIndices);
-        createStandardAndShadowGraphicsPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
-                                                 "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
-                                                 "shaders/standard_transparent.frag.spv",
-                                                 "shaders/shadow_map_animated.vert.spv",
-                                                 Model::BonedVertex::getBindingDescription(),
-                                                 Model::BonedVertex::getAttributeDescriptions(),
-                                                 animatedStandardPipelineIndex,
-                                                 animatedTransparentPipelineIndex,
-                                                 animatedShadowmapPipelineIndex);
+    prt::hash_map<int32_t, int32_t> animatedTextureIndices;
+    loadModels(animatedModels, nAnimatedModels, textures, nTextures, animatedStandardAssetIndex, true, animatedTextureIndices);
+    createStandardAndShadowGraphicsPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
+                                                "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
+                                                "shaders/standard_transparent.frag.spv",
+                                                "shaders/shadow_map_animated.vert.spv",
+                                                Model::BonedVertex::getBindingDescription(),
+                                                Model::BonedVertex::getAttributeDescriptions(),
+                                                animatedStandardPipelineIndex,
+                                                animatedTransparentPipelineIndex,
+                                                animatedShadowmapPipelineIndex);
 
-        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
-                                animatedStandardPipelineIndex, false, true, boneOffsets, textureIndices);
-        createStandardDrawCalls(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
-                                animatedTransparentPipelineIndex, true, true, boneOffsets, textureIndices);
-        createShadowDrawCalls(animatedShadowmapPipelineIndex, animatedStandardPipelineIndex);
-    }
+    /* water */
+    char vert[256] = RESOURCE_PATH;
+    char frag[256] = RESOURCE_PATH;
+    strcat(vert, "shaders/water.vert.spv");
+    strcat(frag, "shaders/standard_transparent.frag.spv");
+    waterPipelineIndex = createStandardGraphicsPipeline(standardAssetIndex, standardUboIndex, vert, frag,
+                                                        Model::Vertex::getBindingDescription(),
+                                                        Model::Vertex::getAttributeDescriptions(), true);
+
+    prt::vector<DrawCall> temp;
+    createModelDrawCalls(models, nModels, modelIDs, nModelIDs,
+                         animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
+                         boneOffsets, 
+                         standardTextureIndices,
+                         animatedTextureIndices,
+                         graphicsPipelines.opaque[standardPipelineIndex].drawCalls,
+                         graphicsPipelines.transparent[transparentPipelineIndex].drawCalls,
+                         graphicsPipelines.opaque[animatedStandardPipelineIndex].drawCalls,
+                         graphicsPipelines.transparent[animatedTransparentPipelineIndex].drawCalls,
+                         graphicsPipelines.transparent[waterPipelineIndex].drawCalls,
+                         graphicsPipelines.offscreen[shadowmapPipelineIndex].drawCalls,
+                         graphicsPipelines.offscreen[animatedShadowmapPipelineIndex].drawCalls);
 
     /* billboard */
     if (nBillboards != 0) {
@@ -717,7 +719,9 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
         createBillboardBuffers(billboardAssetIndex);
         createBillboardDrawCalls(billboards, nBillboards, textureIndices);
     }
-    
+
+    /* composition */
+    compositionPipelineIndex = createCompositionPipeline();
     createCompositionDrawCalls(compositionPipelineIndex);
 
     completeSwapChain();
@@ -731,7 +735,8 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                           Camera & camera,
                           SkyLight  const & sun,
                           prt::vector<PointLight> const & pointLights,
-                          prt::vector<PackedBoxLight> const & boxLights) {      
+                          prt::vector<PackedBoxLight> const & boxLights,
+                          float t) {      
     updateUBOs(modelMatrices, 
                animatedModelMatrices,
                bones,
@@ -740,7 +745,8 @@ void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
                camera,
                sun,
                pointLights,
-               boxLights);
+               boxLights,
+               t);
     VulkanApplication::update();   
 }
 
@@ -752,7 +758,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
                               Camera & camera,
                               SkyLight  const & sun,
                               prt::vector<PointLight> const & pointLights,
-                              prt::vector<PackedBoxLight> const & boxLights) {
+                              prt::vector<PackedBoxLight> const & boxLights,
+                              float t) {
     glm::mat4 viewMatrix = camera.getViewMatrix();
     int w,h = 0;
     getWindowSize(w, h);
@@ -788,6 +795,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         standardUBO.model.proj = projectionMatrix;
         standardUBO.model.proj[1][1] *= -1;
         standardUBO.model.viewPosition = viewPosition;
+
+        standardUBO.model.t = t;
 
         // lights
         standardUBO.lighting.sun.color = sun.color;
@@ -830,6 +839,8 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         animatedStandardUBO.model.proj = projectionMatrix;
         animatedStandardUBO.model.proj[1][1] *= -1;
         animatedStandardUBO.model.viewPosition = viewPosition;
+
+        animatedStandardUBO.model.t = t;
         // lights
         animatedStandardUBO.lighting.sun.color = sun.color;
         animatedStandardUBO.lighting.sun.direction = sun.direction;
@@ -1140,15 +1151,21 @@ void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
     }
 }
 
-void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nModels,
-                                           uint32_t const * modelIDs, size_t nModelIDs,
-                                           size_t pipelineIndex,
-                                           bool transparent,
-                                           bool animated,
-                                           uint32_t const * boneOffsets,
-                                           prt::hash_map<int32_t, int32_t> const & textureIndices) {
-    auto & pipelines = transparent ? graphicsPipelines.transparent : graphicsPipelines.opaque;
-    GraphicsPipeline & pipeline = pipelines[pipelineIndex];
+void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModels,
+                                        uint32_t const * modelIDs, size_t nModelIDs,
+                                        Model    const * animatedModels,   size_t nAnimatedModels,
+                                        uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+                                        uint32_t const * boneOffsets,
+                                        prt::hash_map<int32_t, int32_t> const & textureIndices,
+                                        prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
+                                        prt::vector<DrawCall> & standard,
+                                        prt::vector<DrawCall> & transparent,
+                                        prt::vector<DrawCall> & animated,
+                                        prt::vector<DrawCall> & transparentAnimated,
+                                        prt::vector<DrawCall> & water,
+                                        prt::vector<DrawCall> & shadow,
+                                        prt::vector<DrawCall> & shadowAnimated) {
+    /* non-animated */
     prt::vector<uint32_t> indexOffsets = { 0 };
     indexOffsets.resize(nModels);
     for (size_t i = 1; i < nModels; ++i) {
@@ -1160,8 +1177,6 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
 
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
-            // check if transparent
-            if (material.transparent != transparent) continue; 
             DrawCall drawCall;
             // find texture indices
             int32_t albedoIndex = textureIndices[material.albedoIndex];
@@ -1175,23 +1190,75 @@ void GameRenderer::createStandardDrawCalls(Model    const * models,   size_t nMo
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
-            if (animated) {
-                pc.boneOffset = boneOffsets[i];
-            }
+            // if (animated) {
+            //     pc.boneOffset = boneOffsets[i];
+            // }
 
             // geometry
             drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
 
-            pipeline.drawCalls.push_back(drawCall);
+            switch (material.type)
+            {
+            case Model::Material::Type::standard :
+                standard.push_back(drawCall);
+                shadow.push_back(drawCall);
+                break;
+            case Model::Material::Type::transparent :
+                transparent.push_back(drawCall);
+                break;
+            case Model::Material::Type::water :
+                water.push_back(drawCall);
+                break;
+            }
         }
     }
-}
-void GameRenderer::createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex) {
-    GraphicsPipeline & shadowPipeline = graphicsPipelines.offscreen[shadowPipelineIndex];
-    GraphicsPipeline & standardPipeline = graphicsPipelines.opaque[pipelineIndex];
-    for (auto & standardDrawCall : standardPipeline.drawCalls) {
-        shadowPipeline.drawCalls.push_back(standardDrawCall);
+    /* animated */
+    indexOffsets = { 0 };
+    indexOffsets.resize(nAnimatedModels);
+    for (size_t i = 1; i < nModels; ++i) {
+        indexOffsets[i] = indexOffsets[i-1] + animatedModels[i-1].indexBuffer.size();
+    }
+
+    for (size_t i = 0; i < nAnimatedModelIDs; ++i) {
+        const Model& model = animatedModels[animatedModelIDs[i]];
+
+        for (auto const & mesh : model.meshes) {
+            auto const & material = model.materials[mesh.materialIndex];
+            DrawCall drawCall;
+            // find texture indices
+            int32_t albedoIndex = animatedTextureIndices[material.albedoIndex];
+            int32_t normalIndex = animatedTextureIndices[material.normalIndex];
+            int32_t specularIndex = animatedTextureIndices[material.specularIndex];
+            // push constants
+            StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
+            pc.modelMatrixIdx = i;
+            pc.albedoIndex = albedoIndex;
+            pc.normalIndex = normalIndex;
+            pc.specularIndex = specularIndex;
+            pc.baseColor = material.baseColor;
+            pc.baseSpecularity = material.baseSpecularity;
+            pc.boneOffset = boneOffsets[i];
+
+            // geometry
+            drawCall.firstIndex = indexOffsets[animatedModelIDs[i]] + mesh.startIndex;
+            drawCall.indexCount = mesh.numIndices;
+
+            switch (material.type)
+            {
+            case Model::Material::Type::standard :
+                animated.push_back(drawCall);
+                shadowAnimated.push_back(drawCall);
+                break;
+            case Model::Material::Type::transparent :
+                transparentAnimated.push_back(drawCall);
+                break;
+            case Model::Material::Type::water :
+                assert(false && "Water material not supported for animated model!");
+                water.push_back(drawCall);
+                break;
+            }
+        }
     }
 }
 

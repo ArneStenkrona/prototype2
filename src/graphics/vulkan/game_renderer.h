@@ -51,7 +51,8 @@ public:
                 Camera & camera,
                 SkyLight const & sun,
                 prt::vector<PointLight> const & pointLights,
-                prt::vector<PackedBoxLight> const & boxLights);
+                prt::vector<PackedBoxLight> const & boxLights,
+                float t);
 
 private:
     float nearPlane = 0.03f;
@@ -66,6 +67,7 @@ private:
     int32_t animatedShadowmapPipelineIndex = -1;
     int32_t transparentPipelineIndex = -1;
     int32_t animatedTransparentPipelineIndex = -1;
+    int32_t waterPipelineIndex = -1;
     int32_t billboardPipelineIndex = -1; // transparent
 
     VkDescriptorImageInfo samplerInfo;
@@ -123,6 +125,21 @@ private:
     void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
     void createSkyboxDrawCalls();
+    void createModelDrawCalls(Model    const * models,   size_t nModels,
+                              uint32_t const * modelIDs, size_t nModelIDs,
+                              Model    const * animatedModels,   size_t nAnimatedModels,
+                              uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+                              uint32_t const * boneOffsets,
+                              prt::hash_map<int32_t, int32_t> const & textureIndices,
+                              prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
+                              prt::vector<DrawCall> & standard,
+                              prt::vector<DrawCall> & transparent,
+                              prt::vector<DrawCall> & animated,
+                              prt::vector<DrawCall> & transparentAnimated,
+                              prt::vector<DrawCall> & water,
+                              prt::vector<DrawCall> & shadow,
+                              prt::vector<DrawCall> & shadowAnimated);
+
     void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
     void createStandardDrawCalls(Model    const * models,   size_t nModels,
                                  uint32_t const * modelIDs, size_t nModelIDs,
@@ -143,7 +160,8 @@ private:
                     Camera & camera,
                     SkyLight const & sun,
                     prt::vector<PointLight> const & pointLights,
-                    prt::vector<PackedBoxLight> const & boxLights);
+                    prt::vector<PackedBoxLight> const & boxLights,
+                    float t);
                     
     void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
 

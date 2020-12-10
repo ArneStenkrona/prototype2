@@ -45,7 +45,7 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
                             skybox);
 }
 
-void Scene::renderScene() {
+void Scene::renderScene(Camera & camera) {
     prt::vector<glm::mat4> modelMatrices; 
     getTransformMatrices(modelMatrices, false);
     prt::vector<glm::mat4> animatedModelMatrices; 
@@ -64,10 +64,11 @@ void Scene::renderScene() {
                           bones,
                           billboardPositions,
                           billboardColors,
-                          m_camera, 
+                          camera, 
                           m_lights.sun,
                           pointLights,
-                          boxLights);
+                          boxLights,
+                          time);
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
@@ -147,7 +148,6 @@ prt::vector<PackedBoxLight> Scene::getBoxLights() {
     return ret; 
 }
 
-
 void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const {
     if (animated) {
         m_characterSystem.getTransformMatrices(transformMatrices);
@@ -161,14 +161,12 @@ void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool
 }
 
 void Scene::update(float deltaTime) {
-    static float t = 0;
-
-    t+=deltaTime;
-    updateSun(t);
+    time+=deltaTime;
+    updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
-    renderScene();
+    renderScene(m_camera);
 }
 
 void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
