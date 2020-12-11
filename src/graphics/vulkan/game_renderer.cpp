@@ -37,8 +37,8 @@ void GameRenderer::createStandardAndShadowPipelines(size_t standardAssetIndex, s
                                                      bindingDescription, attributeDescription);
 }
 
-int32_t GameRenderer::createCompositionPipeline() {
-    int32_t pipelineIndex = graphicsPipelines.size();
+void GameRenderer::createCompositionPipeline() {
+    compositionPipelineIndex = graphicsPipelines.size();
     graphicsPipelines.push_back(GraphicsPipeline{});
     GraphicsPipeline& pipeline = graphicsPipelines.back();
 
@@ -155,11 +155,87 @@ int32_t GameRenderer::createCompositionPipeline() {
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                        data.indexBuffer, 
                        data.indexBufferMemory);
-    return pipelineIndex;
 }
 
-void createGridPipeline(size_t /*assetIndex*/, size_t /*uboIndex*/) {
+void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
+    gridPipelineIndex = graphicsPipelines.size();
+    graphicsPipelines.push_back(GraphicsPipeline{});
+    GraphicsPipeline& pipeline = graphicsPipelines.back();
 
+    pipeline.subpass = 1;
+    pipeline.type = PIPELINE_TYPE_TRANSPARENT;
+    pipeline.renderGroup = EDITOR_RENDER_GROUP;
+
+    pipeline.assetsIndex = assetIndex;
+    pipeline.uboIndex = uboIndex;
+    UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
+
+    // Descriptor set layout
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    pipeline.descriptorSetLayoutBindings.resize(1);
+    pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
+    // Descriptor pools
+    pipeline.descriptorPoolSizes.resize(1);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    // Descriptor sets
+    pipeline.descriptorSets.resize(swapChainImages.size());
+    pipeline.descriptorWrites.resize(swapChainImages.size());
+    for (size_t i = 0; i < swapChainImages.size(); i++) { 
+        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.descriptorBufferInfos[i].offset = 0;
+        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+
+        pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
+        
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+        // pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
+    }
+
+    // Vertex input
+    pipeline.vertexInputBinding.binding = 0;
+    pipeline.vertexInputBinding.stride = sizeof(glm::vec3);
+    pipeline.vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    pipeline.vertexInputAttributes.resize(1);
+    pipeline.vertexInputAttributes[0].binding = 0;
+    pipeline.vertexInputAttributes[0].location = 0;
+    pipeline.vertexInputAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    pipeline.vertexInputAttributes[0].offset = 0;
+
+    auto & shaderStages = pipeline.shaderStages;
+    shaderStages.resize(2);
+
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, RESOURCE_PATH);
+    strcat(shaderStages[0].shader, "shaders/grid.vert.spv");
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, RESOURCE_PATH);
+    strcat(shaderStages[1].shader, "shaders/grid.frag.spv");
+
+    pipeline.extent = swapChainExtent;
+    pipeline.renderpass = scenePass;
+    pipeline.useColorAttachment = true;
+    pipeline.enableDepthBias = false;
 }
 
 void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
@@ -168,6 +244,7 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     GraphicsPipeline& pipeline = graphicsPipelines.back();
 
     pipeline.subpass = 0;
+    pipeline.type = PIPELINE_TYPE_OPAQUE;
 
     pipeline.assetsIndex = assetIndex;
     pipeline.uboIndex = uboIndex;
@@ -612,6 +689,8 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     return pipelineIndex;
 }
 
+// TODO: Split this function to decouple pipeline
+// creation from asset binding
 void GameRenderer::bindAssets(Model const * models, size_t nModels,
                               uint32_t const * modelIDs,
                               size_t nModelIDs,
@@ -625,6 +704,9 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                               Texture const * textures,
                               size_t nTextures,
                               prt::array<Texture, 6> const & skybox) {
+    /* grid */
+    size_t gridAssetIndex = pushBackAssets();
+    size_t gridUboIndex = pushBackUniformBufferData(sizeof(GridUBO));
     /* skybox */
     size_t skyboxAssetIndex = pushBackAssets();
     size_t skyboxUboIndex = pushBackUniformBufferData(sizeof(SkyboxUBO));
@@ -651,13 +733,18 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     /* billboards */
     size_t billboardAssetIndex;
     size_t billboardUboIndex;
-    if (nBillboards) {
+    // if (nBillboards) {
         billboardAssetIndex = pushBackAssets();
         billboardUboIndex = pushBackUniformBufferData(sizeof(BillboardUBO));
-    }
+    // }
 
     // Swapchain needs to be updated
     reprepareSwapChain();
+
+    /* grid */
+    createGridPipeline(gridAssetIndex, gridUboIndex);
+    createGridBuffers(gridAssetIndex);
+    createGridDrawCalls();
 
     /* skybox */
     loadCubeMap(skybox, skyboxAssetIndex);
@@ -714,17 +801,17 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                          graphicsPipelines[animatedShadowmapPipelineIndex].drawCalls);
 
     /* billboard */
-    if (nBillboards != 0) {
+    // if (nBillboards != 0) {
         prt::hash_map<int32_t, int32_t> textureIndices;
         loadBillboards(billboards, nBillboards, textures, nTextures, billboardAssetIndex, textureIndices);
         createBillboardPipeline(billboardAssetIndex, billboardUboIndex);
 
         createBillboardBuffers(billboardAssetIndex);
         createBillboardDrawCalls(billboards, nBillboards, textureIndices);
-    }
+    // }
 
     /* composition */
-    compositionPipelineIndex = createCompositionPipeline();
+    createCompositionPipeline();
     createCompositionDrawCalls(compositionPipelineIndex);
 
     completeSwapChain();
@@ -768,6 +855,18 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     camera.setProjection(w, h, nearPlane, farPlane);
     glm::mat4 projectionMatrix = camera.getProjectionMatrix();
     glm::vec3 viewPosition = camera.getPosition();
+
+    // grid ubo
+    if (gridPipelineIndex != -1) {
+        auto gridUboData = getUniformBufferData(graphicsPipelines[gridPipelineIndex].uboIndex).uboData.data();
+        GridUBO & gridUBO = *reinterpret_cast<GridUBO*>(gridUboData);
+        gridUBO.view = viewMatrix;
+        gridUBO.proj = projectionMatrix;
+        gridUBO.viewPosition = glm::vec4(viewPosition, 1.0f);
+        gridUBO.proj[1][1] *= -1;
+        gridUBO.nearPlane = nearPlane;
+        gridUBO.farPlane = farPlane;
+    }
 
     // skybox ubo
     if (skyboxPipelineIndex != -1) {
@@ -1122,6 +1221,15 @@ void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t ass
                            skybox[0].mipLevels);
 }
 
+void GameRenderer::createGridDrawCalls() {
+    GraphicsPipeline & pipeline = graphicsPipelines[gridPipelineIndex];
+
+    DrawCall drawCall;
+    drawCall.firstIndex = 0;
+    drawCall.indexCount = 6;
+    pipeline.drawCalls.push_back(drawCall);
+}
+
 void GameRenderer::createSkyboxDrawCalls() {
     GraphicsPipeline & pipeline = graphicsPipelines[skyboxPipelineIndex];
     DrawCall drawCall;
@@ -1192,9 +1300,6 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
-            // if (animated) {
-            //     pc.boneOffset = boneOffsets[i];
-            // }
 
             // geometry
             drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
@@ -1352,6 +1457,31 @@ void GameRenderer::createCubeMapBuffers(size_t assetIndex) {
                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                     data.indexBuffer, 
                     data.indexBufferMemory);   
+}
+
+void GameRenderer::createGridBuffers(size_t assetIndex) {
+    prt::array<glm::vec3, 6> vertices;
+
+    vertices[0] = glm::vec3{1.0f, 1.0f, 0.0f};
+    vertices[1] = glm::vec3{ -1.0f, -1.0f, 0.0f};
+    vertices[2] = glm::vec3{-1.0f,  1.0f, 0.0f};
+    vertices[3] = glm::vec3{ -1.0f,  -1.0f, 0.0f};
+    vertices[4] = glm::vec3{ 1.0f,  1.0f, 0.0f};
+    vertices[5] = glm::vec3{ 1.0f,  -1.0f, 0.0f};
+
+    VertexData & data = getAssets(assetIndex).vertexData;
+    createAndMapBuffer(vertices.data(), sizeof(glm::vec3) * vertices.size(),
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                       data.vertexBuffer, 
+                       data.vertexBufferMemory);    
+
+    prt::vector<uint32_t> indices = { 0, 1, 2,
+                                      3, 4, 5};
+    
+    createAndMapBuffer(indices.data(), sizeof(uint32_t) * indices.size(),
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                       data.indexBuffer, 
+                       data.indexBufferMemory);   
 }
 
 void GameRenderer::createBillboardBuffers(size_t assetIndex) {

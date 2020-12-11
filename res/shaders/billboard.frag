@@ -33,7 +33,7 @@ void main() {
                                        (texture(sampler2D(textures[pc.albedoIndex], samp), fs_in.fragTexCoord)) * ubo.colors[pc.positionIndex];
     float weight = 
         max(min(1.0, max( max(color.r, color.g), color.b ) * color.a ) , color.a) *
-        clamp(0.03 / (1e-5 + pow(fs_in.fragPos.z / 200, 4.0)), 1e-2, 3e3);
+        clamp(0.03 / (1e-5 + pow(gl_FragCoord.z / 200, 4.0)), 1e-2, 3e3);
 
     // Blend Func: GL_ONE, GL_ONE
     // Switch to premultiplied alpha and weight

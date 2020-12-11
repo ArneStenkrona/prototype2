@@ -1775,7 +1775,10 @@ void VulkanApplication::createDescriptorSets() {
                         asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                         asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
                     }
-                    pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+                    // THIS IS REALLY AD HOC, SHOULD BE DONE MORE DYNAMICALLY
+                    if (pipeline.descriptorWrites[i].size() >= 2) {
+                        pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+                    }
 
                     vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
                                            pipeline.descriptorWrites[i].data(), 0, nullptr);

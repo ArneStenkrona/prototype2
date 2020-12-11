@@ -65,6 +65,7 @@ private:
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.95f;
 
+    int32_t gridPipelineIndex = -1;
     int32_t skyboxPipelineIndex = -1;
     int32_t standardPipelineIndex = -1;
     int32_t animatedStandardPipelineIndex = -1;
@@ -89,7 +90,7 @@ private:
                                           int32_t & transparentPipeline,
                                           int32_t & shadowPipeline);
 
-    int32_t createCompositionPipeline();
+    void createCompositionPipeline();
 
     void createGridPipeline(size_t assetIndex, size_t uboIndex);
 
@@ -116,6 +117,7 @@ private:
     
     void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
 
+    void createGridBuffers(size_t assetIndex);
     void createCubeMapBuffers(size_t assetIndex);
     void createBillboardBuffers(size_t assetIndex);
     
@@ -132,6 +134,7 @@ private:
 
     void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
+    void createGridDrawCalls();
     void createSkyboxDrawCalls();
     void createModelDrawCalls(Model    const * models,   size_t nModels,
                               uint32_t const * modelIDs, size_t nModelIDs,
