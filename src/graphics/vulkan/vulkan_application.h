@@ -77,9 +77,9 @@ struct Assets {
 };
 
 struct FrameBufferAttachment {
-		VkImage image;
-		VkDeviceMemory memory;
-		VkImageView imageView;
+		VkImage image = VK_NULL_HANDLE;
+		VkDeviceMemory memory = VK_NULL_HANDLE;
+		VkImageView imageView = VK_NULL_HANDLE;
 };
 
 struct Cascade {
@@ -231,8 +231,8 @@ private:
         
     FrameBufferAttachment colorAttachment;
     FrameBufferAttachment depthAttachment;
-    FrameBufferAttachment accumulationAttachment;
-    FrameBufferAttachment revealageAttachment;
+    // FrameBufferAttachment accumulationAttachment;
+    // FrameBufferAttachment revealageAttachment;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
@@ -302,8 +302,6 @@ private:
     
     void createColorResources();
     void createDepthResources();
-    void createAccumulationResources();
-    void createRevealageResources();
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);

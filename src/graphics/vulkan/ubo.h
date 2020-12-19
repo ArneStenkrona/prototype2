@@ -106,4 +106,8 @@ struct AnimatedShadowMapUBO {
     alignas(16) BoneUBO bones;
 };
 
+struct MouseSBO {
+    alignas(16) glm::vec3 mouseWorldPosition;
+};
+
 #endif

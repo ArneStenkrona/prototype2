@@ -60,10 +60,6 @@ void VulkanApplication::initVulkan() {
     createOffscreenFrameBuffer();
     prepareGraphicsPipelines();
     createCommandPool();
-    createColorResources();
-    createDepthResources();
-    createAccumulationResources();
-    createRevealageResources();
     createTextureSampler();
     createOffscreenSampler();
     createSyncObjects();
@@ -85,21 +81,29 @@ void VulkanApplication::render(uint16_t renderGroupMask) {
 void VulkanApplication::cleanupSwapChain() {
     vkDeviceWaitIdle(device);
     
-    vkDestroyImageView(device, depthAttachment.imageView, nullptr);
-    vkDestroyImage(device, depthAttachment.image, nullptr);
-    vkFreeMemory(device, depthAttachment.memory, nullptr);
+    if (depthAttachment.imageView != VK_NULL_HANDLE) {
+        vkDestroyImageView(device, depthAttachment.imageView, nullptr);
+        vkDestroyImage(device, depthAttachment.image, nullptr);
+        vkFreeMemory(device, depthAttachment.memory, nullptr);
+    }
  
-    vkDestroyImageView(device, colorAttachment.imageView, nullptr);
-    vkDestroyImage(device, colorAttachment.image, nullptr);
-    vkFreeMemory(device, colorAttachment.memory, nullptr);
+    if (colorAttachment.imageView != VK_NULL_HANDLE) {
+        vkDestroyImageView(device, colorAttachment.imageView, nullptr);
+        vkDestroyImage(device, colorAttachment.image, nullptr);
+        vkFreeMemory(device, colorAttachment.memory, nullptr);
+    }
 
-    vkDestroyImageView(device, accumulationAttachment.imageView, nullptr);
-    vkDestroyImage(device, accumulationAttachment.image, nullptr);
-    vkFreeMemory(device, accumulationAttachment.memory, nullptr);
+    // if (accumulationAttachment.imageView != VK_NULL_HANDLE) {
+    //     vkDestroyImageView(device, accumulationAttachment.imageView, nullptr);
+    //     vkDestroyImage(device, accumulationAttachment.image, nullptr);
+    //     vkFreeMemory(device, accumulationAttachment.memory, nullptr);
+    // }
     
-    vkDestroyImageView(device, revealageAttachment.imageView, nullptr);
-    vkDestroyImage(device, revealageAttachment.image, nullptr);
-    vkFreeMemory(device, revealageAttachment.memory, nullptr);
+    // if (revealageAttachment.imageView != VK_NULL_HANDLE) {
+    //     vkDestroyImageView(device, revealageAttachment.imageView, nullptr);
+    //     vkDestroyImage(device, revealageAttachment.image, nullptr);
+    //     vkFreeMemory(device, revealageAttachment.memory, nullptr);
+    // }
 
     for (auto & attachment : accumulationAttachments) {
         vkDestroyImageView(device, attachment.imageView, nullptr);
@@ -239,8 +243,6 @@ void VulkanApplication::completeSwapChain() {
     prepareGraphicsPipelines();
     createColorResources();
     createDepthResources();
-    createAccumulationResources();
-    createRevealageResources();
     createFramebuffers();
     createDescriptorPools();
     createDescriptorSets();
@@ -1256,39 +1258,6 @@ void VulkanApplication::createDepthResources() {
                                                 1, 1);
     
     transitionImageLayout(depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
-}
-
-void VulkanApplication::createAccumulationResources() {
-    VkFormat colorFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
-
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, 1, 0, msaaSamples, colorFormat, 
-                VK_IMAGE_TILING_OPTIMAL, 
-                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,//VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                accumulationAttachment.image, accumulationAttachment.memory);
-
-    accumulationAttachment.imageView = createImageView(accumulationAttachment.image, colorFormat, 
-                                                       VK_IMAGE_ASPECT_COLOR_BIT, 
-                                                       VK_IMAGE_VIEW_TYPE_2D,
-                                                       1, 1);
-    
-    transitionImageLayout(accumulationAttachment.image, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
-}
-void VulkanApplication::createRevealageResources() {
-    VkFormat colorFormat = VK_FORMAT_R8_UNORM;
-    
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, 1, 0, msaaSamples, colorFormat, 
-                VK_IMAGE_TILING_OPTIMAL, 
-                VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,//VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, 
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                revealageAttachment.image, revealageAttachment.memory);
-
-    revealageAttachment.imageView = createImageView(revealageAttachment.image, colorFormat, 
-                                                    VK_IMAGE_ASPECT_COLOR_BIT, 
-                                                    VK_IMAGE_VIEW_TYPE_2D,
-                                                    1, 1);
-    
-    transitionImageLayout(revealageAttachment.image, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
 }
 
 VkFormat VulkanApplication::findSupportedFormat(prt::vector<VkFormat> const & candidates, 
