@@ -150,7 +150,8 @@ protected:
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
 
-    VkRenderPass scenePass;
+    // RenderPass scenePass;
+    VkRenderPass scenePass = VK_NULL_HANDLE;
 
     prt::vector<FrameBufferAttachment> frameBufferAttachments;
     size_t colorFBAIndex;
@@ -264,6 +265,7 @@ private:
     
     void createScenePass();
     void createScenePassNoMsaa();
+    // void createRenderPass(RenderPass & renderpass);
 
     void createOffscreenSampler();
     void createOffscreenRenderPass();

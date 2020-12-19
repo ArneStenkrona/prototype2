@@ -56,7 +56,6 @@ void VulkanApplication::initVulkan() {
     createLogicalDevice();
     createSwapChain();
     createImageViews();
-    createScenePass();
     createOffscreenFrameBuffer();
     prepareGraphicsPipelines();
     createCommandPool();
@@ -118,7 +117,10 @@ void VulkanApplication::cleanupSwapChain() {
         vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
     }
 
-    vkDestroyRenderPass(device, scenePass, nullptr);
+    if (scenePass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(device, scenePass, nullptr);
+    }
+
     vkDestroyRenderPass(device, offscreenPass.renderPass, nullptr);
  
     for (auto & imageView : swapChainImageViews) {
@@ -521,7 +523,6 @@ void VulkanApplication::createScenePassNoMsaa() {
     subpasses[2].inputAttachmentCount = inputTransparencyAttachmentRefs.size();
     subpasses[2].pInputAttachments = inputTransparencyAttachmentRefs.data();
 
-    // I AM VERY UNSURE ABOUT THESE DEPENDENCIES
     prt::array<VkSubpassDependency,3> dependencies = {};
     dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass = 0;
@@ -841,9 +842,17 @@ void VulkanApplication::createTransparencyAttachments() {
 }
 
 void VulkanApplication::prepareGraphicsPipelines() {
+    for (auto & pipeline : graphicsPipelines) {
+        if (pipeline.type == PIPELINE_TYPE_OFFSCREEN) {
+            pipeline.renderpass = offscreenPass.renderPass;
+        } else {
+            pipeline.renderpass = scenePass;
+        }
+    }
     createDescriptorSetLayouts(graphicsPipelines);
     createPipelineCaches(graphicsPipelines);
     createGraphicsPipelines(graphicsPipelines);
+
 }
 
 void VulkanApplication::createDescriptorSetLayouts(prt::vector<GraphicsPipeline> & pipelines) {
