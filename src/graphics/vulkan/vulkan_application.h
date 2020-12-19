@@ -152,12 +152,11 @@ protected:
 
     VkRenderPass scenePass;
 
-    prt::vector<VkDescriptorImageInfo> accumulationDescriptors;
-    prt::vector<VkDescriptorImageInfo> revealageDescriptors;
-    prt::vector<VkDescriptorImageInfo> inputAccumulationDescriptors;
-    prt::vector<VkDescriptorImageInfo> inputRevealageDescriptors;
-    prt::vector<FrameBufferAttachment> accumulationAttachments;
-    prt::vector<FrameBufferAttachment> revealageAttachments;
+    prt::vector<FrameBufferAttachment> frameBufferAttachments;
+    size_t colorFBAIndex;
+    size_t depthFBAIndex;
+    prt::vector<size_t> accumulationFBAIndices;
+    prt::vector<size_t> revealageFBAIndices;
 
     struct OffscreenPass {
         VkExtent2D extent;
@@ -228,11 +227,6 @@ private:
     
     VkQueue graphicsQueue;
     VkQueue presentQueue;
-        
-    FrameBufferAttachment colorAttachment;
-    FrameBufferAttachment depthAttachment;
-    // FrameBufferAttachment accumulationAttachment;
-    // FrameBufferAttachment revealageAttachment;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
@@ -269,7 +263,6 @@ private:
     void createImageViews();
     
     void createScenePass();
-    // void createScenePassMsaa();
     void createScenePassNoMsaa();
 
     void createOffscreenSampler();

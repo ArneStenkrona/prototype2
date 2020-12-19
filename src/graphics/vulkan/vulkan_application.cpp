@@ -80,42 +80,13 @@ void VulkanApplication::render(uint16_t renderGroupMask) {
     
 void VulkanApplication::cleanupSwapChain() {
     vkDeviceWaitIdle(device);
-    
-    if (depthAttachment.imageView != VK_NULL_HANDLE) {
-        vkDestroyImageView(device, depthAttachment.imageView, nullptr);
-        vkDestroyImage(device, depthAttachment.image, nullptr);
-        vkFreeMemory(device, depthAttachment.memory, nullptr);
-    }
- 
-    if (colorAttachment.imageView != VK_NULL_HANDLE) {
-        vkDestroyImageView(device, colorAttachment.imageView, nullptr);
-        vkDestroyImage(device, colorAttachment.image, nullptr);
-        vkFreeMemory(device, colorAttachment.memory, nullptr);
-    }
 
-    // if (accumulationAttachment.imageView != VK_NULL_HANDLE) {
-    //     vkDestroyImageView(device, accumulationAttachment.imageView, nullptr);
-    //     vkDestroyImage(device, accumulationAttachment.image, nullptr);
-    //     vkFreeMemory(device, accumulationAttachment.memory, nullptr);
-    // }
-    
-    // if (revealageAttachment.imageView != VK_NULL_HANDLE) {
-    //     vkDestroyImageView(device, revealageAttachment.imageView, nullptr);
-    //     vkDestroyImage(device, revealageAttachment.image, nullptr);
-    //     vkFreeMemory(device, revealageAttachment.memory, nullptr);
-    // }
-
-    for (auto & attachment : accumulationAttachments) {
-        vkDestroyImageView(device, attachment.imageView, nullptr);
-        vkDestroyImage(device, attachment.image, nullptr);
-        vkFreeMemory(device, attachment.memory, nullptr);
+    for (FrameBufferAttachment & fba : frameBufferAttachments) {
+        vkDestroyImageView(device, fba.imageView, nullptr);
+        vkDestroyImage(device, fba.image, nullptr);
+        vkFreeMemory(device, fba.memory, nullptr);
     }
-
-    for (auto & attachment : revealageAttachments) {
-        vkDestroyImageView(device, attachment.imageView, nullptr);
-        vkDestroyImage(device, attachment.image, nullptr);
-        vkFreeMemory(device, attachment.memory, nullptr);
-    }
+    frameBufferAttachments.resize(0);
 
     for (auto & depth : offscreenPass.depths) {
         vkDestroyImageView(device, depth.imageView, nullptr);
@@ -596,79 +567,6 @@ void VulkanApplication::createScenePassNoMsaa() {
     }
 }
 
-// void VulkanApplication::createScenePassMsaa() {
-//     VkAttachmentDescription colorAttachmentDesc = {};
-//     colorAttachmentDesc.format = swapChainImageFormat;
-//     colorAttachmentDesc.samples = msaaSamples;
-//     colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-//     colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-//     colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-//     colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-//     colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//     colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    
-//     VkAttachmentDescription depthAttachmentDesc = {};
-//     depthAttachmentDesc.format = findDepthFormat();
-//     depthAttachmentDesc.samples = msaaSamples;
-//     depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-//     depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-//     depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-//     depthAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-//     depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//     depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
-//     VkAttachmentDescription colorAttachmentResolve = {};
-//     colorAttachmentResolve.format = swapChainImageFormat;
-//     colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-//     colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-//     colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-//     colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-//     colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-//     colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//     colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    
-//     VkAttachmentReference colorAttachmentRef = {};
-//     colorAttachmentRef.attachment = 0;
-//     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    
-//     VkAttachmentReference depthAttachmentRef = {};
-//     depthAttachmentRef.attachment = 1;
-//     depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
-//     VkAttachmentReference colorAttachmentResolveRef = {};
-//     colorAttachmentResolveRef.attachment = 2;
-//     colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    
-//     VkSubpassDescription subpass = {};
-//     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-//     subpass.colorAttachmentCount = 1;
-//     subpass.pColorAttachments = &colorAttachmentRef;
-//     subpass.pDepthStencilAttachment = &depthAttachmentRef;
-//     subpass.pResolveAttachments = &colorAttachmentResolveRef;
-    
-//     VkSubpassDependency dependency = {};
-//     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-//     dependency.dstSubpass = 0;
-//     dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-//     dependency.srcAccessMask = 0;
-//     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-//     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    
-//     prt::array<VkAttachmentDescription, 3> attachments = {colorAttachmentDesc, depthAttachmentDesc, colorAttachmentResolve };
-//     VkRenderPassCreateInfo renderPassInfo = {};
-//     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-//     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-//     renderPassInfo.pAttachments = attachments.data();
-//     renderPassInfo.subpassCount = 1;
-//     renderPassInfo.pSubpasses = &subpass;
-//     renderPassInfo.dependencyCount = 1;
-//     renderPassInfo.pDependencies = &dependency;
-    
-//     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &scenePass) != VK_SUCCESS) {
-//         assert(false && "failed to create render pass!");
-//     }
-// }
-
 void VulkanApplication::createOffscreenSampler() {
     // Create sampler to sample from depth attachment
     // Used to sample in the fragment shder for shadowed rendering
@@ -844,15 +742,18 @@ void VulkanApplication::createOffscreenFrameBuffer() {
 }
 
 void VulkanApplication::createTransparencyAttachments() {
-    accumulationAttachments.resize(swapChainImages.size());
-    revealageAttachments.resize(swapChainImages.size());
-    accumulationDescriptors.resize(swapChainImages.size());
-    revealageDescriptors.resize(swapChainImages.size());
-
-    inputAccumulationDescriptors.resize(swapChainImages.size());
-    inputRevealageDescriptors.resize(swapChainImages.size());
+    accumulationFBAIndices.resize(swapChainImages.size());
+    revealageFBAIndices.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
+        accumulationFBAIndices[i] = frameBufferAttachments.size();
+        frameBufferAttachments.push_back({});
+        revealageFBAIndices[i] = frameBufferAttachments.size();
+        frameBufferAttachments.push_back({});
+        FrameBufferAttachment & accumFBA = frameBufferAttachments[accumulationFBAIndices[i]];
+        FrameBufferAttachment & revFBA = frameBufferAttachments[revealageFBAIndices[i]];
+
+
         // accumulation image
         VkImageCreateInfo image{};
         image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -867,12 +768,12 @@ void VulkanApplication::createTransparencyAttachments() {
 
         image.format = VK_FORMAT_R16G16B16A16_SFLOAT;
         image.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        if (vkCreateImage(device, &image, nullptr, &accumulationAttachments[i].image) != VK_SUCCESS) {
+        if (vkCreateImage(device, &image, nullptr, &accumFBA.image) != VK_SUCCESS) {
             assert(false && "failed to create accumulation image!");
         }
         // revealage image
         image.format = VK_FORMAT_R8_UNORM;
-        if (vkCreateImage(device, &image, nullptr, &revealageAttachments[i].image) != VK_SUCCESS) {
+        if (vkCreateImage(device, &image, nullptr, &revFBA.image) != VK_SUCCESS) {
             assert(false && "failed to create revealage image!");
         }
 
@@ -881,29 +782,29 @@ void VulkanApplication::createTransparencyAttachments() {
          VkMemoryAllocateInfo memAlloc{};
         memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         VkMemoryRequirements memReqs;
-        vkGetImageMemoryRequirements(device, accumulationAttachments[i].image, &memReqs);
+        vkGetImageMemoryRequirements(device, accumFBA.image, &memReqs);
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        if (vkAllocateMemory(device, &memAlloc, nullptr, &accumulationAttachments[i].memory) != VK_SUCCESS) {
+        if (vkAllocateMemory(device, &memAlloc, nullptr, &accumFBA.memory) != VK_SUCCESS) {
             assert(false && "failed to allocate memory for accumulation image!");
         }
-        if (vkBindImageMemory(device, accumulationAttachments[i].image, accumulationAttachments[i].memory, 0) != VK_SUCCESS) {
+        if (vkBindImageMemory(device, accumFBA.image, accumFBA.memory, 0) != VK_SUCCESS) {
             assert(false && "failed to bind memory for accumulation image!");
         }
         // revealage memory
-        vkGetImageMemoryRequirements(device, revealageAttachments[i].image, &memReqs);
+        vkGetImageMemoryRequirements(device, revFBA.image, &memReqs);
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        if (vkAllocateMemory(device, &memAlloc, nullptr, &revealageAttachments[i].memory) != VK_SUCCESS) {
+        if (vkAllocateMemory(device, &memAlloc, nullptr, &revFBA.memory) != VK_SUCCESS) {
             assert(false && "failed to allocate memory for revealage image!");
         }
-        if (vkBindImageMemory(device, revealageAttachments[i].image, revealageAttachments[i].memory, 0) != VK_SUCCESS) {
+        if (vkBindImageMemory(device, revFBA.image, revFBA.memory, 0) != VK_SUCCESS) {
             assert(false && "failed to bind memory for revealage image!");
         }
 
-        transitionImageLayout(accumulationAttachments[i].image, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
-        transitionImageLayout(revealageAttachments[i].image, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
+        transitionImageLayout(accumFBA.image, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
+        transitionImageLayout(revFBA.image, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
 
         // accumulation view
         VkImageViewCreateInfo accumulationImageView{};
@@ -916,17 +817,11 @@ void VulkanApplication::createTransparencyAttachments() {
         accumulationImageView.subresourceRange.levelCount = 1;
         accumulationImageView.subresourceRange.baseArrayLayer = 0;
         accumulationImageView.subresourceRange.layerCount = 1;
-        accumulationImageView.image = accumulationAttachments[i].image;
-        if (vkCreateImageView(device, &accumulationImageView, nullptr, &accumulationAttachments[i].imageView) != VK_SUCCESS) {
+        accumulationImageView.image = accumFBA.image;
+        if (vkCreateImageView(device, &accumulationImageView, nullptr, &accumFBA.imageView) != VK_SUCCESS) {
             assert(false && "failed to create image view for accumulation image!");
         }
-
-        accumulationDescriptors[i].imageView = accumulationAttachments[i].imageView;
-        accumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        inputAccumulationDescriptors[i].imageView = accumulationAttachments[i].imageView;
-        inputAccumulationDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
+        
         // revealage view
         VkImageViewCreateInfo revealageImageView{};
         revealageImageView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -938,16 +833,10 @@ void VulkanApplication::createTransparencyAttachments() {
         revealageImageView.subresourceRange.levelCount = 1;
         revealageImageView.subresourceRange.baseArrayLayer = 0;
         revealageImageView.subresourceRange.layerCount = 1;
-        revealageImageView.image = revealageAttachments[i].image;
-        if (vkCreateImageView(device, &revealageImageView, nullptr, &revealageAttachments[i].imageView) != VK_SUCCESS) {
+        revealageImageView.image = revFBA.image;
+        if (vkCreateImageView(device, &revealageImageView, nullptr, &revFBA.imageView) != VK_SUCCESS) {
             assert(false && "failed to create image view for revealage image!");
         }
-
-        revealageDescriptors[i].imageView = revealageAttachments[i].imageView;
-        revealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        inputRevealageDescriptors[i].imageView = revealageAttachments[i].imageView;
-        inputRevealageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 }
 
@@ -1187,28 +1076,19 @@ void VulkanApplication::createFramebuffers() {
 
         if (enableMsaa) {
             assert(false && "msaa currently not supported!");
-            // prt::array<VkImageView, 5> attachments = {
-            //     colorAttachment.imageView,
-            //     depthAttachment.imageView,
-            //     accumulationAttachment.imageView,
-            //     revealageAttachment.imageView,
-            //     swapChainImageViews[i]
-            // };
-            // framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            // framebufferInfo.pAttachments = attachments.data();
         } else {
             prt::array<VkImageView, 6> attachments = {
                 swapChainImageViews[i],
-                depthAttachment.imageView,
-                accumulationAttachments[i].imageView,
-                revealageAttachments[i].imageView,
-                accumulationAttachments[i].imageView,
-                revealageAttachments[i].imageView
+                frameBufferAttachments[depthFBAIndex].imageView,
+                frameBufferAttachments[accumulationFBAIndices[i]].imageView,
+                frameBufferAttachments[revealageFBAIndices[i]].imageView,
+                frameBufferAttachments[accumulationFBAIndices[i]].imageView,
+                frameBufferAttachments[revealageFBAIndices[i]].imageView,
             };
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
         }
-    
+
         if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
             assert(false && "failed to create framebuffer!");
         }
@@ -1229,35 +1109,41 @@ void VulkanApplication::createCommandPool() {
 
 void VulkanApplication::createColorResources() {
     VkFormat colorFormat = swapChainImageFormat;
+
+    colorFBAIndex = frameBufferAttachments.size();
+    frameBufferAttachments.push_back({});
     
     createImage(swapChainExtent.width, swapChainExtent.height, 1, 1, 0, msaaSamples, colorFormat, 
                 VK_IMAGE_TILING_OPTIMAL, 
                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                colorAttachment.image, colorAttachment.memory);
+                frameBufferAttachments[colorFBAIndex].image, frameBufferAttachments[colorFBAIndex].memory);
 
-    colorAttachment.imageView = createImageView(colorAttachment.image, colorFormat, 
-                                                VK_IMAGE_ASPECT_COLOR_BIT, 
-                                                VK_IMAGE_VIEW_TYPE_2D,
-                                                1, 1);
+    frameBufferAttachments[colorFBAIndex].imageView = createImageView(frameBufferAttachments[colorFBAIndex].image, colorFormat, 
+                                                                      VK_IMAGE_ASPECT_COLOR_BIT, 
+                                                                      VK_IMAGE_VIEW_TYPE_2D,
+                                                                      1, 1);
     
-    transitionImageLayout(colorAttachment.image, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
+    transitionImageLayout(frameBufferAttachments[colorFBAIndex].image, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1, 1);
 }
 
 void VulkanApplication::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
+
+    depthFBAIndex = frameBufferAttachments.size();
+    frameBufferAttachments.push_back({});
     
     createImage(swapChainExtent.width, swapChainExtent.height, 1, 1, 0, msaaSamples, depthFormat, 
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-                depthAttachment.image, depthAttachment.memory);
+                frameBufferAttachments[depthFBAIndex].image, frameBufferAttachments[depthFBAIndex].memory);
 
-    depthAttachment.imageView = createImageView(depthAttachment.image, depthFormat, 
-                                                VK_IMAGE_ASPECT_DEPTH_BIT, 
-                                                VK_IMAGE_VIEW_TYPE_2D,
-                                                1, 1);
+    frameBufferAttachments[depthFBAIndex].imageView = createImageView(frameBufferAttachments[depthFBAIndex].image, depthFormat, 
+                                                                      VK_IMAGE_ASPECT_DEPTH_BIT, 
+                                                                      VK_IMAGE_VIEW_TYPE_2D,
+                                                                      1, 1);
     
-    transitionImageLayout(depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
+    transitionImageLayout(frameBufferAttachments[depthFBAIndex].image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 1);
 }
 
 VkFormat VulkanApplication::findSupportedFormat(prt::vector<VkFormat> const & candidates, 
@@ -1323,7 +1209,7 @@ void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& te
                       static_cast<uint32_t>(texture.texHeight),
                       1);
 
-    //transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
+    // transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
  
@@ -1758,8 +1644,18 @@ void VulkanApplication::createDescriptorSets() {
                         descriptorWrite.dstSet = pipeline.descriptorSets[i];
                     }
 
-                    pipeline.descriptorWrites[i][0].pImageInfo = &inputAccumulationDescriptors[i];
-                    pipeline.descriptorWrites[i][1].pImageInfo = &inputRevealageDescriptors[i];
+                    FrameBufferAttachment & accFBA = frameBufferAttachments[accumulationFBAIndices[i]];
+                    FrameBufferAttachment & revFBA = frameBufferAttachments[revealageFBAIndices[i]];
+
+                    VkDescriptorImageInfo accDesc{};
+                    accDesc.imageView = accFBA.imageView;
+                    accDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    VkDescriptorImageInfo revDesc{};
+                    revDesc.imageView = revFBA.imageView;
+                    revDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                    pipeline.descriptorWrites[i][0].pImageInfo = &accDesc;
+                    pipeline.descriptorWrites[i][1].pImageInfo = &revDesc;
 
                     vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
                                         pipeline.descriptorWrites[i].data(), 0, nullptr);
