@@ -77,9 +77,12 @@ struct Assets {
 };
 
 struct FrameBufferAttachment {
-		VkImage image = VK_NULL_HANDLE;
-		VkDeviceMemory memory = VK_NULL_HANDLE;
-		VkImageView imageView = VK_NULL_HANDLE;
+    VkImageCreateInfo imageInfo;
+    VkImageViewCreateInfo imageViewInfo;
+    VkMemoryAllocateInfo memoryInfo;
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkImageView imageView = VK_NULL_HANDLE;
 };
 
 struct Cascade {
@@ -278,7 +281,7 @@ private:
     
     void createSwapChain();
     
-    void createImageViews();
+    void createSwapchainImageViews();
     
     void createScenePass();
     void createRenderPass(RenderPass & renderpass);
@@ -330,11 +333,7 @@ private:
     
     void createTextureSampler();
     
-    VkImageView createImageView(VkImage image, VkFormat format, 
-                                VkImageAspectFlags aspectFlags, 
-                                VkImageViewType viewType,
-                                uint32_t mipLevels,
-                                uint32_t layerCount);
+    VkImageView createImageView(VkImageViewCreateInfo & viewInfo);
     
     void createImage(VkImageCreateInfo & imageInfo, 
                      VkMemoryPropertyFlags properties, VkImage& image, 
