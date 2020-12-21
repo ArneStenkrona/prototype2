@@ -581,7 +581,7 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
         pipeline.descriptorWrites[i][3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         pipeline.descriptorWrites[i][3].descriptorCount = 1;
         pipeline.descriptorWrites[i][3].pBufferInfo = 0;
-        pipeline.descriptorWrites[i][3].pImageInfo = &offscreenPass.descriptors[i];
+        // pipeline.descriptorWrites[i][3].pImageInfo = &offscreenPass.descriptors[i];
     }
 
     // Vertex input
@@ -681,8 +681,7 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     shaderStages[0].shader[0] = '\0';
     strcat(shaderStages[0].shader, vertexShader);
 
-    pipeline.extent = offscreenPass.extent;
-    // pipeline.renderpass = offscreenPass.renderPass;
+    pipeline.extent = renderPasses[offscreenPassIndex].extent;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
 

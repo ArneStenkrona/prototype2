@@ -89,6 +89,12 @@ struct Cascade {
     VkDescriptorImageInfo descriptors;
 };
 
+struct CascadeShadowMap {
+    prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
+    VkSampler depthSampler;
+};
+
+
 struct SubPass {
     VkPipelineBindPoint bindPoint;
     prt::vector<VkAttachmentReference> colorReferences;
@@ -97,6 +103,7 @@ struct SubPass {
 };
 
 struct RenderPass {
+    VkExtent2D extent;
     prt::vector<VkAttachmentDescription> attachments;
     prt::vector<SubPass> subpasses;
     prt::vector<VkSubpassDependency> dependencies;
@@ -177,21 +184,13 @@ protected:
     prt::vector<size_t> revealageFBAIndices;
     prt::vector<size_t> offscreenFBAIndices;
 
-    struct OffscreenPass {
-        VkExtent2D extent;
-        // prt::vector<FrameBufferAttachment> depths;
-        // VkRenderPass renderPass;
-        VkSampler depthSampler;
-        prt::vector<VkDescriptorImageInfo> descriptors;
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSetLayout descriptorSetLayout;
-
-        prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
-    } offscreenPass;
+    CascadeShadowMap shadowMap;
 
     prt::vector<GraphicsPipeline> graphicsPipelines;
 
     VkDevice& getDevice() { return device; }
+
+    size_t pushBackFrameBufferAttachment();
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
@@ -337,11 +336,7 @@ private:
                                 uint32_t mipLevels,
                                 uint32_t layerCount);
     
-    void createImage(uint32_t width, uint32_t height, 
-                     uint32_t mipLevels, uint32_t arrayLayers,
-                     VkImageCreateFlags flags,
-                     VkSampleCountFlagBits numSamples, VkFormat format, 
-                     VkImageTiling tiling, VkImageUsageFlags usage, 
+    void createImage(VkImageCreateInfo & imageInfo, 
                      VkMemoryPropertyFlags properties, VkImage& image, 
                      VkDeviceMemory& imageMemory);
     
