@@ -67,14 +67,14 @@ void GameRenderer::createCompositionPipeline() {
     // accumulation and revealage for transparency
     pipeline.descriptorPoolSizes.resize(2);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
 
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); ++i) {
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); ++i) {
         pipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
         pipeline.descriptorWrites[i][0] = {};
@@ -129,7 +129,7 @@ void GameRenderer::createCompositionPipeline() {
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, frag);
 
-    pipeline.extent = swapChainExtent;
+    pipeline.extent = swapchainExtent;
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
@@ -184,11 +184,11 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor pools
     pipeline.descriptorPoolSizes.resize(1);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); i++) { 
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); i++) { 
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
         pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
@@ -232,7 +232,7 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/grid.frag.spv");
 
-    pipeline.extent = swapChainExtent;
+    pipeline.extent = swapchainExtent;
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
@@ -272,13 +272,13 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor pools
     pipeline.descriptorPoolSizes.resize(2);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); i++) { 
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); i++) { 
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
         pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
@@ -332,7 +332,7 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 
-    pipeline.extent = swapChainExtent;
+    pipeline.extent = swapchainExtent;
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
@@ -381,16 +381,16 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor pools
     pipeline.descriptorPoolSizes.resize(3);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_BILLBOARD_TEXTURES * swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_BILLBOARD_TEXTURES * swapchainImages.size());
     pipeline.descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    pipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); i++) { 
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); i++) { 
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
         pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
@@ -462,7 +462,7 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, RESOURCE_PATH);
     strcat(shaderStages[1].shader, "shaders/billboard.frag.spv");
 
-    pipeline.extent = swapChainExtent;
+    pipeline.extent = swapchainExtent;
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
@@ -524,18 +524,18 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     // Descriptor pools
     pipeline.descriptorPoolSizes.resize(4);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     pipeline.descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_TEXTURES * swapChainImages.size());
+    pipeline.descriptorPoolSizes[1].descriptorCount = static_cast<uint32_t>(NUMBER_SUPPORTED_TEXTURES * swapchainImages.size());
     pipeline.descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    pipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[2].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
     pipeline.descriptorPoolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    pipeline.descriptorPoolSizes[3].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[3].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
 
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); ++i) {
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); ++i) {
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
         pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
@@ -607,7 +607,7 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     shaderStages[1].shader[0] = '\0';
     strcat(shaderStages[1].shader, fragmentShader);
 
-    pipeline.extent = swapChainExtent;
+    pipeline.extent = swapchainExtent;
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
@@ -644,12 +644,12 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     // Descriptor pools
     pipeline.descriptorPoolSizes.resize(1);
     pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapChainImages.size());
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchainImages.size());
 
     // Descriptor sets
-    pipeline.descriptorSets.resize(swapChainImages.size());
-    pipeline.descriptorWrites.resize(swapChainImages.size());
-    for (size_t i = 0; i < swapChainImages.size(); ++i) {
+    pipeline.descriptorSets.resize(swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); ++i) {
         pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         pipeline.descriptorBufferInfos[i].offset = 0;
         pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
@@ -738,7 +738,7 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     // }
 
     // Swapchain needs to be updated
-    reprepareSwapChain();
+    reprepareSwapchain();
 
     /* grid */
     createGridPipeline(gridAssetIndex, gridUboIndex);
@@ -813,7 +813,7 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     createCompositionPipeline();
     createCompositionDrawCalls(compositionPipelineIndex);
 
-    completeSwapChain();
+    completeSwapchain();
 }
 
 void GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 

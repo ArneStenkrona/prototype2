@@ -44,7 +44,7 @@ struct QueueFamilyIndices {
     }
 };
 
-struct SwapChainSupportDetails {
+struct SwapchainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     prt::vector<VkSurfaceFormatKHR> formats;
     prt::vector<VkPresentModeKHR> presentModes;
@@ -77,19 +77,20 @@ struct Assets {
 };
 
 struct FrameBufferAttachment {
+    VkImageLayout imageLayout;
     VkImageCreateInfo imageInfo;
     VkImageViewCreateInfo imageViewInfo;
     VkMemoryAllocateInfo memoryInfo;
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView imageView = VK_NULL_HANDLE;
+
+    bool swapchainAttachment = false;
 };
 
 struct Cascade {
     VkFramebuffer frameBuffer;
-    VkDescriptorSet descriptorSet;
     VkImageView imageView;
-    VkDescriptorImageInfo descriptors;
 };
 
 struct CascadeShadowMap {
@@ -169,12 +170,13 @@ protected:
     VkSampler textureSampler;
 
     // Swapchain data
-    VkSwapchainKHR swapChain;
-    prt::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    prt::vector<VkImageView> swapChainImageViews;
-    prt::vector<VkFramebuffer> swapChainFramebuffers;
+    uint32_t swapchainImageCount;
+    VkSwapchainKHR swapchain;
+    prt::vector<VkImage> swapchainImages;
+    VkFormat swapchainImageFormat;
+    VkExtent2D swapchainExtent;
+    prt::vector<VkImageView> swapchainImageViews;
+    prt::vector<VkFramebuffer> swapchainFramebuffers;
 
     prt::vector<RenderPass> renderPasses;
     size_t scenePassIndex;
@@ -201,10 +203,10 @@ protected:
     void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
     void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
-    void recreateSwapChain();
-    void reprepareSwapChain();
-    void completeSwapChain();
-    void cleanupSwapChain();
+    void recreateSwapchain();
+    void reprepareSwapchain();
+    void completeSwapchain();
+    void cleanupSwapchain();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                             VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
@@ -279,7 +281,7 @@ private:
     
     void createLogicalDevice();
     
-    void createSwapChain();
+    void createSwapchain();
     
     void createSwapchainImageViews();
     
@@ -288,9 +290,7 @@ private:
 
     void createOffscreenSampler();
     void createOffscreenRenderPass();
-    void createOffscreenFrameBuffer();
-
-    void createTransparencyAttachments();
+    void createShadowMap();
 
     void prepareGraphicsPipelines();
     
@@ -314,8 +314,13 @@ private:
     void createSceneCommands(size_t const imageIndex);
     void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
     
-    void createColorResources();
-    void createDepthResources();
+    void createFrameBufferAttachments(); 
+
+    void pushBackColorFBA();
+    void pushBackDepthFBA();
+    void pushBackAccumulationFBA();
+    void pushBackRevealageFBA();
+    void pushBackOffscreenFBA();
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -382,7 +387,7 @@ private:
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
 
     bool isDeviceSuitable(VkPhysicalDevice device);
     
