@@ -89,6 +89,22 @@ struct Cascade {
     VkDescriptorImageInfo descriptors;
 };
 
+struct SubPass {
+    VkPipelineBindPoint bindPoint;
+    prt::vector<VkAttachmentReference> colorReferences;
+    VkAttachmentReference depthReference = {0,VK_IMAGE_LAYOUT_END_RANGE}; // use VK_IMAGE_LAYOUT_END_RANGE to signify no depth reference
+    prt::vector<VkAttachmentReference> inputReferences;
+};
+
+struct RenderPass {
+    prt::vector<VkAttachmentDescription> attachments;
+    prt::vector<SubPass> subpasses;
+    prt::vector<VkSubpassDependency> dependencies;
+
+    VkRenderPass renderPass;
+};
+
+
 enum RenderGroupFlags : uint16_t {
     RENDER_GROUP_FLAG_0 = 1<<0,
     RENDER_GROUP_FLAG_1 = 1<<1,
@@ -150,19 +166,21 @@ protected:
     prt::vector<VkImageView> swapChainImageViews;
     prt::vector<VkFramebuffer> swapChainFramebuffers;
 
-    // RenderPass scenePass;
-    VkRenderPass scenePass = VK_NULL_HANDLE;
+    prt::vector<RenderPass> renderPasses;
+    size_t scenePassIndex;
+    size_t offscreenPassIndex;
 
     prt::vector<FrameBufferAttachment> frameBufferAttachments;
     size_t colorFBAIndex;
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
+    prt::vector<size_t> offscreenFBAIndices;
 
     struct OffscreenPass {
         VkExtent2D extent;
-        prt::vector<FrameBufferAttachment> depths;
-        VkRenderPass renderPass;
+        // prt::vector<FrameBufferAttachment> depths;
+        // VkRenderPass renderPass;
         VkSampler depthSampler;
         prt::vector<VkDescriptorImageInfo> descriptors;
         VkDescriptorPool descriptorPool;
@@ -264,8 +282,7 @@ private:
     void createImageViews();
     
     void createScenePass();
-    void createScenePassNoMsaa();
-    // void createRenderPass(RenderPass & renderpass);
+    void createRenderPass(RenderPass & renderpass);
 
     void createOffscreenSampler();
     void createOffscreenRenderPass();

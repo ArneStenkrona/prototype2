@@ -130,7 +130,7 @@ void GameRenderer::createCompositionPipeline() {
     strcat(shaderStages[1].shader, frag);
 
     pipeline.extent = swapChainExtent;
-    pipeline.renderpass = scenePass;
+    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -233,7 +233,7 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/grid.frag.spv");
 
     pipeline.extent = swapChainExtent;
-    pipeline.renderpass = scenePass;
+    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 }
@@ -333,7 +333,7 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 
     pipeline.extent = swapChainExtent;
-    pipeline.renderpass = scenePass;
+    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
 }
@@ -463,7 +463,7 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/billboard.frag.spv");
 
     pipeline.extent = swapChainExtent;
-    pipeline.renderpass = scenePass;
+    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 }
@@ -608,7 +608,7 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     strcat(shaderStages[1].shader, fragmentShader);
 
     pipeline.extent = swapChainExtent;
-    pipeline.renderpass = scenePass;
+    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -682,7 +682,7 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     strcat(shaderStages[0].shader, vertexShader);
 
     pipeline.extent = offscreenPass.extent;
-    pipeline.renderpass = offscreenPass.renderPass;
+    // pipeline.renderpass = offscreenPass.renderPass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
 

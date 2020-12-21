@@ -26,21 +26,6 @@ enum PipelineType {
     PIPELINE_TYPE_COMPOSITION
 };
 
-struct BufferAttachment {
-
-};
-
-struct RenderPass {
-    prt::vector<BufferAttachment> colorAttachments;
-    prt::vector<BufferAttachment> inputAttachments;
-    BufferAttachment depthAttachment;
-
-    prt::vector<VkSubpassDescription> subpasses;
-    prt::vector<VkSubpassDependency> dependencies;
-
-    VkRenderPass renderPass;
-};
-
 struct GraphicsPipeline {
     static constexpr size_t NULL_INDEX = -1;
     // Assets handle

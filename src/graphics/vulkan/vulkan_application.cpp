@@ -87,11 +87,11 @@ void VulkanApplication::cleanupSwapChain() {
     }
     frameBufferAttachments.resize(0);
 
-    for (auto & depth : offscreenPass.depths) {
-        vkDestroyImageView(device, depth.imageView, nullptr);
-        vkDestroyImage(device, depth.image, nullptr);
-        vkFreeMemory(device, depth.memory, nullptr);
-    }
+    // for (auto & depth : offscreenPass.depths) {
+    //     vkDestroyImageView(device, depth.imageView, nullptr);
+    //     vkDestroyImage(device, depth.image, nullptr);
+    //     vkFreeMemory(device, depth.memory, nullptr);
+    // }
 
     for (auto & cascades : offscreenPass.cascades) {
         for (auto & cascade : cascades) {
@@ -117,11 +117,10 @@ void VulkanApplication::cleanupSwapChain() {
         vkDestroyPipelineLayout(device, graphicsPipeline.pipelineLayout, nullptr);
     }
 
-    if (scenePass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(device, scenePass, nullptr);
+    for (RenderPass & pass : renderPasses) {
+        vkDestroyRenderPass(device, pass.renderPass, nullptr);
     }
-
-    vkDestroyRenderPass(device, offscreenPass.renderPass, nullptr);
+    renderPasses.resize(0);
  
     for (auto & imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
@@ -419,151 +418,153 @@ void VulkanApplication::createImageViews() {
 }
 
 void VulkanApplication::createScenePass() {
-    assert(!enableMsaa && "MSAA NOT SUPPORTED");
-    /*enableMsaa ? createScenePassMsaa() :*/ createScenePassNoMsaa();
+    // push back new render pass
+    scenePassIndex = renderPasses.size();
+    renderPasses.push_back({});
+    RenderPass & scenePass = renderPasses[scenePassIndex];
+    // populate scene pass
+    // attachments
+    scenePass.attachments.resize(6);
+    // colour
+    scenePass.attachments[0].format = swapChainImageFormat;
+    scenePass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    scenePass.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // depth
+    scenePass.attachments[1].format = findDepthFormat();
+    scenePass.attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // accumulation
+    scenePass.attachments[2].format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    scenePass.attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    scenePass.attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // revealage
+    scenePass.attachments[3].format = VK_FORMAT_R8_UNORM;
+    scenePass.attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    scenePass.attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // input accumulation
+    scenePass.attachments[4].format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    scenePass.attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    scenePass.attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[4].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[4].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.attachments[4].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // input revealage
+    scenePass.attachments[5].format = VK_FORMAT_R8_UNORM;
+    scenePass.attachments[5].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[5].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    scenePass.attachments[5].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[5].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[5].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[5].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.attachments[5].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    // subpasses
+    scenePass.subpasses.resize(3);
+    scenePass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    scenePass.subpasses[0].colorReferences.resize(1);
+    scenePass.subpasses[0].colorReferences[0].attachment = 0;
+    scenePass.subpasses[0].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    scenePass.subpasses[0].depthReference.attachment = 1;
+    scenePass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    scenePass.subpasses[1].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    scenePass.subpasses[1].colorReferences.resize(2);
+    scenePass.subpasses[1].colorReferences[0].attachment = 2;
+    scenePass.subpasses[1].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.subpasses[1].colorReferences[1].attachment = 3;
+    scenePass.subpasses[1].colorReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.subpasses[1].depthReference.attachment = 1;
+    scenePass.subpasses[1].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    scenePass.subpasses[2].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    scenePass.subpasses[2].colorReferences.resize(1);
+    scenePass.subpasses[2].colorReferences[0].attachment = 0;
+    scenePass.subpasses[2].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    scenePass.subpasses[2].inputReferences.resize(2);
+    scenePass.subpasses[2].inputReferences[0].attachment = 4;
+    scenePass.subpasses[2].inputReferences[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    scenePass.subpasses[2].inputReferences[1].attachment = 5;
+    scenePass.subpasses[2].inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    scenePass.dependencies.resize(3);
+    scenePass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    scenePass.dependencies[0].dstSubpass = 0;
+    scenePass.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    scenePass.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    scenePass.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    scenePass.dependencies[1].srcSubpass = 0;
+    scenePass.dependencies[1].dstSubpass = 1;
+    scenePass.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    scenePass.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    scenePass.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    scenePass.dependencies[2].srcSubpass = 1;
+    scenePass.dependencies[2].dstSubpass = 2;
+    scenePass.dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    scenePass.dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    scenePass.dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    scenePass.dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    createRenderPass(scenePass);
 }
 
-void VulkanApplication::createScenePassNoMsaa() {
-    VkAttachmentDescription colorAttachmentDesc = {};
-    colorAttachmentDesc.format = swapChainImageFormat;
-    colorAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+void VulkanApplication::createRenderPass(RenderPass & renderPass) {
+    prt::vector<VkSubpassDescription> subpasses;
+    subpasses.resize(renderPass.subpasses.size());
+    for (size_t i = 0; i < subpasses.size(); ++i) {
+        subpasses[i].pipelineBindPoint = renderPass.subpasses[i].bindPoint;
 
-    VkAttachmentDescription depthAttachmentDesc = {};
-    depthAttachmentDesc.format = findDepthFormat();
-    depthAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        subpasses[i].colorAttachmentCount = renderPass.subpasses[i].colorReferences.size();
+        subpasses[i].pColorAttachments = renderPass.subpasses[i].colorReferences.data();
 
-    VkAttachmentDescription accumulationAttachmentDesc = {};
-    accumulationAttachmentDesc.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    accumulationAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    accumulationAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    accumulationAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    accumulationAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    accumulationAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    accumulationAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    accumulationAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        subpasses[i].inputAttachmentCount = renderPass.subpasses[i].inputReferences.size();
+        subpasses[i].pInputAttachments = renderPass.subpasses[i].inputReferences.data();
 
-    VkAttachmentDescription revealageAttachmentDesc = {};
-    revealageAttachmentDesc.format = VK_FORMAT_R8_UNORM;
-    revealageAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    revealageAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    revealageAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    revealageAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    revealageAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    revealageAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    revealageAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        subpasses[i].pDepthStencilAttachment = renderPass.subpasses[i].depthReference.layout != VK_IMAGE_LAYOUT_END_RANGE ?
+                                               &renderPass.subpasses[i].depthReference :
+                                               nullptr;
+    }
 
-    VkAttachmentDescription inputAccumulationAttachmentDesc = {};
-    inputAccumulationAttachmentDesc.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    inputAccumulationAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    inputAccumulationAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    inputAccumulationAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    inputAccumulationAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    inputAccumulationAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    inputAccumulationAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    inputAccumulationAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    VkAttachmentDescription inputRevealageAttachmentDesc = {};
-    inputRevealageAttachmentDesc.format = VK_FORMAT_R8_UNORM;
-    inputRevealageAttachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-    inputRevealageAttachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    inputRevealageAttachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    inputRevealageAttachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    inputRevealageAttachmentDesc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    inputRevealageAttachmentDesc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    inputRevealageAttachmentDesc.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    // color attachment
-    VkAttachmentReference colorAttachmentRef;
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // transparency output attachments
-    prt::array<VkAttachmentReference, 2> transparencyAttachmentRefs = {};
-    transparencyAttachmentRefs[0].attachment = 2;
-    transparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    transparencyAttachmentRefs[1].attachment = 3;
-    transparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // depth attachment
-    VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    // input transparency attachments
-    prt::array<VkAttachmentReference, 2> inputTransparencyAttachmentRefs;
-    inputTransparencyAttachmentRefs[0].attachment = 4;
-    inputTransparencyAttachmentRefs[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    inputTransparencyAttachmentRefs[1].attachment = 5;
-    inputTransparencyAttachmentRefs[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    prt::array<VkSubpassDescription, 3> subpasses = {};
-    // opaque geometry
-    subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[0].colorAttachmentCount = 1;
-    subpasses[0].pColorAttachments = &colorAttachmentRef;
-    subpasses[0].pDepthStencilAttachment = &depthAttachmentRef;
-    // transparent geometry
-    subpasses[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[1].colorAttachmentCount = transparencyAttachmentRefs.size();
-    subpasses[1].pColorAttachments = transparencyAttachmentRefs.data();
-    subpasses[1].pDepthStencilAttachment = &depthAttachmentRef;
-    // composition
-    subpasses[2].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpasses[2].colorAttachmentCount = 1;
-    subpasses[2].pColorAttachments = &colorAttachmentRef;
-    subpasses[2].inputAttachmentCount = inputTransparencyAttachmentRefs.size();
-    subpasses[2].pInputAttachments = inputTransparencyAttachmentRefs.data();
-
-    prt::array<VkSubpassDependency,3> dependencies = {};
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    dependencies[1].srcSubpass = 0;
-    dependencies[1].dstSubpass = 1;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    dependencies[2].srcSubpass = 1;
-    dependencies[2].dstSubpass = 2;
-    dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    prt::array<VkAttachmentDescription, 6> attachments = { colorAttachmentDesc, 
-                                                           depthAttachmentDesc,
-                                                           accumulationAttachmentDesc,
-                                                           revealageAttachmentDesc,
-                                                           inputAccumulationAttachmentDesc,
-                                                           inputRevealageAttachmentDesc };
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 3;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(renderPass.attachments.size());
+    renderPassInfo.pAttachments = renderPass.attachments.data();
+    renderPassInfo.subpassCount = renderPass.subpasses.size();
     renderPassInfo.pSubpasses = subpasses.data();
-    renderPassInfo.dependencyCount = dependencies.size();
-    renderPassInfo.pDependencies = dependencies.data();
+    renderPassInfo.dependencyCount = renderPass.dependencies.size();
+    renderPassInfo.pDependencies = renderPass.dependencies.data();
 
-    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &scenePass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass.renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }
@@ -590,56 +591,44 @@ void VulkanApplication::createOffscreenSampler() {
 }
 
 void VulkanApplication::createOffscreenRenderPass() {
-    VkAttachmentDescription attachmentDescription{};
-    attachmentDescription.format = findDepthFormat();
-    attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-    attachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    
-    VkAttachmentReference depthReference = {};
-    depthReference.attachment = 0;
-    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // push back new render pass
+    offscreenPassIndex = renderPasses.size();
+    renderPasses.push_back({});
+    RenderPass & offscreenPass = renderPasses[offscreenPassIndex];
 
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 0;
-    subpass.pDepthStencilAttachment = &depthReference;
+    offscreenPass.attachments.resize(1);
+    offscreenPass.attachments[0].format = findDepthFormat();
+    offscreenPass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    offscreenPass.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    offscreenPass.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    offscreenPass.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    offscreenPass.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    offscreenPass.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    offscreenPass.attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-    // Use subpass dependencies for layout transitions
-    prt::array<VkSubpassDependency, 2> dependencies = {};
+    offscreenPass.subpasses.resize(1);
+    offscreenPass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    offscreenPass.subpasses[0].depthReference.attachment = 0;
+    offscreenPass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    offscreenPass.dependencies.resize(2);
+    offscreenPass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    offscreenPass.dependencies[0].dstSubpass = 0;
+    offscreenPass.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    offscreenPass.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    offscreenPass.dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    offscreenPass.dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    offscreenPass.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    dependencies[1].srcSubpass = 0;
-    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    offscreenPass.dependencies[1].srcSubpass = 0;
+    offscreenPass.dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    offscreenPass.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    offscreenPass.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    offscreenPass.dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    offscreenPass.dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    offscreenPass.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    VkRenderPassCreateInfo renderPassCreateInfo{};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.attachmentCount = 1;
-    renderPassCreateInfo.pAttachments = &attachmentDescription;
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpass;
-    renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-    renderPassCreateInfo.pDependencies = dependencies.data();
-
-    if (vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &offscreenPass.renderPass) != VK_SUCCESS) {
-            assert(false && "failed to create offscreen render pass!");
-    }
+    createRenderPass(offscreenPass);
 }
 
 void VulkanApplication::createOffscreenFrameBuffer() {
@@ -648,11 +637,16 @@ void VulkanApplication::createOffscreenFrameBuffer() {
     offscreenPass.extent.width = shadowmapDimension;
     offscreenPass.extent.height = shadowmapDimension;
 
-    offscreenPass.depths.resize(swapChainImages.size());
+    offscreenFBAIndices.resize(swapChainImages.size());
+    // offscreenPass.depths.resize(swapChainImages.size());
     offscreenPass.descriptors.resize(swapChainImages.size());
     offscreenPass.cascades.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); ++i) {
+        offscreenFBAIndices[i] = frameBufferAttachments.size();
+        frameBufferAttachments.push_back({});
+        FrameBufferAttachment & depthFBA = frameBufferAttachments.back();
+        
         // shadpow map image
         VkImageCreateInfo image{};
         image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -666,7 +660,7 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         image.tiling = VK_IMAGE_TILING_OPTIMAL;
         image.format = findDepthFormat();
         image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        if (vkCreateImage(device, &image, nullptr, &offscreenPass.depths[i].image) != VK_SUCCESS) {
+        if (vkCreateImage(device, &image, nullptr, &depthFBA.image) != VK_SUCCESS) {
             assert(false && "failed to create offscreen depth image!");
         }
 
@@ -674,13 +668,13 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         VkMemoryAllocateInfo memAlloc{};
         memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         VkMemoryRequirements memReqs;
-        vkGetImageMemoryRequirements(device, offscreenPass.depths[i].image, &memReqs);
+        vkGetImageMemoryRequirements(device, depthFBA.image, &memReqs);
         memAlloc.allocationSize = memReqs.size;
         memAlloc.memoryTypeIndex = findMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        if (vkAllocateMemory(device, &memAlloc, nullptr, &offscreenPass.depths[i].memory) != VK_SUCCESS) {
+        if (vkAllocateMemory(device, &memAlloc, nullptr, &depthFBA.memory) != VK_SUCCESS) {
             assert(false && "failed to allocate memory for offscreen depth image!");
         }
-        if (vkBindImageMemory(device, offscreenPass.depths[i].image, offscreenPass.depths[i].memory, 0) != VK_SUCCESS) {
+        if (vkBindImageMemory(device, depthFBA.image, depthFBA.memory, 0) != VK_SUCCESS) {
             assert(false && "failed to bind memory for offscreen depth image!");
         }
 
@@ -695,13 +689,13 @@ void VulkanApplication::createOffscreenFrameBuffer() {
         depthStencilImageView.subresourceRange.levelCount = 1;
         depthStencilImageView.subresourceRange.baseArrayLayer = 0;
         depthStencilImageView.subresourceRange.layerCount = NUMBER_SHADOWMAP_CASCADES;
-        depthStencilImageView.image = offscreenPass.depths[i].image;
-        if (vkCreateImageView(device, &depthStencilImageView, nullptr, &offscreenPass.depths[i].imageView) != VK_SUCCESS) {
+        depthStencilImageView.image = depthFBA.image;
+        if (vkCreateImageView(device, &depthStencilImageView, nullptr, &depthFBA.imageView) != VK_SUCCESS) {
             assert(false && "failed to create image view for offscreen depth image!");
         }
 
         offscreenPass.descriptors[i].sampler = offscreenPass.depthSampler;
-        offscreenPass.descriptors[i].imageView = offscreenPass.depths[i].imageView;
+        offscreenPass.descriptors[i].imageView = depthFBA.imageView;
         offscreenPass.descriptors[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
         // One image and framebuffer per cascade
@@ -718,14 +712,14 @@ void VulkanApplication::createOffscreenFrameBuffer() {
             viewInfo.subresourceRange.levelCount = 1;
             viewInfo.subresourceRange.baseArrayLayer = j;
             viewInfo.subresourceRange.layerCount = 1;
-            viewInfo.image = offscreenPass.depths[i].image;
+            viewInfo.image = depthFBA.image;
             if (vkCreateImageView(device, &viewInfo, nullptr, &offscreenPass.cascades[i][j].imageView) != VK_SUCCESS) {
                 assert(false && "failed to create image view for offscreen frame buffer!");
             }
             // Create frame buffer
             VkFramebufferCreateInfo fbufCreateInfo{};
             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = offscreenPass.renderPass;
+            fbufCreateInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
             fbufCreateInfo.attachmentCount = 1;
             fbufCreateInfo.pAttachments = &offscreenPass.cascades[i][j].imageView;
             fbufCreateInfo.width = offscreenPass.extent.width;
@@ -736,7 +730,7 @@ void VulkanApplication::createOffscreenFrameBuffer() {
             }
 
             offscreenPass.cascades[i][j].descriptors.sampler = offscreenPass.depthSampler;
-            offscreenPass.cascades[i][j].descriptors.imageView = offscreenPass.depths[i].imageView;
+            offscreenPass.cascades[i][j].descriptors.imageView = depthFBA.imageView;
             offscreenPass.cascades[i][j].descriptors.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         }
     }
@@ -844,9 +838,9 @@ void VulkanApplication::createTransparencyAttachments() {
 void VulkanApplication::prepareGraphicsPipelines() {
     for (auto & pipeline : graphicsPipelines) {
         if (pipeline.type == PIPELINE_TYPE_OFFSCREEN) {
-            pipeline.renderpass = offscreenPass.renderPass;
+            pipeline.renderpass = renderPasses[offscreenPassIndex].renderPass;
         } else {
-            pipeline.renderpass = scenePass;
+            pipeline.renderpass = renderPasses[scenePassIndex].renderPass;
         }
     }
     createDescriptorSetLayouts(graphicsPipelines);
@@ -1078,7 +1072,7 @@ void VulkanApplication::createFramebuffers() {
     for (size_t i = 0; i < swapChainImageViews.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = scenePass;
+        framebufferInfo.renderPass = renderPasses[scenePassIndex].renderPass;
         framebufferInfo.width = swapChainExtent.width;
         framebufferInfo.height = swapChainExtent.height;
         framebufferInfo.layers = 1;
@@ -1848,7 +1842,7 @@ void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = offscreenPass.renderPass;
+    renderPassBeginInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
     renderPassBeginInfo.renderArea.extent = offscreenPass.extent;
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearValue;
@@ -1898,7 +1892,7 @@ void VulkanApplication::createSceneCommands(size_t const imageIndex) {
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = scenePass;
+    renderPassBeginInfo.renderPass = renderPasses[scenePassIndex].renderPass;
     renderPassBeginInfo.framebuffer = swapChainFramebuffers[imageIndex];
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = swapChainExtent;
