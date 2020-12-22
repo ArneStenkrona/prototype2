@@ -74,6 +74,17 @@ void GameRenderer::createCompositionPipeline() {
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+
+    pipeline.imageAttachments.resize(2);
+    pipeline.imageAttachments[0].descriptorIndex = 0;
+    pipeline.imageAttachments[0].FBAIndices = accumulationFBAIndices;
+    pipeline.imageAttachments[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    pipeline.imageAttachments[0].sampler = VK_NULL_HANDLE;
+    pipeline.imageAttachments[1].descriptorIndex = 1;
+    pipeline.imageAttachments[1].FBAIndices = revealageFBAIndices;
+    pipeline.imageAttachments[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    pipeline.imageAttachments[1].sampler = VK_NULL_HANDLE;
+
     for (size_t i = 0; i < swapchainImages.size(); ++i) {
         pipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
@@ -188,10 +199,14 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
     for (size_t i = 0; i < swapchainImages.size(); i++) { 
-        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        pipeline.descriptorBufferInfos[i].offset = 0;
-        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
         pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
         
@@ -278,10 +293,14 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
     for (size_t i = 0; i < swapchainImages.size(); i++) { 
-        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        pipeline.descriptorBufferInfos[i].offset = 0;
-        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
         pipeline.descriptorWrites[i].resize(2, VkWriteDescriptorSet{});
         
@@ -390,10 +409,14 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+    
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
     for (size_t i = 0; i < swapchainImages.size(); i++) { 
-        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        pipeline.descriptorBufferInfos[i].offset = 0;
-        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
 
         pipeline.descriptorWrites[i].resize(3, VkWriteDescriptorSet{});
         
@@ -535,10 +558,20 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+
+    pipeline.imageAttachments.resize(1);
+    pipeline.imageAttachments[0].descriptorIndex = 3;
+    pipeline.imageAttachments[0].FBAIndices = offscreenFBAIndices;
+    pipeline.imageAttachments[0].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    pipeline.imageAttachments[0].sampler = shadowMap.sampler;
+
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
     for (size_t i = 0; i < swapchainImages.size(); ++i) {
-        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        pipeline.descriptorBufferInfos[i].offset = 0;
-        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
         pipeline.descriptorWrites[i].resize(4, VkWriteDescriptorSet{});
         
@@ -561,7 +594,7 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
         pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
 
         // VkDescriptorImageInfo samplerInfo = {};
-        samplerInfo.sampler = textureSampler;
+        pipeline.textureSamplerInfo.sampler = textureSampler;
 
         pipeline.descriptorWrites[i][2] = {};
         pipeline.descriptorWrites[i][2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -649,10 +682,14 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     // Descriptor sets
     pipeline.descriptorSets.resize(swapchainImages.size());
     pipeline.descriptorWrites.resize(swapchainImages.size());
+
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
     for (size_t i = 0; i < swapchainImages.size(); ++i) {
-        pipeline.descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        pipeline.descriptorBufferInfos[i].offset = 0;
-        pipeline.descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
         
         pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
         pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1155,6 +1192,12 @@ void GameRenderer::loadModels(Model const * models, size_t nModels,
                                asset.textureImages.images[i], 
                                Texture::defaultTexture()->mipLevels);
     }
+
+    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
+        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+    }
 }
 
 void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboards, 
@@ -1202,22 +1245,34 @@ void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboar
                                asset.textureImages.images[i], 
                                Texture::defaultTexture()->mipLevels);
     }
+
+    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
+        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+    }
 }
 
 void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex) {  
     createCubeMapBuffers(assetIndex);
-    Assets& ass = getAssets(assetIndex);
+    Assets& asset = getAssets(assetIndex);
 
-    ass.textureImages.images.resize(1);
-    ass.textureImages.imageViews.resize(1);
-    ass.textureImages.imageMemories.resize(1);
-    ass.textureImages.descriptorImageInfos.resize(1);
-    createCubeMapImage(ass.textureImages.images[0], 
-                       ass.textureImages.imageMemories[0], 
+    asset.textureImages.images.resize(1);
+    asset.textureImages.imageViews.resize(1);
+    asset.textureImages.imageMemories.resize(1);
+    asset.textureImages.descriptorImageInfos.resize(1);
+    createCubeMapImage(asset.textureImages.images[0], 
+                       asset.textureImages.imageMemories[0], 
                        skybox);
-    createCubeMapImageView(ass.textureImages.imageViews[0], 
-                           ass.textureImages.images[0], 
+    createCubeMapImageView(asset.textureImages.imageViews[0], 
+                           asset.textureImages.images[0], 
                            skybox[0].mipLevels);
+
+    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
+        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+    }
 }
 
 void GameRenderer::createGridDrawCalls() {

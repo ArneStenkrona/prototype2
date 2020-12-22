@@ -95,7 +95,7 @@ struct Cascade {
 
 struct CascadeShadowMap {
     prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
-    VkSampler depthSampler;
+    VkSampler sampler;
 };
 
 
@@ -182,12 +182,18 @@ protected:
     size_t scenePassIndex;
     size_t offscreenPassIndex;
 
+    /*
+     * TODO: Differentiate between swapchain-dependent FBAs
+     * and regular FBAs so that not all FBAs need to be rebuilt
+     * when the swapchain is recreated
+     **/
     prt::vector<FrameBufferAttachment> frameBufferAttachments;
     size_t colorFBAIndex;
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
     prt::vector<size_t> offscreenFBAIndices;
+    // prt::vector<prt::array<size_t, NUMBER_SHADOWMAP_CASCADES> > shadowMapFBAIndices;
 
     CascadeShadowMap shadowMap;
 
@@ -321,6 +327,7 @@ private:
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
     void pushBackOffscreenFBA();
+    void pushBackShadowMapFBA();
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);

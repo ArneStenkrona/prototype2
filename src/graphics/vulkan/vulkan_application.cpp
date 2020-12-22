@@ -156,7 +156,7 @@ void VulkanApplication::cleanup() {
     }
 
     vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroySampler(device, shadowMap.depthSampler, nullptr);
+    vkDestroySampler(device, shadowMap.sampler, nullptr);
 
     for (auto & ass : assets) {
         vkDestroyBuffer(device, ass.vertexData.vertexBuffer, nullptr);
@@ -595,7 +595,7 @@ void VulkanApplication::createOffscreenSampler() {
     sampler.minLod = 0.0f;
     sampler.maxLod = 1.0f;
     sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    if (vkCreateSampler(device, &sampler, nullptr, &shadowMap.depthSampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &sampler, nullptr, &shadowMap.sampler) != VK_SUCCESS) {
         assert(false && "failed to create sampler for offscreen depth image!");
     }
 }
@@ -663,7 +663,6 @@ void VulkanApplication::pushBackOffscreenFBA() {
         fba.imageInfo.format = findDepthFormat();
         fba.imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        
 
         // depth image view
         fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -680,6 +679,46 @@ void VulkanApplication::pushBackOffscreenFBA() {
         fba.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 }
+
+// void VulkanApplication::pushBackShadowMapFBA() {
+//     shadowMapFBAIndices.resize(swapchainImageCount);
+
+//     for (size_t i = 0; i < swapchainImageCount; ++i) {
+//         // One image and framebuffer per cascade
+//         for (unsigned int j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
+//             shadowMapFBAIndices[i][j] = pushBackFrameBufferAttachment();
+//             FrameBufferAttachment & fba = frameBufferAttachments[shadowMapFBAIndices[i][j]];
+//             // Image view for this cascade's layer (inside the depth map)
+//             // This view is used to render to that specific depth image layer
+//             VkImageViewCreateInfo viewInfo{};
+//             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+//             viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+//             viewInfo.format = findDepthFormat();
+//             viewInfo.subresourceRange = {};
+//             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+//             viewInfo.subresourceRange.baseMipLevel = 0;
+//             viewInfo.subresourceRange.levelCount = 1;
+//             viewInfo.subresourceRange.baseArrayLayer = j;
+//             viewInfo.subresourceRange.layerCount = 1;
+//             viewInfo.image = frameBufferAttachments[offscreenFBAIndices[i]].image;
+//             if (vkCreateImageView(device, &viewInfo, nullptr, &shadowMap.cascades[i][j].imageView) != VK_SUCCESS) {
+//                 assert(false && "failed to create image view for offscreen frame buffer!");
+//             }
+//             // Create frame buffer
+//             VkFramebufferCreateInfo fbufCreateInfo{};
+//             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+//             fbufCreateInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
+//             fbufCreateInfo.attachmentCount = 1;
+//             fbufCreateInfo.pAttachments = &shadowMap.cascades[i][j].imageView;
+//             fbufCreateInfo.width = shadowmapDimension;
+//             fbufCreateInfo.height = shadowmapDimension;
+//             fbufCreateInfo.layers = 1;
+//             if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].frameBuffer) != VK_SUCCESS) {
+//                 assert(false && "failed to create offscreen frame buffer!");
+//             }
+//         }
+//     }
+// }
 
 void VulkanApplication::createShadowMap() {
     shadowMap.cascades.resize(swapchainImageCount);
@@ -1638,77 +1677,29 @@ void VulkanApplication::createDescriptorSets() {
         }
 
         for (size_t i = 0; i < swapchainImages.size(); i++) {     
-                Assets& asset = assets[pipeline.assetsIndex];
-            switch (pipeline.type) {
-                case PipelineType::PIPELINE_TYPE_OFFSCREEN: {
-                    /* Offscreen */
-                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
-                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
-                    }
-                    pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];     
+            prt::vector<VkDescriptorImageInfo> imDesc;
+            imDesc.resize(pipeline.imageAttachments.size());
+            for (size_t j = 0; j < pipeline.imageAttachments.size(); ++j) {
+                ImageAttachment const & attach = pipeline.imageAttachments[j];
+                imDesc[j].sampler = attach.sampler;
+                imDesc[j].imageView = frameBufferAttachments[attach.FBAIndices[i]].imageView;
+                imDesc[j].imageLayout = attach.layout;
 
-                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
-                                           pipeline.descriptorWrites[i].data(), 0, nullptr);    
+                pipeline.descriptorWrites[i][attach.descriptorIndex].pImageInfo = &imDesc[j];
+            }
 
-                    break;
-                }
-                case PipelineType::PIPELINE_TYPE_OPAQUE: {}
-                case PipelineType::PIPELINE_TYPE_TRANSPARENT: {
-                    /* Opaque and transparent */
+            prt::vector<VkDescriptorImageInfo> uboDesc;
+            uboDesc.resize(pipeline.uboAttachments.size());
+            for (size_t j = 0; j < pipeline.uboAttachments.size(); ++j) {
+                pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.uboAttachments[j].descriptorBufferInfos[i];     
+            }
 
-                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
-                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
-                    }
-                    pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
-                    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
-                        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-                        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
-                    }
-                    // THIS IS REALLY AD HOC, SHOULD BE DONE MORE DYNAMICALLY
-                    if (pipeline.descriptorWrites[i].size() >= 2) {
-                        pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
-                    }
+            for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
+                descriptorWrite.dstSet = pipeline.descriptorSets[i];
+            }
 
-                    // THIS IS REALLY AD HOC, SHOULD BE DONE MORE DYNAMICALLY
-                    VkDescriptorImageInfo shadowDesc{};
-                    if (pipeline.descriptorWrites[i].size() >= 4) {
-                        shadowDesc.sampler = shadowMap.depthSampler;
-                        shadowDesc.imageView = frameBufferAttachments[offscreenFBAIndices[i]].imageView;
-                        shadowDesc.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
-                        pipeline.descriptorWrites[i][3].pImageInfo = &shadowDesc;
-                    }
-
-                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
-                                           pipeline.descriptorWrites[i].data(), 0, nullptr);
-
-                    break;
-                }
-                case PipelineType::PIPELINE_TYPE_COMPOSITION: {
-                    /* Composition */
-                    for (auto & descriptorWrite : pipeline.descriptorWrites[i]) {
-                        descriptorWrite.dstSet = pipeline.descriptorSets[i];
-                    }
-
-                    FrameBufferAttachment & accFBA = frameBufferAttachments[accumulationFBAIndices[i]];
-                    FrameBufferAttachment & revFBA = frameBufferAttachments[revealageFBAIndices[i]];
-
-                    VkDescriptorImageInfo accDesc{};
-                    accDesc.imageView = accFBA.imageView;
-                    accDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    VkDescriptorImageInfo revDesc{};
-                    revDesc.imageView = revFBA.imageView;
-                    revDesc.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-                    pipeline.descriptorWrites[i][0].pImageInfo = &accDesc;
-                    pipeline.descriptorWrites[i][1].pImageInfo = &revDesc;
-
-                    vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
-                                        pipeline.descriptorWrites[i].data(), 0, nullptr);
-                    break;
-                }
-            }      
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
+                                   pipeline.descriptorWrites[i].data(), 0, nullptr);       
         }
     }
 }
