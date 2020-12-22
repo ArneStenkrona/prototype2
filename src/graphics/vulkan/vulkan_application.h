@@ -76,7 +76,7 @@ struct Assets {
     TextureImages textureImages;
 };
 
-struct FrameBufferAttachment {
+struct FramebufferAttachment {
     VkImageLayout imageLayout;
     VkImageCreateInfo imageInfo;
     VkImageViewCreateInfo imageViewInfo;
@@ -85,11 +85,15 @@ struct FrameBufferAttachment {
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView imageView = VK_NULL_HANDLE;
 
+    /*
+     * TODO: find better solution to
+     * swapchain recreation issues
+     **/
     bool swapchainAttachment = false;
 };
 
 struct Cascade {
-    VkFramebuffer frameBuffer;
+    VkFramebuffer framebuffer;
     VkImageView imageView;
 };
 
@@ -104,6 +108,8 @@ struct SubPass {
     prt::vector<VkAttachmentReference> colorReferences;
     VkAttachmentReference depthReference = {0,VK_IMAGE_LAYOUT_END_RANGE}; // use VK_IMAGE_LAYOUT_END_RANGE to signify no depth reference
     prt::vector<VkAttachmentReference> inputReferences;
+
+    prt::vector<size_t> pipelineIndices;
 };
 
 struct RenderPass {
@@ -113,6 +119,31 @@ struct RenderPass {
     prt::vector<VkSubpassDependency> dependencies;
 
     VkRenderPass renderPass;
+
+    prt::vector<prt::vector<VkFramebuffer> > framebuffers; // RenderPass will be performed once on each frame buffer for each command buffer
+    prt::vector<VkClearValue> clearValues;
+
+    /*
+     * TODO: find better solution to
+     * swapchain recreation issues
+     **/
+    enum RenderOutputType {
+        RENDER_OUTPUT_TYPE_SWAPCHAIN,
+        RENDER_OUTPUT_TYPE_SHADOWMAP
+    };
+    RenderOutputType outputType;
+
+    /*
+     * TODO: Refactor this monstrosity
+     * It is only used to set the current
+     * cascade index through push constant
+     * when rendering to shadow map
+     **/
+    int pushConstantFBIndexByteOffset = -1;
+
+    float depthBiasConstant = 0.0f;
+    float depthBiasClamp = 0.0f;
+    float depthBiasSlope = 0.0f;
 };
 
 
@@ -161,6 +192,13 @@ public:
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 protected:
+    /*
+     * TODO: Move this to where appropriate
+     **/
+    static constexpr int32_t shadowmapDimension = 2048;
+    static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
+    static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
+
     // command data
     VkCommandPool commandPool;
     uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
@@ -187,13 +225,12 @@ protected:
      * and regular FBAs so that not all FBAs need to be rebuilt
      * when the swapchain is recreated
      **/
-    prt::vector<FrameBufferAttachment> frameBufferAttachments;
+    prt::vector<FramebufferAttachment> framebufferAttachments;
     size_t colorFBAIndex;
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
     prt::vector<size_t> offscreenFBAIndices;
-    // prt::vector<prt::array<size_t, NUMBER_SHADOWMAP_CASCADES> > shadowMapFBAIndices;
 
     CascadeShadowMap shadowMap;
 
@@ -201,7 +238,8 @@ protected:
 
     VkDevice& getDevice() { return device; }
 
-    size_t pushBackFrameBufferAttachment();
+    size_t pushBackFramebufferAttachment();
+    size_t pushBackRenderPass();
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
@@ -226,12 +264,12 @@ protected:
 
     inline UniformBufferData& getUniformBufferData(size_t index) { return uniformBufferDatas[index]; } 
     inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
+    
+    prt::vector<size_t> getPipelineIndicesByType(PipelineType type);
+    
+    VkFormat findDepthFormat();
 
 private:
-    static constexpr int32_t shadowmapDimension = 2048;
-    static constexpr float depthBiasConstant = 0.01f;//1.25f;
-    static constexpr float depthBiasSlope = 0.01f;//1.75f;
-
     static constexpr unsigned int maxFramesInFlight = 2;
 
     static constexpr prt::array<const char*, 1> validationLayers = { "VK_LAYER_KHRONOS_validation" };
@@ -291,11 +329,7 @@ private:
     
     void createSwapchainImageViews();
     
-    void createScenePass();
-    void createRenderPass(RenderPass & renderpass);
-
     void createOffscreenSampler();
-    void createOffscreenRenderPass();
     void createShadowMap();
 
     void prepareGraphicsPipelines();
@@ -310,17 +344,19 @@ private:
     void createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines);
     void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
-    void createFramebuffers();
-    
     void createCommandPool(); 
     void createCommandBuffers();
     void createCommandBuffer(size_t const imageIndex);
 
-    void createOffscreenCommands(size_t const imageIndex);
-    void createSceneCommands(size_t const imageIndex);
-    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void createSwapchainFrameBuffers();
     
-    void createFrameBufferAttachments(); 
+    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass);
+
+    void createRenderPasses();
+    void createRenderPass(RenderPass & renderpass);
+    
+    void createFramebufferAttachments(); 
 
     void pushBackColorFBA();
     void pushBackDepthFBA();
@@ -331,9 +367,7 @@ private:
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
-    
-    VkFormat findDepthFormat();
-    
+        
     bool hasStencilComponent(VkFormat format);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
@@ -382,8 +416,6 @@ private:
     void updateUniformBuffers(uint32_t currentImage);
     
     void drawFrame();
-
-    prt::vector<GraphicsPipeline*> getPipelinesByType(PipelineType type);
     
     VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);

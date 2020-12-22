@@ -185,6 +185,9 @@ private:
                         glm::vec3 const & lightDir,
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
+
+    void pushBackSceneRenderPass();
+    void pushBackOffscreenRenderPass();
 };
 
 #endif

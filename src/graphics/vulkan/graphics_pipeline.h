@@ -60,11 +60,14 @@ struct GraphicsPipeline {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkPipelineCache pipelineCache;
-    VkRenderPass renderpass;
+    size_t renderPassIndex;
     VkExtent2D extent;
     VkVertexInputBindingDescription vertexInputBinding;
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     prt::vector<ShaderStage> shaderStages;
+
+    VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
+    
     bool useColorAttachment;
     bool enableDepthBias;
     unsigned int subpass;

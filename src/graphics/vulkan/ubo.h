@@ -55,8 +55,6 @@ struct StandardPushConstants {
     alignas(16) glm::vec4 baseColor;
     alignas(4)  float baseSpecularity;
     alignas(4)  uint32_t boneOffset;
-    // use if more data is needed
-    // alignas(16) unsigned char additionalData[32];
 };
 
 struct BillboardPushConstants {
@@ -104,10 +102,6 @@ struct AnimatedShadowMapUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 depthVP[NUMBER_SHADOWMAP_CASCADES];
     alignas(16) BoneUBO bones;
-};
-
-struct MouseSBO {
-    alignas(16) glm::vec3 mouseWorldPosition;
 };
 
 #endif

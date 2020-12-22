@@ -56,7 +56,6 @@ void VulkanApplication::initVulkan() {
     createLogicalDevice();
     createSwapchain();
     createSwapchainImageViews();
-    // createOffscreenFrameBuffer();
     prepareGraphicsPipelines();
     createCommandPool();
     createTextureSampler();
@@ -68,7 +67,7 @@ void VulkanApplication::initVulkan() {
     pushBackDepthFBA();
     pushBackAccumulationFBA(); 
     pushBackRevealageFBA(); 
-    pushBackOffscreenFBA(); 
+    pushBackOffscreenFBA();
 }
 
 void VulkanApplication::render(uint16_t renderGroupMask) {
@@ -86,7 +85,7 @@ void VulkanApplication::render(uint16_t renderGroupMask) {
 void VulkanApplication::cleanupSwapchain() {
     vkDeviceWaitIdle(device);
 
-    for (FrameBufferAttachment & fba : frameBufferAttachments) {
+    for (FramebufferAttachment & fba : framebufferAttachments) {
         if (fba.imageView != VK_NULL_HANDLE) {
             vkDestroyImageView(device, fba.imageView, nullptr);
             vkDestroyImage(device, fba.image, nullptr);
@@ -106,7 +105,7 @@ void VulkanApplication::cleanupSwapchain() {
 
     for (auto & cascades : shadowMap.cascades) {
         for (auto & cascade : cascades) {
-            vkDestroyFramebuffer(device, cascade.frameBuffer, nullptr);
+            vkDestroyFramebuffer(device, cascade.framebuffer, nullptr);
         }
     }
  
@@ -119,9 +118,10 @@ void VulkanApplication::cleanupSwapchain() {
     }
 
     for (RenderPass & pass : renderPasses) {
-        vkDestroyRenderPass(device, pass.renderPass, nullptr);
+        if (pass.renderPass != VK_NULL_HANDLE) {
+            vkDestroyRenderPass(device, pass.renderPass, nullptr);
+        }
     }
-    renderPasses.resize(0);
  
     for (auto & imageView : swapchainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
@@ -207,14 +207,15 @@ void VulkanApplication::reprepareSwapchain() {
 
     createSwapchain();
     createSwapchainImageViews();
-    createScenePass();
-    createOffscreenRenderPass();
 }
 
 void VulkanApplication::completeSwapchain() {
+    // createScenePass();
+    // createOffscreenRenderPass();
+    createRenderPasses();
     prepareGraphicsPipelines();
-    createFrameBufferAttachments();
-    createFramebuffers();
+    createFramebufferAttachments();
+    createSwapchainFrameBuffers();
     createShadowMap();
     createDescriptorPools();
     createDescriptorSets();
@@ -425,130 +426,18 @@ void VulkanApplication::createSwapchainImageViews() {
     }
 }
 
-void VulkanApplication::createScenePass() {
-    // push back new render pass
-    scenePassIndex = renderPasses.size();
-    renderPasses.push_back({});
-    RenderPass & scenePass = renderPasses[scenePassIndex];
-
-    scenePass.extent = swapchainExtent;
-    // populate scene pass
-    // attachments
-    scenePass.attachments.resize(6);
-    // colour
-    scenePass.attachments[0].format = swapchainImageFormat;
-    scenePass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    scenePass.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    // depth
-    scenePass.attachments[1].format = findDepthFormat();
-    scenePass.attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    // accumulation
-    scenePass.attachments[2].format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    scenePass.attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    scenePass.attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // revealage
-    scenePass.attachments[3].format = VK_FORMAT_R8_UNORM;
-    scenePass.attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    scenePass.attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // input accumulation
-    scenePass.attachments[4].format = VK_FORMAT_R16G16B16A16_SFLOAT;
-    scenePass.attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    scenePass.attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[4].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[4].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.attachments[4].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // input revealage
-    scenePass.attachments[5].format = VK_FORMAT_R8_UNORM;
-    scenePass.attachments[5].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[5].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    scenePass.attachments[5].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[5].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    scenePass.attachments[5].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[5].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.attachments[5].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    // subpasses
-    scenePass.subpasses.resize(3);
-    scenePass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    scenePass.subpasses[0].colorReferences.resize(1);
-    scenePass.subpasses[0].colorReferences[0].attachment = 0;
-    scenePass.subpasses[0].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    scenePass.subpasses[0].depthReference.attachment = 1;
-    scenePass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    scenePass.subpasses[1].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    scenePass.subpasses[1].colorReferences.resize(2);
-    scenePass.subpasses[1].colorReferences[0].attachment = 2;
-    scenePass.subpasses[1].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.subpasses[1].colorReferences[1].attachment = 3;
-    scenePass.subpasses[1].colorReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.subpasses[1].depthReference.attachment = 1;
-    scenePass.subpasses[1].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    scenePass.subpasses[2].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    scenePass.subpasses[2].colorReferences.resize(1);
-    scenePass.subpasses[2].colorReferences[0].attachment = 0;
-    scenePass.subpasses[2].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    scenePass.subpasses[2].inputReferences.resize(2);
-    scenePass.subpasses[2].inputReferences[0].attachment = 4;
-    scenePass.subpasses[2].inputReferences[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    scenePass.subpasses[2].inputReferences[1].attachment = 5;
-    scenePass.subpasses[2].inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    scenePass.dependencies.resize(3);
-    scenePass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    scenePass.dependencies[0].dstSubpass = 0;
-    scenePass.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    scenePass.dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    scenePass.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    scenePass.dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    scenePass.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    scenePass.dependencies[1].srcSubpass = 0;
-    scenePass.dependencies[1].dstSubpass = 1;
-    scenePass.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    scenePass.dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    scenePass.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    scenePass.dependencies[1].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    scenePass.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    scenePass.dependencies[2].srcSubpass = 1;
-    scenePass.dependencies[2].dstSubpass = 2;
-    scenePass.dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    scenePass.dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    scenePass.dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    scenePass.dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    scenePass.dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    createRenderPass(scenePass);
-}
-
 void VulkanApplication::createRenderPass(RenderPass & renderPass) {
+    switch (renderPass.outputType) {
+    case RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN:
+        renderPass.extent = swapchainExtent;
+        break;
+    
+    case RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP:
+        renderPass.extent.width = shadowmapDimension;
+        renderPass.extent.height = shadowmapDimension;
+        break;
+    }
+
     prt::vector<VkSubpassDescription> subpasses;
     subpasses.resize(renderPass.subpasses.size());
     for (size_t i = 0; i < subpasses.size(); ++i) {
@@ -600,55 +489,11 @@ void VulkanApplication::createOffscreenSampler() {
     }
 }
 
-void VulkanApplication::createOffscreenRenderPass() {
-    // push back new render pass
-    offscreenPassIndex = renderPasses.size();
-    renderPasses.push_back({});
-    RenderPass & offscreen = renderPasses[offscreenPassIndex];
-
-    offscreen.extent.width = shadowmapDimension;
-    offscreen.extent.height = shadowmapDimension;
-
-    offscreen.attachments.resize(1);
-    offscreen.attachments[0].format = findDepthFormat();
-    offscreen.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    offscreen.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    offscreen.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    offscreen.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    offscreen.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    offscreen.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    offscreen.attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-
-    offscreen.subpasses.resize(1);
-    offscreen.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    offscreen.subpasses[0].depthReference.attachment = 0;
-    offscreen.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    offscreen.dependencies.resize(2);
-    offscreen.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    offscreen.dependencies[0].dstSubpass = 0;
-    offscreen.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    offscreen.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    offscreen.dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    offscreen.dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    offscreen.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    offscreen.dependencies[1].srcSubpass = 0;
-    offscreen.dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    offscreen.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    offscreen.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    offscreen.dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    offscreen.dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    offscreen.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-    createRenderPass(offscreen);
-}
-
 void VulkanApplication::pushBackOffscreenFBA() {
     offscreenFBAIndices.resize(swapchainImageCount);
     for (size_t i = 0; i < offscreenFBAIndices.size(); ++i) {
-        offscreenFBAIndices[i] = pushBackFrameBufferAttachment();
-        FrameBufferAttachment & fba = frameBufferAttachments[offscreenFBAIndices[i]];
+        offscreenFBAIndices[i] = pushBackFramebufferAttachment();
+        FramebufferAttachment & fba = framebufferAttachments[offscreenFBAIndices[i]];
         
         // shadpow map image
         fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -680,46 +525,6 @@ void VulkanApplication::pushBackOffscreenFBA() {
     }
 }
 
-// void VulkanApplication::pushBackShadowMapFBA() {
-//     shadowMapFBAIndices.resize(swapchainImageCount);
-
-//     for (size_t i = 0; i < swapchainImageCount; ++i) {
-//         // One image and framebuffer per cascade
-//         for (unsigned int j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
-//             shadowMapFBAIndices[i][j] = pushBackFrameBufferAttachment();
-//             FrameBufferAttachment & fba = frameBufferAttachments[shadowMapFBAIndices[i][j]];
-//             // Image view for this cascade's layer (inside the depth map)
-//             // This view is used to render to that specific depth image layer
-//             VkImageViewCreateInfo viewInfo{};
-//             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-//             viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-//             viewInfo.format = findDepthFormat();
-//             viewInfo.subresourceRange = {};
-//             viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-//             viewInfo.subresourceRange.baseMipLevel = 0;
-//             viewInfo.subresourceRange.levelCount = 1;
-//             viewInfo.subresourceRange.baseArrayLayer = j;
-//             viewInfo.subresourceRange.layerCount = 1;
-//             viewInfo.image = frameBufferAttachments[offscreenFBAIndices[i]].image;
-//             if (vkCreateImageView(device, &viewInfo, nullptr, &shadowMap.cascades[i][j].imageView) != VK_SUCCESS) {
-//                 assert(false && "failed to create image view for offscreen frame buffer!");
-//             }
-//             // Create frame buffer
-//             VkFramebufferCreateInfo fbufCreateInfo{};
-//             fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-//             fbufCreateInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
-//             fbufCreateInfo.attachmentCount = 1;
-//             fbufCreateInfo.pAttachments = &shadowMap.cascades[i][j].imageView;
-//             fbufCreateInfo.width = shadowmapDimension;
-//             fbufCreateInfo.height = shadowmapDimension;
-//             fbufCreateInfo.layers = 1;
-//             if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].frameBuffer) != VK_SUCCESS) {
-//                 assert(false && "failed to create offscreen frame buffer!");
-//             }
-//         }
-//     }
-// }
-
 void VulkanApplication::createShadowMap() {
     shadowMap.cascades.resize(swapchainImageCount);
 
@@ -738,7 +543,7 @@ void VulkanApplication::createShadowMap() {
             viewInfo.subresourceRange.levelCount = 1;
             viewInfo.subresourceRange.baseArrayLayer = j;
             viewInfo.subresourceRange.layerCount = 1;
-            viewInfo.image = frameBufferAttachments[offscreenFBAIndices[i]].image;
+            viewInfo.image = framebufferAttachments[offscreenFBAIndices[i]].image;
             if (vkCreateImageView(device, &viewInfo, nullptr, &shadowMap.cascades[i][j].imageView) != VK_SUCCESS) {
                 assert(false && "failed to create image view for offscreen frame buffer!");
             }
@@ -751,7 +556,7 @@ void VulkanApplication::createShadowMap() {
             fbufCreateInfo.width = shadowmapDimension;
             fbufCreateInfo.height = shadowmapDimension;
             fbufCreateInfo.layers = 1;
-            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].frameBuffer) != VK_SUCCESS) {
+            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].framebuffer) != VK_SUCCESS) {
                 assert(false && "failed to create offscreen frame buffer!");
             }
         }
@@ -761,9 +566,9 @@ void VulkanApplication::createShadowMap() {
 void VulkanApplication::prepareGraphicsPipelines() {
     for (auto & pipeline : graphicsPipelines) {
         if (pipeline.type == PIPELINE_TYPE_OFFSCREEN) {
-            pipeline.renderpass = renderPasses[offscreenPassIndex].renderPass;
+            pipeline.renderPassIndex = offscreenPassIndex;
         } else {
-            pipeline.renderpass = renderPasses[scenePassIndex].renderPass;
+            pipeline.renderPassIndex = scenePassIndex;
         }
     }
     createDescriptorSetLayouts(graphicsPipelines);
@@ -822,6 +627,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     prt::vector<VkDynamicState> dynamicStates;
     dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
     dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+    dynamicStates.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
     
     VkViewport viewport = {};
     viewport.x = 0.0f;
@@ -848,7 +654,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.cullMode = graphicsPipeline.cullModeFlags;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     if (graphicsPipeline.enableDepthBias) {
@@ -961,7 +767,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = graphicsPipeline.pipelineLayout;
-    pipelineInfo.renderPass = graphicsPipeline.renderpass;
+    pipelineInfo.renderPass = renderPasses[graphicsPipeline.renderPassIndex].renderPass;
     pipelineInfo.subpass = graphicsPipeline.subpass;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
@@ -989,7 +795,7 @@ void VulkanApplication::createGraphicsPipelines(prt::vector<GraphicsPipeline> co
     }
 }
 
-void VulkanApplication::createFramebuffers() {
+void VulkanApplication::createSwapchainFrameBuffers() {
     swapchainFramebuffers.resize(swapchainImageViews.size());
     
     for (size_t i = 0; i < swapchainImageViews.size(); i++) {
@@ -1005,11 +811,11 @@ void VulkanApplication::createFramebuffers() {
         } else {
             prt::array<VkImageView, 6> attachments = {
                 swapchainImageViews[i],
-                frameBufferAttachments[depthFBAIndex].imageView,
-                frameBufferAttachments[accumulationFBAIndices[i]].imageView,
-                frameBufferAttachments[revealageFBAIndices[i]].imageView,
-                frameBufferAttachments[accumulationFBAIndices[i]].imageView,
-                frameBufferAttachments[revealageFBAIndices[i]].imageView,
+                framebufferAttachments[depthFBAIndex].imageView,
+                framebufferAttachments[accumulationFBAIndices[i]].imageView,
+                framebufferAttachments[revealageFBAIndices[i]].imageView,
+                framebufferAttachments[accumulationFBAIndices[i]].imageView,
+                framebufferAttachments[revealageFBAIndices[i]].imageView,
             };
             framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
@@ -1033,8 +839,14 @@ void VulkanApplication::createCommandPool() {
     }
 }
 
-void VulkanApplication::createFrameBufferAttachments() {
-    for (FrameBufferAttachment & fba : frameBufferAttachments) {
+void VulkanApplication::createRenderPasses() {
+    for (RenderPass & pass : renderPasses) {
+        createRenderPass(pass);
+    }
+}
+
+void VulkanApplication::createFramebufferAttachments() {
+    for (FramebufferAttachment & fba : framebufferAttachments) {
         if (fba.swapchainAttachment) {
             fba.imageInfo.extent.width = swapchainExtent.width;
             fba.imageInfo.extent.height = swapchainExtent.height;
@@ -1057,15 +869,21 @@ void VulkanApplication::createFrameBufferAttachments() {
     }
 }
 
-size_t VulkanApplication::pushBackFrameBufferAttachment() {
-    size_t index = frameBufferAttachments.size();
-    frameBufferAttachments.push_back({});
+size_t VulkanApplication::pushBackRenderPass() {
+    size_t index = renderPasses.size();
+    renderPasses.push_back({});
+    return index;
+}
+
+size_t VulkanApplication::pushBackFramebufferAttachment() {
+    size_t index = framebufferAttachments.size();
+    framebufferAttachments.push_back({});
     return index;
 }
 
 void VulkanApplication::pushBackColorFBA() {
-    colorFBAIndex = pushBackFrameBufferAttachment();
-    FrameBufferAttachment & fba = frameBufferAttachments[colorFBAIndex];
+    colorFBAIndex = pushBackFramebufferAttachment();
+    FramebufferAttachment & fba = framebufferAttachments[colorFBAIndex];
 
     fba.swapchainAttachment = true;
 
@@ -1100,8 +918,8 @@ void VulkanApplication::pushBackColorFBA() {
 }
 
 void VulkanApplication::pushBackDepthFBA() {
-    depthFBAIndex = pushBackFrameBufferAttachment();
-    FrameBufferAttachment & fba = frameBufferAttachments[depthFBAIndex];
+    depthFBAIndex = pushBackFramebufferAttachment();
+    FramebufferAttachment & fba = framebufferAttachments[depthFBAIndex];
 
     fba.swapchainAttachment = true;
 
@@ -1138,8 +956,8 @@ void VulkanApplication::pushBackDepthFBA() {
 void VulkanApplication::pushBackAccumulationFBA() {
     accumulationFBAIndices.resize(swapchainImageCount);
     for (size_t i = 0; i < swapchainImageCount; ++i) {
-        accumulationFBAIndices[i] = pushBackFrameBufferAttachment();
-        FrameBufferAttachment & accumFBA = frameBufferAttachments[accumulationFBAIndices[i]];
+        accumulationFBAIndices[i] = pushBackFramebufferAttachment();
+        FramebufferAttachment & accumFBA = framebufferAttachments[accumulationFBAIndices[i]];
 
         accumFBA.swapchainAttachment = true;
 
@@ -1176,8 +994,8 @@ void VulkanApplication::pushBackAccumulationFBA() {
 void VulkanApplication::pushBackRevealageFBA() {
     revealageFBAIndices.resize(swapchainImageCount);
     for (size_t i = 0; i < swapchainImages.size(); ++i) {
-        revealageFBAIndices[i] = pushBackFrameBufferAttachment();
-        FrameBufferAttachment & revFBA = frameBufferAttachments[revealageFBAIndices[i]];
+        revealageFBAIndices[i] = pushBackFramebufferAttachment();
+        FramebufferAttachment & revFBA = framebufferAttachments[revealageFBAIndices[i]];
 
         revFBA.swapchainAttachment = true;
 
@@ -1682,7 +1500,7 @@ void VulkanApplication::createDescriptorSets() {
             for (size_t j = 0; j < pipeline.imageAttachments.size(); ++j) {
                 ImageAttachment const & attach = pipeline.imageAttachments[j];
                 imDesc[j].sampler = attach.sampler;
-                imDesc[j].imageView = frameBufferAttachments[attach.FBAIndices[i]].imageView;
+                imDesc[j].imageView = framebufferAttachments[attach.FBAIndices[i]].imageView;
                 imDesc[j].imageLayout = attach.layout;
 
                 pipeline.descriptorWrites[i][attach.descriptorIndex].pImageInfo = &imDesc[j];
@@ -1864,118 +1682,94 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
         assert(false && "failed to begin recording command buffer!");
     }
     
-    createOffscreenCommands(imageIndex);
-    createSceneCommands(imageIndex);
+    for (RenderPass & renderPass : renderPasses) {
+        createRenderPassCommands(imageIndex, renderPass);
+    }
 
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
         assert(false && "failed to record command buffer!");
     }
 }
 
-void VulkanApplication::createOffscreenCommands(size_t const imageIndex) {
-    VkClearValue clearValue = {};
-    clearValue.depthStencil = { 1.0f, 0 };
-
-    RenderPass & offscreen = renderPasses[offscreenPassIndex];
-
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = offscreen.renderPass;
-    renderPassBeginInfo.renderArea.extent = offscreen.extent;
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearValue;
-
-
-    VkViewport viewport;
-    viewport.width = offscreen.extent.width;
-    viewport.height = offscreen.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    viewport.x = 0;
-    viewport.y = 0;
-    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
-
-    VkRect2D scissor;
-    scissor.extent = offscreen.extent;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
-
-    vkCmdSetDepthBias(commandBuffers[imageIndex],
-                    depthBiasConstant,
-                    0.0f,
-                    depthBiasSlope);
-    prt::vector<GraphicsPipeline*> offscreenPipelines = getPipelinesByType(PipelineType::PIPELINE_TYPE_OFFSCREEN);
-    for (unsigned int i = 0; i < NUMBER_SHADOWMAP_CASCADES; ++i) {
-        renderPassBeginInfo.framebuffer = shadowMap.cascades[imageIndex][i].frameBuffer;
-        vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        for (GraphicsPipeline * pipeline : offscreenPipelines) {
-            if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
-            // set cascade index push constant (this really should be handled in a prettier way)
-            for (auto & drawCall : pipeline->drawCalls) {
-                *reinterpret_cast<int32_t*>(&drawCall.pushConstants[4]) = i;
+void VulkanApplication::createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass) {
+    switch (renderPass.outputType) {
+        case RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN: {
+            renderPass.framebuffers.resize(swapchainImageCount);
+            for (size_t i = 0; i < renderPass.framebuffers.size(); ++i) {
+                renderPass.framebuffers[i].resize(1);
+                renderPass.framebuffers[i][0] = swapchainFramebuffers[i];
             }
-            createDrawCommands(imageIndex, *pipeline);
+        }
+        break;
+        case RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP: {
+            renderPass.framebuffers.resize(swapchainImageCount);
+            for (size_t i = 0; i < swapchainImageCount; ++i) {
+                renderPass.framebuffers[i].resize(NUMBER_SHADOWMAP_CASCADES);
+                for (size_t j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
+                    renderPass.framebuffers[i][j] = shadowMap.cascades[i][j].framebuffer;
+                }
+            }
+        }
+        break;
+    }
+
+    for (size_t i = 0; i < renderPass.framebuffers[imageIndex].size(); ++i) {
+        VkFramebuffer & framebuffer = renderPass.framebuffers[imageIndex][i];
+
+        VkRenderPassBeginInfo renderPassBeginInfo = {};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = renderPass.renderPass;
+        renderPassBeginInfo.framebuffer = framebuffer;
+        renderPassBeginInfo.renderArea.offset = {0, 0};
+        renderPassBeginInfo.renderArea.extent = renderPass.extent;
+        renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(renderPass.clearValues.size());
+        renderPassBeginInfo.pClearValues = renderPass.clearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        VkViewport viewport;
+        viewport.width = renderPass.extent.width;
+        viewport.height = renderPass.extent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        viewport.x = 0;
+        viewport.y = 0;
+        vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
+    
+        VkRect2D scissor;
+        scissor.extent = renderPass.extent;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
+
+        vkCmdSetDepthBias(commandBuffers[imageIndex],
+                          renderPass.depthBiasConstant,
+                          renderPass.depthBiasClamp,
+                          renderPass.depthBiasSlope);
+
+        // Render pass is divided into sub passes
+        assert(!renderPass.subpasses.empty() && "Subpasses can not be empty!");
+        for (size_t j = 0; j < renderPass.subpasses.size(); ++j) {
+            SubPass & sub = renderPass.subpasses[j];
+            if (j  > 0) {
+                vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
+            }
+
+            for (size_t pipeIndex : sub.pipelineIndices) {
+                GraphicsPipeline & pipeline = graphicsPipelines[pipeIndex];
+                if (!checkMask(commandBufferRenderGroupMask, pipeline.renderGroup)) continue;
+
+                if (renderPass.pushConstantFBIndexByteOffset != -1) {
+                    for (auto & drawCall : pipeline.drawCalls) {
+                        *reinterpret_cast<int32_t*>(&drawCall.pushConstants[renderPass.pushConstantFBIndexByteOffset]) = i;
+                    }
+                }
+                
+                createDrawCommands(imageIndex, pipeline);
+            }
         }
         vkCmdEndRenderPass(commandBuffers[imageIndex]);
     }
-}
-
-void VulkanApplication::createSceneCommands(size_t const imageIndex) {
-    prt::array<VkClearValue, 4> clearValues = {};
-    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-    clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
-    clearValues[3].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
-
-    RenderPass & scenePass = renderPasses[scenePassIndex];
-
-    VkRenderPassBeginInfo renderPassBeginInfo = {};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = scenePass.renderPass;
-    renderPassBeginInfo.framebuffer = swapchainFramebuffers[imageIndex];
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = scenePass.extent;
-    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    renderPassBeginInfo.pClearValues = clearValues.data();
-
-    vkCmdBeginRenderPass(commandBuffers[imageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    VkViewport viewport;
-    viewport.width = scenePass.extent.width;
-    viewport.height = scenePass.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    viewport.x = 0;
-    viewport.y = 0;
-    vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
- 
-    VkRect2D scissor;
-    scissor.extent = scenePass.extent;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
-    // render opaque geometry
-    prt::vector<GraphicsPipeline*> opaque = getPipelinesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
-    for (GraphicsPipeline * pipeline : opaque) {
-        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
-        createDrawCommands(imageIndex, *pipeline);
-    }
-    // render transparent geometry
-    vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
-    prt::vector<GraphicsPipeline*> transparent = getPipelinesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
-    for (GraphicsPipeline * pipeline : transparent) {
-        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
-        createDrawCommands(imageIndex, *pipeline);
-    }
-    // composite render data
-    vkCmdNextSubpass(commandBuffers[imageIndex], VK_SUBPASS_CONTENTS_INLINE);
-    prt::vector<GraphicsPipeline*> composition = getPipelinesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
-    for (GraphicsPipeline * pipeline : composition) {
-        if (!checkMask(commandBufferRenderGroupMask, pipeline->renderGroup)) continue;
-        createDrawCommands(imageIndex, *pipeline);
-    }
-    vkCmdEndRenderPass(commandBuffers[imageIndex]);
 }
 
 void VulkanApplication::createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline) {
@@ -1991,17 +1785,17 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex, GraphicsPipe
                             pipeline.pipelineLayout, 0, 1, &pipeline.descriptorSets[imageIndex], 0, nullptr);
     for (auto const & drawCall : pipeline.drawCalls) {
         vkCmdPushConstants(commandBuffers[imageIndex], pipeline.pipelineLayout, 
-                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-                            0, 
-                            drawCall.pushConstants.size() * sizeof(drawCall.pushConstants[0]), 
-                            (void *)drawCall.pushConstants.data());
+                           VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+                           0, 
+                           drawCall.pushConstants.size() * sizeof(drawCall.pushConstants[0]), 
+                           (void *)drawCall.pushConstants.data());
 
         vkCmdDrawIndexed(commandBuffers[imageIndex], 
-                drawCall.indexCount,
-                1,
-                drawCall.firstIndex,
-                0,
-                0);
+                         drawCall.indexCount,
+                         1,
+                         drawCall.firstIndex,
+                         0,
+                         0);
     }
 }
 
@@ -2100,12 +1894,12 @@ void VulkanApplication::drawFrame() {
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
 }
 
-prt::vector<GraphicsPipeline*> VulkanApplication::getPipelinesByType(PipelineType type) {
-    prt::vector<GraphicsPipeline*> pipelines;
-    for (auto & pipeline : graphicsPipelines) {
-        if (pipeline.type == type) pipelines.push_back(&pipeline);
+prt::vector<size_t> VulkanApplication::getPipelineIndicesByType(PipelineType type) {
+    prt::vector<size_t> indices;
+    for (size_t i = 0; i < graphicsPipelines.size(); ++i) {
+        if (graphicsPipelines[i].type == type) indices.push_back(i);
     }
-    return pipelines;
+    return indices;
 }
 
 VkShaderModule VulkanApplication::createShaderModule(const char* filename) {
