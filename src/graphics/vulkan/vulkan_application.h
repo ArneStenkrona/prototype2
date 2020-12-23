@@ -93,13 +93,13 @@ struct FramebufferAttachment {
 };
 
 struct Cascade {
+    size_t frameBufferIndex;
     VkFramebuffer framebuffer;
     VkImageView imageView;
 };
 
 struct CascadeShadowMap {
     prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
-    VkSampler sampler;
 };
 
 
@@ -132,6 +132,7 @@ struct RenderPass {
         RENDER_OUTPUT_TYPE_SHADOWMAP
     };
     RenderOutputType outputType;
+    size_t shadowMapIndex; // only used for RENDER_OUTPUT_TYPE_SHADOWMAP
 
     /*
      * TODO: Refactor this monstrosity
@@ -199,13 +200,16 @@ protected:
     static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
     static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
 
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
     // command data
     VkCommandPool commandPool;
     uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
     prt::vector<VkCommandBuffer> commandBuffers;
     
-    // Sampler
+    // Samplers
     VkSampler textureSampler;
+    VkSampler shadowMapSampler;
 
     // Swapchain data
     uint32_t swapchainImageCount;
@@ -215,6 +219,7 @@ protected:
     VkExtent2D swapchainExtent;
     prt::vector<VkImageView> swapchainImageViews;
     prt::vector<VkFramebuffer> swapchainFramebuffers;
+    prt::vector<prt::vector<size_t>> swapchainFBAindices;
 
     prt::vector<RenderPass> renderPasses;
     size_t scenePassIndex;
@@ -226,20 +231,17 @@ protected:
      * when the swapchain is recreated
      **/
     prt::vector<FramebufferAttachment> framebufferAttachments;
-    size_t colorFBAIndex;
-    size_t depthFBAIndex;
-    prt::vector<size_t> accumulationFBAIndices;
-    prt::vector<size_t> revealageFBAIndices;
-    prt::vector<size_t> offscreenFBAIndices;
 
-    CascadeShadowMap shadowMap;
+    prt::vector<CascadeShadowMap> shadowMaps;
 
     prt::vector<GraphicsPipeline> graphicsPipelines;
 
     VkDevice& getDevice() { return device; }
 
     size_t pushBackFramebufferAttachment();
+    void addSwapchainFBA(size_t swapchainIndex, size_t fbaIndex);
     size_t pushBackRenderPass();
+    size_t pushBackShadowMap();
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
@@ -289,7 +291,6 @@ private:
     VkSurfaceKHR surface;
     
     VkPhysicalDevice physicalDevice;
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
     
     VkQueue graphicsQueue;
@@ -330,7 +331,6 @@ private:
     void createSwapchainImageViews();
     
     void createOffscreenSampler();
-    void createShadowMap();
 
     void prepareGraphicsPipelines();
     
@@ -340,7 +340,6 @@ private:
     void createPipelineCaches(prt::vector<GraphicsPipeline> & pipelines);
     void createPipelineCache(GraphicsPipeline & pipeline);
 
-    void createShadowMapPipeline();
     void createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines);
     void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
@@ -356,14 +355,10 @@ private:
     void createRenderPasses();
     void createRenderPass(RenderPass & renderpass);
     
-    void createFramebufferAttachments(); 
+    void createFramebufferAttachments();
 
-    void pushBackColorFBA();
-    void pushBackDepthFBA();
-    void pushBackAccumulationFBA();
-    void pushBackRevealageFBA();
-    void pushBackOffscreenFBA();
-    void pushBackShadowMapFBA();
+    void createShadowMaps();
+    void createShadowMap(CascadeShadowMap & shadowMap);
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);

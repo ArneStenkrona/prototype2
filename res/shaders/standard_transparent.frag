@@ -57,6 +57,7 @@ layout(push_constant) uniform MATERIAL {
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -122,7 +123,7 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos, 1.0));
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *

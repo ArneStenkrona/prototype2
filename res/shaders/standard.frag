@@ -57,6 +57,7 @@ layout(push_constant) uniform MATERIAL {
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -122,7 +123,7 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos, 1.0));
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
@@ -134,10 +135,10 @@ void main() {
 
 // Screen-door transparency: Discard pixel if below threshold.
 // (Note: pos is pixel position.)
-const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
-                                  13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
-                                  4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
-                                  16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
+// const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+//                                   13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+//                                   4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+//                                   16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
 
 // void transparencyDither(float alpha) {
 //     int x = int(gl_FragCoord.x) / 4;

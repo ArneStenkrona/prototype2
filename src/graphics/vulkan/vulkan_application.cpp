@@ -62,12 +62,6 @@ void VulkanApplication::initVulkan() {
     createOffscreenSampler();
     createSyncObjects();
     createDescriptorPools();
-
-    pushBackColorFBA();
-    pushBackDepthFBA();
-    pushBackAccumulationFBA(); 
-    pushBackRevealageFBA(); 
-    pushBackOffscreenFBA();
 }
 
 void VulkanApplication::render(uint16_t renderGroupMask) {
@@ -93,9 +87,11 @@ void VulkanApplication::cleanupSwapchain() {
         }
     }
 
-    for (auto & cascades : shadowMap.cascades) {
-        for (auto & cascade : cascades) {
-            vkDestroyImageView(device, cascade.imageView, nullptr);
+    for (CascadeShadowMap & map : shadowMaps) {
+        for (auto & cascades : map.cascades) {
+            for (auto & cascade : cascades) {
+                vkDestroyImageView(device, cascade.imageView, nullptr);
+            }
         }
     }
  
@@ -103,9 +99,11 @@ void VulkanApplication::cleanupSwapchain() {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
-    for (auto & cascades : shadowMap.cascades) {
-        for (auto & cascade : cascades) {
-            vkDestroyFramebuffer(device, cascade.framebuffer, nullptr);
+    for (CascadeShadowMap & map : shadowMaps) {
+        for (auto & cascades : map.cascades) {
+            for (auto & cascade : cascades) {
+                vkDestroyFramebuffer(device, cascade.framebuffer, nullptr);
+            }
         }
     }
  
@@ -156,7 +154,7 @@ void VulkanApplication::cleanup() {
     }
 
     vkDestroySampler(device, textureSampler, nullptr);
-    vkDestroySampler(device, shadowMap.sampler, nullptr);
+    vkDestroySampler(device, shadowMapSampler, nullptr);
 
     for (auto & ass : assets) {
         vkDestroyBuffer(device, ass.vertexData.vertexBuffer, nullptr);
@@ -210,13 +208,11 @@ void VulkanApplication::reprepareSwapchain() {
 }
 
 void VulkanApplication::completeSwapchain() {
-    // createScenePass();
-    // createOffscreenRenderPass();
     createRenderPasses();
     prepareGraphicsPipelines();
     createFramebufferAttachments();
     createSwapchainFrameBuffers();
-    createShadowMap();
+    createShadowMaps();
     createDescriptorPools();
     createDescriptorSets();
     createCommandBuffers();
@@ -367,6 +363,8 @@ void VulkanApplication::createSwapchain() {
     if (swapchainSupport.capabilities.maxImageCount > 0 && swapchainImageCount > swapchainSupport.capabilities.maxImageCount) {
         swapchainImageCount = swapchainSupport.capabilities.maxImageCount;
     }
+
+    swapchainFBAindices.resize(swapchainImageCount);
     
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -484,82 +482,8 @@ void VulkanApplication::createOffscreenSampler() {
     sampler.minLod = 0.0f;
     sampler.maxLod = 1.0f;
     sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    if (vkCreateSampler(device, &sampler, nullptr, &shadowMap.sampler) != VK_SUCCESS) {
+    if (vkCreateSampler(device, &sampler, nullptr, &shadowMapSampler) != VK_SUCCESS) {
         assert(false && "failed to create sampler for offscreen depth image!");
-    }
-}
-
-void VulkanApplication::pushBackOffscreenFBA() {
-    offscreenFBAIndices.resize(swapchainImageCount);
-    for (size_t i = 0; i < offscreenFBAIndices.size(); ++i) {
-        offscreenFBAIndices[i] = pushBackFramebufferAttachment();
-        FramebufferAttachment & fba = framebufferAttachments[offscreenFBAIndices[i]];
-        
-        // shadpow map image
-        fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        fba.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        fba.imageInfo.extent.width = shadowmapDimension;
-        fba.imageInfo.extent.height = shadowmapDimension;
-        fba.imageInfo.extent.depth = 1;
-        fba.imageInfo.mipLevels = 1;
-        fba.imageInfo.arrayLayers = NUMBER_SHADOWMAP_CASCADES;
-        fba.imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        fba.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        fba.imageInfo.format = findDepthFormat();
-        fba.imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-        // depth image view
-        fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        fba.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-        fba.imageViewInfo.format = findDepthFormat();
-        fba.imageViewInfo.subresourceRange = {};
-        fba.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        fba.imageViewInfo.subresourceRange.baseMipLevel = 0;
-        fba.imageViewInfo.subresourceRange.levelCount = 1;
-        fba.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-        fba.imageViewInfo.subresourceRange.layerCount = NUMBER_SHADOWMAP_CASCADES;
-        // fba.imageViewInfo.image = fba.image; // Not yet created
-
-        fba.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    }
-}
-
-void VulkanApplication::createShadowMap() {
-    shadowMap.cascades.resize(swapchainImageCount);
-
-    for (size_t i = 0; i < swapchainImageCount; ++i) {
-        // One image and framebuffer per cascade
-        for (unsigned int j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
-            // Image view for this cascade's layer (inside the depth map)
-            // This view is used to render to that specific depth image layer
-            VkImageViewCreateInfo viewInfo{};
-            viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-            viewInfo.format = findDepthFormat();
-            viewInfo.subresourceRange = {};
-            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            viewInfo.subresourceRange.baseMipLevel = 0;
-            viewInfo.subresourceRange.levelCount = 1;
-            viewInfo.subresourceRange.baseArrayLayer = j;
-            viewInfo.subresourceRange.layerCount = 1;
-            viewInfo.image = framebufferAttachments[offscreenFBAIndices[i]].image;
-            if (vkCreateImageView(device, &viewInfo, nullptr, &shadowMap.cascades[i][j].imageView) != VK_SUCCESS) {
-                assert(false && "failed to create image view for offscreen frame buffer!");
-            }
-            // Create frame buffer
-            VkFramebufferCreateInfo fbufCreateInfo{};
-            fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            fbufCreateInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
-            fbufCreateInfo.attachmentCount = 1;
-            fbufCreateInfo.pAttachments = &shadowMap.cascades[i][j].imageView;
-            fbufCreateInfo.width = shadowmapDimension;
-            fbufCreateInfo.height = shadowmapDimension;
-            fbufCreateInfo.layers = 1;
-            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].framebuffer) != VK_SUCCESS) {
-                assert(false && "failed to create offscreen frame buffer!");
-            }
-        }
     }
 }
 
@@ -806,20 +730,15 @@ void VulkanApplication::createSwapchainFrameBuffers() {
         framebufferInfo.height = swapchainExtent.height;
         framebufferInfo.layers = 1;
 
-        if (enableMsaa) {
-            assert(false && "msaa currently not supported!");
-        } else {
-            prt::array<VkImageView, 6> attachments = {
-                swapchainImageViews[i],
-                framebufferAttachments[depthFBAIndex].imageView,
-                framebufferAttachments[accumulationFBAIndices[i]].imageView,
-                framebufferAttachments[revealageFBAIndices[i]].imageView,
-                framebufferAttachments[accumulationFBAIndices[i]].imageView,
-                framebufferAttachments[revealageFBAIndices[i]].imageView,
-            };
-            framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
+        prt::vector<VkImageView> attachments;
+        attachments.resize(swapchainFBAindices[i].size() + 1);
+        attachments[0] = swapchainImageViews[i];
+        for (size_t j = 0; j < swapchainFBAindices[i].size(); ++j) {
+            attachments[j + 1] = framebufferAttachments[swapchainFBAindices[i][j]].imageView;
         }
+
+        framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+        framebufferInfo.pAttachments = attachments.data();
 
         if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchainFramebuffers[i]) != VK_SUCCESS) {
             assert(false && "failed to create framebuffer!");
@@ -869,6 +788,48 @@ void VulkanApplication::createFramebufferAttachments() {
     }
 }
 
+void VulkanApplication::createShadowMaps() {
+    for (CascadeShadowMap & map : shadowMaps) {
+        createShadowMap(map);
+    }
+}
+
+void VulkanApplication::createShadowMap(CascadeShadowMap & shadowMap) {
+    for (size_t i = 0; i < shadowMap.cascades.size(); ++i) {
+        // One image and framebuffer per cascade
+        for (unsigned int j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
+            // Image view for this cascade's layer (inside the depth map)
+            // This view is used to render to that specific depth image layer
+            VkImageViewCreateInfo viewInfo{};
+            viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+            viewInfo.format = findDepthFormat();
+            viewInfo.subresourceRange = {};
+            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            viewInfo.subresourceRange.baseMipLevel = 0;
+            viewInfo.subresourceRange.levelCount = 1;
+            viewInfo.subresourceRange.baseArrayLayer = j;
+            viewInfo.subresourceRange.layerCount = 1;
+            viewInfo.image = framebufferAttachments[shadowMap.cascades[i][j].frameBufferIndex].image;
+            if (vkCreateImageView(device, &viewInfo, nullptr, &shadowMap.cascades[i][j].imageView) != VK_SUCCESS) {
+                assert(false && "failed to create image view for offscreen frame buffer!");
+            }
+            // Create frame buffer
+            VkFramebufferCreateInfo fbufCreateInfo{};
+            fbufCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            fbufCreateInfo.renderPass = renderPasses[offscreenPassIndex].renderPass;
+            fbufCreateInfo.attachmentCount = 1;
+            fbufCreateInfo.pAttachments = &shadowMap.cascades[i][j].imageView;
+            fbufCreateInfo.width = shadowmapDimension;
+            fbufCreateInfo.height = shadowmapDimension;
+            fbufCreateInfo.layers = 1;
+            if (vkCreateFramebuffer(device, &fbufCreateInfo, nullptr, &shadowMap.cascades[i][j].framebuffer) != VK_SUCCESS) {
+                assert(false && "failed to create offscreen frame buffer!");
+            }
+        }
+    }
+}
+
 size_t VulkanApplication::pushBackRenderPass() {
     size_t index = renderPasses.size();
     renderPasses.push_back({});
@@ -881,151 +842,14 @@ size_t VulkanApplication::pushBackFramebufferAttachment() {
     return index;
 }
 
-void VulkanApplication::pushBackColorFBA() {
-    colorFBAIndex = pushBackFramebufferAttachment();
-    FramebufferAttachment & fba = framebufferAttachments[colorFBAIndex];
-
-    fba.swapchainAttachment = true;
-
-    VkFormat colorFormat = swapchainImageFormat;
-
-    fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    fba.imageInfo.flags = 0;
-    fba.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    fba.imageInfo.extent.width = swapchainExtent.width;
-    fba.imageInfo.extent.height = swapchainExtent.height;
-    fba.imageInfo.extent.depth = 1;
-    fba.imageInfo.mipLevels = 1;
-    fba.imageInfo.arrayLayers = 1;
-    fba.imageInfo.format = colorFormat;
-    fba.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    fba.imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    fba.imageInfo.samples = msaaSamples;
-    fba.imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    // fba.imageViewInfo.image = fba.image; // not created yet
-    fba.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    fba.imageViewInfo.format = colorFormat;
-    fba.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    fba.imageViewInfo.subresourceRange.baseMipLevel = 0;
-    fba.imageViewInfo.subresourceRange.levelCount = 1;
-    fba.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-    fba.imageViewInfo.subresourceRange.layerCount = 1;
-
-    fba.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+void VulkanApplication::addSwapchainFBA(size_t swapchainIndex, size_t fbaIndex) {
+    swapchainFBAindices[swapchainIndex].push_back(fbaIndex);
 }
 
-void VulkanApplication::pushBackDepthFBA() {
-    depthFBAIndex = pushBackFramebufferAttachment();
-    FramebufferAttachment & fba = framebufferAttachments[depthFBAIndex];
-
-    fba.swapchainAttachment = true;
-
-    VkFormat depthFormat = findDepthFormat();
-
-    fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    fba.imageInfo.flags = 0;
-    fba.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    fba.imageInfo.extent.width = swapchainExtent.width;
-    fba.imageInfo.extent.height = swapchainExtent.height;
-    fba.imageInfo.extent.depth = 1;
-    fba.imageInfo.mipLevels = 1;
-    fba.imageInfo.arrayLayers = 1;
-    fba.imageInfo.format = depthFormat;
-    fba.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    fba.imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    fba.imageInfo.samples = msaaSamples;
-    fba.imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    // fba.imageViewInfo.image = fba.image; // not created yet
-    fba.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    fba.imageViewInfo.format = depthFormat;
-    fba.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    fba.imageViewInfo.subresourceRange.baseMipLevel = 0;
-    fba.imageViewInfo.subresourceRange.levelCount = 1;
-    fba.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-    fba.imageViewInfo.subresourceRange.layerCount = 1;
-    
-    fba.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-}
-
-void VulkanApplication::pushBackAccumulationFBA() {
-    accumulationFBAIndices.resize(swapchainImageCount);
-    for (size_t i = 0; i < swapchainImageCount; ++i) {
-        accumulationFBAIndices[i] = pushBackFramebufferAttachment();
-        FramebufferAttachment & accumFBA = framebufferAttachments[accumulationFBAIndices[i]];
-
-        accumFBA.swapchainAttachment = true;
-
-        // accumulation image
-        accumFBA.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        accumFBA.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        accumFBA.imageInfo.extent.width = swapchainExtent.width;
-        accumFBA.imageInfo.extent.height = swapchainExtent.height;
-        accumFBA.imageInfo.extent.depth = 1;
-        accumFBA.imageInfo.mipLevels = 1;
-        accumFBA.imageInfo.arrayLayers = 1;
-        accumFBA.imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        accumFBA.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-
-        accumFBA.imageInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        accumFBA.imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-
-        // accumulation view
-        accumFBA.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        accumFBA.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        accumFBA.imageViewInfo.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-        accumFBA.imageViewInfo.subresourceRange = {};
-        accumFBA.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        accumFBA.imageViewInfo.subresourceRange.baseMipLevel = 0;
-        accumFBA.imageViewInfo.subresourceRange.levelCount = 1;
-        accumFBA.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-        accumFBA.imageViewInfo.subresourceRange.layerCount = 1;
-        // accumFBA.imageViewInfo.image = accumFBA.image; // not created yet
-
-        accumFBA.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    }
-}
-
-void VulkanApplication::pushBackRevealageFBA() {
-    revealageFBAIndices.resize(swapchainImageCount);
-    for (size_t i = 0; i < swapchainImages.size(); ++i) {
-        revealageFBAIndices[i] = pushBackFramebufferAttachment();
-        FramebufferAttachment & revFBA = framebufferAttachments[revealageFBAIndices[i]];
-
-        revFBA.swapchainAttachment = true;
-
-        // accumulation image
-        revFBA.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        revFBA.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        revFBA.imageInfo.extent.width = swapchainExtent.width;
-        revFBA.imageInfo.extent.height = swapchainExtent.height;
-        revFBA.imageInfo.format = VK_FORMAT_R8_UNORM;
-        revFBA.imageInfo.extent.depth = 1;
-        revFBA.imageInfo.mipLevels = 1;
-        revFBA.imageInfo.arrayLayers = 1;
-        revFBA.imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        revFBA.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        revFBA.imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        
-        // revealage view        
-        revFBA.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        revFBA.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        revFBA.imageViewInfo.format = VK_FORMAT_R8_UNORM;
-        revFBA.imageViewInfo.subresourceRange = {};
-        revFBA.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        revFBA.imageViewInfo.subresourceRange.baseMipLevel = 0;
-        revFBA.imageViewInfo.subresourceRange.levelCount = 1;
-        revFBA.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-        revFBA.imageViewInfo.subresourceRange.layerCount = 1;
-        // revFBA.imageViewInfo.image = revFBA.image; // not created yet
-        
-        revFBA.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    }
+size_t VulkanApplication::pushBackShadowMap() {
+    size_t index = shadowMaps.size();
+    shadowMaps.push_back({});
+    return index;
 }
 
 VkFormat VulkanApplication::findSupportedFormat(prt::vector<VkFormat> const & candidates, 
@@ -1706,7 +1530,7 @@ void VulkanApplication::createRenderPassCommands(size_t const imageIndex, Render
             for (size_t i = 0; i < swapchainImageCount; ++i) {
                 renderPass.framebuffers[i].resize(NUMBER_SHADOWMAP_CASCADES);
                 for (size_t j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
-                    renderPass.framebuffers[i][j] = shadowMap.cascades[i][j].framebuffer;
+                    renderPass.framebuffers[i][j] = shadowMaps[renderPass.shadowMapIndex].cascades[i][j].framebuffer;
                 }
             }
         }

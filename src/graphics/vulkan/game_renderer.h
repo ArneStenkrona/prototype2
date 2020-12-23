@@ -65,6 +65,14 @@ private:
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.95f;
 
+    size_t colorFBAIndex;
+    size_t depthFBAIndex;
+    prt::vector<size_t> accumulationFBAIndices;
+    prt::vector<size_t> revealageFBAIndices;
+    prt::vector<size_t> offscreenFBAIndices;
+
+    size_t shadowMapIndex;
+
     int32_t gridPipelineIndex = -1;
     int32_t skyboxPipelineIndex = -1;
     int32_t standardPipelineIndex = -1;
@@ -186,8 +194,17 @@ private:
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
+    void pushBackColorFBA();
+    void pushBackDepthFBA();
+    void pushBackAccumulationFBA();
+    void pushBackRevealageFBA();
+    void pushBackOffscreenFBA();
+    void pushBackShadowMapFBA();
+
     void pushBackSceneRenderPass();
     void pushBackOffscreenRenderPass();
+
+    void pushBackSunShadowMap();
 };
 
 #endif
