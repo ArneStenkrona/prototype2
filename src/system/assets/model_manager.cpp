@@ -12,12 +12,6 @@
 
 #include <fstream>
 
-bool is_file_exist(const char *fileName)
-{
-    std::ifstream infile(fileName);
-    return infile.good();
-}
-
 ModelManager::ModelManager(const char* modelDirectory) {
     strcpy(m_modelDirectory, modelDirectory);
 }
@@ -79,7 +73,7 @@ void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
 }
 
 void ModelManager::loadModels(char const * paths[], size_t count,
-                              uint32_t * ids, bool animated) {
+                              uint32_t * ids, bool animated, TextureManager & textureManager) {
     auto & models = animated ? m_loadedAnimatedModels : m_loadedNonAnimatedModels;
     
     char path[256];
@@ -95,7 +89,7 @@ void ModelManager::loadModels(char const * paths[], size_t count,
 
             models.push_back({});
             Model & model = models.back();
-            model.load(path, animated);
+            model.load(path, animated, textureManager);
         } else {
             ids[i] = m_pathToModelID.find(paths[i])->value();
         }

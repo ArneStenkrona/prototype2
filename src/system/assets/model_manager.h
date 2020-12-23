@@ -6,6 +6,8 @@
 
 #include "src/game/component/component.h"
 
+#include "src/system/assets/texture_manager.h"
+
 #include "src/graphics/geometry/model.h"
 
 class ModelManager {
@@ -34,7 +36,7 @@ public:
     Model const & getAnimatedModel(uint32_t modelID) const { return m_loadedAnimatedModels[modelID]; }
 
     void loadModels(char const * paths[], size_t count,
-                    uint32_t * ids, bool animated);
+                    uint32_t * ids, bool animated, TextureManager & textureManager);
 
     uint32_t getAnimationIndex(uint32_t modelIndex, char const * name);
 

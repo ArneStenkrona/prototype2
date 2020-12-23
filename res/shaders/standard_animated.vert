@@ -23,8 +23,8 @@ struct BoxLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[100];
-    mat4 invTransposeModel[100];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -58,6 +58,7 @@ layout(location = 6) in vec4 inBoneWeights;
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -89,6 +90,8 @@ void main() {
 
     vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));
+
+    vs_out.fragNormal = n;
     
     vs_out.fragTexCoord = inTexCoord;
     vs_out.shadowPos = (ubo.view * vec4(vs_out.fragPos + n, 1.0)).xyz;

@@ -55,25 +55,42 @@ struct StandardPushConstants {
     alignas(16) glm::vec4 baseColor;
     alignas(4)  float baseSpecularity;
     alignas(4)  uint32_t boneOffset;
-    // use if more data is needed
-    // alignas(16) unsigned char additionalData[32];
 };
 
-// struct TransparentPushConstants {
-//     alignas(4)  int32_t modelMatrixIdx;
-// 	alignas(4)  int32_t albedoIndex;
-// 	alignas(4)  int32_t normalIndex;
-// 	alignas(4)  int32_t specularIndex;
-//     alignas(16) glm::vec4 baseColor;
-//     alignas(4)  float baseSpecularity;
-//     // use if more data is needed
-//     alignas(16) unsigned char additionalData[32];
-// };
+struct BillboardPushConstants {
+    alignas(16) glm::vec4 billboardSize;
+    alignas(4) int albedoIndex;
+    alignas(4) int positionIndex;
+};
+
+struct GridUBO {
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+    alignas(16) glm::vec4 viewPosition;
+    alignas(4) float nearPlane;
+    alignas(4) float farPlane;
+};
 
 struct SkyboxUBO {
-		alignas(16) glm::mat4 projection;
-		alignas(16) glm::mat4 model;
-		//alignas(4) float lodBias = 0.0f;
+    alignas(16) glm::mat4 projection;
+    alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 skyRotation;
+    alignas(16) glm::vec4 sunDirection;
+    alignas(16) glm::vec4 nightColor;
+    alignas(16) glm::vec4 dayColor;
+    alignas(16) glm::vec4 sunEdgeColor;
+    alignas(16) glm::vec4 sunsetriseColor;
+    alignas(16) glm::vec4 sunColor;
+    alignas(4) float distToNoon;
+};
+
+struct BillboardUBO {
+    alignas(16) glm::vec4 positions[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec4 up_vectors[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec4 right_vectors[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::vec4 colors[NUMBER_SUPPORTED_BILLBOARDS];
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 projection;
 };
 
 struct ShadowMapUBO  {

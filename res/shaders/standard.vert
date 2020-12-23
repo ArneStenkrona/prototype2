@@ -23,8 +23,8 @@ struct BoxLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[100];
-    mat4 invTransposeModel[100];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -54,6 +54,7 @@ layout(location = 4) in vec3 inBinormal;
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -62,13 +63,17 @@ layout(location = 0) out VS_OUT {
 } vs_out;
 
 void main() {
-    vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0));
-    vec3 t = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inTangent);
-    vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inBinormal);
-    vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * inNormal);
+    vec4 worldPos = ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
+    worldPos = worldPos / worldPos.w;
+    vs_out.fragPos = worldPos.xyz;
+    vec3 t = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inTangent, 0.0)));
+    vec3 b = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inBinormal, 0.0)));
+    vec3 n = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inNormal, 0.0)));
 
     vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));
+    
+    vs_out.fragNormal = n;
     
     vs_out.fragTexCoord = inTexCoord;
 
@@ -78,5 +83,5 @@ void main() {
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
 
-    gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * worldPos;
 }

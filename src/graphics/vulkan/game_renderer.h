@@ -6,6 +6,7 @@
 
 #include "src/graphics/lighting/light.h"
 #include "src/graphics/camera/camera.h"
+#include "src/graphics/geometry/billboard.h"
 
 #include "src/container/hash_map.h"
 
@@ -30,6 +31,10 @@ public:
                     size_t nAnimatedModels,
                     uint32_t const * animatedModelIDs,
                     size_t nAnimatedModelIDs,
+                    Billboard const * billboards,
+                    size_t nBillboards,
+                    Texture const * textures,
+                    size_t nTextures,
                     prt::array<Texture, 6> const & skybox);
 
     /**
@@ -41,17 +46,34 @@ public:
     void update(prt::vector<glm::mat4> const & modelMatrices, 
                 prt::vector<glm::mat4> const & animatedModelMatrices,
                 prt::vector<glm::mat4> const & bones,
+                prt::vector<glm::vec4> const & billboardPositions,
+                prt::vector<glm::vec4> const & billboardColors,
                 Camera & camera,
-                DirLight const & sun,
+                SkyLight const & sun,
                 prt::vector<PointLight> const & pointLights,
-                prt::vector<PackedBoxLight> const & boxLights);
+                prt::vector<PackedBoxLight> const & boxLights,
+                float t);
+
+    static constexpr unsigned int COMMON_RENDER_GROUP = 0;
+    static constexpr unsigned int GAME_RENDER_GROUP = 1;
+    static constexpr uint16_t GAME_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_1;
+    static constexpr unsigned int EDITOR_RENDER_GROUP = 2;
+    static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.95f;
 
-    int32_t compositionPipelineIndex = -1;
+    size_t colorFBAIndex;
+    size_t depthFBAIndex;
+    prt::vector<size_t> accumulationFBAIndices;
+    prt::vector<size_t> revealageFBAIndices;
+    prt::vector<size_t> offscreenFBAIndices;
+
+    size_t shadowMapIndex;
+
+    int32_t gridPipelineIndex = -1;
     int32_t skyboxPipelineIndex = -1;
     int32_t standardPipelineIndex = -1;
     int32_t animatedStandardPipelineIndex = -1;
@@ -59,34 +81,41 @@ private:
     int32_t animatedShadowmapPipelineIndex = -1;
     int32_t transparentPipelineIndex = -1;
     int32_t animatedTransparentPipelineIndex = -1;
+    int32_t waterPipelineIndex = -1;
+    int32_t billboardPipelineIndex = -1; // transparent
+    int32_t compositionPipelineIndex = -1;
 
     VkDescriptorImageInfo samplerInfo;
 
-    void createStandardAndShadowGraphicsPipelines(size_t standardAssetIndex, size_t standardUboIndex,
-                                                  size_t shadowmapUboIndex, 
-                                                  const char * relativeVert, const char * relativeFrag,
-                                                  const char * relativeTransparentFrag,
-                                                  const char * relativeShadowVert,
-                                                  VkVertexInputBindingDescription bindingDescription,
-                                                  prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                                  int32_t & standardPipeline, 
-                                                  int32_t & transparentPipeline,
-                                                  int32_t & shadowPipeline);
+    void createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
+                                          size_t shadowmapUboIndex, 
+                                          const char * relativeVert, const char * relativeFrag,
+                                          const char * relativeTransparentFrag,
+                                          const char * relativeShadowVert,
+                                          VkVertexInputBindingDescription bindingDescription,
+                                          prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                          int32_t & standardPipeline, 
+                                          int32_t & transparentPipeline,
+                                          int32_t & shadowPipeline);
 
-    int32_t createCompositionPipeline();
+    void createCompositionPipeline();
 
-    void createSkyboxGraphicsPipeline(size_t assetIndex, size_t uboIndex);
+    void createGridPipeline(size_t assetIndex, size_t uboIndex);
 
-    int32_t createStandardGraphicsPipeline(size_t assetIndex, size_t uboIndex, 
-                                           char const * vertexShader, char const * fragmentShader,
-                                           VkVertexInputBindingDescription bindingDescription,
-                                           prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                           bool transparent);
+    void createSkyboxPipeline(size_t assetIndex, size_t uboIndex);
+
+    void createBillboardPipeline(size_t assetIndex, size_t uboIndex);
+
+    int32_t createStandardPipeline(size_t assetIndex, size_t uboIndex, 
+                                   char const * vertexShader, char const * fragmentShader,
+                                   VkVertexInputBindingDescription bindingDescription,
+                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                   bool transparent);
                                           
-    int32_t createShadowmapGraphicsPipeline(size_t assetIndex, size_t uboIndex,
-                                            char const * vertexShader,
-                                            VkVertexInputBindingDescription bindingDescription,
-                                            prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
+    int32_t createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
+                                    char const * vertexShader,
+                                    VkVertexInputBindingDescription bindingDescription,
+                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
@@ -96,20 +125,48 @@ private:
     
     void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
 
+    void createGridBuffers(size_t assetIndex);
     void createCubeMapBuffers(size_t assetIndex);
+    void createBillboardBuffers(size_t assetIndex);
+    
+    void loadModels(Model const * models, size_t nModels, 
+                    Texture const * textures, size_t nTextures,
+                    size_t assetIndex,
+                    bool animated,
+                    prt::hash_map<int32_t, int32_t> & textureIndices);
 
-    void loadModels(Model const * models, size_t nModels, size_t assetIndex,
-                    bool animated);
+    void loadBillboards(Billboard const * billboards, size_t nBillboards, 
+                        Texture const * textures, size_t nTextures,
+                        size_t assetIndex,
+                        prt::hash_map<int32_t, int32_t> & textureIndices);
 
     void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
+    void createGridDrawCalls();
     void createSkyboxDrawCalls();
+    void createModelDrawCalls(Model    const * models,   size_t nModels,
+                              uint32_t const * modelIDs, size_t nModelIDs,
+                              Model    const * animatedModels,   size_t nAnimatedModels,
+                              uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+                              uint32_t const * boneOffsets,
+                              prt::hash_map<int32_t, int32_t> const & textureIndices,
+                              prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
+                              prt::vector<DrawCall> & standard,
+                              prt::vector<DrawCall> & transparent,
+                              prt::vector<DrawCall> & animated,
+                              prt::vector<DrawCall> & transparentAnimated,
+                              prt::vector<DrawCall> & water,
+                              prt::vector<DrawCall> & shadow,
+                              prt::vector<DrawCall> & shadowAnimated);
+
+    void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
     void createStandardDrawCalls(Model    const * models,   size_t nModels,
                                  uint32_t const * modelIDs, size_t nModelIDs,
                                  size_t pipelineIndex,
                                  bool transparent,
                                  bool animated,
-                                 uint32_t const * boneOffsets);
+                                 uint32_t const * boneOffsets,
+                                 prt::hash_map<int32_t, int32_t> const & textureIndices);
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
     void createCompositionDrawCalls(size_t pipelineIndex);
@@ -117,18 +174,37 @@ private:
     void updateUBOs(prt::vector<glm::mat4> const & nonAnimatedModelMatrices, 
                     prt::vector<glm::mat4> const & animatedModelMatrices,
                     prt::vector<glm::mat4> const & bones,
+                    prt::vector<glm::vec4> const & billboardPositions,
+                    prt::vector<glm::vec4> const & billboardColors,
                     Camera & camera,
-                    DirLight const & sun,
+                    SkyLight const & sun,
                     prt::vector<PointLight> const & pointLights,
-                    prt::vector<PackedBoxLight> const & boxLights);
+                    prt::vector<PackedBoxLight> const & boxLights,
+                    float t);
                     
-    void updateSkyboxUBO(Camera const & camera);
+    void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
+
+    void updateBillboardUBO(Camera const & camera, 
+                            prt::vector<glm::vec4> const & billboardPositions, 
+                            prt::vector<glm::vec4> const & billboardColors);
 
     void updateCascades(glm::mat4 const & projectionMatrix,
                         glm::mat4 const & viewMatrix,
                         glm::vec3 const & lightDir,
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
+
+    void pushBackColorFBA();
+    void pushBackDepthFBA();
+    void pushBackAccumulationFBA();
+    void pushBackRevealageFBA();
+    void pushBackOffscreenFBA();
+    void pushBackShadowMapFBA();
+
+    void pushBackSceneRenderPass();
+    void pushBackOffscreenRenderPass();
+
+    void pushBackSunShadowMap();
 };
 
 #endif

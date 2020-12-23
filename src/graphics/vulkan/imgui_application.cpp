@@ -668,8 +668,8 @@ void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
     double mouseX, mouseY;
     _input.getCursorPos(mouseX, mouseY);
     io.MousePos = ImVec2(mouseX, mouseY);
-    io.MouseDown[0] = _input.getMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-    io.MouseDown[1] = _input.getMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    io.MouseDown[0] = _input.getKeyPress(INPUT_KEY::KEY_MOUSE_LEFT) == GLFW_PRESS;
+    io.MouseDown[1] = _input.getKeyPress(INPUT_KEY::KEY_MOUSE_RIGHT) == GLFW_PRESS;
 }
 
 // Draw current imGui frame into a command buffer

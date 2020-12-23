@@ -34,12 +34,14 @@ public:
     void sampleAnimation(prt::vector<glm::mat4> & bones);
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
+
+    void renderScene(Camera & camera);
     
 private:
     struct Lights {
         prt::vector<PointLight> pointLights;
         prt::vector<BoxLight> boxLights;
-        DirLight sun;
+        SkyLight sun;
     } m_lights;
 
     template<size_t N>
@@ -51,6 +53,14 @@ private:
         uint32_t colliderIDs[N];
     };
     StaticSolidEntities<10> m_staticSolidEntities;
+
+    struct {
+        Billboard billboard;
+        glm::vec4 position;
+        float distance;
+    } m_moon;
+
+    float time = 0.0f;
 
     GameRenderer & m_gameRenderer;
     AssetManager& m_assetManager;
@@ -67,13 +77,15 @@ private:
                            uint32_t const * & modelIDs, size_t & nModelIDs);
 
     void initColliders();
+
+    void initSky();
     
     prt::vector<PointLight> getPointLights();
     prt::vector<PackedBoxLight> getBoxLights();
     
+    void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateCamera(float deltaTime);
-    void renderScene();
 
     friend class SceneSerialization;
 };

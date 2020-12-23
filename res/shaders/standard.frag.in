@@ -57,6 +57,7 @@ layout(push_constant) uniform MATERIAL {
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -122,11 +123,11 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos, 1.0));
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
-           CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
+           CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
@@ -134,10 +135,10 @@ void main() {
 
 // Screen-door transparency: Discard pixel if below threshold.
 // (Note: pos is pixel position.)
-const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
-                                  13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
-                                  4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
-                                  16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
+// const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+//                                   13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+//                                   4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+//                                   16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
 
 // void transparencyDither(float alpha) {
 //     int x = int(gl_FragCoord.x) / 4;
@@ -172,13 +173,12 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     // diffuse shading
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
-    // vec3 reflectDir = reflect(-lightDir, normal); // phong
-    vec3 halfwayDir = normalize(-lightDir + viewDir); // blinn-phong
+    vec3 r = reflect(lightDir, normal);
     float shininess = 32.0;
-    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess);
+    float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess);
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
-    vec3 specular = lightColor * spec;
+    vec3 specular = vec3(1) * spec;
     return diffuse + specular;
 }
 

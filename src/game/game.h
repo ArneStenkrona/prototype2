@@ -1,15 +1,15 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "src/entity_component_system/entity/entity_manager.h"
 #include "src/system/assets/model_manager.h"
 #include "src/system/assets/asset_manager.h"
 #include "src/game/scene/scene.h"
+#include "src/game/editor/editor.h"
 #include "src/game/system/physics/physics_system.h"
-
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/vulkan/game_renderer.h"
-#include "src/system/input/input.h"
+#include "src/graphics/vulkan/game_renderer.h"
+
 
 class Game {
 public:
@@ -19,13 +19,23 @@ public:
     void run();
 
 private:
+    enum Mode {
+        GAME,
+        EDITOR
+    };
+
+    Mode m_mode = Mode::GAME;
+    uint16_t m_renderMask = RENDER_GROUP_FLAG_ALL;
+
     Input m_input;
     GameRenderer m_gameRenderer;
 
     AssetManager m_assetManager;
 
     PhysicsSystem m_physicsSystem;
+
     Scene m_scene;
+    Editor m_editor;
 
     uint32_t m_frameRate;
     uint32_t m_microsecondsPerFrame;
@@ -34,6 +44,7 @@ private:
     float m_time;
 
     void update(float deltaTime);
+    void updateMode();
 
     void loadScene();
 };

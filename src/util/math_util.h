@@ -19,6 +19,11 @@ namespace math_util {
                              glm::vec3 const & lookTo,
                              glm::vec3 const & up,
                              glm::vec3 const & alternativeUp);
+    
+    glm::mat4 safeLookAt(glm::vec3 const & lookFrom,
+                         glm::vec3 const & lookTo,
+                         glm::vec3 const & up,
+                         glm::vec3 const & alternativeUp);
 
     /**
      * Calculate linear interpolation
