@@ -59,6 +59,9 @@ void Scene::renderScene(Camera & camera) {
 
     prt::vector<PointLight> pointLights = getPointLights();
     prt::vector<PackedBoxLight> boxLights = getBoxLights();
+
+    double x,y;
+    m_input.getCursorPos(x,y);
     m_gameRenderer.update(modelMatrices, 
                           animatedModelMatrices,
                           bones,
@@ -68,7 +71,8 @@ void Scene::renderScene(Camera & camera) {
                           m_lights.sun,
                           pointLights,
                           boxLights,
-                          time);
+                          time,
+                          glm::vec2{x,y});
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {

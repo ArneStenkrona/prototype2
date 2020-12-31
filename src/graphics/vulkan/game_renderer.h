@@ -37,22 +37,27 @@ public:
                     size_t nTextures,
                     prt::array<Texture, 6> const & skybox);
 
+    struct RenderResult {
+        glm::vec3 mouseWorldPosition;
+    };
+
     /**
      * updates the scene
      * @param modelMatrices : model matrices
      * @param camera : scene camera
      * @param sun : sun light
      */
-    void update(prt::vector<glm::mat4> const & modelMatrices, 
-                prt::vector<glm::mat4> const & animatedModelMatrices,
-                prt::vector<glm::mat4> const & bones,
-                prt::vector<glm::vec4> const & billboardPositions,
-                prt::vector<glm::vec4> const & billboardColors,
-                Camera & camera,
-                SkyLight const & sun,
-                prt::vector<PointLight> const & pointLights,
-                prt::vector<PackedBoxLight> const & boxLights,
-                float t);
+    RenderResult update(prt::vector<glm::mat4> const & modelMatrices, 
+                        prt::vector<glm::mat4> const & animatedModelMatrices,
+                        prt::vector<glm::mat4> const & bones,
+                        prt::vector<glm::vec4> const & billboardPositions,
+                        prt::vector<glm::vec4> const & billboardColors,
+                        Camera & camera,
+                        SkyLight const & sun,
+                        prt::vector<PointLight> const & pointLights,
+                        prt::vector<PackedBoxLight> const & boxLights,
+                        float t,
+                        glm::vec2 mousePosition);
 
     static constexpr unsigned int COMMON_RENDER_GROUP = 0;
     static constexpr unsigned int GAME_RENDER_GROUP = 1;
@@ -65,11 +70,14 @@ private:
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.95f;
 
-    size_t colorFBAIndex;
+    // size_t colorFBAIndex;
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
     prt::vector<size_t> offscreenFBAIndices;
+    prt::vector<size_t> objectFBAIndices;
+
+    size_t depthCopyIndex;
 
     size_t shadowMapIndex;
 
@@ -194,7 +202,7 @@ private:
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
-    void pushBackColorFBA();
+    // void pushBackColorFBA();
     void pushBackDepthFBA();
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();

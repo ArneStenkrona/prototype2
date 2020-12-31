@@ -57,7 +57,8 @@ void VulkanApplication::initVulkan() {
     createSwapchain();
     createSwapchainImageViews();
     prepareGraphicsPipelines();
-    createCommandPool();
+    createCommandPool(commandPool, 0);
+    createCommandPool(dynamicCommandPool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     createTextureSampler();
     createOffscreenSampler();
     createSyncObjects();
@@ -95,7 +96,7 @@ void VulkanApplication::cleanupSwapchain() {
         }
     }
  
-    for (auto & framebuffer : swapchainFramebuffers) {
+    for (auto & framebuffer : swapchain.swapchainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
@@ -108,6 +109,7 @@ void VulkanApplication::cleanupSwapchain() {
     }
  
     vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+    vkFreeCommandBuffers(device, dynamicCommandPool, static_cast<uint32_t>(dynamicCommandBuffers.size()), dynamicCommandBuffers.data());
 
     for (auto & graphicsPipeline : graphicsPipelines) {
         vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
@@ -121,11 +123,18 @@ void VulkanApplication::cleanupSwapchain() {
         }
     }
  
-    for (auto & imageView : swapchainImageViews) {
+    for (auto & imageView : swapchain.swapchainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
+
+    for (auto & copies : swapchain.swapchainFBACopies) {
+        for (SwapchainFBACopy & copy : copies) {
+            vkDestroyBuffer(device, copy.buffer, nullptr);
+            vkFreeMemory(device, copy.bufferMemory, nullptr);
+        }
+    }
  
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
+    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
 
     for (auto & graphicsPipeline : graphicsPipelines) {
         vkDestroyDescriptorPool(device, graphicsPipeline.descriptorPool, nullptr);
@@ -138,7 +147,7 @@ void VulkanApplication::cleanup() {
     cleanupSwapchain();
 
     for (auto & uniformBufferData : uniformBufferDatas) {
-        for (size_t i = 0; i < swapchainImages.size(); i++) {
+        for (size_t i = 0; i < swapchain.swapchainImages.size(); i++) {
             vkUnmapMemory(device, uniformBufferData.uniformBufferMemories[i]);
             vkDestroyBuffer(device, uniformBufferData.uniformBuffers[i], nullptr);
             vkFreeMemory(device, uniformBufferData.uniformBufferMemories[i], nullptr);
@@ -171,6 +180,7 @@ void VulkanApplication::cleanup() {
     }
  
     vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyCommandPool(device, dynamicCommandPool, nullptr);
  
     vkDestroyDevice(device, nullptr);
  
@@ -212,10 +222,12 @@ void VulkanApplication::completeSwapchain() {
     prepareGraphicsPipelines();
     createFramebufferAttachments();
     createSwapchainFrameBuffers();
+    createSwapchainFBACopies();
     createShadowMaps();
     createDescriptorPools();
     createDescriptorSets();
     createCommandBuffers();
+    createDynamicCommandBuffers();
 }
 
 void VulkanApplication::createInstance() {
@@ -359,18 +371,19 @@ void VulkanApplication::createSwapchain() {
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapchainSupport.presentModes);
     VkExtent2D extent = chooseSwapExtent(swapchainSupport.capabilities);
     
-    swapchainImageCount = swapchainSupport.capabilities.minImageCount + 1;
-    if (swapchainSupport.capabilities.maxImageCount > 0 && swapchainImageCount > swapchainSupport.capabilities.maxImageCount) {
-        swapchainImageCount = swapchainSupport.capabilities.maxImageCount;
+    swapchain.swapchainImageCount = swapchainSupport.capabilities.minImageCount + 1;
+    if (swapchainSupport.capabilities.maxImageCount > 0 && swapchain.swapchainImageCount > swapchainSupport.capabilities.maxImageCount) {
+        swapchain.swapchainImageCount = swapchainSupport.capabilities.maxImageCount;
     }
 
-    swapchainFBAindices.resize(swapchainImageCount);
+    swapchain.swapchainFBAindices.resize(swapchain.swapchainImageCount);
+    swapchain.swapchainFBACopies.resize(swapchain.swapchainImageCount);
     
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = surface;
     
-    createInfo.minImageCount = swapchainImageCount;
+    createInfo.minImageCount = swapchain.swapchainImageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
     createInfo.imageExtent = extent;
@@ -393,41 +406,41 @@ void VulkanApplication::createSwapchain() {
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
     
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain.swapchain) != VK_SUCCESS) {
         assert(false && "failed to create swap chain!");
     }
     
-    vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, nullptr);
-    swapchainImages.resize(swapchainImageCount);
-    vkGetSwapchainImagesKHR(device, swapchain, &swapchainImageCount, swapchainImages.data());
+    vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.swapchainImageCount, nullptr);
+    swapchain.swapchainImages.resize(swapchain.swapchainImageCount);
+    vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchain.swapchainImageCount, swapchain.swapchainImages.data());
     
-    swapchainImageFormat = surfaceFormat.format;
-    swapchainExtent = extent;
+    swapchain.swapchainImageFormat = surfaceFormat.format;
+    swapchain.swapchainExtent = extent;
 }
 
 void VulkanApplication::createSwapchainImageViews() {
-    swapchainImageViews.resize(swapchainImages.size());
+    swapchain.swapchainImageViews.resize(swapchain.swapchainImages.size());
 
-    for (uint32_t i = 0; i < swapchainImages.size(); i++) {
+    for (uint32_t i = 0; i < swapchain.swapchainImages.size(); i++) {
         VkImageViewCreateInfo viewInfo = {};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = swapchainImages[i];
+        viewInfo.image = swapchain.swapchainImages[i];
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = swapchainImageFormat;
+        viewInfo.format = swapchain.swapchainImageFormat;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
         
-        swapchainImageViews[i] = createImageView(viewInfo);
+        swapchain.swapchainImageViews[i] = createImageView(viewInfo);
     }
 }
 
 void VulkanApplication::createRenderPass(RenderPass & renderPass) {
     switch (renderPass.outputType) {
     case RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN:
-        renderPass.extent = swapchainExtent;
+        renderPass.extent = swapchain.swapchainExtent;
         break;
     
     case RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP:
@@ -720,40 +733,55 @@ void VulkanApplication::createGraphicsPipelines(prt::vector<GraphicsPipeline> co
 }
 
 void VulkanApplication::createSwapchainFrameBuffers() {
-    swapchainFramebuffers.resize(swapchainImageViews.size());
+    swapchain.swapchainFramebuffers.resize(swapchain.swapchainImageViews.size());
     
-    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+    for (size_t i = 0; i < swapchain.swapchainImageViews.size(); i++) {
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPasses[scenePassIndex].renderPass;
-        framebufferInfo.width = swapchainExtent.width;
-        framebufferInfo.height = swapchainExtent.height;
+        framebufferInfo.width = swapchain.swapchainExtent.width;
+        framebufferInfo.height = swapchain.swapchainExtent.height;
         framebufferInfo.layers = 1;
 
         prt::vector<VkImageView> attachments;
-        attachments.resize(swapchainFBAindices[i].size() + 1);
-        attachments[0] = swapchainImageViews[i];
-        for (size_t j = 0; j < swapchainFBAindices[i].size(); ++j) {
-            attachments[j + 1] = framebufferAttachments[swapchainFBAindices[i][j]].imageView;
+        attachments.resize(swapchain.swapchainFBAindices[i].size() + 1);
+        attachments[0] = swapchain.swapchainImageViews[i];
+        for (size_t j = 0; j < swapchain.swapchainFBAindices[i].size(); ++j) {
+            attachments[j + 1] = framebufferAttachments[swapchain.swapchainFBAindices[i][j]].imageView;
         }
 
         framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         framebufferInfo.pAttachments = attachments.data();
 
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchainFramebuffers[i]) != VK_SUCCESS) {
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchain.swapchainFramebuffers[i]) != VK_SUCCESS) {
             assert(false && "failed to create framebuffer!");
         }
     }
 }
 
-void VulkanApplication::createCommandPool() {
+void VulkanApplication::createSwapchainFBACopies() {
+    for (auto & copies : swapchain.swapchainFBACopies) {
+        for (SwapchainFBACopy & copy : copies) {
+            createBuffer(copy.bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+                         copy.buffer, copy.bufferMemory);
+
+            if (vkMapMemory(device, copy.bufferMemory, 0, VK_WHOLE_SIZE, 0, &copy.data ) != VK_SUCCESS) {
+                assert(false && "failed to map memory!");
+            }
+        }
+    }
+}
+
+void VulkanApplication::createCommandPool(VkCommandPool & pool, VkCommandPoolCreateFlags flags) {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
     
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.flags = flags;
     
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
         assert(false && "failed to create graphics command pool!");
     }
 }
@@ -767,8 +795,8 @@ void VulkanApplication::createRenderPasses() {
 void VulkanApplication::createFramebufferAttachments() {
     for (FramebufferAttachment & fba : framebufferAttachments) {
         if (fba.swapchainAttachment) {
-            fba.imageInfo.extent.width = swapchainExtent.width;
-            fba.imageInfo.extent.height = swapchainExtent.height;
+            fba.imageInfo.extent.width = swapchain.swapchainExtent.width;
+            fba.imageInfo.extent.height = swapchain.swapchainExtent.height;
         }
 
         createImage(fba.imageInfo,
@@ -842,9 +870,48 @@ size_t VulkanApplication::pushBackFramebufferAttachment() {
     return index;
 }
 
-void VulkanApplication::addSwapchainFBA(size_t swapchainIndex, size_t fbaIndex) {
-    swapchainFBAindices[swapchainIndex].push_back(fbaIndex);
+size_t VulkanApplication::addSwapchainFBA(size_t swapchainIndex, size_t fbaIndex) {
+    swapchain.swapchainFBAindices[swapchainIndex].push_back(fbaIndex);
+    return swapchain.swapchainFBAindices[swapchainIndex].size() - 1;
 }
+
+size_t VulkanApplication::addSwapchainFBACopy(size_t swapchainIndex, size_t swapchainFBAIndex, 
+                                              uint32_t width, uint32_t height, VkImageAspectFlags aspectFlags) {
+    swapchain.swapchainFBACopies[swapchainIndex].push_back({});
+
+    SwapchainFBACopy & copy = swapchain.swapchainFBACopies[swapchainIndex].back();
+    copy.swapchainAttachmentIndex = swapchainFBAIndex;
+
+    copy.region.imageExtent.width = width;
+    copy.region.imageExtent.height = height;
+    copy.region.imageExtent.depth = 1;
+
+    copy.region.imageSubresource.aspectMask = aspectFlags;
+    copy.region.imageSubresource.mipLevel = 0;
+    copy.region.imageSubresource.baseArrayLayer = 0;
+    copy.region.imageSubresource.layerCount = 1;
+
+    size_t pixelSize;
+    switch (aspectFlags)
+    {
+    case VK_IMAGE_ASPECT_COLOR_BIT:
+        pixelSize = 4 * 4;
+        break;
+        case VK_IMAGE_ASPECT_DEPTH_BIT:
+        pixelSize = 4;
+        break;
+    
+    default:
+        pixelSize = 0;
+        assert(false && "Error unhandled aspect flags!");
+        break;
+    }
+
+    copy.bufferSize = width * height * pixelSize;
+
+    return swapchain.swapchainFBACopies[swapchainIndex].size() - 1;
+}
+
 
 size_t VulkanApplication::pushBackShadowMap() {
     size_t index = shadowMaps.size();
@@ -1158,7 +1225,7 @@ VkImageView VulkanApplication::createImageView(VkImageViewCreateInfo & viewInfo)
 }
 
 void VulkanApplication::createImage(VkImageCreateInfo & imageInfo, VkMemoryPropertyFlags properties, 
-                                    VkImage& image, VkDeviceMemory& imageMemory) {
+                                    VkImage & image, VkDeviceMemory & imageMemory) {
     
     if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         assert(false && "failed to create image!");
@@ -1179,6 +1246,8 @@ void VulkanApplication::createImage(VkImageCreateInfo & imageInfo, VkMemoryPrope
     vkBindImageMemory(device, image, imageMemory, 0);
 }
 
+// TODO: remove/change this function and shift responsibility of transitioning to
+//       caller 
 void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format, 
                                               VkImageLayout oldLayout, VkImageLayout newLayout, 
                                               uint32_t mipLevels, uint32_t layerCount) {
@@ -1195,7 +1264,8 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
     
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         
         if (hasStencilComponent(format)) {
@@ -1231,14 +1301,18 @@ void VulkanApplication::transitionImageLayout(VkImage image, VkFormat format,
         
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    }
-    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    }
-    else {
+    } else if (oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        
+        sourceStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else {
         assert(false && "unsupported layout transition!");
     }
     
@@ -1296,7 +1370,7 @@ void VulkanApplication::createDescriptorPool(GraphicsPipeline & pipeline) {
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(pipeline.descriptorPoolSizes.size());
     poolInfo.pPoolSizes = pipeline.descriptorPoolSizes.data();
-    poolInfo.maxSets = static_cast<uint32_t>(swapchainImages.size());
+    poolInfo.maxSets = static_cast<uint32_t>(swapchain.swapchainImages.size());
     
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &pipeline.descriptorPool) != VK_SUCCESS) {
         assert(false && "failed to create descriptor pool!");
@@ -1305,20 +1379,20 @@ void VulkanApplication::createDescriptorPool(GraphicsPipeline & pipeline) {
 
 void VulkanApplication::createDescriptorSets() {
     for (auto & pipeline : graphicsPipelines) {
-        prt::vector<VkDescriptorSetLayout> layout(swapchainImages.size(), pipeline.descriptorSetLayout);
+        prt::vector<VkDescriptorSetLayout> layout(swapchain.swapchainImages.size(), pipeline.descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = pipeline.descriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(swapchainImages.size());
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(swapchain.swapchainImages.size());
         allocInfo.pSetLayouts = layout.data();
 
-        pipeline.descriptorSets.resize(swapchainImages.size());
+        pipeline.descriptorSets.resize(swapchain.swapchainImages.size());
         if (vkAllocateDescriptorSets(device, &allocInfo, pipeline.descriptorSets.data()) != VK_SUCCESS) {
             assert(false && "failed to allocate descriptor sets!");
         }
 
-        for (size_t i = 0; i < swapchainImages.size(); i++) {     
+        for (size_t i = 0; i < swapchain.swapchainImages.size(); i++) {     
             prt::vector<VkDescriptorImageInfo> imDesc;
             imDesc.resize(pipeline.imageAttachments.size());
             for (size_t j = 0; j < pipeline.imageAttachments.size(); ++j) {
@@ -1406,12 +1480,12 @@ size_t VulkanApplication::pushBackUniformBufferData(size_t uboSize) {
     uniformBufferDatas.push_back({});
     UniformBufferData& uniformBufferData = uniformBufferDatas.back();
     uniformBufferData.uboData.resize(uboSize);
-    uniformBufferData.mappedMemories.resize(swapchainImages.size());
-    uniformBufferData.uniformBuffers.resize(swapchainImages.size());
-    uniformBufferData.uniformBufferMemories.resize(swapchainImages.size());
+    uniformBufferData.mappedMemories.resize(swapchain.swapchainImages.size());
+    uniformBufferData.uniformBuffers.resize(swapchain.swapchainImages.size());
+    uniformBufferData.uniformBufferMemories.resize(swapchain.swapchainImages.size());
 
     size_t size = uniformBufferData.uboData.size();
-    for (size_t i = 0; i < swapchainImages.size(); i++) {
+    for (size_t i = 0; i < swapchain.swapchainImages.size(); i++) {
         createBuffer(size, 
                      VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
@@ -1470,7 +1544,7 @@ uint32_t VulkanApplication::findMemoryType(uint32_t typeFilter, VkMemoryProperty
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
     
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
             return i;
         }
@@ -1481,7 +1555,7 @@ uint32_t VulkanApplication::findMemoryType(uint32_t typeFilter, VkMemoryProperty
 }
 
 void VulkanApplication::createCommandBuffers() {
-    commandBuffers.resize(swapchainFramebuffers.size());
+    commandBuffers.resize(swapchain.swapchainFramebuffers.size());
     
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1492,8 +1566,23 @@ void VulkanApplication::createCommandBuffers() {
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         assert(false && "failed to allocate command buffers!");
     }
+
     for (size_t i = 0; i < commandBuffers.size(); i++) {
         createCommandBuffer(i);
+    }
+}
+
+void VulkanApplication::createDynamicCommandBuffers() {
+    dynamicCommandBuffers.resize(swapchain.swapchainFramebuffers.size());
+    
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = dynamicCommandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, dynamicCommandBuffers.data()) != VK_SUCCESS) {
+        assert(false && "failed to allocate dynamic command buffers!");
     }
 }
 
@@ -1510,7 +1599,76 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
         createRenderPassCommands(imageIndex, renderPass);
     }
 
+    // copy FBAs
+    for (SwapchainFBACopy & copy : swapchain.swapchainFBACopies[imageIndex]) {
+        size_t fbaIndex = swapchain.swapchainFBAindices[imageIndex][copy.swapchainAttachmentIndex];
+        
+        // Transition image
+        VkImageMemoryBarrier barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = framebufferAttachments[fbaIndex].imageLayout;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = framebufferAttachments[fbaIndex].image;
+    
+        if (barrier.oldLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+            barrier.newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            
+            if (hasStencilComponent(framebufferAttachments[fbaIndex].imageInfo.format)) {
+                barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+        } else {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+    
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        
+        barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        
+        vkCmdPipelineBarrier(commandBuffers[imageIndex],
+                             VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0,
+                             0, nullptr,
+                             0, nullptr,
+                             1, &barrier);
+    }
+
     if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
+        assert(false && "failed to record command buffer!");
+    }
+}
+
+void VulkanApplication::updateDynamicCommandBuffer(size_t const imageIndex) {    
+    vkResetCommandBuffer(dynamicCommandBuffers[imageIndex], 0);
+
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    
+    if (vkBeginCommandBuffer(dynamicCommandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+        assert(false && "failed to begin recording command buffer!");
+    }
+
+    // copy FBAs
+    for (SwapchainFBACopy & copy : swapchain.swapchainFBACopies[imageIndex]) {
+        size_t fbaIndex = swapchain.swapchainFBAindices[imageIndex][copy.swapchainAttachmentIndex];
+
+        vkCmdCopyImageToBuffer(dynamicCommandBuffers[imageIndex],
+                               framebufferAttachments[fbaIndex].image,
+                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               copy.buffer,
+                               1,
+                               &copy.region);
+    }
+
+    if (vkEndCommandBuffer(dynamicCommandBuffers[imageIndex]) != VK_SUCCESS) {
         assert(false && "failed to record command buffer!");
     }
 }
@@ -1518,16 +1676,16 @@ void VulkanApplication::createCommandBuffer(size_t const imageIndex) {
 void VulkanApplication::createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass) {
     switch (renderPass.outputType) {
         case RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN: {
-            renderPass.framebuffers.resize(swapchainImageCount);
+            renderPass.framebuffers.resize(swapchain.swapchainImageCount);
             for (size_t i = 0; i < renderPass.framebuffers.size(); ++i) {
                 renderPass.framebuffers[i].resize(1);
-                renderPass.framebuffers[i][0] = swapchainFramebuffers[i];
+                renderPass.framebuffers[i][0] = swapchain.swapchainFramebuffers[i];
             }
         }
         break;
         case RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP: {
-            renderPass.framebuffers.resize(swapchainImageCount);
-            for (size_t i = 0; i < swapchainImageCount; ++i) {
+            renderPass.framebuffers.resize(swapchain.swapchainImageCount);
+            for (size_t i = 0; i < swapchain.swapchainImageCount; ++i) {
                 renderPass.framebuffers[i].resize(NUMBER_SHADOWMAP_CASCADES);
                 for (size_t j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
                     renderPass.framebuffers[i][j] = shadowMaps[renderPass.shadowMapIndex].cascades[i][j].framebuffer;
@@ -1592,6 +1750,7 @@ void VulkanApplication::createRenderPassCommands(size_t const imageIndex, Render
                 createDrawCommands(imageIndex, pipeline);
             }
         }
+        
         vkCmdEndRenderPass(commandBuffers[imageIndex]);
     }
 }
@@ -1627,7 +1786,7 @@ void VulkanApplication::createSyncObjects() {
     imageAvailableSemaphores.resize(maxFramesInFlight);
     renderFinishedSemaphores.resize(maxFramesInFlight);
     inFlightFences.resize(maxFramesInFlight);
-    imagesInFlight.resize(swapchainImages.size(), VK_NULL_HANDLE);
+    imagesInFlight.resize(swapchain.swapchainImages.size(), VK_NULL_HANDLE);
     
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1656,7 +1815,7 @@ void VulkanApplication::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, 
+    VkResult result = vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX, 
                                             imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1670,6 +1829,9 @@ void VulkanApplication::drawFrame() {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }     
     updateUniformBuffers(imageIndex);
+
+    updateDynamicCommandBuffer(imageIndex);
+
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     VkSubmitInfo submitInfo = {};
@@ -1680,9 +1842,11 @@ void VulkanApplication::drawFrame() {
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
+
+    prt::array<VkCommandBuffer, 2> cmdBuffers = { commandBuffers[imageIndex], dynamicCommandBuffers[imageIndex]};
     
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+    submitInfo.commandBufferCount = cmdBuffers.size();
+    submitInfo.pCommandBuffers = cmdBuffers.data();
     
     VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
@@ -1700,7 +1864,7 @@ void VulkanApplication::drawFrame() {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
     
-    VkSwapchainKHR swapchains[] = {swapchain};
+    VkSwapchainKHR swapchains[] = {swapchain.swapchain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapchains;
     
@@ -1716,6 +1880,8 @@ void VulkanApplication::drawFrame() {
     }
     
     currentFrame = (currentFrame + 1) % maxFramesInFlight;
+
+    swapchain.previousImageIndex = imageIndex;
 }
 
 prt::vector<size_t> VulkanApplication::getPipelineIndicesByType(PipelineType type) {
@@ -1940,4 +2106,21 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanApplication::debugCallback(VkDebugUtilsMess
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
     
     return VK_FALSE;
+}
+
+float VulkanApplication::depthToFloat(void * depthValue, VkFormat depthFormat) {    
+    switch (depthFormat) {
+    case VK_FORMAT_D32_SFLOAT:
+        return *static_cast<float*>(depthValue);
+        break;
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        break;
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+        break;
+    
+    default:
+        break;
+    }
+    assert(false && "Conversion for this depth format has not been implemented!");
+    return 0.0f;
 }
