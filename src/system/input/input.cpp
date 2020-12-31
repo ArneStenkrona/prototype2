@@ -44,10 +44,6 @@ bool Input::getKeyUp(INPUT_KEY keyCode) {
     return !currentKeyboardState[keyCode] && previousKeyboardState[keyCode];
 }
 
-int Input::getMouseButton(int mouseButton) {
-    return glfwGetMouseButton(_window, mouseButton);
-}
-
 void Input::getCursorPos(double& xpos, double& ypos) {
     glfwGetCursorPos(_window, &xpos, &ypos);
     xpos *= scaleX;
@@ -59,7 +55,7 @@ void Input::getCursorDelta(double& dx, double& dy) {
     dy = _dy;
 }
 
-void Input::update() {
+void Input::update(bool enableCapture) {
     // update cursor delta
     double x, y;
     getCursorPos(x, y);
@@ -68,18 +64,27 @@ void Input::update() {
     _lastCursorX = x;
     _lastCursorY = y;
     // lock/unlock cursor
-    if (glfwGetKey(_window, GLFW_KEY_ESCAPE)) {
-        glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        _dx = 0;
-        _dy = 0;
-    }
-    int state = glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_LEFT);
-    if (state == GLFW_PRESS)
-    {
-        glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (enableCapture) {
+        if (glfwGetKey(_window, GLFW_KEY_ESCAPE)) {
+            glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            _dx = 0;
+            _dy = 0;
+        }
+        int state = glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_LEFT);
+        if (state == GLFW_PRESS)
+        {
+            glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    } else {
+        if (glfwGetInputMode(_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+            glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            _dx = 0;
+            _dy = 0;
+        }
     }
     updateKeyboardState();
 }
+
 void Input::updateKeyboardState() {
     previousKeyboardState = currentKeyboardState;
     currentKeyboardState[INPUT_KEY::KEY_UNKNOWN] = glfwGetKey(_window, GLFW_KEY_UNKNOWN) == GLFW_PRESS;
@@ -203,4 +208,7 @@ void Input::updateKeyboardState() {
     currentKeyboardState[INPUT_KEY::KEY_RIGHT_ALT] = glfwGetKey(_window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS;
     currentKeyboardState[INPUT_KEY::KEY_RIGHT_SUPER] = glfwGetKey(_window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS;
     currentKeyboardState[INPUT_KEY::KEY_MENU] = glfwGetKey(_window, GLFW_KEY_MENU) == GLFW_PRESS;
+
+    currentKeyboardState[INPUT_KEY::KEY_MOUSE_LEFT] = glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    currentKeyboardState[INPUT_KEY::KEY_MOUSE_RIGHT] = glfwGetMouseButton(_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 }

@@ -44,30 +44,30 @@ struct QueueFamilyIndices {
     }
 };
 
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
+struct SwapchainSupportDetails {
+    VkSurfaceCapabilitiesKHR        capabilities;
     prt::vector<VkSurfaceFormatKHR> formats;
-    prt::vector<VkPresentModeKHR> presentModes;
+    prt::vector<VkPresentModeKHR>   presentModes;
 };
 
 struct VertexData {
-    VkBuffer vertexBuffer;
+    VkBuffer       vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
+    VkBuffer       indexBuffer;
     VkDeviceMemory indexBufferMemory;
 };
 
 struct TextureImages {
-    prt::vector<VkImage> images;
-    prt::vector<VkDeviceMemory> imageMemories;
-    prt::vector<VkImageView> imageViews;
+    prt::vector<VkImage>               images;
+    prt::vector<VkDeviceMemory>        imageMemories;
+    prt::vector<VkImageView>           imageViews;
     prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
 };
 
 struct UniformBufferData {
-    prt::vector<char> uboData{prt::getAlignment(alignof(std::max_align_t))};
-    prt::vector<void*> mappedMemories;
-    prt::vector<VkBuffer> uniformBuffers;
+    prt::vector<char>           uboData{prt::getAlignment(alignof(std::max_align_t))};
+    prt::vector<void*>          mappedMemories;
+    prt::vector<VkBuffer>       uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBufferMemories;
 };
 
@@ -76,21 +76,130 @@ struct Assets {
     TextureImages textureImages;
 };
 
-struct FrameBufferAttachment {
-		VkImage image;
-		VkDeviceMemory memory;
-		VkImageView imageView;
+struct FramebufferAttachment {
+    VkImageLayout         imageLayout;
+    VkImageCreateInfo     imageInfo;
+    VkImageViewCreateInfo imageViewInfo;
+    VkMemoryAllocateInfo  memoryInfo;
+    VkImage               image = VK_NULL_HANDLE;
+    VkDeviceMemory        memory = VK_NULL_HANDLE;
+    VkImageView           imageView = VK_NULL_HANDLE;
+
+    /*
+     * TODO: find better solution to
+     * swapchain recreation issues
+     **/
+    bool swapchainAttachment = false;
 };
 
 struct Cascade {
-    VkFramebuffer frameBuffer;
-    VkDescriptorSet descriptorSet;
+    size_t frameBufferIndex;
+    VkFramebuffer framebuffer;
     VkImageView imageView;
-    VkDescriptorImageInfo descriptors;
-
-    // float splitDepth;
-    // glm::mat4 viewProjMatrix;
 };
+
+struct CascadeShadowMap {
+    prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
+};
+
+struct SwapchainFBACopy {
+    size_t               swapchainAttachmentIndex;
+    VkBufferImageCopy    region;
+    VkBuffer             buffer;
+    VkDeviceMemory       bufferMemory;
+    size_t               bufferSize;
+    void *               data;
+};
+
+// TODO: remove redundant "swapchain" from all
+// member field names
+struct Swapchain {
+    // Swapchain data
+    uint32_t                                    swapchainImageCount;
+    uint32_t                                    previousImageIndex;
+    VkSwapchainKHR                              swapchain;
+    prt::vector<VkImage>                        swapchainImages;
+    VkFormat                                    swapchainImageFormat;
+    VkExtent2D                                  swapchainExtent;
+    prt::vector<VkImageView>                    swapchainImageViews;
+    prt::vector<VkFramebuffer>                  swapchainFramebuffers;
+    prt::vector<prt::vector<size_t> >           swapchainFBAindices;
+    prt::vector<prt::vector<SwapchainFBACopy> > swapchainFBACopies;
+
+};
+
+struct SubPass {
+    VkPipelineBindPoint                bindPoint;
+    prt::vector<VkAttachmentReference> colorReferences;
+    VkAttachmentReference              depthReference = {0,VK_IMAGE_LAYOUT_END_RANGE}; // use VK_IMAGE_LAYOUT_END_RANGE to signify no depth reference
+    prt::vector<VkAttachmentReference> inputReferences;
+
+    prt::vector<size_t> pipelineIndices;
+};
+
+struct RenderPass {
+    VkExtent2D                           extent;
+    prt::vector<VkAttachmentDescription> attachments;
+    prt::vector<SubPass>                 subpasses;
+    prt::vector<VkSubpassDependency>     dependencies;
+
+    VkRenderPass renderPass;
+
+    prt::vector<prt::vector<VkFramebuffer> > framebuffers; // RenderPass will be performed once on each frame buffer for each command buffer
+    prt::vector<VkClearValue>                clearValues;
+
+    /*
+     * TODO: find better solution to
+     * swapchain recreation issues
+     **/
+    enum RenderOutputType {
+        RENDER_OUTPUT_TYPE_SWAPCHAIN,
+        RENDER_OUTPUT_TYPE_SHADOWMAP
+    };
+    RenderOutputType outputType;
+
+    size_t shadowMapIndex; // only used for RENDER_OUTPUT_TYPE_SHADOWMAP
+
+    /*
+     * TODO: Refactor this monstrosity
+     * It is only used to set the current
+     * cascade index through push constant
+     * when rendering to shadow map
+     **/
+    int pushConstantFBIndexByteOffset = -1;
+
+    float depthBiasConstant = 0.0f;
+    float depthBiasClamp = 0.0f;
+    float depthBiasSlope = 0.0f;
+};
+
+
+enum RenderGroupFlags : uint16_t {
+    RENDER_GROUP_FLAG_0 = 1<<0,
+    RENDER_GROUP_FLAG_1 = 1<<1,
+    RENDER_GROUP_FLAG_2 = 1<<2,
+    RENDER_GROUP_FLAG_3 = 1<<3,
+    RENDER_GROUP_FLAG_4 = 1<<4,
+    RENDER_GROUP_FLAG_5 = 1<<5,
+    RENDER_GROUP_FLAG_6 = 1<<6,
+    RENDER_GROUP_FLAG_7 = 1<<7,
+    RENDER_GROUP_FLAG_8 = 1<<8,
+    RENDER_GROUP_FLAG_9 = 1<<9,
+    RENDER_GROUP_FLAG_10 = 1<<10,
+    RENDER_GROUP_FLAG_11 = 1<<11,
+    RENDER_GROUP_FLAG_12 = 1<<12,
+    RENDER_GROUP_FLAG_13 = 1<<13,
+    RENDER_GROUP_FLAG_14 = 1<<14,
+    RENDER_GROUP_FLAG_15 = 1<<15,
+    RENDER_GROUP_FLAG_ALL = uint16_t(~0),
+    RENDER_GROUP_FLAG_NONE = 0,
+};
+
+template<typename INT_T>
+bool checkMask(uint16_t mask, INT_T i) {
+    assert(i <= sizeof(mask)*CHAR_BIT);
+    return mask & (1 << i);
+}
 
 class VulkanApplication {
 public:
@@ -102,60 +211,64 @@ public:
 
     void initWindow(unsigned int width, unsigned int height);
     void initVulkan();
+
+    void render(uint16_t renderGroupMask = RENDER_GROUP_FLAG_ALL);
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = _width; h = _height; };
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 protected:
+    /*
+     * TODO: Move this to where appropriate
+     **/
+    static constexpr int32_t shadowmapDimension = 2048;
+    static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
+    static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
+
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    // render group mask
+    uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
+
     // command data
-    VkCommandPool commandPool;
-    prt::vector<VkCommandBuffer> commandBuffers;
+    VkCommandPool commandPool; // TODO: rename to reflect that pool is for static commands
+    VkCommandPool dynamicCommandPool;
+    prt::vector<VkCommandBuffer> commandBuffers; // TODO: rename to reflect that these are static command buffers
+    prt::vector<VkCommandBuffer> dynamicCommandBuffers;
     
-    // Sampler
+    // Samplers
     VkSampler textureSampler;
+    VkSampler shadowMapSampler;
 
-    // Swapchain data
-    VkSwapchainKHR swapChain;
-    prt::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    prt::vector<VkImageView> swapChainImageViews;
-    prt::vector<VkFramebuffer> swapChainFramebuffers;
+    // Swapchain
+    Swapchain swapchain;
 
-    VkRenderPass scenePass;
+    // Render passes
+    prt::vector<RenderPass> renderPasses;
+    size_t scenePassIndex;
+    size_t offscreenPassIndex;
 
-    prt::vector<VkDescriptorImageInfo> accumulationDescriptors;
-    prt::vector<VkDescriptorImageInfo> revealageDescriptors;
-    prt::vector<VkDescriptorImageInfo> inputAccumulationDescriptors;
-    prt::vector<VkDescriptorImageInfo> inputRevealageDescriptors;
-    prt::vector<FrameBufferAttachment> accumulationAttachments;
-    prt::vector<FrameBufferAttachment> revealageAttachments;
+    /*
+     * TODO: Differentiate between swapchain-dependent FBAs
+     * and regular FBAs so that not all FBAs need to be rebuilt
+     * when the swapchain is recreated
+     **/
+    prt::vector<FramebufferAttachment> framebufferAttachments;
 
-    struct OffscreenPass {
-        VkExtent2D extent;
-        // prt::vector<VkFramebuffer> frameBuffers;
-        prt::vector<FrameBufferAttachment> depths;
-        VkRenderPass renderPass;
-        VkSampler depthSampler;
-        prt::vector<VkDescriptorImageInfo> descriptors;
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSetLayout descriptorSetLayout;
+    prt::vector<CascadeShadowMap> shadowMaps;
 
-        prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
-    } offscreenPass;
-    
-    struct {
-        prt::vector<GraphicsPipeline> offscreen;
-        prt::vector<GraphicsPipeline> opaque;
-        prt::vector<GraphicsPipeline> transparent;
-        prt::vector<GraphicsPipeline> composition;
-
-    } graphicsPipelines;
-
-    void update();
+    prt::vector<GraphicsPipeline> graphicsPipelines;
 
     VkDevice& getDevice() { return device; }
+
+    size_t pushBackFramebufferAttachment();
+
+    size_t addSwapchainFBA(size_t swapchainIndex, size_t fbaIndex);
+    size_t addSwapchainFBACopy(size_t swapchainIndex, size_t swapchainFBAIndex,
+                               uint32_t width, uint32_t height, VkImageAspectFlags aspectFlags);
+
+    size_t pushBackRenderPass();
+    size_t pushBackShadowMap();
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
@@ -163,10 +276,10 @@ protected:
     void createTextureImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
     void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
-    void recreateSwapChain();
-    void reprepareSwapChain();
-    void completeSwapChain();
-    void cleanupSwapChain();
+    void recreateSwapchain();
+    void reprepareSwapchain();
+    void completeSwapchain();
+    void cleanupSwapchain();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                             VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
@@ -180,12 +293,13 @@ protected:
 
     inline UniformBufferData& getUniformBufferData(size_t index) { return uniformBufferDatas[index]; } 
     inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
+    
+    prt::vector<size_t> getPipelineIndicesByType(PipelineType type);
+    
+    VkFormat findDepthFormat();
+    float depthToFloat(void * depthValue, VkFormat depthFormat);
 
 private:
-    static constexpr int32_t shadowmapDimension = 2048;
-    static constexpr float depthBiasConstant = 0.01f;//1.25f;
-    static constexpr float depthBiasSlope = 0.01f;//1.75f;
-
     static constexpr unsigned int maxFramesInFlight = 2;
 
     static constexpr prt::array<const char*, 1> validationLayers = { "VK_LAYER_KHRONOS_validation" };
@@ -205,16 +319,10 @@ private:
     VkSurfaceKHR surface;
     
     VkPhysicalDevice physicalDevice;
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
     
     VkQueue graphicsQueue;
     VkQueue presentQueue;
-        
-    FrameBufferAttachment colorAttachment;
-    FrameBufferAttachment depthAttachment;
-    FrameBufferAttachment accumulationAttachment;
-    FrameBufferAttachment revealageAttachment;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
@@ -246,19 +354,11 @@ private:
     
     void createLogicalDevice();
     
-    void createSwapChain();
+    void createSwapchain();
     
-    void createImageViews();
+    void createSwapchainImageViews();
     
-    void createScenePass();
-    // void createScenePassMsaa();
-    void createScenePassNoMsaa();
-
     void createOffscreenSampler();
-    void createOffscreenRenderPass();
-    void createOffscreenFrameBuffer();
-
-    void createTransparencyAttachments();
 
     void prepareGraphicsPipelines();
     
@@ -268,29 +368,32 @@ private:
     void createPipelineCaches(prt::vector<GraphicsPipeline> & pipelines);
     void createPipelineCache(GraphicsPipeline & pipeline);
 
-    void createShadowMapPipeline();
     void createGraphicsPipelines(prt::vector<GraphicsPipeline> const & pipelines);
     void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
-    void createFramebuffers();
-    
-    void createCommandPool(); 
+    void createCommandPool(VkCommandPool & pool, VkCommandPoolCreateFlags flags); 
     void createCommandBuffers();
+    void createDynamicCommandBuffers();
     void createCommandBuffer(size_t const imageIndex);
-    void createOffscreenCommands(size_t const imageIndex);
-    void createSceneCommands(size_t const imageIndex);
-    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void updateDynamicCommandBuffer(size_t const imageIndex);
+
+    void createSwapchainFrameBuffers();
+    void createSwapchainFBACopies();
     
-    void createColorResources();
-    void createDepthResources();
-    void createAccumulationResources();
-    void createRevealageResources();
+    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass);
+
+    void createRenderPasses();
+    void createRenderPass(RenderPass & renderpass);
+    
+    void createFramebufferAttachments();
+
+    void createShadowMaps();
+    void createShadowMap(CascadeShadowMap & shadowMap);
     
     VkFormat findSupportedFormat(prt::vector<VkFormat> const & candidates, 
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
-    
-    VkFormat findDepthFormat();
-    
+        
     bool hasStencilComponent(VkFormat format);
 
     void generateMipmaps(VkImage image, VkFormat imageFormat, 
@@ -302,17 +405,9 @@ private:
     
     void createTextureSampler();
     
-    VkImageView createImageView(VkImage image, VkFormat format, 
-                                VkImageAspectFlags aspectFlags, 
-                                VkImageViewType viewType,
-                                uint32_t mipLevels,
-                                uint32_t layerCount);
+    VkImageView createImageView(VkImageViewCreateInfo & viewInfo);
     
-    void createImage(uint32_t width, uint32_t height, 
-                     uint32_t mipLevels, uint32_t arrayLayers,
-                     VkImageCreateFlags flags,
-                     VkSampleCountFlagBits numSamples, VkFormat format, 
-                     VkImageTiling tiling, VkImageUsageFlags usage, 
+    void createImage(VkImageCreateInfo & imageInfo, 
                      VkMemoryPropertyFlags properties, VkImage& image, 
                      VkDeviceMemory& imageMemory);
     
@@ -324,13 +419,10 @@ private:
                            uint32_t width, uint32_t height,
                            uint32_t layerCount);
     
-    void createDescriptorPools(prt::vector<GraphicsPipeline> & pipelines);
+    void createDescriptorPools();
     void createDescriptorPool(GraphicsPipeline & pipeline);
     
     void createDescriptorSets();
-    void createDescriptorSetsOffscreen();
-    void createDescriptorSetsGeometry(prt::vector<GraphicsPipeline> & pipelines);
-    void createDescriptorSetsComposition();
     
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, 
                       VkMemoryPropertyFlags properties, VkBuffer& buffer, 
@@ -360,7 +452,7 @@ private:
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
 
     bool isDeviceSuitable(VkPhysicalDevice device);
     

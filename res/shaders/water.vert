@@ -23,8 +23,8 @@ struct BoxLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
-    mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 view;
     mat4 proj;
     vec3 viewPos;
@@ -34,10 +34,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     uint noPointLights;
     uint noBoxLights;
     DirLight sun;
-    vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
-    mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
-    PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
-    BoxLight boxLights[@NUMBER_SUPPORTED_BOXLIGHTS@];
+    vec4 splitDepths[(4 + 4) / 4];
+    mat4 cascadeSpace[4];
+    PointLight pointLights[4];
+    BoxLight boxLights[20];
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT
@@ -62,9 +62,17 @@ layout(location = 0) out VS_OUT {
     mat3 invtbn;
 } vs_out;
 
+float getOffset(vec3 pos, float t) {
+    float res = 0.5 * sin(0.03 * pos.z + t);
+    return res;
+}
+
 void main() {
     vec4 worldPos = ubo.model[pc.modelMatrixIdx] * vec4(inPosition, 1.0);
     worldPos = worldPos / worldPos.w;
+    vec4 waveOffset = vec4(0.0, getOffset(worldPos.xyz, ubo.t), 0.0, 0.0);
+    worldPos += waveOffset;
+
     vs_out.fragPos = worldPos.xyz;
     vec3 t = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inTangent, 0.0)));
     vec3 b = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inBinormal, 0.0)));

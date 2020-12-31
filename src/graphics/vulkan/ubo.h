@@ -55,15 +55,20 @@ struct StandardPushConstants {
     alignas(16) glm::vec4 baseColor;
     alignas(4)  float baseSpecularity;
     alignas(4)  uint32_t boneOffset;
-    // use if more data is needed
-    // alignas(16) unsigned char additionalData[32];
 };
-
 
 struct BillboardPushConstants {
     alignas(16) glm::vec4 billboardSize;
     alignas(4) int albedoIndex;
     alignas(4) int positionIndex;
+};
+
+struct GridUBO {
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+    alignas(16) glm::vec4 viewPosition;
+    alignas(4) float nearPlane;
+    alignas(4) float farPlane;
 };
 
 struct SkyboxUBO {
@@ -78,7 +83,6 @@ struct SkyboxUBO {
     alignas(16) glm::vec4 sunColor;
     alignas(4) float distToNoon;
 };
-
 
 struct BillboardUBO {
     alignas(16) glm::vec4 positions[NUMBER_SUPPORTED_BILLBOARDS];

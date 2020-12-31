@@ -109,9 +109,15 @@ struct Model::Material {
     int32_t normalIndex = -1;
     int32_t specularIndex = -1;
     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
-    bool transparent = false;
+    // bool transparent = false;
     bool twosided = false;
     float baseSpecularity = 0.5f;
+    enum Type {
+        standard,
+        transparent,
+        water
+    };
+    Type type = Type::standard;
 };
 
 struct Model::Bone {

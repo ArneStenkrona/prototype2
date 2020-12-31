@@ -6,7 +6,7 @@ Camera::Camera(Input& input, glm::vec3 position, glm::vec3 up, float yaw, float 
       m_worldUp(up), 
       m_yaw(yaw), 
       m_pitch(pitch),
-      m_movementSpeed(2.5f), 
+      m_movementSpeed(25.0f), 
       m_mouseSensitivity(0.30f), 
       m_fieldOfView(45.0f),
       m_width(800.0f),
@@ -29,9 +29,11 @@ void Camera::setProjection(float width, float height, float near, float far) {
     m_nearPlane = near;
     m_farPlane = far;
 }
+
 glm::mat4 Camera::getProjectionMatrix() const {
     return getProjectionMatrix(m_nearPlane, m_farPlane);
 }
+
 glm::mat4 Camera::getProjectionMatrix(float near, float far) const {
     return glm::perspective(glm::radians(m_fieldOfView), m_width / m_height, near, far);
 }
@@ -55,9 +57,9 @@ void Camera::setTarget(glm::vec3 target) {
     m_position = target - (m_targetDistance * m_front);
 }
 
-void Camera::update(float /*deltaTime*/) {
-    //processKeyboard(deltaTime);
-    processMouseMovement();
+void Camera::update(float deltaTime, bool keyboardMovement, bool drag) {
+    if (keyboardMovement) processKeyboard(deltaTime);
+    processMouseMovement(drag);
 }
 
 void Camera::processKeyboard(float deltaTime) {
@@ -80,7 +82,9 @@ void Camera::processKeyboard(float deltaTime) {
         m_fieldOfView = 45.0f;
 }
 
-void Camera::processMouseMovement() {
+void Camera::processMouseMovement(bool drag) {
+    if (drag && !m_input.getKeyPress(INPUT_KEY::KEY_MOUSE_LEFT)) return;
+
     //Mouse
     double x, y;
     m_input.getCursorDelta(x, y);

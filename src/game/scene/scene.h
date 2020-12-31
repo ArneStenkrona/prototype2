@@ -34,6 +34,8 @@ public:
     void sampleAnimation(prt::vector<glm::mat4> & bones);
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
+
+    void renderScene(Camera & camera);
     
 private:
     struct Lights {
@@ -57,6 +59,8 @@ private:
         glm::vec4 position;
         float distance;
     } m_moon;
+
+    float time = 0.0f;
 
     GameRenderer & m_gameRenderer;
     AssetManager& m_assetManager;
@@ -82,7 +86,6 @@ private:
     void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateCamera(float deltaTime);
-    void renderScene();
 
     friend class SceneSerialization;
 };

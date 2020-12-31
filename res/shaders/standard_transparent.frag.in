@@ -57,6 +57,7 @@ layout(push_constant) uniform MATERIAL {
 layout(location = 0) in VS_OUT {
     vec3 fragPos;
     vec2 fragTexCoord;
+    vec3 fragNormal;
     vec3 shadowPos;
     vec3 tangentSunDir;
     vec3 tangentViewPos;
@@ -122,7 +123,7 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos, 1.0));
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
 
     // Directional lighting
     res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
@@ -137,7 +138,7 @@ void main() {
     
     float weight = 
             max(min(1.0, max( max(color.r, color.g), color.b ) * color.a ) , color.a) *
-            clamp(0.03 / (1e-5 + pow(fs_in.fragPos.z / 200, 4.0)), 1e-2, 3e3);
+            clamp(0.03 / (1e-5 + pow(gl_FragCoord.z / 200, 4.0)), 1e-2, 3e3);
 
     // Blend Func: GL_ONE, GL_ONE
     // Switch to premultiplied alpha and weight

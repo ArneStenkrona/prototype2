@@ -52,8 +52,13 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
         
         scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].baseColor.a);
         scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
-
-        materials[i].transparent = materials[i].baseColor.a < 1.0f;
+        
+        if (materials[i].baseColor.a < 1.0f) {
+            materials[i].type = Material::Type::transparent;
+        }
+        // if (strstr(materials[i].name, "[water]") != NULL) {
+        //     materials[i].type = Material::Type::water;
+        // }
 
         materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, path, textureManager);
         materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, path, textureManager);

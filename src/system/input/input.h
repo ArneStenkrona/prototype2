@@ -127,6 +127,8 @@ enum INPUT_KEY {
     KEY_RIGHT_ALT,
     KEY_RIGHT_SUPER,
     KEY_MENU,
+    KEY_MOUSE_LEFT,
+    KEY_MOUSE_RIGHT,
     KEY_LAST                      
 };
 
@@ -134,11 +136,9 @@ class Input {
 public:
     Input();
 
-    // int getKey(int keyCode); 
     bool getKeyPress(INPUT_KEY keyCode);
     bool getKeyDown(INPUT_KEY keyCode);
     bool getKeyUp(INPUT_KEY keyCode);
-    int getMouseButton(int mouseButton);
 
     void getCursorPos(double& xpos, double& ypos);
     void getCursorDelta(double& dx, double& dy);
@@ -158,7 +158,7 @@ private:
     double _dy;
 
     void init(GLFWwindow* window);
-    void update();
+    void update(bool enableCapture);
     void updateKeyboardState();
     friend class Game;
 };

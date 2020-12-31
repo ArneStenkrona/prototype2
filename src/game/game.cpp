@@ -14,6 +14,7 @@ Game::Game()
   m_assetManager(RESOURCE_PATH),
   m_physicsSystem(m_assetManager.getModelManager()),
   m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
+  m_editor(m_scene, m_input),
   m_frameRate(FRAME_RATE),
   m_microsecondsPerFrame(1000000 / m_frameRate),
   m_currentFrame(0),
@@ -39,11 +40,16 @@ void Game::run() {
     clock::time_point nextSecond = lastTime + std::chrono::seconds(1);
         
     while (m_gameRenderer.isWindowOpen()) {
+        glfwPollEvents();
+
         deadLine = deadLine + std::chrono::microseconds(m_microsecondsPerFrame);
         auto currentTime = clock::now();
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = currentTime;
         update(deltaTime);
+
+        m_gameRenderer.render(m_renderMask);   
+
 
         std::this_thread::sleep_until(deadLine);
 
@@ -60,6 +66,22 @@ void Game::run() {
 
 void Game::update(float deltaTime) {
     m_time += deltaTime;
-    m_input.update();
-    m_scene.update(deltaTime);
+    m_input.update(m_mode == Mode::GAME);
+    updateMode();
+    switch (m_mode) {
+        case Mode::GAME:
+            m_renderMask = GameRenderer::GAME_RENDER_MASK;
+            m_scene.update(deltaTime);
+            break;
+        case Mode::EDITOR:
+            m_renderMask = GameRenderer::EDITOR_RENDER_MASK;
+            m_editor.update(deltaTime);
+            break;
+    }
+}
+
+void Game::updateMode() {
+    if (m_input.getKeyDown(INPUT_KEY::KEY_TAB)) {
+        m_mode = m_mode == Mode::GAME ? Mode::EDITOR : Mode::GAME; 
+    }
 }
