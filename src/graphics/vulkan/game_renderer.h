@@ -39,6 +39,7 @@ public:
 
     struct RenderResult {
         glm::vec3 mouseWorldPosition;
+        int16_t objectIndex;
     };
 
     /**
@@ -77,6 +78,7 @@ private:
     prt::vector<size_t> offscreenFBAIndices;
     prt::vector<size_t> objectFBAIndices;
 
+    size_t objectCopyIndex;
     size_t depthCopyIndex;
 
     size_t shadowMapIndex;
@@ -202,17 +204,21 @@ private:
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
-    // void pushBackColorFBA();
+    void pushBackObjectFBA();
     void pushBackDepthFBA();
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
     void pushBackOffscreenFBA();
-    void pushBackShadowMapFBA();
 
     void pushBackSceneRenderPass();
     void pushBackOffscreenRenderPass();
 
     void pushBackSunShadowMap();
+
+    prt::vector<VkPipelineColorBlendAttachmentState> getOpaqueBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getTransparentBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getCompositionBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getOffscreenBlendAttachmentState();
 };
 
 #endif

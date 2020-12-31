@@ -5,14 +5,17 @@
 GameRenderer::GameRenderer(unsigned int width, unsigned int height)
     : VulkanApplication(width, height) {
 
-    // pushBackColorFBA();
+    pushBackObjectFBA();
     pushBackDepthFBA();
     pushBackAccumulationFBA(); 
     pushBackRevealageFBA(); 
     pushBackOffscreenFBA();
 
     // add fba:s to swapchain
+    // order matters
     for (size_t i = 0; i < swapchain.swapchainImageCount; ++i) {
+        size_t objectIndex = addSwapchainFBA(i, objectFBAIndices[i]);
+        objectCopyIndex = addSwapchainFBACopy(i, objectIndex, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT);
         size_t depthIndex = addSwapchainFBA(i, depthFBAIndex);
         depthCopyIndex = addSwapchainFBACopy(i, depthIndex, 1, 1, VK_IMAGE_ASPECT_DEPTH_BIT);
         addSwapchainFBA(i, accumulationFBAIndices[i]);
@@ -184,6 +187,8 @@ void GameRenderer::createCompositionPipeline() {
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                        data.indexBuffer, 
                        data.indexBufferMemory);
+
+    pipeline.colorBlendAttachments = getCompositionBlendAttachmentState();
 }
 
 void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
@@ -269,6 +274,8 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
+
+    pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
 }
 
 void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
@@ -373,6 +380,9 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
+
+    pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();
+
 }
 
 void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
@@ -507,6 +517,8 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
+
+    pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
 }
 
 int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
@@ -663,6 +675,12 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
+    if (transparent) {
+        pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
+    } else {
+        pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();
+    }
+
     return pipelineIndex;
 }
 
@@ -740,6 +758,8 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     pipeline.extent.height = shadowmapDimension;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
+
+    pipeline.colorBlendAttachments = getOffscreenBlendAttachmentState();
 
     return pipelineIndex;
 }
@@ -894,12 +914,17 @@ GameRenderer::RenderResult GameRenderer::update(prt::vector<glm::mat4> const & m
     // earlier dynamic command buffers and later copies
     // will be overwritten, so it is fine
     for (size_t i = 0; i < swapchain.swapchainImageCount; ++i) { 
-        SwapchainFBACopy & copy = swapchain.swapchainFBACopies[i][depthCopyIndex];
-        int32_t x = glm::clamp(int32_t(mousePosition.x), 0, int32_t(swapchain.swapchainExtent.width) - int32_t(copy.region.imageExtent.width));
-        int32_t y = glm::clamp(int32_t(mousePosition.y), 0, int32_t(swapchain.swapchainExtent.height) - int32_t(copy.region.imageExtent.width));
+        SwapchainFBACopy & objectCopy = swapchain.swapchainFBACopies[i][objectCopyIndex];
+        int32_t x = glm::clamp(int32_t(mousePosition.x), 0, int32_t(swapchain.swapchainExtent.width) - int32_t(objectCopy.region.imageExtent.width));
+        int32_t y = glm::clamp(int32_t(mousePosition.y), 0, int32_t(swapchain.swapchainExtent.height) - int32_t(objectCopy.region.imageExtent.width));
+        
+        objectCopy.region.imageOffset.x = x;
+        objectCopy.region.imageOffset.y = y;
 
-        copy.region.imageOffset.x = x;
-        copy.region.imageOffset.y = y;
+        SwapchainFBACopy & depthCopy = swapchain.swapchainFBACopies[i][depthCopyIndex];
+
+        depthCopy.region.imageOffset.x = x;
+        depthCopy.region.imageOffset.y = y;
     }
 
     updateUBOs(modelMatrices, 
@@ -913,17 +938,19 @@ GameRenderer::RenderResult GameRenderer::update(prt::vector<glm::mat4> const & m
                boxLights,
                t);
 
-    SwapchainFBACopy & copy = swapchain.swapchainFBACopies[swapchain.previousImageIndex][depthCopyIndex];
-    float x = glm::clamp(float(mousePosition.x), 0.0f, float(swapchain.swapchainExtent.width) - float(copy.region.imageExtent.width)) / swapchain.swapchainExtent.width;
-    float y = glm::clamp(float(mousePosition.y), 0.0f, float(swapchain.swapchainExtent.height) - float(copy.region.imageExtent.width)) / swapchain.swapchainExtent.height;
+    SwapchainFBACopy & depthCopy = swapchain.swapchainFBACopies[swapchain.previousImageIndex][depthCopyIndex];
+    float x = glm::clamp(float(mousePosition.x), 0.0f, float(swapchain.swapchainExtent.width) - float(depthCopy.region.imageExtent.width)) / swapchain.swapchainExtent.width;
+    float y = glm::clamp(float(mousePosition.y), 0.0f, float(swapchain.swapchainExtent.height) - float(depthCopy.region.imageExtent.width)) / swapchain.swapchainExtent.height;
     x = 2.0f * x - 1.0f;
     y = 1.0f - 2.0f * y;
-    float mouseDepth = depthToFloat(copy.data, framebufferAttachments[depthFBAIndex].imageInfo.format);
+    float mouseDepth = depthToFloat(depthCopy.data, framebufferAttachments[depthFBAIndex].imageInfo.format);
     glm::mat4 invmvp = glm::inverse(camera.getProjectionMatrix(nearPlane, farPlane) * camera.getViewMatrix());
 
     RenderResult res;
     glm::vec4 mouseWorld = invmvp * glm::vec4(x, y, mouseDepth, 1.0f);
     res.mouseWorldPosition = glm::vec3(mouseWorld / mouseWorld.w);
+
+    res.objectIndex = *static_cast<int16_t*>(swapchain.swapchainFBACopies[swapchain.previousImageIndex][objectCopyIndex].data);
 
     return res;
 }
@@ -1614,6 +1641,44 @@ void GameRenderer::createBillboardBuffers(size_t assetIndex) {
                        data.indexBufferMemory);   
 }
 
+void GameRenderer::pushBackObjectFBA() {
+    objectFBAIndices.resize(swapchain.swapchainImageCount);
+    for (size_t i = 0; i < objectFBAIndices.size(); ++i) {
+        objectFBAIndices[i] = pushBackFramebufferAttachment();
+        FramebufferAttachment & fba = framebufferAttachments[objectFBAIndices[i]];
+        
+        // shadpow map image
+        fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        fba.imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        fba.imageInfo.extent.width = swapchain.swapchainExtent.width;
+        fba.imageInfo.extent.height = swapchain.swapchainExtent.height;
+        fba.imageInfo.extent.depth = 1;
+        fba.imageInfo.mipLevels = 1;
+        fba.imageInfo.arrayLayers = 1;
+        fba.imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        fba.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        fba.imageInfo.format = VK_FORMAT_R16_SINT;
+        fba.imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        // depth image view
+        fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        fba.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        fba.imageViewInfo.format = VK_FORMAT_R16_SINT;
+        fba.imageViewInfo.subresourceRange = {};
+        fba.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        fba.imageViewInfo.subresourceRange.baseMipLevel = 0;
+        fba.imageViewInfo.subresourceRange.levelCount = 1;
+        fba.imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        fba.imageViewInfo.subresourceRange.layerCount = 1;
+        // fba.imageViewInfo.image = fba.image; // Not yet created
+
+        fba.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        fba.swapchainAttachment = true;
+    }
+}
+
 void GameRenderer::pushBackOffscreenFBA() {
     offscreenFBAIndices.resize(swapchain.swapchainImageCount);
     for (size_t i = 0; i < offscreenFBAIndices.size(); ++i) {
@@ -1649,42 +1714,6 @@ void GameRenderer::pushBackOffscreenFBA() {
         fba.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 }
-
-// void GameRenderer::pushBackColorFBA() {
-//     colorFBAIndex = pushBackFramebufferAttachment();
-//     FramebufferAttachment & fba = framebufferAttachments[colorFBAIndex];
-
-//     fba.swapchainAttachment = true;
-
-//     VkFormat colorFormat = swapchain.swapchainImageFormat;
-
-//     fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-//     fba.imageInfo.flags = 0;
-//     fba.imageInfo.imageType = VK_IMAGE_TYPE_2D;
-//     fba.imageInfo.extent.width = swapchain.swapchainExtent.width;
-//     fba.imageInfo.extent.height = swapchain.swapchainExtent.height;
-//     fba.imageInfo.extent.depth = 1;
-//     fba.imageInfo.mipLevels = 1;
-//     fba.imageInfo.arrayLayers = 1;
-//     fba.imageInfo.format = colorFormat;
-//     fba.imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-//     fba.imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//     fba.imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-//     fba.imageInfo.samples = msaaSamples;
-//     fba.imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-//     fba.imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-//     // fba.imageViewInfo.image = fba.image; // not created yet
-//     fba.imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-//     fba.imageViewInfo.format = colorFormat;
-//     fba.imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//     fba.imageViewInfo.subresourceRange.baseMipLevel = 0;
-//     fba.imageViewInfo.subresourceRange.levelCount = 1;
-//     fba.imageViewInfo.subresourceRange.baseArrayLayer = 0;
-//     fba.imageViewInfo.subresourceRange.layerCount = 1;
-
-//     fba.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-// }
 
 void GameRenderer::pushBackDepthFBA() {
     depthFBAIndex = pushBackFramebufferAttachment();
@@ -1803,11 +1832,12 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePassIndex = pushBackRenderPass();
     RenderPass & scenePass = renderPasses[scenePassIndex];
 
-    scenePass.clearValues.resize(4);
+    scenePass.clearValues.resize(5);
     scenePass.clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
-    scenePass.clearValues[1].depthStencil = { 1.0f, 0 };
-    scenePass.clearValues[2].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
-    scenePass.clearValues[3].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
+    scenePass.clearValues[1].color = { { -1.0f, 0.0f, 0.0f, 1.0 } };
+    scenePass.clearValues[2].depthStencil = { 1.0f, 0 };
+    scenePass.clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
+    scenePass.clearValues[4].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
 
     scenePass.framebuffers.resize(1);
     scenePass.framebuffers[0].resize(swapchain.swapchainImageCount);
@@ -1815,7 +1845,7 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.outputType = RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN;
     // populate scene pass
     // attachments
-    scenePass.attachments.resize(6);
+    scenePass.attachments.resize(7);
     // colour
     scenePass.attachments[0].format = swapchain.swapchainImageFormat;
     scenePass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
@@ -1825,26 +1855,26 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     scenePass.attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    // depth
-    scenePass.attachments[1].format = findDepthFormat();
+    // object
+    scenePass.attachments[1].format = VK_FORMAT_R16_SINT;
     scenePass.attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
     scenePass.attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     scenePass.attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     scenePass.attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    // accumulation
-    scenePass.attachments[2].format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    scenePass.attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // depth
+    scenePass.attachments[2].format = findDepthFormat();
     scenePass.attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
     scenePass.attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    scenePass.attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    scenePass.attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     scenePass.attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    scenePass.attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // revealage
-    scenePass.attachments[3].format = VK_FORMAT_R8_UNORM;
+    scenePass.attachments[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // accumulation
+    scenePass.attachments[3].format = VK_FORMAT_R16G16B16A16_SFLOAT;
     scenePass.attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
     scenePass.attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     scenePass.attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1852,17 +1882,17 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     scenePass.attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    // input accumulation
-    scenePass.attachments[4].format = VK_FORMAT_R16G16B16A16_SFLOAT;
+    // revealage
+    scenePass.attachments[4].format = VK_FORMAT_R8_UNORM;
     scenePass.attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
-    scenePass.attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    scenePass.attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     scenePass.attachments[4].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     scenePass.attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    scenePass.attachments[4].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.attachments[4].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // input revealage
-    scenePass.attachments[5].format = VK_FORMAT_R8_UNORM;
+    scenePass.attachments[4].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[4].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // input accumulation
+    scenePass.attachments[5].format = VK_FORMAT_R16G16B16A16_SFLOAT;
     scenePass.attachments[5].samples = VK_SAMPLE_COUNT_1_BIT;
     scenePass.attachments[5].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     scenePass.attachments[5].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -1870,26 +1900,37 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.attachments[5].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[5].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     scenePass.attachments[5].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // input revealage
+    scenePass.attachments[6].format = VK_FORMAT_R8_UNORM;
+    scenePass.attachments[6].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[6].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    scenePass.attachments[6].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[6].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[6].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[6].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.attachments[6].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     // subpasses
     scenePass.subpasses.resize(3);
     scenePass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    scenePass.subpasses[0].colorReferences.resize(1);
+    scenePass.subpasses[0].colorReferences.resize(2);
     scenePass.subpasses[0].colorReferences[0].attachment = 0;
     scenePass.subpasses[0].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    scenePass.subpasses[0].colorReferences[1].attachment = 1;
+    scenePass.subpasses[0].colorReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    scenePass.subpasses[0].depthReference.attachment = 1;
+    scenePass.subpasses[0].depthReference.attachment = 2;
     scenePass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     scenePass.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
 
     scenePass.subpasses[1].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[1].colorReferences.resize(2);
-    scenePass.subpasses[1].colorReferences[0].attachment = 2;
+    scenePass.subpasses[1].colorReferences[0].attachment = 3;
     scenePass.subpasses[1].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.subpasses[1].colorReferences[1].attachment = 3;
+    scenePass.subpasses[1].colorReferences[1].attachment = 4;
     scenePass.subpasses[1].colorReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    scenePass.subpasses[1].depthReference.attachment = 1;
+    scenePass.subpasses[1].depthReference.attachment = 2;
     scenePass.subpasses[1].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     scenePass.subpasses[1].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
@@ -1900,9 +1941,9 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[2].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     scenePass.subpasses[2].inputReferences.resize(2);
-    scenePass.subpasses[2].inputReferences[0].attachment = 4;
+    scenePass.subpasses[2].inputReferences[0].attachment = 5;
     scenePass.subpasses[2].inputReferences[0].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    scenePass.subpasses[2].inputReferences[1].attachment = 5;
+    scenePass.subpasses[2].inputReferences[1].attachment = 6;
     scenePass.subpasses[2].inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     scenePass.subpasses[2].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
@@ -2005,4 +2046,68 @@ void GameRenderer::pushBackSunShadowMap() {
         }
     }
 
+}
+
+prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getOpaqueBlendAttachmentState() {
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+
+    colorBlendAttachments.resize(2);
+    colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[0].blendEnable = VK_FALSE;
+
+    colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+    colorBlendAttachments[1].blendEnable = VK_FALSE;
+
+    return colorBlendAttachments;
+}
+
+prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getTransparentBlendAttachmentState() {
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+    colorBlendAttachments.resize(2);
+
+    colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[0].blendEnable = VK_TRUE;
+    colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+
+    colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+    colorBlendAttachments[1].blendEnable = VK_TRUE;
+    colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+
+    return colorBlendAttachments;
+}
+
+prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getCompositionBlendAttachmentState() {
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+
+    colorBlendAttachments.resize(1);
+    colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[0].blendEnable = VK_TRUE;
+    colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+    colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+ 
+    return colorBlendAttachments;
+}
+
+prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getOffscreenBlendAttachmentState() {
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+
+    colorBlendAttachments.resize(1);
+    colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[0].blendEnable = VK_FALSE;
+ 
+    return colorBlendAttachments;
 }

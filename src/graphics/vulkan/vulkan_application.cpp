@@ -620,53 +620,53 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     
-    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
-    switch (graphicsPipeline.type) {
-        case PIPELINE_TYPE_TRANSPARENT: {
-            colorBlendAttachments.resize(2);
-            colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachments[0].blendEnable = VK_TRUE;
-            colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-            colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-            colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    prt::vector<VkPipelineColorBlendAttachmentState> & colorBlendAttachments = graphicsPipeline.colorBlendAttachments;
+    // switch (graphicsPipeline.type) {
+    //     case PIPELINE_TYPE_TRANSPARENT: {
+    //         colorBlendAttachments.resize(2);
+    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    //         colorBlendAttachments[0].blendEnable = VK_TRUE;
+    //         colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    //         colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    //         colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    //         colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 
-            colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;// | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachments[1].blendEnable = VK_TRUE;
-            colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-            colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-            colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-            break;
-        }
-        case PIPELINE_TYPE_COMPOSITION: {
-            colorBlendAttachments.resize(1);
-            colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachments[0].blendEnable = VK_TRUE;
-            colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
-            colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            break;
-        }
-        default: {
-            colorBlendAttachments.resize(1);
-            colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachments[0].blendEnable = VK_FALSE;
+    //         colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
+    //         colorBlendAttachments[1].blendEnable = VK_TRUE;
+    //         colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    //         colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    //         colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    //         colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    //         break;
+    //     }
+    //     case PIPELINE_TYPE_COMPOSITION: {
+    //         colorBlendAttachments.resize(1);
+    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    //         colorBlendAttachments[0].blendEnable = VK_TRUE;
+    //         colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    //         colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    //         colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
+    //         colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    //         colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    //         break;
+    //     }
+    //     default: {
+    //         colorBlendAttachments.resize(1);
+    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    //         colorBlendAttachments[0].blendEnable = VK_FALSE;
 
-            colorBlending.blendConstants[0] = 0.0f;
-            colorBlending.blendConstants[1] = 0.0f;
-            colorBlending.blendConstants[2] = 0.0f;
-            colorBlending.blendConstants[3] = 0.0f;
-            break;
-        }
-    }
+    //         colorBlending.blendConstants[0] = 0.0f;
+    //         colorBlending.blendConstants[1] = 0.0f;
+    //         colorBlending.blendConstants[2] = 0.0f;
+    //         colorBlending.blendConstants[3] = 0.0f;
+    //         break;
+    //     }
+    // }
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
     colorBlending.attachmentCount = colorBlendAttachments.size();

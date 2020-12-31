@@ -72,6 +72,7 @@ const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
 
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out int outObject;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
@@ -131,6 +132,7 @@ void main() {
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
+    outObject = -1;
 }
 
 // Screen-door transparency: Discard pixel if below threshold.

@@ -66,6 +66,9 @@ struct GraphicsPipeline {
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     prt::vector<ShaderStage> shaderStages;
 
+    // blending
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+
     VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
     
     bool useColorAttachment;
