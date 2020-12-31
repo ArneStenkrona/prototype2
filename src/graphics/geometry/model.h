@@ -99,8 +99,6 @@ struct Model::Node {
     int32_t boneIndex = -1;
     int32_t channelIndex = -1;
     glm::mat4 transform;
-
-    glm::mat4 thatTform;
 };
 
 struct Model::Material {

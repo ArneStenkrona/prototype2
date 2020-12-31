@@ -83,7 +83,6 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
     while(!nodes.empty()) {
         aiNode *node = nodes.back().node;
         int32_t parentIndex = nodes.back().parentIndex;
-        aiMatrix4x4 & nodeTform = node->mTransformation;
         aiMatrix4x4 tform = nodes.back().tform;
         aiMatrix3x3 invtpos = aiMatrix3x3(tform);
         invtpos.Inverse().Transpose();
@@ -93,7 +92,7 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
         int32_t nodeIndex = mNodes.size();
         mNodes.push_back({});
         Node & n = mNodes.back();
-        memcpy(&n.transform, &nodeTform, sizeof(glm::mat4));
+        memcpy(&n.transform, &tform, sizeof(glm::mat4));
         // assimp row-major, glm col-major
         n.transform = glm::transpose(n.transform);
         nodeToIndex.insert(node->mName, nodeIndex);
