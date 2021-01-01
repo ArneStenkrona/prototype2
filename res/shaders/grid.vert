@@ -29,5 +29,6 @@ void main() {
     vec3 p = inPosition;
     vs_out.nearPoint = UnprojectPoint(p.x, p.y, 0.0, ubo.view, ubo.proj).xyz; // unprojecting on the near plane
     vs_out.farPoint = UnprojectPoint(p.x, p.y, 1.0, ubo.view, ubo.proj).xyz; // unprojecting on the far plane
+
     gl_Position = vec4(p, 1.0); // using directly the clipped coordinates
 }

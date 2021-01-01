@@ -271,7 +271,7 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
 
     pipeline.extent = swapchain.swapchainExtent;
     pipeline.useColorAttachment = true;
-    pipeline.enableDepthBias = false;
+    pipeline.enableDepthBias = true;
 
     pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
 }
