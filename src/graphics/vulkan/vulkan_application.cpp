@@ -487,9 +487,9 @@ void VulkanApplication::createOffscreenSampler() {
     sampler.magFilter = VK_FILTER_LINEAR;
     sampler.minFilter = VK_FILTER_LINEAR;
     sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
     sampler.mipLodBias = 0.0f;
     sampler.maxAnisotropy = 1.0f;
     sampler.minLod = 0.0f;
@@ -613,7 +613,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.depthTestEnable = VK_TRUE;
     depthStencil.depthWriteEnable = graphicsPipeline.type == PIPELINE_TYPE_TRANSPARENT ? VK_FALSE : VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencil.depthCompareOp = graphicsPipeline.compareOp;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
     
@@ -621,52 +621,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     
     prt::vector<VkPipelineColorBlendAttachmentState> & colorBlendAttachments = graphicsPipeline.colorBlendAttachments;
-    // switch (graphicsPipeline.type) {
-    //     case PIPELINE_TYPE_TRANSPARENT: {
-    //         colorBlendAttachments.resize(2);
-    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //         colorBlendAttachments[0].blendEnable = VK_TRUE;
-    //         colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    //         colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    //         colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    //         colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 
-    //         colorBlendAttachments[1].colorWriteMask = VK_COLOR_COMPONENT_R_BIT;
-    //         colorBlendAttachments[1].blendEnable = VK_TRUE;
-    //         colorBlendAttachments[1].colorBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[1].srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    //         colorBlendAttachments[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    //         colorBlendAttachments[1].alphaBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    //         colorBlendAttachments[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    //         break;
-    //     }
-    //     case PIPELINE_TYPE_COMPOSITION: {
-    //         colorBlendAttachments.resize(1);
-    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //         colorBlendAttachments[0].blendEnable = VK_TRUE;
-    //         colorBlendAttachments[0].colorBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    //         colorBlendAttachments[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    //         colorBlendAttachments[0].alphaBlendOp = VK_BLEND_OP_ADD;
-    //         colorBlendAttachments[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    //         colorBlendAttachments[0].dstColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    //         break;
-    //     }
-    //     default: {
-    //         colorBlendAttachments.resize(1);
-    //         colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    //         colorBlendAttachments[0].blendEnable = VK_FALSE;
-
-    //         colorBlending.blendConstants[0] = 0.0f;
-    //         colorBlending.blendConstants[1] = 0.0f;
-    //         colorBlending.blendConstants[2] = 0.0f;
-    //         colorBlending.blendConstants[3] = 0.0f;
-    //         break;
-    //     }
-    // }
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
     colorBlending.attachmentCount = colorBlendAttachments.size();
@@ -1724,11 +1679,6 @@ void VulkanApplication::createRenderPassCommands(size_t const imageIndex, Render
         scissor.offset.y = 0;
         vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
-        vkCmdSetDepthBias(commandBuffers[imageIndex],
-                          renderPass.depthBiasConstant,
-                          renderPass.depthBiasClamp,
-                          renderPass.depthBiasSlope);
-
         // Render pass is divided into sub passes
         assert(!renderPass.subpasses.empty() && "Subpasses can not be empty!");
         for (size_t j = 0; j < renderPass.subpasses.size(); ++j) {
@@ -1759,6 +1709,11 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex, GraphicsPipe
     static constexpr VkDeviceSize offset = 0;
     
     vkCmdBindPipeline(commandBuffers[imageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipeline);
+
+    vkCmdSetDepthBias(commandBuffers[imageIndex],
+                      pipeline.depthBiasConstant,
+                      pipeline.depthBiasClamp,
+                      pipeline.depthBiasSlope);
 
     Assets& asset = assets[pipeline.assetsIndex];
     vkCmdBindVertexBuffers(commandBuffers[imageIndex], 0, 1, &asset.vertexData.vertexBuffer, &offset);

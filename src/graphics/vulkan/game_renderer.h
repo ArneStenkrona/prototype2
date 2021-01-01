@@ -67,9 +67,11 @@ public:
     static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
+    static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
+    static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
-    float cascadeSplitLambda = 0.95f;
+    float cascadeSplitLambda = 0.85f;
 
     // size_t colorFBAIndex;
     size_t depthFBAIndex;

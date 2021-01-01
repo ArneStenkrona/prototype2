@@ -167,10 +167,6 @@ struct RenderPass {
      * when rendering to shadow map
      **/
     int pushConstantFBIndexByteOffset = -1;
-
-    float depthBiasConstant = 0.0f;
-    float depthBiasClamp = 0.0f;
-    float depthBiasSlope = 0.0f;
 };
 
 
@@ -223,8 +219,6 @@ protected:
      * TODO: Move this to where appropriate
      **/
     static constexpr int32_t shadowmapDimension = 2048;
-    static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
-    static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     // render group mask

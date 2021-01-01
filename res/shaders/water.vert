@@ -34,8 +34,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     uint noPointLights;
     uint noBoxLights;
     DirLight sun;
-    vec4 splitDepths[(4 + 4) / 4];
-    mat4 cascadeSpace[4];
+    vec4 splitDepths[(5 + 4) / 4];
+    mat4 cascadeSpace[5];
     PointLight pointLights[4];
     BoxLight boxLights[20];
 } ubo;

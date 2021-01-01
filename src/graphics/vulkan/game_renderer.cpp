@@ -162,7 +162,6 @@ void GameRenderer::createCompositionPipeline() {
     strcat(shaderStages[1].shader, frag);
 
     pipeline.extent = swapchain.swapchainExtent;
-    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -271,7 +270,6 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/grid.frag.spv");
 
     pipeline.extent = swapchain.swapchainExtent;
-    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -377,7 +375,6 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/skybox.frag.spv");
 
     pipeline.extent = swapchain.swapchainExtent;
-    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
 
@@ -514,7 +511,6 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     strcat(shaderStages[1].shader, "shaders/billboard.frag.spv");
 
     pipeline.extent = swapchain.swapchainExtent;
-    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -671,7 +667,6 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
     strcat(shaderStages[1].shader, fragmentShader);
 
     pipeline.extent = swapchain.swapchainExtent;
-    // pipeline.renderpass = scenePass;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
@@ -758,6 +753,12 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
     pipeline.extent.height = shadowmapDimension;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
+
+    pipeline.depthBiasConstant = depthBiasConstant;
+    pipeline.depthBiasClamp = 0.0f;
+    pipeline.depthBiasSlope = depthBiasSlope;
+
+    pipeline.cullModeFlags = VK_CULL_MODE_FRONT_BIT;
 
     pipeline.colorBlendAttachments = getOffscreenBlendAttachmentState();
 
@@ -1152,6 +1153,7 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
     float maxZ = farPlane;
 
     float ratio = maxZ / minZ;
+    
     for (unsigned int i = 0;  i < NUMBER_SHADOWMAP_CASCADES; ++i) {
         float p = (i + 1) / static_cast<float>(NUMBER_SHADOWMAP_CASCADES);
         float log = minZ * glm::pow(ratio, p);
@@ -1984,10 +1986,6 @@ void GameRenderer::pushBackOffscreenRenderPass() {
 
     offscreen.outputType = RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP;
     offscreen.shadowMapIndex = shadowMapIndex;
-
-    offscreen.depthBiasConstant = depthBiasConstant;
-    offscreen.depthBiasClamp = 0.0f;
-    offscreen.depthBiasSlope = depthBiasSlope;
     
     /*
      * TODO: Refactor this monstrosity
@@ -2106,7 +2104,7 @@ prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getOffscreenBlend
     prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 
     colorBlendAttachments.resize(1);
-    colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[0].colorWriteMask = 0;
     colorBlendAttachments[0].blendEnable = VK_FALSE;
  
     return colorBlendAttachments;
