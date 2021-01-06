@@ -12,57 +12,52 @@
 
 #include <fstream>
 
-ModelManager::ModelManager(const char* modelDirectory) {
+ModelManager::ModelManager(const char* modelDirectory, TextureManager & textureManager) 
+    : m_textureManager(textureManager) {
     strcpy(m_modelDirectory, modelDirectory);
 }
 
-void ModelManager::getAnimatedModels(Model const * & models, size_t & nModels) {
-    models = m_loadedAnimatedModels.data();
-    nModels = m_loadedAnimatedModels.size();
-}
-
-
-void ModelManager::getBoneOffsets(uint32_t const * modelIndices,
+void ModelManager::getBoneOffsets(ModelID const * modelIDs,
                                   uint32_t * boneOffsets,
                                   size_t n) {
     size_t numBones = 0;
     for (size_t i = 0; i < n; ++i) {
         boneOffsets[i] = numBones;
-        numBones += m_loadedAnimatedModels[modelIndices[i]].bones.size();
+        numBones += m_loadedModels[modelIDs[i]].bones.size();
     }
 }
 
 void ModelManager::getSampledAnimation(float t, 
-                                       prt::vector<uint32_t> const & modelIndices,
+                                       prt::vector<ModelID> const & modelIDs,
                                        prt::vector<uint32_t> const & animationIndices, 
                                        prt::vector<glm::mat4> & transforms) {
     size_t numBones = 0;
-    for (auto & index : modelIndices) {
-        numBones += m_loadedAnimatedModels[index].bones.size();
+    for (auto & index : modelIDs) {
+        numBones += m_loadedModels[index].bones.size();
     }
 
     transforms.resize(numBones);
     size_t tIndex = 0;
-    for (size_t i = 0; i < modelIndices.size(); ++i) {
-        auto const & model = m_loadedAnimatedModels[modelIndices[i]];
+    for (size_t i = 0; i < modelIDs.size(); ++i) {
+        auto const & model = m_loadedModels[modelIDs[i]];
         model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
         tIndex += model.bones.size();
     }
 }
 
-void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
+void ModelManager::getSampledBlendedAnimation(ModelID const * modelIDs,
                                               BlendedAnimation const * animationBlends, 
                                               prt::vector<glm::mat4> & transforms,
                                               size_t n) {
     size_t numBones = 0;
     for (size_t i = 0; i < n; ++i) {
-        numBones += m_loadedAnimatedModels[modelIndices[i]].bones.size();
+        numBones += m_loadedModels[modelIDs[i]].bones.size();
     }
     transforms.resize(numBones);
 
     size_t tIndex = 0;
     for (size_t i = 0; i < n; ++i) {
-        auto const & model = m_loadedAnimatedModels[modelIndices[i]];
+        auto const & model = m_loadedModels[modelIDs[i]];
         model.blendAnimation(animationBlends[i].time, 
                              animationBlends[i].blendFactor, 
                              animationBlends[i].clipA, 
@@ -72,10 +67,31 @@ void ModelManager::getSampledBlendedAnimation(uint32_t const * modelIndices,
     }
 }
 
-void ModelManager::loadModels(char const * paths[], size_t count,
-                              uint32_t * ids, bool animated, TextureManager & textureManager) {
-    auto & models = animated ? m_loadedAnimatedModels : m_loadedNonAnimatedModels;
+ModelID ModelManager::loadModel(char * path,
+                                bool animated) {
+    ModelID id;
     
+    char fullPath[256];
+    size_t dirLen = strlen(m_modelDirectory);
+    strcpy(fullPath, m_modelDirectory);
+    char * subpath = fullPath + dirLen;
+
+    if (m_pathToModelID.find(path) == m_pathToModelID.end()) {
+        strcpy(subpath, path);
+        id = m_loadedModels.size();
+        m_pathToModelID.insert(path, id);
+
+        m_loadedModels.push_back(Model{fullPath});
+        m_loadedModels.back().load(animated, m_textureManager);
+    } else {
+        id = m_pathToModelID.find(path)->value();
+    }
+
+    return id;
+}
+
+void ModelManager::loadModels(char const * paths[], size_t count,
+                              ModelID * ids, bool animated) {    
     char path[256];
     size_t dirLen = strlen(m_modelDirectory);
     strcpy(path, m_modelDirectory);
@@ -83,19 +99,18 @@ void ModelManager::loadModels(char const * paths[], size_t count,
     for (size_t i = 0; i < count; ++i) {
         if (m_pathToModelID.find(paths[i]) == m_pathToModelID.end()) {
             strcpy(subpath, paths[i]);
-            size_t id = models.size();
+            size_t id = m_loadedModels.size();
             m_pathToModelID.insert(paths[i], id);
             ids[i] = id;
 
-            models.push_back({});
-            Model & model = models.back();
-            model.load(path, animated, textureManager);
+            m_loadedModels.push_back(Model{path});
+            m_loadedModels.back().load(animated, m_textureManager);
         } else {
             ids[i] = m_pathToModelID.find(paths[i])->value();
         }
     }
 }
 
-uint32_t ModelManager::getAnimationIndex(uint32_t modelIndex, char const * name) {
-    return m_loadedAnimatedModels[modelIndex].getAnimationIndex(name);
+uint32_t ModelManager::getAnimationIndex(ModelID modelID, char const * name) {
+    return m_loadedModels[modelID].getAnimationIndex(name);
 }

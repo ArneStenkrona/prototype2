@@ -116,7 +116,7 @@ struct SwapchainFBACopy {
 struct Swapchain {
     // Swapchain data
     uint32_t                                    swapchainImageCount;
-    uint32_t                                    previousImageIndex;
+    uint32_t                                    previousImageIndex = 0;
     VkSwapchainKHR                              swapchain;
     prt::vector<VkImage>                        swapchainImages;
     VkFormat                                    swapchainImageFormat;
@@ -352,7 +352,7 @@ private:
     
     void createSwapchainImageViews();
     
-    void createOffscreenSampler();
+    void createShadowMapSampler();
 
     void prepareGraphicsPipelines();
     

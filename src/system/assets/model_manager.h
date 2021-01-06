@@ -4,48 +4,52 @@
 #include "src/container/hash_map.h"
 #include "src/container/vector.h"
 
-#include "src/game/component/component.h"
+#include "src/game/system/animation/animation_system.h"
 
 #include "src/system/assets/texture_manager.h"
 
 #include "src/graphics/geometry/model.h"
+#include "src/game/scene/entity.h"
 
 class ModelManager {
 public:
-    ModelManager(const char* directory);
+    ModelManager(const char * directory, TextureManager & textureManager);
 
-    inline void getNonAnimatedModels(Model const * & models, 
-                                     size_t & nModels) const { models = m_loadedNonAnimatedModels.data();
-                                                               nModels = m_loadedNonAnimatedModels.size(); }
-    void getAnimatedModels(Model const * & models, size_t & nModels);
-    void getBoneOffsets(uint32_t const * modelIndices,
+    inline void getModels(Model const * & models, size_t & n) const { models = m_loadedModels.data();
+                                                                      n = m_loadedModels.size(); }
+
+    inline Model const & getModel(ModelID id) const { return m_loadedModels[id]; }
+
+    void getBoneOffsets(ModelID const * modelIDs,
                         uint32_t * boneOffsets,
                         size_t n);
 
     void getSampledAnimation(float t, 
-                             prt::vector<uint32_t> const & modelIndices,
+                             prt::vector<ModelID> const & modelIDs,
                              prt::vector<uint32_t> const & animationIndices, 
                              prt::vector<glm::mat4> & transforms);
 
-    void getSampledBlendedAnimation(uint32_t const * modelIndices,
+    void getSampledBlendedAnimation(ModelID const * modelIDs,
                                     BlendedAnimation const * animationBlends, 
                                     prt::vector<glm::mat4> & transforms,
                                     size_t n);
 
-    inline Model const & getNonAnimatedModel(uint32_t modelID) const { return m_loadedNonAnimatedModels[modelID]; } 
-    Model const & getAnimatedModel(uint32_t modelID) const { return m_loadedAnimatedModels[modelID]; }
+    ModelID loadModel(char * path, 
+                      bool animated);
 
-    void loadModels(char const * paths[], size_t count,
-                    uint32_t * ids, bool animated, TextureManager & textureManager);
+    void loadModels(char const * paths[], size_t count, 
+                    ModelID * ids, 
+                    bool animated);
 
-    uint32_t getAnimationIndex(uint32_t modelIndex, char const * name);
+    uint32_t getAnimationIndex(ModelID modelID, char const * name);
 
 private:
-    prt::hash_map<std::string, uint32_t> m_pathToModelID;
+    TextureManager & m_textureManager;  
+
+    prt::hash_map<std::string, ModelID> m_pathToModelID;
     char m_modelDirectory[256];
-    prt::vector<Model> m_loadedNonAnimatedModels;
-    prt::vector<Model> m_loadedAnimatedModels;
-    ;
+
+    prt::vector<Model> m_loadedModels;
 };
 
 #endif

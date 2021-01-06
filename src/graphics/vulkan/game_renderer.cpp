@@ -2,6 +2,8 @@
 
 #include "src/util/math_util.h"
 
+#include "src/game/scene/entity.h"
+
 GameRenderer::GameRenderer(unsigned int width, unsigned int height)
     : VulkanApplication(width, height) {
 
@@ -9,7 +11,7 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height)
     pushBackDepthFBA();
     pushBackAccumulationFBA(); 
     pushBackRevealageFBA(); 
-    pushBackOffscreenFBA();
+    pushBackShadowFBA();
 
     // add fba:s to swapchain
     // order matters
@@ -587,7 +589,7 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
 
     pipeline.imageAttachments.resize(1);
     pipeline.imageAttachments[0].descriptorIndex = 3;
-    pipeline.imageAttachments[0].FBAIndices = offscreenFBAIndices;
+    pipeline.imageAttachments[0].FBAIndices = shadowmapFBAIndices;
     pipeline.imageAttachments[0].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     pipeline.imageAttachments[0].sampler = shadowMapSampler;
 
@@ -760,7 +762,7 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
 
     pipeline.cullModeFlags = VK_CULL_MODE_FRONT_BIT;
 
-    pipeline.colorBlendAttachments = getOffscreenBlendAttachmentState();
+    pipeline.colorBlendAttachments = getShadowBlendAttachmentState();
 
     return pipelineIndex;
 }
@@ -768,13 +770,11 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
 // TODO: Split this function to decouple pipeline
 // creation from asset binding
 void GameRenderer::bindAssets(Model const * models, size_t nModels,
-                              uint32_t const * modelIDs,
-                              size_t nModelIDs,
-                              Model const * animatedModels,
-                              uint32_t const * boneOffsets,
-                              size_t nAnimatedModels,
-                              uint32_t const * animatedModelIDs,
+                              ModelID const * staticModelIDs,
+                              size_t nStaticModelIDs,
+                              ModelID const * animatedModelIDs,
                               size_t nAnimatedModelIDs,
+                              uint32_t const * boneOffsets,
                               Billboard const * billboards,
                               size_t nBillboards,
                               Texture const * textures,
@@ -807,12 +807,8 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     animatedShadowMapUboIndex = pushBackUniformBufferData(sizeof(AnimatedShadowMapUBO));
 
     /* billboards */
-    size_t billboardAssetIndex;
-    size_t billboardUboIndex;
-    // if (nBillboards) {
-        billboardAssetIndex = pushBackAssets();
-        billboardUboIndex = pushBackUniformBufferData(sizeof(BillboardUBO));
-    // }
+    size_t billboardAssetIndex = pushBackAssets();
+    size_t billboardUboIndex = pushBackUniformBufferData(sizeof(BillboardUBO));
 
     // Swapchain needs to be updated
     reprepareSwapchain();
@@ -827,31 +823,34 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     createSkyboxPipeline(skyboxAssetIndex, skyboxUboIndex);
     createSkyboxDrawCalls();
     
-    /* non-animated */
     prt::hash_map<int32_t, int32_t> standardTextureIndices;
-    loadModels(models, nModels, textures, nTextures, standardAssetIndex, false, standardTextureIndices);
+    prt::hash_map<int32_t, int32_t> animatedTextureIndices;
+    loadModels(models, nModels, textures, nTextures,
+               standardAssetIndex, animatedStandardAssetIndex,
+               standardTextureIndices,
+               animatedTextureIndices);
+
+    /* non-animated */
     createStandardAndShadowPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
-                                             "shaders/standard.vert.spv", "shaders/standard.frag.spv",
-                                             "shaders/standard_transparent.frag.spv",
-                                             "shaders/shadow_map.vert.spv",
-                                             Model::Vertex::getBindingDescription(),
-                                             Model::Vertex::getAttributeDescriptions(),
-                                             standardPipelineIndex,
-                                             transparentPipelineIndex,
-                                             shadowmapPipelineIndex);
+                                     "shaders/standard.vert.spv", "shaders/standard.frag.spv",
+                                     "shaders/standard_transparent.frag.spv",
+                                     "shaders/shadow_map.vert.spv",
+                                     Model::Vertex::getBindingDescription(),
+                                     Model::Vertex::getAttributeDescriptions(),
+                                     standardPipelineIndex,
+                                     transparentPipelineIndex,
+                                     shadowmapPipelineIndex);
 
     /* animated */
-    prt::hash_map<int32_t, int32_t> animatedTextureIndices;
-    loadModels(animatedModels, nAnimatedModels, textures, nTextures, animatedStandardAssetIndex, true, animatedTextureIndices);
     createStandardAndShadowPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
-                                                "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
-                                                "shaders/standard_transparent.frag.spv",
-                                                "shaders/shadow_map_animated.vert.spv",
-                                                Model::BonedVertex::getBindingDescription(),
-                                                Model::BonedVertex::getAttributeDescriptions(),
-                                                animatedStandardPipelineIndex,
-                                                animatedTransparentPipelineIndex,
-                                                animatedShadowmapPipelineIndex);
+                                     "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
+                                     "shaders/standard_transparent.frag.spv",
+                                     "shaders/shadow_map_animated.vert.spv",
+                                     Model::BonedVertex::getBindingDescription(),
+                                     Model::BonedVertex::getAttributeDescriptions(),
+                                     animatedStandardPipelineIndex,
+                                     animatedTransparentPipelineIndex,
+                                     animatedShadowmapPipelineIndex);
 
     /* water */
     char vert[256] = RESOURCE_PATH;
@@ -863,8 +862,9 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                                                         Model::Vertex::getAttributeDescriptions(), true);
 
     prt::vector<DrawCall> temp;
-    createModelDrawCalls(models, nModels, modelIDs, nModelIDs,
-                         animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs,
+    createModelDrawCalls(models, nModels, 
+                         staticModelIDs, nStaticModelIDs,
+                         animatedModelIDs, nAnimatedModelIDs,
                          boneOffsets, 
                          standardTextureIndices,
                          animatedTextureIndices,
@@ -877,21 +877,19 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                          graphicsPipelines[animatedShadowmapPipelineIndex].drawCalls);
 
     /* billboard */
-    // if (nBillboards != 0) {
-        prt::hash_map<int32_t, int32_t> textureIndices;
-        loadBillboards(billboards, nBillboards, textures, nTextures, billboardAssetIndex, textureIndices);
-        createBillboardPipeline(billboardAssetIndex, billboardUboIndex);
+    prt::hash_map<int32_t, int32_t> billboardTextureIndices;
+    loadBillboards(billboards, nBillboards, textures, nTextures, billboardAssetIndex, billboardTextureIndices);
+    createBillboardPipeline(billboardAssetIndex, billboardUboIndex);
 
-        createBillboardBuffers(billboardAssetIndex);
-        createBillboardDrawCalls(billboards, nBillboards, textureIndices);
-    // }
+    createBillboardBuffers(billboardAssetIndex);
+    createBillboardDrawCalls(billboards, nBillboards, billboardTextureIndices);
 
     /* composition */
     createCompositionPipeline();
     createCompositionDrawCalls(compositionPipelineIndex);
 
     /* render passes (order is important) */
-    pushBackOffscreenRenderPass();
+    pushBackShadowRenderPass();
     pushBackSceneRenderPass();
 
     completeSwapchain();
@@ -1222,35 +1220,46 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
 }
 
 void GameRenderer::loadModels(Model const * models, size_t nModels, 
-                              Texture const * textures, size_t nTextures,
-                              size_t assetIndex,
-                              bool animated,
-                              prt::hash_map<int32_t, int32_t> & textureIndices) {
-    // assert(nModels != 0 && "models can not be empty!");
+                              Texture const * textures, size_t /*nTextures*/,
+                              size_t staticAssetIndex,
+                              size_t animatedAssetIndex,
+                              prt::hash_map<int32_t, int32_t> & staticTextureIndices,
+                              prt::hash_map<int32_t, int32_t> & animatedTextureIndices) {
+    createVertexBuffers(models, nModels, staticAssetIndex, animatedAssetIndex);
+    createIndexBuffers(models, nModels, staticAssetIndex, animatedAssetIndex);
 
-    createVertexBuffer(models, nModels, assetIndex, animated);
-    createIndexBuffer(models, nModels, assetIndex);
 
-    Assets & asset = getAssets(assetIndex);
-    prt::vector<bool> loaded;
-    loaded.resize(nTextures);
+    size_t numStaticTex = 0;
+    Assets & staticAsset = getAssets(staticAssetIndex);
+    staticAsset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
+    staticAsset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
+    staticAsset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
+    staticAsset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
+    
+    staticTextureIndices.insert(-1, -1);
 
-    size_t numTex = 0;
-    asset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
-    asset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
-    asset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
-    asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
+    size_t numAnimatedTex = 0;
+    Assets & animatedAsset = getAssets(animatedAssetIndex);
+    animatedAsset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
+    animatedAsset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
+    animatedAsset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
+    animatedAsset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
 
-    textureIndices.insert(-1, -1);
+    animatedTextureIndices.insert(-1, -1);
 
     for (size_t i = 0; i < nModels; ++i) {
+        bool animated = models[i].isAnimated();
+
+        Assets & asset = animated ? animatedAsset : staticAsset;
+        size_t & numTex = animated ? numAnimatedTex : numStaticTex;
+        prt::hash_map<int32_t, int32_t> & textureIndices = animated ? animatedTextureIndices : staticTextureIndices;
+
         for (auto const & material: models[i].materials) {
             prt::array<int32_t, 3> indices = { material.albedoIndex,
                                                material.normalIndex,
                                                material.specularIndex };
             for (int32_t ind : indices) {
-                if (ind != -1 && !loaded[ind]) {
-                    loaded[ind] = true;
+                if (ind != -1 && textureIndices.find(ind) == textureIndices.end()) {
                     Texture const & texture = textures[ind];
                     createTextureImage(asset.textureImages.images[numTex], 
                                        asset.textureImages.imageMemories[numTex], 
@@ -1266,19 +1275,34 @@ void GameRenderer::loadModels(Model const * models, size_t nModels,
         }
     }
 
-    for (size_t i = numTex; i < asset.textureImages.images.size(); ++i) {
-        createTextureImage(asset.textureImages.images[i], 
-                           asset.textureImages.imageMemories[i], 
+    for (size_t i = numStaticTex; i < staticAsset.textureImages.images.size(); ++i) {
+        createTextureImage(staticAsset.textureImages.images[i], 
+                           staticAsset.textureImages.imageMemories[i], 
                            *Texture::defaultTexture());
-        createTextureImageView(asset.textureImages.imageViews[i], 
-                               asset.textureImages.images[i], 
+        createTextureImageView(staticAsset.textureImages.imageViews[i], 
+                               staticAsset.textureImages.images[i], 
                                Texture::defaultTexture()->mipLevels);
     }
 
-    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
-        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+    for (size_t i = numAnimatedTex; i < animatedAsset.textureImages.images.size(); ++i) {
+        createTextureImage(animatedAsset.textureImages.images[i], 
+                           animatedAsset.textureImages.imageMemories[i], 
+                           *Texture::defaultTexture());
+        createTextureImageView(animatedAsset.textureImages.imageViews[i], 
+                               animatedAsset.textureImages.images[i], 
+                               Texture::defaultTexture()->mipLevels);
+    }
+
+    for (size_t j = 0; j < staticAsset.textureImages.descriptorImageInfos.size(); ++j) {
+        staticAsset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+        staticAsset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        staticAsset.textureImages.descriptorImageInfos[j].imageView = staticAsset.textureImages.imageViews[j];
+    }
+
+    for (size_t j = 0; j < animatedAsset.textureImages.descriptorImageInfos.size(); ++j) {
+        animatedAsset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
+        animatedAsset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        animatedAsset.textureImages.descriptorImageInfos[j].imageView = animatedAsset.textureImages.imageViews[j];
     }
 }
 
@@ -1398,11 +1422,10 @@ void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
 }
 
 void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModels,
-                                        uint32_t const * modelIDs, size_t nModelIDs,
-                                        Model    const * animatedModels,   size_t nAnimatedModels,
-                                        uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+                                        ModelID const * staticModelIDs, size_t nStaticModelIDs,
+                                        ModelID const * animatedModelIDs, size_t nAnimatedModelIDs,
                                         uint32_t const * boneOffsets,
-                                        prt::hash_map<int32_t, int32_t> const & textureIndices,
+                                        prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
                                         prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
                                         prt::vector<DrawCall> & standard,
                                         prt::vector<DrawCall> & transparent,
@@ -1413,21 +1436,28 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
                                         prt::vector<DrawCall> & shadowAnimated) {
     /* non-animated */
     prt::vector<uint32_t> indexOffsets = { 0 };
-    indexOffsets.resize(nModels);
-    for (size_t i = 1; i < nModels; ++i) {
-        indexOffsets[i] = indexOffsets[i-1] + models[i-1].indexBuffer.size();
+    size_t animatedOffset = 0;
+    size_t staticOffset = 0;
+    for (size_t i = 0; i < nModels; ++i) {
+        if (models[i].isAnimated()) {
+            indexOffsets.push_back(animatedOffset);
+            animatedOffset += models[i].indexBuffer.size();
+        } else {
+            indexOffsets.push_back(staticOffset);
+            staticOffset = models[i].indexBuffer.size();
+        }
     }
 
-    for (size_t i = 0; i < nModelIDs; ++i) {
-        const Model& model = models[modelIDs[i]];
+    for (size_t i = 0; i < nStaticModelIDs; ++i) {
+        const Model& model = models[staticModelIDs[i]];
 
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
             DrawCall drawCall;
             // find texture indices
-            int32_t albedoIndex = textureIndices[material.albedoIndex];
-            int32_t normalIndex = textureIndices[material.normalIndex];
-            int32_t specularIndex = textureIndices[material.specularIndex];
+            int32_t albedoIndex = staticTextureIndices[material.albedoIndex];
+            int32_t normalIndex = staticTextureIndices[material.normalIndex];
+            int32_t specularIndex = staticTextureIndices[material.specularIndex];
             // push constants
             StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
             pc.modelMatrixIdx = i;
@@ -1438,7 +1468,7 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
             pc.baseSpecularity = material.baseSpecularity;
 
             // geometry
-            drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
+            drawCall.firstIndex = indexOffsets[staticModelIDs[i]] + mesh.startIndex;
             drawCall.indexCount = mesh.numIndices;
 
             switch (material.type)
@@ -1456,15 +1486,10 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
             }
         }
     }
-    /* animated */
-    indexOffsets = { 0 };
-    indexOffsets.resize(nAnimatedModels);
-    for (size_t i = 1; i < nAnimatedModels; ++i) {
-        indexOffsets[i] = indexOffsets[i-1] + animatedModels[i-1].indexBuffer.size();
-    }
 
+    /* animated */
     for (size_t i = 0; i < nAnimatedModelIDs; ++i) {
-        const Model& model = animatedModels[animatedModelIDs[i]];
+        const Model& model = models[animatedModelIDs[i]];
 
         for (auto const & mesh : model.meshes) {
             auto const & material = model.materials[mesh.materialIndex];
@@ -1513,14 +1538,21 @@ void GameRenderer::createCompositionDrawCalls(size_t pipelineIndex) {
     pipeline.drawCalls.push_back(drawCall);
 }
 
-void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,
-                                      bool animated) {
-    size_t vertexSize = animated ? sizeof(Model::BonedVertex) : sizeof(Model::Vertex);
-    prt::vector<unsigned char> vertexData;
+void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
+                                       size_t staticAssetIndex, size_t animatedAssetIndex) {
+    prt::vector<unsigned char> staticVertexData;
+    prt::vector<unsigned char> animatedVertexData;
+
     for (size_t i = 0; i < nModels; ++i) {
+        bool animated = models[i].isAnimated();
+        prt::vector<unsigned char> & vertexData = animated ? animatedVertexData : staticVertexData;
+        size_t vertexSize = animated ? sizeof(Model::BonedVertex) : sizeof(Model::Vertex);
+
         size_t prevSize = vertexData.size();
+
         vertexData.resize(prevSize + vertexSize * models[i].vertexBuffer.size());
         unsigned char* dest = vertexData.data() + prevSize;
+
         if (animated) {
             assert(models[i].vertexBuffer.size() == models[i].vertexBoneBuffer.size());
             for (size_t j = 0; j < models[i].vertexBuffer.size(); ++j) {
@@ -1532,27 +1564,51 @@ void GameRenderer::createVertexBuffer(Model const * models, size_t nModels, size
             memcpy(dest, models[i].vertexBuffer.data(), vertexSize * models[i].vertexBuffer.size());
         }
     }
-    VertexData& data = getAssets(assetIndex).vertexData;
-    createAndMapBuffer(vertexData.data(), vertexSize * vertexData.size(),
+    
+    VertexData & staticData = getAssets(staticAssetIndex).vertexData;
+    createAndMapBuffer(staticVertexData.data(), sizeof(Model::Vertex) * staticVertexData.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                       data.vertexBuffer, 
-                       data.vertexBufferMemory);    
+                       staticData.vertexBuffer, 
+                       staticData.vertexBufferMemory);
+
+    VertexData & animatedData = getAssets(animatedAssetIndex).vertexData;
+    createAndMapBuffer(animatedVertexData.data(), sizeof(Model::BonedVertex) * animatedVertexData.size(),
+                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                       animatedData.vertexBuffer, 
+                       animatedData.vertexBufferMemory);  
 }
 
-void GameRenderer::createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex) {
-    prt::vector<uint32_t> allIndices;
-    size_t vertexOffset = 0;
+void GameRenderer::createIndexBuffers(Model const * models, size_t nModels, 
+                                      size_t staticAssetIndex, size_t animatedAssetIndex) {
+    prt::vector<uint32_t> allStaticIndices;
+    prt::vector<uint32_t> allAnimatedIndices;
+
+    size_t staticVertexOffset = 0;
+    size_t animatedVertexOffset = 0;
+
     for (size_t i = 0; i < nModels; i++) {
+        bool animated = models[i].isAnimated();
+        prt::vector<uint32_t> & allIndices = animated ? allAnimatedIndices : allStaticIndices;
+        size_t & vertexOffset = animated ? animatedVertexOffset : staticVertexOffset;
+
         for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
             allIndices.push_back(models[i].indexBuffer[j] + vertexOffset);
         }
+
         vertexOffset += models[i].vertexBuffer.size();
     }
-    VertexData& data = getAssets(assetIndex).vertexData;
-    createAndMapBuffer(allIndices.data(), sizeof(uint32_t) * allIndices.size(),
+
+    VertexData& staticData = getAssets(staticAssetIndex).vertexData;
+    createAndMapBuffer(allStaticIndices.data(), sizeof(uint32_t) * allStaticIndices.size(),
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                       data.indexBuffer, 
-                       data.indexBufferMemory);
+                       staticData.indexBuffer, 
+                       staticData.indexBufferMemory);
+
+    VertexData& animatedData = getAssets(animatedAssetIndex).vertexData;
+    createAndMapBuffer(allAnimatedIndices.data(), sizeof(uint32_t) * allAnimatedIndices.size(),
+                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                       animatedData.indexBuffer, 
+                       animatedData.indexBufferMemory);
 }
 
 void GameRenderer::createCubeMapBuffers(size_t assetIndex) {
@@ -1681,11 +1737,11 @@ void GameRenderer::pushBackObjectFBA() {
     }
 }
 
-void GameRenderer::pushBackOffscreenFBA() {
-    offscreenFBAIndices.resize(swapchain.swapchainImageCount);
-    for (size_t i = 0; i < offscreenFBAIndices.size(); ++i) {
-        offscreenFBAIndices[i] = pushBackFramebufferAttachment();
-        FramebufferAttachment & fba = framebufferAttachments[offscreenFBAIndices[i]];
+void GameRenderer::pushBackShadowFBA() {
+    shadowmapFBAIndices.resize(swapchain.swapchainImageCount);
+    for (size_t i = 0; i < shadowmapFBAIndices.size(); ++i) {
+        shadowmapFBAIndices[i] = pushBackFramebufferAttachment();
+        FramebufferAttachment & fba = framebufferAttachments[shadowmapFBAIndices[i]];
         
         // shadpow map image
         fba.imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1976,7 +2032,7 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 }
 
-void GameRenderer::pushBackOffscreenRenderPass() {
+void GameRenderer::pushBackShadowRenderPass() {
     // push back new render pass
     offscreenPassIndex = pushBackRenderPass();
     RenderPass & offscreen = renderPasses[offscreenPassIndex];
@@ -2040,7 +2096,7 @@ void GameRenderer::pushBackSunShadowMap() {
     for (size_t i = 0; i < shadowMap.cascades.size(); ++i) {
         // One image and framebuffer per cascade
         for (unsigned int j = 0; j < NUMBER_SHADOWMAP_CASCADES; ++j) {
-            shadowMap.cascades[i][j].frameBufferIndex = offscreenFBAIndices[i];
+            shadowMap.cascades[i][j].frameBufferIndex = shadowmapFBAIndices[i];
         }
     }
 
@@ -2100,7 +2156,7 @@ prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getCompositionBle
     return colorBlendAttachments;
 }
 
-prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getOffscreenBlendAttachmentState() {
+prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getShadowBlendAttachmentState() {
     prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 
     colorBlendAttachments.resize(1);

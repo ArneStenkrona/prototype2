@@ -35,6 +35,8 @@ namespace prt {
             assert(_present);
             return reinterpret_cast<V const&>(_value);
         }
+
+        bool present() const { return _present; }
         
     private:
         alignas(K) char _key[sizeof(K)];

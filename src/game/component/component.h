@@ -1,5 +1,5 @@
-#ifndef COMPONENT_H
-#define COMPONENT_H
+#ifndef PRT_COMPONENT_H
+#define PRT_COMPONENT_H
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#include "src/game/system/physics/collider_tag.h"
 
 /* Transform */
 struct Transform {
@@ -22,19 +24,11 @@ struct Transform {
     }
 };
 
-/* Animation blending */
-struct BlendedAnimation {
-    uint32_t clipA;
-    uint32_t clipB;
-    float blendFactor = 0.0f;
-    float time = 0.0f;
-};
-
 struct CharacterPhysics {
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
     glm::vec3 movementVector = {0.0f, 0.0f, 0.0f};
     glm::vec3 groundNormal;
-    uint16_t colliderID;
+    ColliderTag colliderTag;
     bool isGrounded = false;
     bool isJumping = false;
     float airTime = 0.0f;

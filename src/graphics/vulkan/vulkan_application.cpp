@@ -60,7 +60,7 @@ void VulkanApplication::initVulkan() {
     createCommandPool(commandPool, 0);
     createCommandPool(dynamicCommandPool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     createTextureSampler();
-    createOffscreenSampler();
+    createShadowMapSampler();
     createSyncObjects();
     createDescriptorPools();
 }
@@ -479,9 +479,7 @@ void VulkanApplication::createRenderPass(RenderPass & renderPass) {
     }
 }
 
-void VulkanApplication::createOffscreenSampler() {
-    // Create sampler to sample from depth attachment
-    // Used to sample in the fragment shder for shadowed rendering
+void VulkanApplication::createShadowMapSampler() {
     VkSamplerCreateInfo sampler{};
     sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     sampler.magFilter = VK_FILTER_LINEAR;
@@ -492,6 +490,7 @@ void VulkanApplication::createOffscreenSampler() {
     sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
     sampler.mipLodBias = 0.0f;
     sampler.maxAnisotropy = 1.0f;
+    sampler.anisotropyEnable = VK_TRUE; 
     sampler.minLod = 0.0f;
     sampler.maxLod = 1.0f;
     sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;

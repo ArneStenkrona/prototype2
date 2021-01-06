@@ -19,7 +19,7 @@
 
 class PhysicsSystem {
 public:
-    PhysicsSystem(ModelManager & modelManager);
+    PhysicsSystem();
 
     void updateModelColliders(uint32_t const * colliderIDs,
                               Transform const * transforms,
@@ -50,16 +50,13 @@ public:
                                 Transform * transforms,
                                 size_t n);
 
-    uint16_t addEllipsoidCollider(glm::vec3 const & ellipsoid, int32_t characterIndex);
-    void addModelColliders(uint32_t const * modelIDs, Transform const * transforms,
-                           size_t count, uint32_t * ids);
+    ColliderTag addEllipsoidCollider(glm::vec3 const & ellipsoid);
+    ColliderTag addModelCollider(Model const & model, Transform const & transform);
 
     float getGravity() const { return m_gravity; }
         
 private:
     prt::vector<glm::vec3> m_ellipsoids;
-
-    ModelManager & m_modelManager;
 
     prt::vector<ModelCollider> m_modelColliders;
     prt::vector<MeshCollider> m_meshColliders;
@@ -73,18 +70,16 @@ private:
     prt::vector<int32_t> m_meshTreeIndices;
     prt::vector<AABB> m_ellipsoidAABBs;
     prt::vector<int32_t> m_ellipsoidTreeIndices;
-    prt::vector<uint32_t> m_ellipsoidCharacterIndices;
     // aabb tree
     DynamicAABBTree m_aabbTree;
 
     float m_gravity = 1.0f;
 
-    uint32_t addModelCollider(Model const & model, Transform const & transform);
-
     void collideCharacterwithWorld(CharacterPhysics * physics,
                                    Transform * transforms,
                                    size_t n,
                                    uint32_t characterIndex,
+                                   prt::hash_map<uint16_t, size_t> const & tagToCharacter,
                                    bool & grounded);
 
     bool collideCharacterWithMeshes(glm::vec3 const & position, 
@@ -100,6 +95,7 @@ private:
                                         size_t n,
                                         uint32_t characterIndex,
                                         prt::vector<uint16_t> const & colliderIDs,
+                                        prt::hash_map<uint16_t, size_t> const & tagToCharacter,
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,

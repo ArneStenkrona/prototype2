@@ -13,15 +13,21 @@
 
 #include <fstream>
 
-void Model::load(char const * path, bool loadAnimation, TextureManager & textureManager) {
+Model::Model(char const * path)
+    : mLoaded(false), mAnimated(false) {
+    strcpy(mPath, path);
+}
+
+void Model::load(bool loadAnimation, TextureManager & textureManager) {
     assert(!mLoaded && "Model is already loaded!");
+
     mAnimated = loadAnimation;
 
     Assimp::Importer importer;
     importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, 
                                 aiPrimitiveType_LINE | aiPrimitiveType_POINT);
     
-    aiScene const * scene = importer.ReadFile(path,
+    aiScene const * scene = importer.ReadFile(mPath,
                                               aiProcess_CalcTangentSpace         |
                                               aiProcess_Triangulate              |
                                               aiProcess_FlipUVs                  |
@@ -36,7 +42,7 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
         std::cout << importer.GetErrorString() << std::endl;
         assert(false && "failed to load file!");
     }
-    strcpy(name, strchr(path, '/'));
+    strcpy(name, strchr(mPath, '/'));
 
     // parse materials
     materials.resize(scene->mNumMaterials);
@@ -60,8 +66,8 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
         //     materials[i].type = Material::Type::water;
         // }
 
-        materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, path, textureManager);
-        materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, path, textureManager);
+        materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, mPath, textureManager);
+        materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, mPath, textureManager);
     }
 
     /* Process node hierarchy */
@@ -239,9 +245,9 @@ void Model::load(char const * path, bool loadAnimation, TextureManager & texture
         }
     }
 
-    // release assimp resources
-    mLoaded = true;
     calcTangentSpace();
+
+    mLoaded = true;
 }
 
 uint32_t Model::getAnimationIndex(char const * name) const {

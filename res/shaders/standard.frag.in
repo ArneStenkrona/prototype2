@@ -124,10 +124,12 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
+
     vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
+
     // Directional lighting
-    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex) *
+    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r  *
            CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
@@ -213,7 +215,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
 
     float shadowFactor = 0.0;
     int count = 0;
-    int range = 2;
+    int range = 1;
 
     for (int x = -range; x <= range; ++x) {
         for (int y = -range; y <= range; ++y) {
@@ -221,5 +223,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
             ++count;
         }
     }
+
+
     return shadowFactor / count;
 }

@@ -8,6 +8,8 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/geometry/billboard.h"
 
+#include "src/game/scene/entity.h"
+
 #include "src/container/hash_map.h"
 
 class GameRenderer : public VulkanApplication {
@@ -19,18 +21,15 @@ public:
     GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
-
     /**
      * binds a scene to the graphics pipeline
      */
     void bindAssets(Model const * models, size_t nModels,
-                    uint32_t const * modelIDs,
-                    size_t nModelIDs,
-                    Model const * animatedModels,
-                    uint32_t const * boneOffsets,
-                    size_t nAnimatedModels,
-                    uint32_t const * animatedModelIDs,
+                    ModelID const * staticModelIDs,
+                    size_t nStaticModelIDs,
+                    ModelID const * animatedModelIDs,
                     size_t nAnimatedModelIDs,
+                    uint32_t const * boneOffsets,
                     Billboard const * billboards,
                     size_t nBillboards,
                     Texture const * textures,
@@ -77,7 +76,7 @@ private:
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
-    prt::vector<size_t> offscreenFBAIndices;
+    prt::vector<size_t> shadowmapFBAIndices;
     prt::vector<size_t> objectFBAIndices;
 
     size_t objectCopyIndex;
@@ -132,10 +131,11 @@ private:
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
 
-    void createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,
-                            bool animated);
+    void createVertexBuffers(Model const * models, size_t nModels, 
+                             size_t staticAssetIndex, size_t animatedAssetIndex);
     
-    void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
+    void createIndexBuffers(Model const * models, size_t nModels,
+                            size_t staticAssetIndex, size_t animatedAssetIndex);
 
     void createGridBuffers(size_t assetIndex);
     void createCubeMapBuffers(size_t assetIndex);
@@ -143,9 +143,10 @@ private:
     
     void loadModels(Model const * models, size_t nModels, 
                     Texture const * textures, size_t nTextures,
-                    size_t assetIndex,
-                    bool animated,
-                    prt::hash_map<int32_t, int32_t> & textureIndices);
+                    size_t staticAssetIndex,
+                    size_t animatedAssetIndex,
+                    prt::hash_map<int32_t, int32_t> & staticTextureIndices,
+                    prt::hash_map<int32_t, int32_t> & animatedTextureIndices);
 
     void loadBillboards(Billboard const * billboards, size_t nBillboards, 
                         Texture const * textures, size_t nTextures,
@@ -156,12 +157,11 @@ private:
 
     void createGridDrawCalls();
     void createSkyboxDrawCalls();
-    void createModelDrawCalls(Model    const * models,   size_t nModels,
-                              uint32_t const * modelIDs, size_t nModelIDs,
-                              Model    const * animatedModels,   size_t nAnimatedModels,
-                              uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+    void createModelDrawCalls(Model const * models,   size_t nModels,
+                              ModelID const * staticModelIDs, size_t nStaticModelIDs,
+                              ModelID const * animatedModelIDs, size_t nAnimatedModelIDs,
                               uint32_t const * boneOffsets,
-                              prt::hash_map<int32_t, int32_t> const & textureIndices,
+                              prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
                               prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
                               prt::vector<DrawCall> & standard,
                               prt::vector<DrawCall> & transparent,
@@ -172,13 +172,7 @@ private:
                               prt::vector<DrawCall> & shadowAnimated);
 
     void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
-    void createStandardDrawCalls(Model    const * models,   size_t nModels,
-                                 uint32_t const * modelIDs, size_t nModelIDs,
-                                 size_t pipelineIndex,
-                                 bool transparent,
-                                 bool animated,
-                                 uint32_t const * boneOffsets,
-                                 prt::hash_map<int32_t, int32_t> const & textureIndices);
+
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
     void createCompositionDrawCalls(size_t pipelineIndex);
@@ -210,17 +204,17 @@ private:
     void pushBackDepthFBA();
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
-    void pushBackOffscreenFBA();
+    void pushBackShadowFBA();
 
     void pushBackSceneRenderPass();
-    void pushBackOffscreenRenderPass();
+    void pushBackShadowRenderPass();
 
     void pushBackSunShadowMap();
 
     prt::vector<VkPipelineColorBlendAttachmentState> getOpaqueBlendAttachmentState();
     prt::vector<VkPipelineColorBlendAttachmentState> getTransparentBlendAttachmentState();
     prt::vector<VkPipelineColorBlendAttachmentState> getCompositionBlendAttachmentState();
-    prt::vector<VkPipelineColorBlendAttachmentState> getOffscreenBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getShadowBlendAttachmentState();
 };
 
 #endif

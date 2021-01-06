@@ -21,11 +21,11 @@ TextureManager::TextureManager(const char* directory) {
 uint32_t TextureManager::loadTexture(char const * texturePath, bool fullPath) {    
     uint32_t id = 0;
 
-    char path[256];
+    char path[256] = {};    
     if (!fullPath) {
         strcpy(path, m_textureDirectory);
     }
-        strcat(path, texturePath);
+    strcat(path, texturePath);
 
     if (m_pathToTextureID.find(path) == m_pathToTextureID.end()) {
         id = m_loadedTextures.size();

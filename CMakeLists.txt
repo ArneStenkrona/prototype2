@@ -100,6 +100,7 @@ file(GLOB SOURCES
     "src/game/scene/*.cpp"
     "src/game/system/*.cpp"
     "src/game/system/physics/*.cpp"
+    "src/game/system/animation/*.cpp"
     "src/game/system/character/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
@@ -166,8 +167,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)

@@ -1,4 +1,4 @@
-#include "character.h"
+#include "character_system.h"
 
 #include "src/util/math_util.h"
 
@@ -6,15 +6,17 @@
 
 #include "glm/gtx/string_cast.hpp"
 
+#include "src/game/scene/scene.h"
 
-CharacterSystem::CharacterSystem(Input & input, 
-                                 Camera & camera, 
+#include <cstdlib>
+
+CharacterSystem::CharacterSystem(Scene * scene, 
                                  PhysicsSystem & physicsSystem,
-                                 AssetManager & assetManager)
-    : m_camera{camera},
-      m_playerController{input, camera}, 
+                                 AnimationSystem & animationSystem)
+    : m_scene{scene},
       m_physicsSystem{physicsSystem},
-      m_assetManager{assetManager} {
+      m_animationSystem{animationSystem},
+      m_playerController{scene->getInput(), scene->getCamera()} {
 }
 
 void CharacterSystem::updateCharacters(float deltaTime) {
@@ -23,49 +25,52 @@ void CharacterSystem::updateCharacters(float deltaTime) {
 
     // JUST FOR FUN, WILL REMOVE LATER
     if (m_characters.size > 1) {
-        glm::vec3 dir = m_characters.transforms[0].position - m_characters.transforms[1].position;
+        glm::vec3 dir = m_scene->getTransform(m_characters.entityIDs[0]).position - m_scene->getTransform(m_characters.entityIDs[1]).position;
         m_characters.input[1].move = glm::vec2(dir.x,dir.z);
         if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
     }
 
-    for (size_t index = 0; index < m_characters.size; ++index) {
+    for (CharacterID index = 0; index < m_characters.size; ++index) {
         updateCharacter(index, deltaTime);
     }
 }
 
+CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips) { 
+    assert(m_characters.size < m_characters.maxSize && "Character amount exceeded!");
+
+    m_characters.entityIDs[m_characters.size] = entityID;
+    m_characters.physics[m_characters.size].colliderTag = tag;
+    m_characters.animationClips[m_characters.size] = clips;
+
+    ++m_characters.size; 
+    return m_characters.size - 1; 
+}
+                                                  
 void CharacterSystem::updatePhysics(float deltaTime) {
+    prt::vector<Transform> transforms;
+    transforms.resize(m_characters.size);
+
+    for (CharacterID i = 0; i < m_characters.size; ++i) {
+        transforms[i] = m_scene->getTransform(m_characters.entityIDs[i]);
+    }
+
     m_physicsSystem.updateCharacterPhysics(deltaTime,
                                            m_characters.physics,
-                                           m_characters.transforms,
+                                           transforms.data(),
                                            m_characters.size);
-}
 
-void CharacterSystem::updateCamera() {
-    glm::vec3 hit;
-    glm::vec3 corners[4];
-    float dist = 5.0f;
-    m_camera.getCameraCorners(corners[0], corners[1], corners[2], corners[3]);
-
-    auto const & transform = m_characters.transforms[PLAYER_ID];
-    for (size_t i = 0; i < 4; ++i) {
-        glm::vec3 dir = glm::normalize(corners[i] - transform.position);
-        if (m_physicsSystem.raycast(transform.position, dir, 
-                                    5.0f, hit)) {
-            dist = std::min(dist, glm::distance(transform.position, hit));
-
-        }
+    for (CharacterID i = 0; i < m_characters.size; ++i) {
+        m_scene->getTransform(m_characters.entityIDs[i]) = transforms[i];
     }
-    m_camera.setTargetDistance(dist);
-    m_camera.setTarget(transform.position);
 }
 
-void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
+void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) {
     // declare aliases to shorten code
-    auto const & input = m_characters.input[index];
-    auto & transform = m_characters.transforms[index];
-    auto & physics = m_characters.physics[index];
-    auto & animation = m_characters.animation[index];
-    auto const & clips = m_characters.animationClips[index];
+    auto const & input = m_characters.input[characterID];
+    auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
+    auto & physics = m_characters.physics[characterID];
+    auto & animation = m_animationSystem.getAnimationBlend(m_characters.entityIDs[characterID]);
+    auto const & clips = m_characters.animationClips[characterID];
     
     glm::vec3 targetMovement{0.0f};
 
@@ -139,18 +144,4 @@ void CharacterSystem::updateCharacter(size_t index, float deltaTime) {
 
     animation.blendFactor = glm::clamp(animation.blendFactor, 0.0f, 1.0f);
     animation.time += animationDelta;
-}
-
-void CharacterSystem::sampleAnimation(prt::vector<glm::mat4> & bones) {
-    m_assetManager.getModelManager().getSampledBlendedAnimation(m_characters.modelIDs,
-                                                                m_characters.animation,
-                                                                bones,
-                                                                m_characters.size);
-}
-
-void CharacterSystem::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) const {
-    transformMatrices.resize(m_characters.size);
-    for (size_t i = 0; i < m_characters.size; ++i) {
-        transformMatrices[i] = m_characters.transforms[i].transformMatrix();
-    } 
 }
