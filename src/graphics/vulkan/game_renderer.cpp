@@ -770,11 +770,11 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
 // TODO: Split this function to decouple pipeline
 // creation from asset binding
 void GameRenderer::bindAssets(Model const * models, size_t nModels,
-                              ModelID const * staticModelIDs,
+                              ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
                               size_t nStaticModelIDs,
-                              ModelID const * animatedModelIDs,
-                              size_t nAnimatedModelIDs,
+                              ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                               uint32_t const * boneOffsets,
+                              size_t nAnimatedModelIDs,
                               Billboard const * billboards,
                               size_t nBillboards,
                               Texture const * textures,
@@ -863,8 +863,8 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
 
     prt::vector<DrawCall> temp;
     createModelDrawCalls(models, nModels, 
-                         staticModelIDs, nStaticModelIDs,
-                         animatedModelIDs, nAnimatedModelIDs,
+                         staticModelIDs, staticEntityIDs, nStaticModelIDs,
+                         animatedModelIDs, animatedEntityIDs, nAnimatedModelIDs,
                          boneOffsets, 
                          standardTextureIndices,
                          animatedTextureIndices,
@@ -895,17 +895,17 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     completeSwapchain();
 }
 
-GameRenderer::RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
-                                                prt::vector<glm::mat4> const & animatedModelMatrices,
-                                                prt::vector<glm::mat4> const & bones,
-                                                prt::vector<glm::vec4> const & billboardPositions,
-                                                prt::vector<glm::vec4> const & billboardColors,
-                                                Camera & camera,
-                                                SkyLight  const & sun,
-                                                prt::vector<PointLight> const & pointLights,
-                                                prt::vector<PackedBoxLight> const & boxLights,
-                                                float t,
-                                                glm::vec2 mousePosition) {      
+RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
+                                  prt::vector<glm::mat4> const & animatedModelMatrices,
+                                  prt::vector<glm::mat4> const & bones,
+                                  prt::vector<glm::vec4> const & billboardPositions,
+                                  prt::vector<glm::vec4> const & billboardColors,
+                                  Camera & camera,
+                                  SkyLight  const & sun,
+                                  prt::vector<PointLight> const & pointLights,
+                                  prt::vector<PackedBoxLight> const & boxLights,
+                                  float t,
+                                  glm::vec2 mousePosition) {      
 
     // technically we should only update the copy for
     // the current swapchain image, although earlier
@@ -949,7 +949,7 @@ GameRenderer::RenderResult GameRenderer::update(prt::vector<glm::mat4> const & m
     glm::vec4 mouseWorld = invmvp * glm::vec4(x, y, mouseDepth, 1.0f);
     res.mouseWorldPosition = glm::vec3(mouseWorld / mouseWorld.w);
 
-    res.objectIndex = *static_cast<int16_t*>(swapchain.swapchainFBACopies[swapchain.previousImageIndex][objectCopyIndex].data);
+    res.entityID = *static_cast<int16_t*>(swapchain.swapchainFBACopies[swapchain.previousImageIndex][objectCopyIndex].data);
 
     return res;
 }
@@ -1421,9 +1421,11 @@ void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
     }
 }
 
-void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModels,
-                                        ModelID const * staticModelIDs, size_t nStaticModelIDs,
-                                        ModelID const * animatedModelIDs, size_t nAnimatedModelIDs,
+void GameRenderer::createModelDrawCalls(Model    const * models, size_t nModels,
+                                        ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
+                                        size_t nStaticModelIDs,
+                                        ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
+                                        size_t nAnimatedModelIDs,
                                         uint32_t const * boneOffsets,
                                         prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
                                         prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
@@ -1466,6 +1468,7 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
+            pc.entityID = staticEntityIDs[i];
 
             // geometry
             drawCall.firstIndex = indexOffsets[staticModelIDs[i]] + mesh.startIndex;
@@ -1506,6 +1509,7 @@ void GameRenderer::createModelDrawCalls(Model    const * models,   size_t nModel
             pc.specularIndex = specularIndex;
             pc.baseColor = material.baseColor;
             pc.baseSpecularity = material.baseSpecularity;
+            pc.entityID = animatedEntityIDs[i];
             pc.boneOffset = boneOffsets[i];
 
             // geometry

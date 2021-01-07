@@ -54,6 +54,7 @@ struct StandardPushConstants {
 	alignas(4)  int32_t specularIndex;
     alignas(16) glm::vec4 baseColor;
     alignas(4)  float baseSpecularity;
+    alignas(4)  int32_t entityID;
     alignas(4)  uint32_t boneOffset;
 };
 

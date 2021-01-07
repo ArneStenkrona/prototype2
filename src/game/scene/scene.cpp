@@ -20,9 +20,11 @@ void Scene::bindToRenderer(GameRenderer & gameRenderer) {
     
     gameRenderer.bindAssets(m_renderData.models,
                             m_renderData.nModels,
-                            m_renderData.staticModelIDs.data(), m_renderData.staticModelIDs.size(),
-                            m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size(),
+                            m_renderData.staticModelIDs.data(), m_renderData.staticEntityIDs.data(),
+                            m_renderData.staticModelIDs.size(),
+                            m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
                             m_renderData.boneOffsets.data(),
+                            m_renderData.animatedModelIDs.size(),
                             &m_moon.billboard, 1,
                             m_renderData.textures, m_renderData.nTextures,
                             skybox);
@@ -38,8 +40,10 @@ void Scene::bindRenderData() {
         if (mid != -1) {
             if (models[mid].isAnimated()) {
                 m_renderData.animatedModelIDs.push_back(mid);
+                m_renderData.animatedEntityIDs.push_back(i);
             } else {
                 m_renderData.staticModelIDs.push_back(mid);
+                m_renderData.staticEntityIDs.push_back(i);
             }
         }
     }
@@ -67,17 +71,17 @@ void Scene::renderScene(Camera & camera) {
 
     double x,y;
     m_input.getCursorPos(x,y);
-    m_gameRenderer.update(m_renderData.staticTransforms, 
-                          m_renderData.animatedTransforms,
-                          bones,
-                          billboardPositions,
-                          billboardColors,
-                          camera, 
-                          m_lights.sun,
-                          pointLights,
-                          boxLights,
-                          time,
-                          glm::vec2{x,y});
+    m_renderResult = m_gameRenderer.update(m_renderData.staticTransforms, 
+                                           m_renderData.animatedTransforms,
+                                           bones,
+                                           billboardPositions,
+                                           billboardColors,
+                                           camera, 
+                                           m_lights.sun,
+                                           pointLights,
+                                           boxLights,
+                                           time,
+                                           glm::vec2{x,y});
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {

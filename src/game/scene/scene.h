@@ -75,14 +75,17 @@ private:
         size_t nModels;
 
         prt::vector<glm::mat4>       staticTransforms;
+        prt::vector<EntityID>         staticEntityIDs;
         prt::vector<ModelID>         staticModelIDs;
 
         prt::vector<glm::mat4>       animatedTransforms;
+        prt::vector<EntityID>         animatedEntityIDs;
         prt::vector<ModelID>         animatedModelIDs;
         prt::vector<uint32_t>        boneOffsets;
     };
     
     RenderData m_renderData;
+    RenderResult m_renderResult;
 
     void bindRenderData();
     

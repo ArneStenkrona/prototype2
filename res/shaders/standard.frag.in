@@ -52,6 +52,7 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 12) int specularIndex;
     layout(offset = 16) vec4 baseColor;
     layout(offset = 32) float baseSpecularity;
+    layout(offset = 36) int entityID;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -72,7 +73,7 @@ const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
 
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out int outObject;
+layout(location = 1) out int outEntity;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
@@ -135,7 +136,7 @@ void main() {
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
 
-    outObject = -1;
+    outEntity = material.entityID;
 }
 
 // Screen-door transparency: Discard pixel if below threshold.

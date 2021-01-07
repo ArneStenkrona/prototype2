@@ -12,6 +12,11 @@
 
 #include "src/container/hash_map.h"
 
+struct RenderResult {
+    glm::vec3 mouseWorldPosition;
+    int16_t entityID;
+};
+
 class GameRenderer : public VulkanApplication {
 public:
     /**
@@ -25,21 +30,16 @@ public:
      * binds a scene to the graphics pipeline
      */
     void bindAssets(Model const * models, size_t nModels,
-                    ModelID const * staticModelIDs,
+                    ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
                     size_t nStaticModelIDs,
-                    ModelID const * animatedModelIDs,
-                    size_t nAnimatedModelIDs,
+                    ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                     uint32_t const * boneOffsets,
+                    size_t nAnimatedModelIDs,
                     Billboard const * billboards,
                     size_t nBillboards,
                     Texture const * textures,
                     size_t nTextures,
                     prt::array<Texture, 6> const & skybox);
-
-    struct RenderResult {
-        glm::vec3 mouseWorldPosition;
-        int16_t objectIndex;
-    };
 
     /**
      * updates the scene
@@ -158,8 +158,10 @@ private:
     void createGridDrawCalls();
     void createSkyboxDrawCalls();
     void createModelDrawCalls(Model const * models,   size_t nModels,
-                              ModelID const * staticModelIDs, size_t nStaticModelIDs,
-                              ModelID const * animatedModelIDs, size_t nAnimatedModelIDs,
+                              ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
+                              size_t nStaticModelIDs,
+                              ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
+                              size_t nAnimatedModelIDs,
                               uint32_t const * boneOffsets,
                               prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
                               prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
