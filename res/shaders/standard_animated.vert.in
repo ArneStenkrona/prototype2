@@ -44,7 +44,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout(push_constant) uniform PER_OBJECT {
 	layout(offset = 0) int modelMatrixIdx;
-    layout(offset = 36) uint boneOffset;
+    layout(offset = 40) uint boneOffset;
 } pc;
 
 layout(location = 0) in vec3 inPosition;

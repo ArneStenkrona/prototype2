@@ -7,16 +7,18 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/lighting/light.h"
 #include "src/system/input/input.h"
+#include "src/game/system/animation/animation_system.h"
 #include "src/game/system/physics/physics_system.h"
-#include "src/game/system/character/character.h"
+#include "src/game/system/character/character_system.h"
 #include "src/graphics/vulkan/game_renderer.h"
+#include "src/game/scene/entity.h"
 
 #include "src/container/vector.h"
+#include "src/container/hash_map.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
-
 
 class Scene {
 public:
@@ -27,8 +29,6 @@ public:
 
     void bindToRenderer(GameRenderer & gameRenderer);
 
-    void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const;
-
     void update(float deltaTime);
 
     void sampleAnimation(prt::vector<glm::mat4> & bones);
@@ -36,6 +36,11 @@ public:
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
 
     void renderScene(Camera & camera);
+
+    Transform & getTransform(EntityID id) { return m_entities.transforms[id]; }
+
+    Input & getInput() { return m_input; }
+    Camera & getCamera() { return m_camera; }
     
 private:
     struct Lights {
@@ -44,15 +49,7 @@ private:
         SkyLight sun;
     } m_lights;
 
-    template<size_t N>
-    struct StaticSolidEntities {
-        enum { maxSize = N };
-        size_t size = 0;
-        uint32_t modelIDs[N];
-        Transform transforms[N];
-        uint32_t colliderIDs[N];
-    };
-    StaticSolidEntities<10> m_staticSolidEntities;
+    Entities<100> m_entities;
 
     struct {
         Billboard billboard;
@@ -67,17 +64,31 @@ private:
     PhysicsSystem& m_physicsSystem;
     Input& m_input;
     Camera m_camera;
+    AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
 
-    uint32_t const * getModelIDs(size_t & nModelIDs, bool animated) const;
+    struct RenderData {
+        Texture const * textures;
+        size_t nTextures;
 
-    void getNonAnimatedModels(Model const * & models, size_t & nModels, 
-                              uint32_t const * & modelIDs, size_t & nModelIDs) const;
-    void getAnimatedModels(Model const * & models, size_t & nModels, 
-                           uint32_t const * & modelIDs, size_t & nModelIDs);
+        Model const * models;
+        size_t nModels;
 
-    void initColliders();
+        prt::vector<glm::mat4>       staticTransforms;
+        prt::vector<EntityID>         staticEntityIDs;
+        prt::vector<ModelID>         staticModelIDs;
 
+        prt::vector<glm::mat4>       animatedTransforms;
+        prt::vector<EntityID>         animatedEntityIDs;
+        prt::vector<ModelID>         animatedModelIDs;
+        prt::vector<uint32_t>        boneOffsets;
+    };
+    
+    RenderData m_renderData;
+    RenderResult m_renderResult;
+
+    void bindRenderData();
+    
     void initSky();
     
     prt::vector<PointLight> getPointLights();
@@ -86,6 +97,7 @@ private:
     void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateCamera(float deltaTime);
+    void updateRenderData();
 
     friend class SceneSerialization;
 };

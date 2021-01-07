@@ -12,7 +12,7 @@ Game::Game()
 : m_input(),
   m_gameRenderer(800, 600),
   m_assetManager(RESOURCE_PATH),
-  m_physicsSystem(m_assetManager.getModelManager()),
+  m_physicsSystem(),
   m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
   m_editor(m_scene, m_input),
   m_frameRate(FRAME_RATE),

@@ -23,6 +23,7 @@ layout (binding = 0) uniform UBO
 } ubo;
 
 layout(set = 0, binding = 1) uniform samplerCube samplerCubeMap;
+layout(location = 1) out int outObject;
 
 #define PI 3.14159265359
 
@@ -62,4 +63,5 @@ void main()
     }
 
     outColor = vec4(color, 1.0);
+    outObject = -1;
 }

@@ -34,8 +34,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     uint noPointLights;
     uint noBoxLights;
     DirLight sun;
-    vec4 splitDepths[(4 + 4) / 4];
-    mat4 cascadeSpace[4];
+    vec4 splitDepths[(5 + 4) / 4];
+    mat4 cascadeSpace[5];
     PointLight pointLights[4];
     BoxLight boxLights[20];
     /*Bones*/
@@ -44,7 +44,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout(push_constant) uniform PER_OBJECT {
 	layout(offset = 0) int modelMatrixIdx;
-    layout(offset = 36) uint boneOffset;
+    layout(offset = 40) uint boneOffset;
 } pc;
 
 layout(location = 0) in vec3 inPosition;

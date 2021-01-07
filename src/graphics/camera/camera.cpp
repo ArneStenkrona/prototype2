@@ -29,9 +29,11 @@ void Camera::setProjection(float width, float height, float near, float far) {
     m_nearPlane = near;
     m_farPlane = far;
 }
+
 glm::mat4 Camera::getProjectionMatrix() const {
     return getProjectionMatrix(m_nearPlane, m_farPlane);
 }
+
 glm::mat4 Camera::getProjectionMatrix(float near, float far) const {
     return glm::perspective(glm::radians(m_fieldOfView), m_width / m_height, near, far);
 }

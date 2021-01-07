@@ -8,7 +8,14 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/geometry/billboard.h"
 
+#include "src/game/scene/entity.h"
+
 #include "src/container/hash_map.h"
+
+struct RenderResult {
+    glm::vec3 mouseWorldPosition;
+    int16_t entityID;
+};
 
 class GameRenderer : public VulkanApplication {
 public:
@@ -19,17 +26,14 @@ public:
     GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
-
     /**
      * binds a scene to the graphics pipeline
      */
     void bindAssets(Model const * models, size_t nModels,
-                    uint32_t const * modelIDs,
-                    size_t nModelIDs,
-                    Model const * animatedModels,
+                    ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
+                    size_t nStaticModelIDs,
+                    ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                     uint32_t const * boneOffsets,
-                    size_t nAnimatedModels,
-                    uint32_t const * animatedModelIDs,
                     size_t nAnimatedModelIDs,
                     Billboard const * billboards,
                     size_t nBillboards,
@@ -43,16 +47,17 @@ public:
      * @param camera : scene camera
      * @param sun : sun light
      */
-    void update(prt::vector<glm::mat4> const & modelMatrices, 
-                prt::vector<glm::mat4> const & animatedModelMatrices,
-                prt::vector<glm::mat4> const & bones,
-                prt::vector<glm::vec4> const & billboardPositions,
-                prt::vector<glm::vec4> const & billboardColors,
-                Camera & camera,
-                SkyLight const & sun,
-                prt::vector<PointLight> const & pointLights,
-                prt::vector<PackedBoxLight> const & boxLights,
-                float t);
+    RenderResult update(prt::vector<glm::mat4> const & modelMatrices, 
+                        prt::vector<glm::mat4> const & animatedModelMatrices,
+                        prt::vector<glm::mat4> const & bones,
+                        prt::vector<glm::vec4> const & billboardPositions,
+                        prt::vector<glm::vec4> const & billboardColors,
+                        Camera & camera,
+                        SkyLight const & sun,
+                        prt::vector<PointLight> const & pointLights,
+                        prt::vector<PackedBoxLight> const & boxLights,
+                        float t,
+                        glm::vec2 mousePosition);
 
     static constexpr unsigned int COMMON_RENDER_GROUP = 0;
     static constexpr unsigned int GAME_RENDER_GROUP = 1;
@@ -61,15 +66,21 @@ public:
     static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
+    static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
+    static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
-    float cascadeSplitLambda = 0.95f;
+    float cascadeSplitLambda = 0.85f;
 
-    size_t colorFBAIndex;
+    // size_t colorFBAIndex;
     size_t depthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
-    prt::vector<size_t> offscreenFBAIndices;
+    prt::vector<size_t> shadowmapFBAIndices;
+    prt::vector<size_t> objectFBAIndices;
+
+    size_t objectCopyIndex;
+    size_t depthCopyIndex;
 
     size_t shadowMapIndex;
 
@@ -120,10 +131,11 @@ private:
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
 
-    void createVertexBuffer(Model const * models, size_t nModels, size_t assetIndex,
-                            bool animated);
+    void createVertexBuffers(Model const * models, size_t nModels, 
+                             size_t staticAssetIndex, size_t animatedAssetIndex);
     
-    void createIndexBuffer(Model const * models, size_t nModels, size_t assetIndex);
+    void createIndexBuffers(Model const * models, size_t nModels,
+                            size_t staticAssetIndex, size_t animatedAssetIndex);
 
     void createGridBuffers(size_t assetIndex);
     void createCubeMapBuffers(size_t assetIndex);
@@ -131,9 +143,10 @@ private:
     
     void loadModels(Model const * models, size_t nModels, 
                     Texture const * textures, size_t nTextures,
-                    size_t assetIndex,
-                    bool animated,
-                    prt::hash_map<int32_t, int32_t> & textureIndices);
+                    size_t staticAssetIndex,
+                    size_t animatedAssetIndex,
+                    prt::hash_map<int32_t, int32_t> & staticTextureIndices,
+                    prt::hash_map<int32_t, int32_t> & animatedTextureIndices);
 
     void loadBillboards(Billboard const * billboards, size_t nBillboards, 
                         Texture const * textures, size_t nTextures,
@@ -144,12 +157,13 @@ private:
 
     void createGridDrawCalls();
     void createSkyboxDrawCalls();
-    void createModelDrawCalls(Model    const * models,   size_t nModels,
-                              uint32_t const * modelIDs, size_t nModelIDs,
-                              Model    const * animatedModels,   size_t nAnimatedModels,
-                              uint32_t const * animatedModelIDs, size_t nAnimatedModelIDs,
+    void createModelDrawCalls(Model const * models,   size_t nModels,
+                              ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
+                              size_t nStaticModelIDs,
+                              ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
+                              size_t nAnimatedModelIDs,
                               uint32_t const * boneOffsets,
-                              prt::hash_map<int32_t, int32_t> const & textureIndices,
+                              prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
                               prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
                               prt::vector<DrawCall> & standard,
                               prt::vector<DrawCall> & transparent,
@@ -160,13 +174,7 @@ private:
                               prt::vector<DrawCall> & shadowAnimated);
 
     void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
-    void createStandardDrawCalls(Model    const * models,   size_t nModels,
-                                 uint32_t const * modelIDs, size_t nModelIDs,
-                                 size_t pipelineIndex,
-                                 bool transparent,
-                                 bool animated,
-                                 uint32_t const * boneOffsets,
-                                 prt::hash_map<int32_t, int32_t> const & textureIndices);
+
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
     void createCompositionDrawCalls(size_t pipelineIndex);
@@ -194,17 +202,21 @@ private:
                         prt::array<glm::mat4, NUMBER_SHADOWMAP_CASCADES> & cascadeSpace,
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
-    void pushBackColorFBA();
+    void pushBackObjectFBA();
     void pushBackDepthFBA();
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
-    void pushBackOffscreenFBA();
-    void pushBackShadowMapFBA();
+    void pushBackShadowFBA();
 
     void pushBackSceneRenderPass();
-    void pushBackOffscreenRenderPass();
+    void pushBackShadowRenderPass();
 
     void pushBackSunShadowMap();
+
+    prt::vector<VkPipelineColorBlendAttachmentState> getOpaqueBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getTransparentBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getCompositionBlendAttachmentState();
+    prt::vector<VkPipelineColorBlendAttachmentState> getShadowBlendAttachmentState();
 };
 
 #endif

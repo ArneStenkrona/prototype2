@@ -66,10 +66,19 @@ struct GraphicsPipeline {
     prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
     prt::vector<ShaderStage> shaderStages;
 
+    // blending
+    prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+
     VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
+    VkCompareOp compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     
     bool useColorAttachment;
     bool enableDepthBias;
+
+    float depthBiasConstant = 1.0f;
+    float depthBiasClamp = 0.0f;
+    float depthBiasSlope = 1.0f;
+
     unsigned int subpass;
 
     PipelineType type;

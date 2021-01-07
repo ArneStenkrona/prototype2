@@ -34,8 +34,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     uint noPointLights;
     uint noBoxLights;
     DirLight sun;
-    vec4 splitDepths[(4 + 4) / 4];
-    mat4 cascadeSpace[4];
+    vec4 splitDepths[(5 + 4) / 4];
+    mat4 cascadeSpace[5];
     PointLight pointLights[4];
     BoxLight boxLights[20];
 } ubo;
@@ -52,6 +52,7 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 12) int specularIndex;
     layout(offset = 16) vec4 baseColor;
     layout(offset = 32) float baseSpecularity;
+    layout(offset = 36) int entityID;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -72,6 +73,7 @@ const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
 
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out int outEntity;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
@@ -118,19 +120,23 @@ void main() {
     }
 
     int cascadeIndex = 0;
-    for (int i = 0; i < 4 - 1; ++i) {
+    for (int i = 0; i < 5 - 1; ++i) {
         if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
             cascadeIndex = i + 1;
         }
     }
+
     vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
+    sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
 
     // Directional lighting
-    res += filterPCF(sunShadowCoord / sunShadowCoord.w, cascadeIndex) *
+    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r  *
            CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
+
+    outEntity = material.entityID;
 }
 
 // Screen-door transparency: Discard pixel if below threshold.
@@ -193,18 +199,18 @@ vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albed
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
     float shadow = 1.0f;
-    if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0) {
-        float dist = texture(shadowMap, vec3(shadowCoord.st + off, cascadeIndex)).r;
-        if (shadowCoord.w > 0.0 && dist < shadowCoord.z) {
-            shadow = 0.0f;
-        }
+
+    float dist = texture(shadowMap, vec3(shadowCoord.st + off, cascadeIndex)).r;
+    if (shadowCoord.w > 0.0 && dist < shadowCoord.z) {
+        shadow = 0.0f;
     }
+
     return shadow;
 }
 
 float filterPCF(vec4 shadowCoord, int cascadeIndex) {
     ivec2 textDim = textureSize(shadowMap, 0).xy;
-    float scale = 1.5;
+    float scale = 0.5;
     float dx = scale * 1.0 / float(textDim.x);
     float dy = scale * 1.0 / float(textDim.y);
 
@@ -218,5 +224,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
             ++count;
         }
     }
+
+
     return shadowFactor / count;
 }

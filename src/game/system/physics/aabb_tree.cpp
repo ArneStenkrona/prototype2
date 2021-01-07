@@ -49,10 +49,10 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb,
             if (node.isLeaf()) {
                 if (caller != node.colliderTag) {
                     switch (node.colliderTag.type) {
-                        case ColliderType::MESH: 
+                        case ColliderType::COLLIDER_TYPE_MESH: 
                             meshIndices.push_back(node.colliderTag.index);
                             break;
-                        case ColliderType::ELLIPSOID:
+                        case ColliderType::COLLIDER_TYPE_ELLIPSOID:
                             ellipsoidIndices.push_back(node.colliderTag.index);
                             break;
                         default:

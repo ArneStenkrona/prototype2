@@ -6,52 +6,48 @@
 #include "src/system/assets/asset_manager.h"
 #include "src/game/system/physics/physics_system.h"
 #include "src/game/component/component.h"
+#include "src/game/scene/entity.h"
 #include "src/container/vector.h"
 
 #include <cstdint>
 
+class Scene;
+
 class CharacterSystem {
 public:
-    CharacterSystem(Input & input, 
-                    Camera & camera, 
-                    PhysicsSystem & physicsSystem, 
-                    AssetManager & assetManager);
+    CharacterSystem(Scene * scene, 
+                    PhysicsSystem & physicsSystem,
+                    AnimationSystem & animationSystem);
+
+    CharacterID addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips);
+             
     void updateCharacters(float deltaTime);
 
     void updatePhysics(float deltaTime);
-    void updateCamera();
 
-    void sampleAnimation(prt::vector<glm::mat4> & bones);
-
-    uint32_t const * getModelIDs(size_t & nModelIDs) const { nModelIDs = m_characters.size; return m_characters.modelIDs; }
-    void getTransformMatrices(prt::vector<glm::mat4>& transformMatrices) const;
+    EntityID getPlayer() const { return m_characters.entityIDs[PLAYER_ID]; }
 
 private:
     template<size_t N>
     struct Characters {
         enum { maxSize = N };
-        size_t size = 0;
+        CharacterID size = 0;
 
-        uint32_t modelIDs[N];
-
-        Transform transforms[N];
+        EntityID entityIDs[N];
         CharacterPhysics physics[N];
-
         CharacterInput input[N];
-        
-        BlendedAnimation animation[N];
         CharacterAnimationClips animationClips[N];
     };
     Characters<10> m_characters;
     static constexpr size_t PLAYER_ID = 0;
 
-    Camera & m_camera;
-    PlayerController m_playerController;
+    Scene * m_scene;
     PhysicsSystem & m_physicsSystem;
+    AnimationSystem & m_animationSystem;
 
-    AssetManager & m_assetManager;
+    PlayerController m_playerController;
 
-    void updateCharacter(size_t index, float deltaTime);
+    void updateCharacter(CharacterID characterID, float deltaTime);
 
     friend class SceneSerialization;
 };

@@ -8,6 +8,13 @@
 #include <stdlib.h>
 
 void SceneSerialization::loadScene(char const * file, Scene & scene) {
+    // set components to undefined
+    for (size_t i = 0; i < scene.m_entities.maxSize; ++i) {
+        scene.m_entities.modelIDs[i] = -1;
+        scene.m_entities.characterIDs[i] = -1;
+        scene.m_entities.colliderTags[i].type = ColliderType::COLLIDER_TYPE_NONE;
+    }
+
     // load file into buffer
     prt::vector<char> buf;
     FILE *fp = fopen(file, "r");
@@ -96,19 +103,25 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
 }
 
 void SceneSerialization::parseStaticSolidEntity(char const *& buf, Scene & scene) {
-    size_t index = scene.m_staticSolidEntities.size;
-    ++scene.m_staticSolidEntities.size;
+    EntityID id = scene.m_entities.addEntity();
 
-    uint32_t modelID; 
+    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
     scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, false);
 
-    scene.m_staticSolidEntities.modelIDs[index] = modelID;
-    scene.m_staticSolidEntities.transforms[index].position = parseVec3(buf);
-    scene.m_staticSolidEntities.transforms[index].rotation = parseQuat(buf);
-    scene.m_staticSolidEntities.transforms[index].scale = parseVec3(buf);
+    scene.m_entities.modelIDs[id] = modelID;
+    scene.m_entities.transforms[id].position = parseVec3(buf);
+    scene.m_entities.transforms[id].rotation = parseQuat(buf);
+    scene.m_entities.transforms[id].scale = parseVec3(buf);
+
+    Model const * models;
+    size_t nModels;
+    scene.m_assetManager.getModelManager().getModels(models, nModels);
+
+    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addModelCollider(models[modelID], 
+                                                                               scene.m_entities.transforms[id]);
 }
 
 void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
@@ -139,30 +152,34 @@ void SceneSerialization::parseBoxLight(char const *& buf, Scene & scene) {
 }
 
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
-    auto & characters = scene.m_characterSystem.m_characters;
-    size_t index = characters.size;
-    assert(index < characters.maxSize && "Character amount exceeded!");
-    ++characters.size;
+    EntityID id = scene.m_entities.addEntity();
 
-    uint32_t modelID; 
+    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
     scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, true);
 
-    characters.modelIDs[index] = modelID;
+    scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
 
-    characters.transforms[index].position = parseVec3(buf);
-    characters.transforms[index].rotation = parseQuat(buf);
-    characters.transforms[index].scale = parseVec3(buf);
+    scene.m_entities.modelIDs[id] = modelID;
 
-    characters.physics[index].colliderID = scene.m_physicsSystem.addEllipsoidCollider(parseVec3(buf), index);
+    scene.m_entities.transforms[id].position = parseVec3(buf);
+    scene.m_entities.transforms[id].rotation = parseQuat(buf);
+    scene.m_entities.transforms[id].scale = parseVec3(buf);
 
-    characters.animationClips[index].idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
-    characters.animationClips[index].walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
-    characters.animationClips[index].run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
-    characters.animationClips[index].jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
-    characters.animationClips[index].fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
+    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(parseVec3(buf));
+
+    CharacterAnimationClips clips;
+    clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
+    clips.walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
+    clips.run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
+    clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
+    clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
+
+    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips);
+
+    scene.m_entities.characterIDs[id] = characterID;
 }
 
 void SceneSerialization::parseString(char const *& buf, char * dest) {
