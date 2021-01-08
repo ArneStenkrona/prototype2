@@ -196,15 +196,12 @@ void Scene::updatePhysics(float deltaTime) {
 void Scene::updateColliders() {
     prt::vector<ColliderTag> tags;
     prt::vector<Transform> transforms;
-    tags.resize(m_colliderUpdateSet.size());
-    transforms.resize(m_colliderUpdateSet.size());
-
-    size_t i = 0;
 
     for (auto it = m_colliderUpdateSet.begin(); it != m_colliderUpdateSet.end(); it++) {
-        tags[i] = m_entities.colliderTags[it->value()];
-        transforms[i] = m_entities.transforms[it->value()];
-        ++i;
+        ColliderTag tag =  m_entities.colliderTags[it->value()];
+        if (tag.type != ColliderType::COLLIDER_TYPE_MODEL) continue;
+        tags.push_back(tag);
+        transforms.push_back(m_entities.transforms[it->value()]);
     }
 
     m_physicsSystem.updateModelColliders(tags.data(),  transforms.data(), tags.size());
