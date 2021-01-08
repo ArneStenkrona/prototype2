@@ -49,7 +49,7 @@ public:
      */
     void insert(ColliderTag const * tags, AABB const * aabbs, size_t n,
                 int32_t * treeIndices);
-
+                
     /**
      * Updates the nodes given by a range of tree indices which is then
      * made up-to-date

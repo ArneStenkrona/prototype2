@@ -21,7 +21,7 @@ class PhysicsSystem {
 public:
     PhysicsSystem();
 
-    void updateModelColliders(uint32_t const * colliderIDs,
+    void updateModelColliders(ColliderTag const * tags,
                               Transform const * transforms,
                               size_t count);
     /**

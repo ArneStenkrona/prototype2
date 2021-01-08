@@ -15,6 +15,7 @@
 
 #include "src/container/vector.h"
 #include "src/container/hash_map.h"
+#include "src/container/hash_set.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -50,6 +51,8 @@ private:
     } m_lights;
 
     Entities<100> m_entities;
+
+    prt::hash_set<EntityID> m_colliderUpdateSet;
 
     struct {
         Billboard billboard;
@@ -96,10 +99,12 @@ private:
     
     void updateSun(float time);
     void updatePhysics(float deltaTime);
+    void updateColliders();
     void updateCamera(float deltaTime);
     void updateRenderData();
 
     friend class SceneSerialization;
+    friend class Editor;
 };
 
 #endif

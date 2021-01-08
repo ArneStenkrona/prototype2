@@ -13,6 +13,7 @@
 #include "src/container/hash_map.h"
 
 struct RenderResult {
+    float mouseDepth;
     glm::vec3 mouseWorldPosition;
     int16_t entityID;
 };

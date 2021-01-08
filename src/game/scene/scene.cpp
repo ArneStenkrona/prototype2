@@ -60,6 +60,8 @@ void Scene::bindRenderData() {
 }
 
 void Scene::renderScene(Camera & camera) {
+    updateRenderData();
+
     prt::vector<glm::mat4> bones; 
     sampleAnimation(bones);
 
@@ -152,7 +154,6 @@ void Scene::update(float deltaTime) {
     m_characterSystem.updateCharacters(deltaTime);
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
-    updateRenderData();
     renderScene(m_camera);
 }
 
@@ -188,7 +189,27 @@ void Scene::updateSun(float time) {
 
 
 void Scene::updatePhysics(float deltaTime) {
+    updateColliders();
     m_characterSystem.updatePhysics(deltaTime);
+}
+
+void Scene::updateColliders() {
+    prt::vector<ColliderTag> tags;
+    prt::vector<Transform> transforms;
+    tags.resize(m_colliderUpdateSet.size());
+    transforms.resize(m_colliderUpdateSet.size());
+
+    size_t i = 0;
+
+    for (auto it = m_colliderUpdateSet.begin(); it != m_colliderUpdateSet.end(); it++) {
+        tags[i] = m_entities.colliderTags[it->value()];
+        transforms[i] = m_entities.transforms[it->value()];
+        ++i;
+    }
+
+    m_physicsSystem.updateModelColliders(tags.data(),  transforms.data(), tags.size());
+
+    m_colliderUpdateSet = prt::hash_set<EntityID>();
 }
 
 void Scene::updateCamera(float deltaTime) {

@@ -11,6 +11,10 @@ private:
     void updateInput(float deltaTime);
     void render();
 
+    EntityID m_selectedEntityID = -1;
+    glm::vec3 m_selectedEntityPosition;
+    glm::vec3 m_selectedMousePosition;    
+
     Scene & m_scene;
     Input & m_input;
     Camera m_camera;

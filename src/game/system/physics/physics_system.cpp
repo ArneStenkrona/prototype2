@@ -77,16 +77,17 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
     return tag;
 }
 
-void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
-                                        Transform const *transforms,
-                                        size_t count) {
+void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
+                                         Transform const *transforms,
+                                         size_t count) {
     for (auto & meshCollider : m_meshColliders) {
         meshCollider.hasMoved = false;
     }
-    prt::vector<int32_t> treeIndices;
-    for (size_t i = 0; i< count; ++i) {
-        size_t currIndex = m_modelColliders[colliderIDs[i]].startIndex;
-        size_t endIndex = currIndex + m_modelColliders[colliderIDs[i]].numIndices;
+    for (size_t i = 0; i < count; ++i) {
+        size_t startIndex = m_modelColliders[tags[i].index].startIndex;
+        size_t currIndex = m_modelColliders[tags[i].index].startIndex;
+        size_t numIndices = m_modelColliders[tags[i].index].numIndices;
+        size_t endIndex = currIndex + numIndices;
         glm::mat4 mat = transforms[i].transformMatrix();
         while (currIndex < endIndex) {
             MeshCollider & curr = m_meshColliders[currIndex];
@@ -94,25 +95,24 @@ void PhysicsSystem::updateModelColliders(uint32_t const * colliderIDs,
             curr.transform = transforms[i];
 
             // update geometry cache
-            size_t currIndex = curr.startIndex;
-            size_t endIndex = currIndex + curr.numIndices;
+            size_t currIndex2 = curr.startIndex;
+            size_t endIndex2 = currIndex2 + curr.numIndices;
             glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
             glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
-            while (currIndex < endIndex) {
-                m_geometryCache[currIndex] = mat * glm::vec4(m_geometry[currIndex], 1.0f);
-                min = glm::min(min, m_geometryCache[currIndex]);
-                max = glm::max(max, m_geometryCache[currIndex]);
-                ++currIndex;
+            while (currIndex2 < endIndex2) {
+                m_geometryCache[currIndex2] = mat * glm::vec4(m_geometry[currIndex2], 1.0f);
+                min = glm::min(min, m_geometryCache[currIndex2]);
+                max = glm::max(max, m_geometryCache[currIndex2]);
+                ++currIndex2;
             }
             m_meshAABBs[currIndex].lowerBound = min;
             m_meshAABBs[currIndex].upperBound = max;
-
-            treeIndices.push_back(m_meshTreeIndices[currIndex]);
             ++currIndex;
         }
+
+        m_aabbTree.update(&m_meshTreeIndices[startIndex], 
+                          &m_meshAABBs[startIndex], numIndices);
     }
-    
-    m_aabbTree.update(treeIndices.data(), m_meshAABBs.data(), count);
 }
 
 // From "Realtime Collision Detection" by Christer Ericson

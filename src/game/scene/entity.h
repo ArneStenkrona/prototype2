@@ -15,8 +15,8 @@ struct Entities {
 public:
     enum { maxSize = N };
 
-    Transform transforms[N];
-    ModelID modelIDs[N];
+    Transform   transforms[N];
+    ModelID     modelIDs[N];
     AnimationID animationIDs[N];
     CharacterID characterIDs[N];
     ColliderTag colliderTags[N];

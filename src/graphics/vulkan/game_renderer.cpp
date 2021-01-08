@@ -946,6 +946,7 @@ RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
     glm::mat4 invmvp = glm::inverse(camera.getProjectionMatrix(nearPlane, farPlane) * camera.getViewMatrix());
 
     RenderResult res;
+    res.mouseDepth = mouseDepth;
     glm::vec4 mouseWorld = invmvp * glm::vec4(x, y, mouseDepth, 1.0f);
     res.mouseWorldPosition = glm::vec3(mouseWorld / mouseWorld.w);
 
