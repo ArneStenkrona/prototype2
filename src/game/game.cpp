@@ -10,7 +10,7 @@
 
 Game::Game()
 : m_input(),
-  m_gameRenderer(800, 600),
+  m_gameRenderer(800, 600, m_input),
   m_assetManager(RESOURCE_PATH),
   m_physicsSystem(),
   m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
@@ -48,7 +48,7 @@ void Game::run() {
         lastTime = currentTime;
         update(deltaTime);
 
-        m_gameRenderer.render(m_renderMask);   
+        m_gameRenderer.render(deltaTime, m_renderMask);   
 
 
         std::this_thread::sleep_until(deadLine);

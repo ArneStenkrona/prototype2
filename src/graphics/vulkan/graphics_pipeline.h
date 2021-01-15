@@ -13,6 +13,15 @@ struct DrawCall {
     alignas(16) PushConstants pushConstants;
 };
 
+struct GUIDrawCall {
+    uint32_t indexOffset;
+    uint32_t indexCount;
+    uint32_t vertexOffset;
+    VkRect2D scissor;
+    using PushConstants = prt::array<unsigned char, 64>;
+    alignas(16) PushConstants pushConstants;
+};
+
 struct ShaderStage {
     VkShaderStageFlagBits stage;
     char shader[512];
@@ -23,6 +32,7 @@ enum PipelineType {
     PIPELINE_TYPE_OPAQUE,
     PIPELINE_TYPE_OFFSCREEN,
     PIPELINE_TYPE_TRANSPARENT,
+    PIPELINE_TYPE_GUI,
     PIPELINE_TYPE_COMPOSITION
 };
 
@@ -42,7 +52,8 @@ struct UBOAttachment {
 struct GraphicsPipeline {
     static constexpr size_t NULL_INDEX = -1;
     // Assets handle
-    size_t assetsIndex;
+    size_t assetsIndex = NULL_INDEX;
+    size_t dynamicAssetsIndex = NULL_INDEX;
     // UBO handle
     size_t uboIndex = NULL_INDEX;
 
@@ -72,7 +83,7 @@ struct GraphicsPipeline {
     VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
     VkCompareOp compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     
-    bool useColorAttachment;
+    bool useColorAttachment; // Remove?
     bool enableDepthBias;
 
     float depthBiasConstant = 1.0f;
@@ -89,6 +100,8 @@ struct GraphicsPipeline {
 
     // Draw calls
     prt::vector<DrawCall> drawCalls;
+
+    prt::vector<GUIDrawCall> guiDrawCalls;
 };
 
 #endif

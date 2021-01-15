@@ -4,8 +4,9 @@
 
 #include "src/game/scene/entity.h"
 
-GameRenderer::GameRenderer(unsigned int width, unsigned int height)
-    : VulkanApplication(width, height) {
+GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & input)
+    : VulkanApplication(width, height),
+      m_imguiApplication(getPhysicalDevice(), getDevice(), input, width, height) {
 
     pushBackObjectFBA();
     pushBackDepthFBA();
@@ -26,11 +27,44 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height)
         addSwapchainFBA(i, revealageFBAIndices[i]);
     }
 
-    pushBackSunShadowMap();
+    pushBackShadowRenderPass();
+    pushBackSceneRenderPass();
+    
+//     guiPipelineIndex = graphicsPipelines.size();
+//     graphicsPipelines.push_back(GraphicsPipeline{});
+//     GraphicsPipeline& guiPipeline = graphicsPipelines.back();
+
+//     size_t guiAssetIndex = pushBackDynamicAssets();
+
+//     m_imguiApplication.initResources(commandPool, graphicsQueue,
+//                                      swapchain.swapchainImageCount,
+//                                      msaaSamples,
+//                                      0,
+//                                      EDITOR_RENDER_GROUP,
+//                                      guiAssetIndex,
+//                                      guiPipeline);
 }
 
 GameRenderer::~GameRenderer() {
 }
+
+void GameRenderer::render(float /*deltaTime*/, uint16_t renderGroupMask) {
+    updateRenderGroupMask(renderGroupMask);
+    uint32_t imageIndex = waitForNextImageIndex();
+    
+    // int w,h;
+    // getWindowSize(w,h);
+
+    // GraphicsPipeline & guiPipeline = graphicsPipelines[guiPipelineIndex];
+
+    // m_imguiApplication.update(float(w), float(h), deltaTime,
+    //                           imageIndex, commandPool, graphicsQueue, 
+    //                           getDynamicAssets(guiPipeline.dynamicAssetsIndex),
+    //                           guiPipeline);
+
+    drawFrame(imageIndex);
+}
+
 
 void GameRenderer::createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
                                                     size_t shadowmapUboIndex, 
@@ -61,11 +95,11 @@ void GameRenderer::createStandardAndShadowPipelines(size_t standardAssetIndex, s
 }
 
 void GameRenderer::createCompositionPipeline() {
-    compositionPipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+    compositionPipelineIndex = pushBackPipeline();
+    GraphicsPipeline& pipeline = getPipeline(compositionPipelineIndex);
 
     pipeline.type = PIPELINE_TYPE_COMPOSITION;
+    pipeline.renderPassIndex = scenePassIndex;;
     pipeline.subpass = 2;
 
     pipeline.assetsIndex = pushBackAssets();
@@ -190,13 +224,14 @@ void GameRenderer::createCompositionPipeline() {
                        data.indexBufferMemory);
 
     pipeline.colorBlendAttachments = getCompositionBlendAttachmentState();
+    pipeline.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 }
 
 void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
-    gridPipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+    gridPipelineIndex = pushBackPipeline();
+    GraphicsPipeline & pipeline = getPipeline(gridPipelineIndex);
 
+    pipeline.renderPassIndex = scenePassIndex;
     pipeline.subpass = 1;
     pipeline.type = PIPELINE_TYPE_TRANSPARENT;
     pipeline.renderGroup = EDITOR_RENDER_GROUP;
@@ -279,10 +314,10 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
 }
 
 void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
-    skyboxPipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+    skyboxPipelineIndex = pushBackPipeline();
+    GraphicsPipeline& pipeline = getPipeline(skyboxPipelineIndex);
 
+    pipeline.renderPassIndex = scenePassIndex;;
     pipeline.subpass = 0;
     pipeline.type = PIPELINE_TYPE_OPAQUE;
 
@@ -385,10 +420,10 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
 }
 
 void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
-    billboardPipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+    billboardPipelineIndex = pushBackPipeline();
+    GraphicsPipeline& pipeline = getPipeline(billboardPipelineIndex);
 
+    pipeline.renderPassIndex = scenePassIndex;;
     pipeline.subpass = 1;
     pipeline.type = PIPELINE_TYPE_TRANSPARENT;
 
@@ -524,10 +559,10 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
                                                     VkVertexInputBindingDescription bindingDescription,
                                                     prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
                                                     bool transparent) {
-    int32_t pipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+    int32_t pipelineIndex = pushBackPipeline();
+    GraphicsPipeline& pipeline = getPipeline(pipelineIndex);
 
+    pipeline.renderPassIndex = scenePassIndex;
     pipeline.subpass = transparent ? 1 : 0;
     pipeline.type = transparent ? PIPELINE_TYPE_TRANSPARENT : PIPELINE_TYPE_OPAQUE;
 
@@ -682,15 +717,15 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
 }
 
 int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
-                                                   char const * vertexShader,
-                                                   VkVertexInputBindingDescription bindingDescription,
-                                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
-    int32_t pipelineIndex = graphicsPipelines.size();
-    graphicsPipelines.push_back(GraphicsPipeline{});
-    GraphicsPipeline& pipeline = graphicsPipelines.back();
+                                              char const * vertexShader,
+                                              VkVertexInputBindingDescription bindingDescription,
+                                              prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
+    int32_t pipelineIndex = pushBackPipeline();
+    GraphicsPipeline& pipeline = getPipeline(pipelineIndex);
 
-    pipeline.type = PIPELINE_TYPE_OFFSCREEN;
+    pipeline.renderPassIndex = shadowmapPassIndex;
     pipeline.subpass = 0;
+    pipeline.type = PIPELINE_TYPE_OFFSCREEN;
 
     pipeline.assetsIndex = assetIndex;
     pipeline.uboIndex = uboIndex;
@@ -868,13 +903,13 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                          boneOffsets, 
                          standardTextureIndices,
                          animatedTextureIndices,
-                         graphicsPipelines[standardPipelineIndex].drawCalls,
-                         graphicsPipelines[transparentPipelineIndex].drawCalls,
-                         graphicsPipelines[animatedStandardPipelineIndex].drawCalls,
-                         graphicsPipelines[animatedTransparentPipelineIndex].drawCalls,
-                         graphicsPipelines[waterPipelineIndex].drawCalls,
-                         graphicsPipelines[shadowmapPipelineIndex].drawCalls,
-                         graphicsPipelines[animatedShadowmapPipelineIndex].drawCalls);
+                         getPipeline(standardPipelineIndex).drawCalls,
+                         getPipeline(transparentPipelineIndex).drawCalls,
+                         getPipeline(animatedStandardPipelineIndex).drawCalls,
+                         getPipeline(animatedTransparentPipelineIndex).drawCalls,
+                         getPipeline(waterPipelineIndex).drawCalls,
+                         getPipeline(shadowmapPipelineIndex).drawCalls,
+                         getPipeline(animatedShadowmapPipelineIndex).drawCalls);
 
     /* billboard */
     prt::hash_map<int32_t, int32_t> billboardTextureIndices;
@@ -887,10 +922,6 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     /* composition */
     createCompositionPipeline();
     createCompositionDrawCalls(compositionPipelineIndex);
-
-    /* render passes (order is important) */
-    pushBackShadowRenderPass();
-    pushBackSceneRenderPass();
 
     completeSwapchain();
 }
@@ -974,7 +1005,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
 
     // grid ubo
     if (gridPipelineIndex != -1) {
-        auto gridUboData = getUniformBufferData(graphicsPipelines[gridPipelineIndex].uboIndex).uboData.data();
+        auto gridUboData = getUniformBufferData(getPipeline(gridPipelineIndex).uboIndex).uboData.data();
         GridUBO & gridUBO = *reinterpret_cast<GridUBO*>(gridUboData);
         gridUBO.view = viewMatrix;
         gridUBO.proj = projectionMatrix;
@@ -1001,7 +1032,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     // standard ubo         
     if (standardPipelineIndex !=  -1) {    
         assert(shadowmapPipelineIndex  != -1);     
-        auto standardUboData = getUniformBufferData(graphicsPipelines[standardPipelineIndex].uboIndex).uboData.data();
+        auto standardUboData = getUniformBufferData(getPipeline(standardPipelineIndex).uboIndex).uboData.data();
         StandardUBO & standardUBO = *reinterpret_cast<StandardUBO*>(standardUboData);
         // model
         for (size_t i = 0; i < modelMatrices.size(); ++i) {
@@ -1033,7 +1064,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
             standardUBO.lighting.splitDepths[i/4][i%4] = splitDepths[i];
         }
         // shadow map ubo
-        auto shadowUboData = getUniformBufferData(graphicsPipelines[shadowmapPipelineIndex].uboIndex).uboData.data();
+        auto shadowUboData = getUniformBufferData(getPipeline(shadowmapPipelineIndex).uboIndex).uboData.data();
         ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
         // shadow model
         memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * animatedModelMatrices.size());
@@ -1045,7 +1076,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
     /* animated*/
     if (animatedStandardPipelineIndex != -1) {
     assert(animatedShadowmapPipelineIndex != -1);
-        auto animatedStandardUboData = getUniformBufferData(graphicsPipelines[animatedStandardPipelineIndex].uboIndex).uboData.data();
+        auto animatedStandardUboData = getUniformBufferData(getPipeline(animatedStandardPipelineIndex).uboIndex).uboData.data();
         AnimatedStandardUBO & animatedStandardUBO = *reinterpret_cast<AnimatedStandardUBO*>(animatedStandardUboData);
         for (size_t i = 0; i < animatedModelMatrices.size(); ++i) {
             animatedStandardUBO.model.model[i] = animatedModelMatrices[i];
@@ -1079,7 +1110,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         assert(bones.size() <= NUMBER_MAX_BONES);
         memcpy(&animatedStandardUBO.bones.bones[0], bones.data(), sizeof(glm::mat4) * bones.size()); 
         // shadow map ubo
-        auto animatedShadowUboData = getUniformBufferData(graphicsPipelines[animatedShadowmapPipelineIndex].uboIndex).uboData.data();
+        auto animatedShadowUboData = getUniformBufferData(getPipeline(animatedShadowmapPipelineIndex).uboIndex).uboData.data();
         AnimatedShadowMapUBO & animatedShadowUBO = *reinterpret_cast<AnimatedShadowMapUBO*>(animatedShadowUboData);
         // shadow model
         memcpy(animatedShadowUBO.model, animatedStandardUBO.model.model, sizeof(animatedStandardUBO.model.model[0]) * animatedModelMatrices.size());
@@ -1092,7 +1123,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
 }
 
 void GameRenderer::updateSkyboxUBO(Camera const & camera, SkyLight const & sky) {
-    auto skyboxUboData = getUniformBufferData(graphicsPipelines[skyboxPipelineIndex].uboIndex).uboData.data();
+    auto skyboxUboData = getUniformBufferData(getPipeline(skyboxPipelineIndex).uboIndex).uboData.data();
     SkyboxUBO & skyboxUBO = *reinterpret_cast<SkyboxUBO*>(skyboxUboData);
 
     glm::mat4 skyboxViewMatrix = camera.getViewMatrix();
@@ -1117,7 +1148,7 @@ void GameRenderer::updateSkyboxUBO(Camera const & camera, SkyLight const & sky) 
 void GameRenderer::updateBillboardUBO(Camera const & camera, 
                                       prt::vector<glm::vec4> const & billboardPositions,
                                       prt::vector<glm::vec4> const & billboardColors) {
-    auto uboData = getUniformBufferData(graphicsPipelines[billboardPipelineIndex].uboIndex).uboData.data();
+    auto uboData = getUniformBufferData(getPipeline(billboardPipelineIndex).uboIndex).uboData.data();
     BillboardUBO & ubo = *reinterpret_cast<BillboardUBO*>(uboData);
 
     ubo.view = camera.getViewMatrix();
@@ -1383,7 +1414,7 @@ void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t ass
 }
 
 void GameRenderer::createGridDrawCalls() {
-    GraphicsPipeline & pipeline = graphicsPipelines[gridPipelineIndex];
+    GraphicsPipeline & pipeline = getPipeline(gridPipelineIndex);
 
     DrawCall drawCall;
     drawCall.firstIndex = 0;
@@ -1392,7 +1423,7 @@ void GameRenderer::createGridDrawCalls() {
 }
 
 void GameRenderer::createSkyboxDrawCalls() {
-    GraphicsPipeline & pipeline = graphicsPipelines[skyboxPipelineIndex];
+    GraphicsPipeline & pipeline = getPipeline(skyboxPipelineIndex);
     DrawCall drawCall;
     drawCall.firstIndex = 0;
     drawCall.indexCount = 36;
@@ -1402,7 +1433,7 @@ void GameRenderer::createSkyboxDrawCalls() {
 void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
                                             size_t nBillboards,
                                             prt::hash_map<int32_t, int32_t> const & textureIndices) {
-    GraphicsPipeline & pipeline = graphicsPipelines[billboardPipelineIndex];
+    GraphicsPipeline & pipeline = getPipeline(billboardPipelineIndex);
 
     DrawCall drawCall;
     drawCall.firstIndex = 0;
@@ -1536,7 +1567,7 @@ void GameRenderer::createModelDrawCalls(Model    const * models, size_t nModels,
 }
 
 void GameRenderer::createCompositionDrawCalls(size_t pipelineIndex) {
-    GraphicsPipeline & pipeline = graphicsPipelines[pipelineIndex];
+    GraphicsPipeline & pipeline = getPipeline(pipelineIndex);
     DrawCall drawCall;
     drawCall.firstIndex = 0;
     drawCall.indexCount = 6;
@@ -1892,7 +1923,7 @@ void GameRenderer::pushBackRevealageFBA() {
 
 void GameRenderer::pushBackSceneRenderPass() {
     // push back new render pass
-    scenePassIndex = pushBackRenderPass();
+    scenePassIndex = pushBackRenderPass(true);
     RenderPass & scenePass = renderPasses[scenePassIndex];
 
     scenePass.clearValues.resize(5);
@@ -1901,9 +1932,6 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.clearValues[2].depthStencil = { 1.0f, 0 };
     scenePass.clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
     scenePass.clearValues[4].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
-
-    scenePass.framebuffers.resize(1);
-    scenePass.framebuffers[0].resize(swapchain.swapchainImageCount);
 
     scenePass.outputType = RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN;
     // populate scene pass
@@ -1985,7 +2013,7 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[0].depthReference.attachment = 2;
     scenePass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    scenePass.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
+    // scenePass.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
 
     scenePass.subpasses[1].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[1].colorReferences.resize(2);
@@ -1996,7 +2024,7 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[1].depthReference.attachment = 2;
     scenePass.subpasses[1].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    scenePass.subpasses[1].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
+    // scenePass.subpasses[1].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
 
     scenePass.subpasses[2].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[2].colorReferences.resize(1);
@@ -2009,7 +2037,7 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[2].inputReferences[1].attachment = 6;
     scenePass.subpasses[2].inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    scenePass.subpasses[2].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
+    // scenePass.subpasses[2].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
 
     scenePass.dependencies.resize(3);
     scenePass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -2039,14 +2067,17 @@ void GameRenderer::pushBackSceneRenderPass() {
 
 void GameRenderer::pushBackShadowRenderPass() {
     // push back new render pass
-    offscreenPassIndex = pushBackRenderPass();
-    RenderPass & offscreen = renderPasses[offscreenPassIndex];
+    shadowmapPassIndex = pushBackRenderPass();
+    RenderPass & shadowPass = renderPasses[shadowmapPassIndex];
 
-    offscreen.clearValues.resize(1);
-    offscreen.clearValues[0].depthStencil = { 1.0f, 0 };
+    shadowPass.clearValues.resize(1);
+    shadowPass.clearValues[0].depthStencil = { 1.0f, 0 };
 
-    offscreen.outputType = RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP;
-    offscreen.shadowMapIndex = shadowMapIndex;
+    shadowPass.outputType = RenderPass::RENDER_OUTPUT_TYPE_SHADOWMAP;
+
+    pushBackSunShadowMap();
+
+    shadowPass.shadowMapIndex = shadowMapIndex;
     
     /*
      * TODO: Refactor this monstrosity
@@ -2054,48 +2085,48 @@ void GameRenderer::pushBackShadowRenderPass() {
      * cascade index through push constant
      * when rendering to shadow map
      **/
-    offscreen.pushConstantFBIndexByteOffset = 4;
+    shadowPass.pushConstantFBIndexByteOffset = 4;
 
-    offscreen.extent.width = shadowmapDimension;
-    offscreen.extent.height = shadowmapDimension;
+    shadowPass.extent.width = shadowmapDimension;
+    shadowPass.extent.height = shadowmapDimension;
 
-    offscreen.attachments.resize(1);
-    offscreen.attachments[0].format = findDepthFormat();
-    offscreen.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    offscreen.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    offscreen.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    offscreen.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    offscreen.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    offscreen.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    offscreen.attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    shadowPass.attachments.resize(1);
+    shadowPass.attachments[0].format = findDepthFormat();
+    shadowPass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    shadowPass.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    shadowPass.attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    shadowPass.attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    shadowPass.attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    shadowPass.attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    shadowPass.attachments[0].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 
-    offscreen.subpasses.resize(1);
-    offscreen.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    offscreen.subpasses[0].depthReference.attachment = 0;
-    offscreen.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    shadowPass.subpasses.resize(1);
+    shadowPass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    shadowPass.subpasses[0].depthReference.attachment = 0;
+    shadowPass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    offscreen.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OFFSCREEN);
+    // shadowPass.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OFFSCREEN);
 
-    offscreen.dependencies.resize(2);
-    offscreen.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    offscreen.dependencies[0].dstSubpass = 0;
-    offscreen.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    offscreen.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    offscreen.dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    offscreen.dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    offscreen.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    shadowPass.dependencies.resize(2);
+    shadowPass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    shadowPass.dependencies[0].dstSubpass = 0;
+    shadowPass.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    shadowPass.dependencies[0].dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    shadowPass.dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    shadowPass.dependencies[0].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    shadowPass.dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    offscreen.dependencies[1].srcSubpass = 0;
-    offscreen.dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    offscreen.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    offscreen.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    offscreen.dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    offscreen.dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    offscreen.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    shadowPass.dependencies[1].srcSubpass = 0;
+    shadowPass.dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    shadowPass.dependencies[1].srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    shadowPass.dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    shadowPass.dependencies[1].srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    shadowPass.dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    shadowPass.dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 }
 
 void GameRenderer::pushBackSunShadowMap() {
-    shadowMapIndex = pushBackShadowMap();
+    shadowMapIndex = pushBackShadowMap(shadowmapPassIndex);
     CascadeShadowMap & shadowMap = shadowMaps[shadowMapIndex];
     shadowMap.cascades.resize(swapchain.swapchainImageCount);
     for (size_t i = 0; i < shadowMap.cascades.size(); ++i) {

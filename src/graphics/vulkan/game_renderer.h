@@ -8,6 +8,8 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/geometry/billboard.h"
 
+#include "src/graphics/vulkan/imgui_application.h"
+
 #include "src/game/scene/entity.h"
 
 #include "src/container/hash_map.h"
@@ -24,7 +26,7 @@ public:
      * @param width frame width
      * @param heght frame height
      */
-    GameRenderer(unsigned int width, unsigned int height);
+    GameRenderer(unsigned int width, unsigned int height, Input & input);
 
     ~GameRenderer();
     /**
@@ -60,6 +62,8 @@ public:
                         float t,
                         glm::vec2 mousePosition);
 
+    void render(float deltaTime, uint16_t renderGroupMask);
+
     static constexpr unsigned int COMMON_RENDER_GROUP = 0;
     static constexpr unsigned int GAME_RENDER_GROUP = 1;
     static constexpr uint16_t GAME_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_1;
@@ -67,11 +71,16 @@ public:
     static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
+    ImGuiApplication m_imguiApplication;
+
     static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
     static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
     float cascadeSplitLambda = 0.85f;
+
+    size_t scenePassIndex;
+    size_t shadowmapPassIndex;
 
     // size_t colorFBAIndex;
     size_t depthFBAIndex;
@@ -96,6 +105,7 @@ private:
     int32_t waterPipelineIndex = -1;
     int32_t billboardPipelineIndex = -1; // transparent
     int32_t compositionPipelineIndex = -1;
+    int32_t guiPipelineIndex = -1;
 
     VkDescriptorImageInfo samplerInfo;
 
