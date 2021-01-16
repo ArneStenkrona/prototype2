@@ -77,6 +77,7 @@ private:
     static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
+    float maxShadowDistance = 100.0f;
     float cascadeSplitLambda = 0.85f;
 
     size_t scenePassIndex;

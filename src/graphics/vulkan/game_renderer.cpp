@@ -1177,10 +1177,10 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
                                   prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths) {
     float cascadeSplits[NUMBER_SHADOWMAP_CASCADES];
 
-    float clipRange = farPlane - nearPlane;
+    float clipRange = farPlane - maxShadowDistance;
 
     float minZ = nearPlane;
-    float maxZ = farPlane;
+    float maxZ = maxShadowDistance;
 
     float ratio = maxZ / minZ;
     
@@ -1242,7 +1242,7 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
         // I use negative farPlane as minExtents in Z axis in order to get
         // shadow casters behind camera.
         // This is not ideal but a work-around for now
-        glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f - farPlane, maxExtents.z - minExtents.z);
+        glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f - maxShadowDistance , maxExtents.z - minExtents.z);
 
         cascadeSpace[i] = cascadeProjection * cascadeView;
         splitDepths[i] = (nearPlane + splitDist * clipRange) *  -1.0f;

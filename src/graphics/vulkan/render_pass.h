@@ -11,8 +11,6 @@ struct SubPass {
     prt::vector<VkAttachmentReference> colorReferences;
     VkAttachmentReference              depthReference = {0,VK_IMAGE_LAYOUT_END_RANGE}; // use VK_IMAGE_LAYOUT_END_RANGE to signify no depth reference
     prt::vector<VkAttachmentReference> inputReferences;
-
-    // prt::vector<size_t> pipelineIndices;
 };
 
 struct RenderPass {
