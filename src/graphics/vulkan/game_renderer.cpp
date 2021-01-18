@@ -931,8 +931,8 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     strcat(vert, "shaders/water.vert.spv");
     strcat(frag, "shaders/standard_transparent.frag.spv");
     waterPipelineIndex = createStandardPipeline(standardAssetIndex, standardUboIndex, vert, frag,
-                                                        Model::Vertex::getBindingDescription(),
-                                                        Model::Vertex::getAttributeDescriptions(), true);
+                                                Model::Vertex::getBindingDescription(),
+                                                Model::Vertex::getAttributeDescriptions(), true);
 
     prt::vector<DrawCall> temp;
     createModelDrawCalls(models, nModels, 

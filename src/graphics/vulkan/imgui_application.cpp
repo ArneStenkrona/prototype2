@@ -56,7 +56,7 @@ void ImGuiApplication::init(float width, float height) {
     style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
     // Dimensions
     ImGuiIO& io = ImGui::GetIO();
-    io.DisplayFramebufferScale = ImVec2(dpiScaleFactor, dpiScaleFactor);
+    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
     io.DisplaySize = ImVec2{width / dpiScaleFactor, height / dpiScaleFactor};
 }
 
@@ -815,10 +815,10 @@ void ImGuiApplication::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) 
                 drawCall.indexCount = pcmd->ElemCount;
                 drawCall.vertexOffset = vertexOffset;
 
-                drawCall.scissor.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
-                drawCall.scissor.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-                drawCall.scissor.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-                drawCall.scissor.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
+                drawCall.scissor.offset.x = std::max((int32_t)(dpiScaleFactor * pcmd->ClipRect.x), 0);
+                drawCall.scissor.offset.y = std::max((int32_t)(dpiScaleFactor * pcmd->ClipRect.y), 0);
+                drawCall.scissor.extent.width = (uint32_t)(dpiScaleFactor * (pcmd->ClipRect.z - pcmd->ClipRect.x));
+                drawCall.scissor.extent.height = (uint32_t)(dpiScaleFactor * (pcmd->ClipRect.w - pcmd->ClipRect.y));
 
                 PushConstBlock & pc = *reinterpret_cast<PushConstBlock*>(drawCall.pushConstants.data());
                 pc.scale = glm::vec2(dpiScaleFactor * 2.0f / io.DisplaySize.x, dpiScaleFactor * 2.0f / io.DisplaySize.y);
