@@ -209,11 +209,9 @@ protected:
     uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
 
     // command data
-    prt::vector<VkCommandPool> commandPools; // TODO: rename to reflect that pool is for static commands
+    prt::vector<VkCommandPool> commandPools;
     VkCommandPool secondaryCommandPool;
-    // VkCommandPool dynamicCommandPool;
-    prt::vector<VkCommandBuffer> commandBuffers; // TODO: rename to reflect that these are static command buffers
-    // prt::vector<VkCommandBuffer> dynamicCommandBuffers;
+    prt::vector<VkCommandBuffer> commandBuffers; 
     
     // Samplers
     VkSampler textureSampler;
@@ -365,17 +363,14 @@ private:
     void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
     void createCommandPool(VkCommandPool & pool, VkCommandPoolCreateFlags flags); 
+    
     void createCommandBuffers();
-    // void createDynamicCommandBuffers();
-    // void createCommandBuffer(size_t const imageIndex);
     void createRenderPassCommandBuffers(RenderPass & pass);
-    // void updateDynamicCommandBuffer(size_t const imageIndex);
     void recordCommandBuffer(size_t const imageIndex);
 
     void createSwapchainFrameBuffers();
     void createSwapchainFBACopies();
     
-    // void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
     void createDrawCommands(size_t const imageIndex, 
                             VkFramebuffer framebuffer,
                             size_t framebufferIndex,
