@@ -9,7 +9,8 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & inpu
       m_imguiApplication(getPhysicalDevice(), getDevice(), input, width, height) {
 
     pushBackObjectFBA();
-    pushBackDepthFBA();
+    pushBackDepthFBA(depthFBAIndex);
+    pushBackDepthFBA(guiDepthFBAIndex);
     pushBackAccumulationFBA(); 
     pushBackRevealageFBA(); 
     pushBackShadowFBA();
@@ -25,42 +26,43 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & inpu
         addSwapchainFBA(i, revealageFBAIndices[i]);
         addSwapchainFBA(i, accumulationFBAIndices[i]);
         addSwapchainFBA(i, revealageFBAIndices[i]);
+        addSwapchainFBA(i, guiDepthFBAIndex);
     }
 
     pushBackShadowRenderPass();
     pushBackSceneRenderPass();
     
-//     guiPipelineIndex = graphicsPipelines.size();
-//     graphicsPipelines.push_back(GraphicsPipeline{});
-//     GraphicsPipeline& guiPipeline = graphicsPipelines.back();
+    guiPipelineIndex = pushBackPipeline();
+    GraphicsPipeline& guiPipeline = getPipeline(guiPipelineIndex);
 
-//     size_t guiAssetIndex = pushBackDynamicAssets();
+    size_t guiAssetIndex = pushBackDynamicAssets();
 
-//     m_imguiApplication.initResources(commandPool, graphicsQueue,
-//                                      swapchain.swapchainImageCount,
-//                                      msaaSamples,
-//                                      0,
-//                                      EDITOR_RENDER_GROUP,
-//                                      guiAssetIndex,
-//                                      guiPipeline);
+    m_imguiApplication.initResources(commandPools[0], graphicsQueue,
+                                     swapchain.swapchainImageCount,
+                                     msaaSamples,
+                                     scenePassIndex,
+                                     3,
+                                     EDITOR_RENDER_GROUP,
+                                     guiAssetIndex,
+                                     guiPipeline);
 }
 
 GameRenderer::~GameRenderer() {
 }
 
-void GameRenderer::render(float /*deltaTime*/, uint16_t renderGroupMask) {
+void GameRenderer::render(float deltaTime, uint16_t renderGroupMask) {
     updateRenderGroupMask(renderGroupMask);
     uint32_t imageIndex = waitForNextImageIndex();
     
-    // int w,h;
-    // getWindowSize(w,h);
+    int w,h;
+    getWindowSize(w,h);
 
-    // GraphicsPipeline & guiPipeline = graphicsPipelines[guiPipelineIndex];
+    GraphicsPipeline & guiPipeline = getPipeline(guiPipelineIndex);
 
-    // m_imguiApplication.update(float(w), float(h), deltaTime,
-    //                           imageIndex, commandPool, graphicsQueue, 
-    //                           getDynamicAssets(guiPipeline.dynamicAssetsIndex),
-    //                           guiPipeline);
+    m_imguiApplication.update(float(w), float(h), deltaTime,
+                              imageIndex, commandPools[imageIndex], graphicsQueue, 
+                              getDynamicAssets(guiPipeline.dynamicAssetsIndex),
+                              guiPipeline);
 
     drawFrame(imageIndex);
 }
@@ -96,7 +98,7 @@ void GameRenderer::createStandardAndShadowPipelines(size_t standardAssetIndex, s
 
 void GameRenderer::createCompositionPipeline() {
     compositionPipelineIndex = pushBackPipeline();
-    GraphicsPipeline& pipeline = getPipeline(compositionPipelineIndex);
+    GraphicsPipeline & pipeline = getPipeline(compositionPipelineIndex);
 
     pipeline.type = PIPELINE_TYPE_COMPOSITION;
     pipeline.renderPassIndex = scenePassIndex;;
@@ -224,7 +226,13 @@ void GameRenderer::createCompositionPipeline() {
                        data.indexBufferMemory);
 
     pipeline.colorBlendAttachments = getCompositionBlendAttachmentState();
-    pipeline.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_FALSE;
+    pipeline.depthStencilState.depthWriteEnable = VK_FALSE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
 }
 
 void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
@@ -309,6 +317,13 @@ void GameRenderer::createGridPipeline(size_t assetIndex, size_t uboIndex) {
     pipeline.extent = swapchain.swapchainExtent;
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = true;
+
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = VK_FALSE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
 
     pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
 }
@@ -414,6 +429,13 @@ void GameRenderer::createSkyboxPipeline(size_t assetIndex, size_t uboIndex) {
     pipeline.extent = swapchain.swapchainExtent;
     pipeline.useColorAttachment = false;
     pipeline.enableDepthBias = true;
+
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = VK_FALSE; // skybox should leave depth at max
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
 
     pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();
 
@@ -551,16 +573,23 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = VK_FALSE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
+
     pipeline.colorBlendAttachments = getTransparentBlendAttachmentState();
 }
 
 int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
-                                                    char const * vertexShader, char const * fragmentShader,
-                                                    VkVertexInputBindingDescription bindingDescription,
-                                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                                    bool transparent) {
+                                             char const * vertexShader, char const * fragmentShader,
+                                             VkVertexInputBindingDescription bindingDescription,
+                                             prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                                             bool transparent) {
     int32_t pipelineIndex = pushBackPipeline();
-    GraphicsPipeline& pipeline = getPipeline(pipelineIndex);
+    GraphicsPipeline & pipeline = getPipeline(pipelineIndex);
 
     pipeline.renderPassIndex = scenePassIndex;
     pipeline.subpass = transparent ? 1 : 0;
@@ -713,6 +742,13 @@ int32_t GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
         pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();
     }
 
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = pipeline.type == PIPELINE_TYPE_TRANSPARENT ? VK_FALSE : VK_TRUE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
+
     return pipelineIndex;
 }
 
@@ -799,6 +835,13 @@ int32_t GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex
 
     pipeline.colorBlendAttachments = getShadowBlendAttachmentState();
 
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = VK_TRUE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
+
     return pipelineIndex;
 }
 
@@ -852,11 +895,6 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
     createGridPipeline(gridAssetIndex, gridUboIndex);
     createGridBuffers(gridAssetIndex);
     createGridDrawCalls();
-
-    /* skybox */
-    loadCubeMap(skybox, skyboxAssetIndex);
-    createSkyboxPipeline(skyboxAssetIndex, skyboxUboIndex);
-    createSkyboxDrawCalls();
     
     prt::hash_map<int32_t, int32_t> standardTextureIndices;
     prt::hash_map<int32_t, int32_t> animatedTextureIndices;
@@ -918,6 +956,11 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
 
     createBillboardBuffers(billboardAssetIndex);
     createBillboardDrawCalls(billboards, nBillboards, billboardTextureIndices);
+
+    /* skybox */
+    loadCubeMap(skybox, skyboxAssetIndex);
+    createSkyboxPipeline(skyboxAssetIndex, skyboxUboIndex);
+    createSkyboxDrawCalls();
 
     /* composition */
     createCompositionPipeline();
@@ -1239,7 +1282,7 @@ void GameRenderer::updateCascades(glm::mat4 const & projectionMatrix,
         glm::vec3 maxExtents = glm::vec3{radius};
         glm::vec3 minExtents = -maxExtents;
         glm::mat4 cascadeView = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, {0.0f, 1.0f, 0.0f});
-        // I use negative farPlane as minExtents in Z axis in order to get
+        // I use negative maxShadowDistance as minExtents in Z axis in order to get
         // shadow casters behind camera.
         // This is not ideal but a work-around for now
         glm::mat4 cascadeProjection = glm::ortho(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f - maxShadowDistance , maxExtents.z - minExtents.z);
@@ -1809,10 +1852,10 @@ void GameRenderer::pushBackShadowFBA() {
     }
 }
 
-void GameRenderer::pushBackDepthFBA() {
-    depthFBAIndex = pushBackFramebufferAttachment();
+void GameRenderer::pushBackDepthFBA(size_t & fbaIndex) {
+    fbaIndex = pushBackFramebufferAttachment();
 
-    FramebufferAttachment & fba = framebufferAttachments[depthFBAIndex];
+    FramebufferAttachment & fba = framebufferAttachments[fbaIndex];
 
     fba.swapchainAttachment = true;
 
@@ -1926,18 +1969,20 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePassIndex = pushBackRenderPass(true);
     RenderPass & scenePass = renderPasses[scenePassIndex];
 
-    scenePass.clearValues.resize(5);
-    scenePass.clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0 } };
-    scenePass.clearValues[1].color = { { -1.0f, 0.0f, 0.0f, 1.0 } };
+    scenePass.clearValues.resize(8);
+    scenePass.clearValues[0].color = {{ 0.0f, 0.0f, 0.0f, 1.0 }};
+    scenePass.clearValues[1].color = {{ -1.0f, 0.0f, 0.0f, 1.0 }};
     scenePass.clearValues[2].depthStencil = { 1.0f, 0 };
-    scenePass.clearValues[3].color = { { 0.0f, 0.0f, 0.0f, 0.0 } };
-    scenePass.clearValues[4].color = { { 1.0f, 1.0f, 1.0f, 1.0 } };
+    scenePass.clearValues[3].color = {{ 0.0f, 0.0f, 0.0f, 0.0 }};
+    scenePass.clearValues[4].color = {{ 1.0f, 1.0f, 1.0f, 1.0 }};
+    // input attachments do not matter
+    scenePass.clearValues[7].depthStencil = { 1.0f, 0 };
 
     scenePass.outputType = RenderPass::RENDER_OUTPUT_TYPE_SWAPCHAIN;
     // populate scene pass
     // attachments
-    scenePass.attachments.resize(7);
-    // colour
+    scenePass.attachments.resize(8);
+    // color
     scenePass.attachments[0].format = swapchain.swapchainImageFormat;
     scenePass.attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
     scenePass.attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -2000,9 +2045,18 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.attachments[6].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     scenePass.attachments[6].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     scenePass.attachments[6].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // gui depth
+    scenePass.attachments[7].format = findDepthFormat();
+    scenePass.attachments[7].samples = VK_SAMPLE_COUNT_1_BIT;
+    scenePass.attachments[7].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    scenePass.attachments[7].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[7].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    scenePass.attachments[7].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    scenePass.attachments[7].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    scenePass.attachments[7].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     // subpasses
-    scenePass.subpasses.resize(3);
+    scenePass.subpasses.resize(4);
     scenePass.subpasses[0].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[0].colorReferences.resize(2);
     scenePass.subpasses[0].colorReferences[0].attachment = 0;
@@ -2013,8 +2067,6 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[0].depthReference.attachment = 2;
     scenePass.subpasses[0].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    // scenePass.subpasses[0].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_OPAQUE);
-
     scenePass.subpasses[1].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[1].colorReferences.resize(2);
     scenePass.subpasses[1].colorReferences[0].attachment = 3;
@@ -2023,8 +2075,6 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[1].colorReferences[1].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     scenePass.subpasses[1].depthReference.attachment = 2;
     scenePass.subpasses[1].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    // scenePass.subpasses[1].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_TRANSPARENT);
 
     scenePass.subpasses[2].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     scenePass.subpasses[2].colorReferences.resize(1);
@@ -2037,9 +2087,17 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.subpasses[2].inputReferences[1].attachment = 6;
     scenePass.subpasses[2].inputReferences[1].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    // scenePass.subpasses[2].pipelineIndices = getPipelineIndicesByType(PipelineType::PIPELINE_TYPE_COMPOSITION);
+    scenePass.subpasses[3].bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    scenePass.subpasses[3].colorReferences.resize(1);
+    scenePass.subpasses[3].colorReferences[0].attachment = 0;
+    scenePass.subpasses[3].colorReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    scenePass.dependencies.resize(3);
+    scenePass.subpasses[3].depthReference.attachment = 7;
+    scenePass.subpasses[3].depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    scenePass.subpasses[3].dynamic = true;
+
+    scenePass.dependencies.resize(4);
     scenePass.dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
     scenePass.dependencies[0].dstSubpass = 0;
     scenePass.dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -2063,6 +2121,14 @@ void GameRenderer::pushBackSceneRenderPass() {
     scenePass.dependencies[2].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     scenePass.dependencies[2].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
     scenePass.dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    scenePass.dependencies[3].srcSubpass = 2;
+    scenePass.dependencies[3].dstSubpass = 3;
+    scenePass.dependencies[3].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    scenePass.dependencies[3].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    scenePass.dependencies[3].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    scenePass.dependencies[3].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    scenePass.dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 }
 
 void GameRenderer::pushBackShadowRenderPass() {

@@ -41,6 +41,7 @@ public:
     void initResources(VkCommandPool &commandPool,
                        VkQueue &copyQueue, size_t swapchainCount,
                        VkSampleCountFlagBits msaaSamples,
+                       size_t renderPass,
                        size_t subpass,
                        unsigned int renderGroup,
                        size_t dynamicAssetIndex,
@@ -65,8 +66,9 @@ private:
     // VkBuffer indexBuffer;
     // VkDeviceMemory indexBufferMemory;
     // void *indexBufferMapped = nullptr;
-    int32_t vertexCount = 0;
-    int32_t indexCount = 0;
+    // int32_t vertexCount = 0;
+    // int32_t indexCount = 0;
+    float dpiScaleFactor = 1.0f;
 
     bool initFrameGraph = false;
 
@@ -91,9 +93,10 @@ private:
     void init(float width, float height);
 
     void createPipeline(unsigned int renderGroup,
+                        size_t renderPass,
                         size_t subpass,
                         size_t dynamicAssetIndex,
-                        GraphicsPipeline &pipeline);
+                        GraphicsPipeline & pipeline);
 
         // Starts a new imGui frame and sets up windows and ui elements
     void newFrame(bool updateFrameGraph);

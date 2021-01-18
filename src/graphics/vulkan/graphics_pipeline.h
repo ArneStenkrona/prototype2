@@ -81,7 +81,9 @@ struct GraphicsPipeline {
     prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 
     VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
-    VkCompareOp compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState;
+    // VkCompareOp compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
     
     bool useColorAttachment; // Remove?
     bool enableDepthBias;

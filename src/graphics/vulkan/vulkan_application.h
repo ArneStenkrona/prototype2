@@ -78,9 +78,22 @@ struct Assets {
     TextureImages textureImages;
 };
 
+struct DynamicVertexData {
+    VkBuffer          vertexBuffer;
+    VkDeviceMemory    vertexBufferMemory;
+    VkDeviceSize      vertexBufferSize;
+    VkBuffer          indexBuffer;
+    VkDeviceMemory    indexBufferMemory;
+    VkDeviceSize      indexBufferSize;
+    prt::vector<char> vertexData{prt::getAlignment(alignof(std::max_align_t))};
+    prt::vector<char> indexData{prt::getAlignment(alignof(std::max_align_t))};
+    bool              updated;
+    // prt::vector<void*> mappedMemories;
+};
+
 struct DynamicAssets {
-    prt::vector<VertexData> vertexData;
-    prt::vector<TextureImages> textureImages;
+    prt::vector<DynamicVertexData> vertexData;
+    prt::vector<TextureImages>     textureImages;
 };
 
 struct FramebufferAttachment {
@@ -196,10 +209,11 @@ protected:
     uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
 
     // command data
-    VkCommandPool commandPool; // TODO: rename to reflect that pool is for static commands
-    VkCommandPool dynamicCommandPool;
+    prt::vector<VkCommandPool> commandPools; // TODO: rename to reflect that pool is for static commands
+    VkCommandPool secondaryCommandPool;
+    // VkCommandPool dynamicCommandPool;
     prt::vector<VkCommandBuffer> commandBuffers; // TODO: rename to reflect that these are static command buffers
-    prt::vector<VkCommandBuffer> dynamicCommandBuffers;
+    // prt::vector<VkCommandBuffer> dynamicCommandBuffers;
     
     // Samplers
     VkSampler textureSampler;
@@ -271,7 +285,9 @@ protected:
     inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
     
     prt::vector<size_t> getPipelineIndicesByType(PipelineType type);
-    prt::vector<size_t> getPipelineIndicesBySubPass(RenderPass const & renderPass, unsigned int subpass);
+    prt::vector<size_t> getPipelineIndicesBySubPass(SubPass const & subpass);
+
+    prt::vector<VkFramebuffer> getFramebuffers(RenderPass const & renderPass, size_t imageIndex);
     
     VkFormat findDepthFormat();
     float depthToFloat(void * depthValue, VkFormat depthFormat);
@@ -350,14 +366,29 @@ private:
     
     void createCommandPool(VkCommandPool & pool, VkCommandPoolCreateFlags flags); 
     void createCommandBuffers();
-    void createDynamicCommandBuffers();
-    void createCommandBuffer(size_t const imageIndex);
-    void updateDynamicCommandBuffer(size_t const imageIndex);
+    // void createDynamicCommandBuffers();
+    // void createCommandBuffer(size_t const imageIndex);
+    void createRenderPassCommandBuffers(RenderPass & pass);
+    // void updateDynamicCommandBuffer(size_t const imageIndex);
+    void recordCommandBuffer(size_t const imageIndex);
 
     void createSwapchainFrameBuffers();
     void createSwapchainFBACopies();
     
-    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    // void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void createDrawCommands(size_t const imageIndex, 
+                            VkFramebuffer framebuffer,
+                            size_t framebufferIndex,
+                            RenderPass & renderPass,
+                            size_t subIndex);
+
+    void createDrawCommands(size_t const imageIndex,
+                            VkFramebuffer framebuffer,
+                            size_t framebufferIndex,
+                            RenderPass & renderPass,
+                            size_t subIndex, 
+                            GraphicsPipeline & pipeline);
+
     void createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass);
 
     void createRenderPasses();
@@ -417,6 +448,8 @@ private:
     void createSyncObjects();
 
     void updateUniformBuffers(uint32_t currentImage);
+
+    void updateDynamicAssets(uint32_t const imageIndex);
     
     VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);

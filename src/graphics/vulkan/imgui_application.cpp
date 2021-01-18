@@ -27,11 +27,14 @@ void setImageLayout(
 ImGuiApplication::ImGuiApplication(VkPhysicalDevice physicalDevice, VkDevice device,
                                    Input& input, float width, float height)
     : m_physicalDevice(physicalDevice), m_device(device), m_input(input) {
-    ImGui::CreateContext();
+    ImGui::CreateContext(); 
     init(width, height);
+
+    dpiScaleFactor = 2.0f;
 }
 
 ImGuiApplication::~ImGuiApplication() {
+    vkDeviceWaitIdle(m_device);
     if (fontImage != VK_NULL_HANDLE) {
         vkDestroyImage(m_device, fontImage, nullptr);
         vkDestroyImageView(m_device, fontView, nullptr);
@@ -53,14 +56,15 @@ void ImGuiApplication::init(float width, float height) {
     style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
     // Dimensions
     ImGuiIO& io = ImGui::GetIO();
-    io.DisplaySize = ImVec2(width, height);
-    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+    io.DisplayFramebufferScale = ImVec2(dpiScaleFactor, dpiScaleFactor);
+    io.DisplaySize = ImVec2{width / dpiScaleFactor, height / dpiScaleFactor};
 }
 
 // Initialize all Vulkan resources used by the ui
 void ImGuiApplication::initResources(VkCommandPool& commandPool, 
                                      VkQueue& copyQueue, size_t swapchainCount,
                                      VkSampleCountFlagBits /*msaaSamples*/,
+                                     size_t renderPass,
                                      size_t subpass,
                                      unsigned int renderGroup,
                                      size_t dynamicAssetIndex,
@@ -254,13 +258,13 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
         assert(false && "failed to create sampler!");
     }
 
-    // Descriptor pool
-    VkDescriptorPoolSize poolSize = {};
-    poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize.descriptorCount = 1;
-    prt::vector<VkDescriptorPoolSize> poolSizes = {
-        poolSize
-    };
+    // // Descriptor pool
+    // VkDescriptorPoolSize poolSize = {};
+    // poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    // poolSize.descriptorCount = 1;
+    // prt::vector<VkDescriptorPoolSize> poolSizes = {
+    //     poolSize
+    // };
     // VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
     // descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     // descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -315,7 +319,7 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
 
     // vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 
-    createPipeline(renderGroup, subpass, dynamicAssetIndex, pipeline);
+    createPipeline(renderGroup, renderPass, subpass, dynamicAssetIndex, pipeline);
     
     // // Pipeline cache
     // VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
@@ -506,12 +510,14 @@ void ImGuiApplication::update(float width, float height,
 }
 
 void ImGuiApplication::createPipeline(unsigned int renderGroup,
+                                      size_t renderPass,
                                       size_t subpass,
                                       size_t dynamicAssetIndex,
                                       GraphicsPipeline & pipeline) {
 
     pipeline.type = PIPELINE_TYPE_GUI;
     pipeline.renderGroup = renderGroup;
+    pipeline.renderPassIndex = renderPass;
     pipeline.subpass = subpass; 
 
     pipeline.dynamicAssetsIndex = dynamicAssetIndex;
@@ -544,7 +550,7 @@ void ImGuiApplication::createPipeline(unsigned int renderGroup,
     fontDescriptor.sampler = sampler;
     fontDescriptor.imageView = fontView;
     fontDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    
+
     for (size_t i = 0; i < swapchainImageCount; ++i) {
         // pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
         // pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
@@ -581,18 +587,13 @@ void ImGuiApplication::createPipeline(unsigned int renderGroup,
     vInputAttribDescription2.location = 2;
     vInputAttribDescription2.format = VK_FORMAT_R8G8B8A8_UNORM;
     vInputAttribDescription2.offset = offsetof(ImDrawVert, col);
-    prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
+    
+    pipeline.vertexInputAttributes = {
         vInputAttribDescription0,	// Location 0: Position
         vInputAttribDescription1,	// Location 1: UV
         vInputAttribDescription2	// Location 0: Color
     };
 
-    pipeline.vertexInputAttributes.resize(vertexInputAttributes.size());
-    size_t inIndx = 0;
-    for (auto const & att : vertexInputAttributes) {
-        pipeline.vertexInputAttributes[inIndx] = att;
-        ++inIndx;
-    }
     auto & shaderStages = pipeline.shaderStages;
     shaderStages.resize(2);
 
@@ -616,6 +617,8 @@ void ImGuiApplication::createPipeline(unsigned int renderGroup,
     pipeline.useColorAttachment = true;
     pipeline.enableDepthBias = false;
 
+    pipeline.cullModeFlags = VK_CULL_MODE_NONE;
+
     VkPipelineColorBlendAttachmentState blendAttachmentState{};
     blendAttachmentState.blendEnable = VK_TRUE;
     blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -627,6 +630,12 @@ void ImGuiApplication::createPipeline(unsigned int renderGroup,
     blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 
     pipeline.colorBlendAttachments.push_back(blendAttachmentState);
+
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_FALSE;
+    pipeline.depthStencilState.depthWriteEnable = VK_FALSE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
 }
 
 // Starts a new imGui frame and sets up windows and ui elements
@@ -677,10 +686,13 @@ void ImGuiApplication::newFrame(bool updateFrameGraph)
 }
 
 // Update vertex and index buffer containing the imGui elements when required
-void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool commandPool, VkQueue queue,
+void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool /*commandPool*/, VkQueue /*queue*/,
                                     //  VkFence* pFence, uint32_t nFence, 
-                                     DynamicAssets & assets)
-{
+                                     DynamicAssets & assets) {
+    assert(sizeof(ImDrawIdx) == sizeof(uint16_t) && "short length mismatch!");
+
+    assets.vertexData[imageIndex].updated = false;
+
     ImDrawData* imDrawData = ImGui::GetDrawData();
 
     // Note: Alignment is done inside buffer creation
@@ -691,67 +703,68 @@ void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool commandPoo
         return;
     }
     // Update buffers only if vertex or index count has been changed compared to current buffer size
-
-    auto & vertexBuffer = assets.vertexData[imageIndex].vertexBuffer;
-    auto & vertexMemory = assets.vertexData[imageIndex].vertexBufferMemory;
+    // auto & vertexBuffer = assets.vertexData[imageIndex].vertexBuffer;
+    // auto & vertexMemory = assets.vertexData[imageIndex].vertexBufferMemory;
     
-    auto & indexBuffer = assets.vertexData[imageIndex].indexBuffer;
-    auto & indexMemory = assets.vertexData[imageIndex].indexBufferMemory;
+    // auto & indexBuffer = assets.vertexData[imageIndex].indexBuffer;
+    // auto & indexMemory = assets.vertexData[imageIndex].indexBufferMemory;
 
     // copy data to linear memory range
-    prt::vector<char> vertexBufferData;
-    prt::vector<char> indexBufferData;
-    vertexBufferData.resize(vertexBufferSize);
-    indexBufferData.resize(indexBufferSize);
+    // prt::vector<char> vertexBufferData;
+    // prt::vector<char> indexBufferData;
+    assets.vertexData[imageIndex].vertexData.resize(vertexBufferSize);
+    assets.vertexData[imageIndex].indexData.resize(vertexBufferSize);
+    // vertexBufferData.resize(vertexBufferSize);
+    // indexBufferData.resize(indexBufferSize);
 
-    char * vtxDst = vertexBufferData.data();
-    char * idxDst = indexBufferData.data();
+    char * vtxDst = assets.vertexData[imageIndex].vertexData.data();
+    char * idxDst = assets.vertexData[imageIndex].indexData.data();
 
     for (int n = 0; n < imDrawData->CmdListsCount; n++) {
         const ImDrawList* cmd_list = imDrawData->CmdLists[n];
         memcpy(vtxDst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
         memcpy(idxDst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-        vtxDst += cmd_list->VtxBuffer.Size;
-        idxDst += cmd_list->IdxBuffer.Size;
+        vtxDst += cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
+        idxDst += cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
     }
 
-    // Vertex buffer
-    if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
-        // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    // // Vertex buffer
+    // if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
+    //     // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-        if (vertexBuffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(m_device, vertexBuffer, nullptr);
-            vkFreeMemory(m_device, vertexMemory, nullptr);
-        }
+    //     if (vertexBuffer != VK_NULL_HANDLE) {
+    //         vkDestroyBuffer(m_device, vertexBuffer, nullptr);
+    //         vkFreeMemory(m_device, vertexMemory, nullptr);
+    //     }
 
-        vkutil::createAndMapBuffer(m_physicalDevice, m_device,
-                                   commandPool, queue,
-                                   vertexBufferData.data(), vertexBufferData.size(),
-                                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                   vertexBuffer,
-                                   vertexMemory);
+    //     vkutil::createAndMapBuffer(m_physicalDevice, m_device,
+    //                                commandPool, queue,
+    //                                vertexBufferData.data(), vertexBufferData.size(),
+    //                                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    //                                vertexBuffer,
+    //                                vertexMemory);
 
-        vertexCount = imDrawData->TotalVtxCount;
-    }
+    //     vertexCount = imDrawData->TotalVtxCount;
+    // }
 
-    // Index buffer
-    if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
-        // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    // // Index buffer
+    // if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
+    //     // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-        if (indexBuffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(m_device, indexBuffer, nullptr);
-            vkFreeMemory(m_device, indexMemory, nullptr);
-        }
+    //     if (indexBuffer != VK_NULL_HANDLE) {
+    //         vkDestroyBuffer(m_device, indexBuffer, nullptr);
+    //         vkFreeMemory(m_device, indexMemory, nullptr);
+    //     }
 
-        vkutil::createAndMapBuffer(m_physicalDevice, m_device,
-                                   commandPool, queue,
-                                   indexBufferData.data(), indexBufferData.size(),
-                                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                   indexBuffer,
-                                   indexMemory);
+    //     vkutil::createAndMapBuffer(m_physicalDevice, m_device,
+    //                                commandPool, queue,
+    //                                indexBufferData.data(), indexBufferData.size(),
+    //                                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+    //                                indexBuffer,
+    //                                indexMemory);
 
-        indexCount = imDrawData->TotalIdxCount;
-    }
+    //     indexCount = imDrawData->TotalIdxCount;
+    // }
 }
 
 void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
@@ -763,7 +776,7 @@ void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
 
     double mouseX, mouseY;
     m_input.getCursorPos(mouseX, mouseY);
-    io.MousePos = ImVec2(mouseX, mouseY);
+    io.MousePos = ImVec2(mouseX / dpiScaleFactor, mouseY / dpiScaleFactor);
     io.MouseDown[0] = m_input.getKeyPress(INPUT_KEY::KEY_MOUSE_LEFT) == GLFW_PRESS;
     io.MouseDown[1] = m_input.getKeyPress(INPUT_KEY::KEY_MOUSE_RIGHT) == GLFW_PRESS;
 }
@@ -777,6 +790,9 @@ void ImGuiApplication::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) 
     int32_t indexOffset = 0;
 
     size_t nDrawCalls = 0;
+    
+    ImDrawData * data = ImGui::GetDrawData();
+    data->ScaleClipRects(data->FramebufferScale);
 
     for (int32_t i = 0; i < imDrawData->CmdListsCount; i++) {
             const ImDrawList* cmd_list = imDrawData->CmdLists[i];
@@ -788,9 +804,9 @@ void ImGuiApplication::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) 
     size_t callIndex = 0;
 
     if (imDrawData->CmdListsCount > 0) {
-        for (int32_t i = 0; i < imDrawData->CmdListsCount; i++) {
+        for (int32_t i = 0; i < imDrawData->CmdListsCount; ++i) {
             const ImDrawList* cmd_list = imDrawData->CmdLists[i];
-            for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++) {
+            for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; ++j) {
                 const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
 
                 GUIDrawCall & drawCall = drawCalls[callIndex];
@@ -805,8 +821,10 @@ void ImGuiApplication::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) 
                 drawCall.scissor.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
 
                 PushConstBlock & pc = *reinterpret_cast<PushConstBlock*>(drawCall.pushConstants.data());
-                pc.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
+                pc.scale = glm::vec2(dpiScaleFactor * 2.0f / io.DisplaySize.x, dpiScaleFactor * 2.0f / io.DisplaySize.y);
                 pc.translate = glm::vec2(-1.0f, -1.0f);
+
+                indexOffset += pcmd->ElemCount;
 
                 ++callIndex;
             }

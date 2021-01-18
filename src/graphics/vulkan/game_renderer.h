@@ -85,6 +85,7 @@ private:
 
     // size_t colorFBAIndex;
     size_t depthFBAIndex;
+    size_t guiDepthFBAIndex;
     prt::vector<size_t> accumulationFBAIndices;
     prt::vector<size_t> revealageFBAIndices;
     prt::vector<size_t> shadowmapFBAIndices;
@@ -215,7 +216,7 @@ private:
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
     void pushBackObjectFBA();
-    void pushBackDepthFBA();
+    void pushBackDepthFBA(size_t & fbaIndex);
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
     void pushBackShadowFBA();
