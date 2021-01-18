@@ -39,7 +39,6 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & inpu
 
     m_imguiApplication.initResources(commandPools[0], graphicsQueue,
                                      swapchain.swapchainImageCount,
-                                     msaaSamples,
                                      scenePassIndex,
                                      3,
                                      EDITOR_RENDER_GROUP,
@@ -60,7 +59,7 @@ void GameRenderer::render(float deltaTime, uint16_t renderGroupMask) {
     GraphicsPipeline & guiPipeline = getPipeline(guiPipelineIndex);
 
     m_imguiApplication.update(float(w), float(h), deltaTime,
-                              imageIndex, commandPools[imageIndex], graphicsQueue, 
+                              imageIndex,
                               getDynamicAssets(guiPipeline.dynamicAssetsIndex),
                               guiPipeline);
 

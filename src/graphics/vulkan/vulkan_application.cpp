@@ -2142,40 +2142,38 @@ void VulkanApplication::updateDynamicAssets(uint32_t const imageIndex) {
                               vertexData.indexData.size(), vertexData.indexData.data());
         }
 
-        // VkBufferMemoryBarrier barrier = {};
-        // barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        // barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        // barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT; 
-        // barrier.buffer = vertexData.vertexBuffer;
-        // barrier.offset = 0;
-        // barrier.size = vertexData.vertexBufferSize;
+        VkBufferMemoryBarrier barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT; 
+        barrier.buffer = vertexData.vertexBuffer;
+        barrier.offset = 0;
+        barrier.size = vertexData.vertexBufferSize;
     
-        // vkCmdPipelineBarrier(commandBuffers[imageIndex],
-        //                      VK_PIPELINE_STAGE_TRANSFER_BIT, 
-        //                      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-        //                      0,
-        //                      0, nullptr,
-        //                      1, &barrier,
-        //                      0, nullptr);
+        vkCmdPipelineBarrier(commandBuffers[imageIndex],
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, 
+                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                             0,
+                             0, nullptr,
+                             1, &barrier,
+                             0, nullptr);
         
-        // barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        // barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT; 
-        // barrier.buffer = vertexData.indexBuffer;
-        // barrier.offset = 0;
-        // barrier.size = vertexData.indexBufferSize;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT; 
+        barrier.buffer = vertexData.indexBuffer;
+        barrier.offset = 0;
+        barrier.size = vertexData.indexBufferSize;
     
-        // vkCmdPipelineBarrier(commandBuffers[imageIndex],
-        //                      VK_PIPELINE_STAGE_TRANSFER_BIT,
-        //                      VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-        //                      0,
-        //                      0, nullptr,
-        //                      1, &barrier,
-        //                      0, nullptr);
+        vkCmdPipelineBarrier(commandBuffers[imageIndex],
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                             0,
+                             0, nullptr,
+                             1, &barrier,
+                             0, nullptr);
 
         assets.vertexData[imageIndex].updated = true;
     }
-
-
 }
 
 

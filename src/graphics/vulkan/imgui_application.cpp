@@ -63,7 +63,6 @@ void ImGuiApplication::init(float width, float height) {
 // Initialize all Vulkan resources used by the ui
 void ImGuiApplication::initResources(VkCommandPool& commandPool, 
                                      VkQueue& copyQueue, size_t swapchainCount,
-                                     VkSampleCountFlagBits /*msaaSamples*/,
                                      size_t renderPass,
                                      size_t subpass,
                                      unsigned int renderGroup,
@@ -123,21 +122,6 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
         assert(false && "failed to create texture image view!");
     }
 
-    // Staging buffers for font data upload
-    //vk::Buffer stagingBuffer;
-
-    /*if(m_device->createBuffer(
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        &stagingBuffer,
-        uploadSize) != VK_SUCCESS) {
-        assert(false && "failed to create buffer!");
-    }
-
-    stagingBuffer.map();
-    memcpy(stagingBuffer.mapped, fontData, uploadSize);
-    stagingBuffer.unmap();*/
-
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     vkutil::createBuffer(m_physicalDevice, m_device, 
@@ -152,7 +136,6 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
 
     
     // Copy buffer data to font image
-    //VkCommandBuffer copyCmd = m_device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
     // Begin command buffer
     VkCommandBufferAllocateInfo commandBufferAllocateInfo {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -207,7 +190,6 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
         VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-    //m_device->flushCommandBuffer(copyCmd, copyQueue, true);
     // flush command buffer
     if(vkEndCommandBuffer(copyCmd) != VK_SUCCESS) {
         assert(false && "failed to end command buffer!");
@@ -240,7 +222,6 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
 
     vkFreeCommandBuffers(m_device, commandPool, 1, &copyCmd);
 
-    //stagingBuffer.destroy();
     vkDestroyBuffer(m_device, stagingBuffer, nullptr);
     vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
@@ -258,252 +239,19 @@ void ImGuiApplication::initResources(VkCommandPool& commandPool,
         assert(false && "failed to create sampler!");
     }
 
-    // // Descriptor pool
-    // VkDescriptorPoolSize poolSize = {};
-    // poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    // poolSize.descriptorCount = 1;
-    // prt::vector<VkDescriptorPoolSize> poolSizes = {
-    //     poolSize
-    // };
-    // VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
-    // descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    // descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    // descriptorPoolInfo.pPoolSizes = poolSizes.data();
-    // descriptorPoolInfo.maxSets = 2;
-    // if (vkCreateDescriptorPool(m_device, &descriptorPoolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
-    //     assert(false && "failed to create descriptor pool!");
-    // }
-
-    // Descriptor set layout
-    // VkDescriptorSetLayoutBinding setLayoutBinding = {};
-    // setLayoutBinding.binding = 0;
-    // setLayoutBinding.descriptorCount = 1;
-    // setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    // setLayoutBinding.pImmutableSamplers = nullptr;
-    // setLayoutBinding.stageFlags =   VK_SHADER_STAGE_FRAGMENT_BIT;
-    // prt::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-    //     setLayoutBinding
-    // };
-    // VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
-    // descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    // descriptorSetLayoutCreateInfo.pBindings = setLayoutBindings.data();
-    // descriptorSetLayoutCreateInfo.bindingCount = setLayoutBindings.size();
-    // if (vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-    //     assert(false && "failed to create descriptor set layout!");
-    // }
-
-    // // Descriptor set
-    // VkDescriptorSetAllocateInfo descriptorSetAllocateInfo {};
-    // descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    // descriptorSetAllocateInfo.descriptorPool = descriptorPool;
-    // descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
-    // descriptorSetAllocateInfo.descriptorSetCount = 1;
-    // if(vkAllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, &descriptorSet) != VK_SUCCESS) {
-    //     assert(false && "failed to create descriptor sets!");
-    // }
-    // VkDescriptorImageInfo fontDescriptor {};
-    // fontDescriptor.sampler = sampler;
-    // fontDescriptor.imageView = fontView;
-    // fontDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // // vks::initializers::writeDescriptorSet(descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)
-    // VkWriteDescriptorSet writeDescriptorSet {};
-    // writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    // writeDescriptorSet.dstSet = descriptorSet;
-    // writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    // writeDescriptorSet.dstBinding = 0;
-    // writeDescriptorSet.pImageInfo = &fontDescriptor;
-    // writeDescriptorSet.descriptorCount = 1;
-    // prt::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-    //     writeDescriptorSet
-    // };
-
-    // vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-
     createPipeline(renderGroup, renderPass, subpass, dynamicAssetIndex, pipeline);
-    
-    // // Pipeline cache
-    // VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
-    // pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-    // if (vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &pipelineCache) != VK_SUCCESS) {
-    //     assert(false && "failed to create pipeline cache!");
-    // }
-
-    // // Pipeline layout
-    // // Push constants for UI rendering parameters
-    // VkPushConstantRange pushConstantRange {};
-    // pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    // pushConstantRange.offset = 0;
-    // pushConstantRange.size = sizeof(PushConstBlock);
-    // VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo {};
-    // pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    // pipelineLayoutCreateInfo.setLayoutCount = 1;
-    // pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
-    // pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-    // pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
-    // if (vkCreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-    //     assert(false && "failed to create pipeline layout!");
-    // }
-
-    // // Setup graphics pipeline for UI rendering
-    // VkPipelineInputAssemblyStateCreateInfo inputAssemblyState {};
-    // inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    // inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    // inputAssemblyState.flags = 0;
-    // inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-
-    // VkPipelineRasterizationStateCreateInfo rasterizationState {};
-    // rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    // rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    // rasterizationState.cullMode = VK_CULL_MODE_NONE;
-    // rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    // rasterizationState.flags = 0;
-    // rasterizationState.depthClampEnable = VK_FALSE;
-    // rasterizationState.lineWidth = 1.0f;
-
-    // // Enable blending
-    // VkPipelineColorBlendAttachmentState blendAttachmentState{};
-    // blendAttachmentState.blendEnable = VK_TRUE;
-    // blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    // blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    // blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    // blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-    // blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    // blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    // blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-
-    // VkPipelineColorBlendStateCreateInfo colorBlendState {};
-    // colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    // colorBlendState.attachmentCount = 1;
-    // colorBlendState.pAttachments = &blendAttachmentState;
-
-    // VkPipelineDepthStencilStateCreateInfo depthStencilState {};
-    // depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    // depthStencilState.depthTestEnable = VK_FALSE;
-    // depthStencilState.depthWriteEnable = VK_FALSE;
-    // depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    // depthStencilState.front = depthStencilState.back;
-    // depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    // VkPipelineViewportStateCreateInfo viewportState {};
-    // viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    // viewportState.viewportCount = 1;
-    // viewportState.scissorCount = 1;
-    // viewportState.flags = 0;
-
-    // VkPipelineMultisampleStateCreateInfo multisampleState {};
-    // multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    // multisampleState.rasterizationSamples = msaaSamples;//VK_SAMPLE_COUNT_1_BIT;
-    // multisampleState.flags = 0;
-
-    // prt::vector<VkDynamicState> dynamicStateEnables = {
-    //     VK_DYNAMIC_STATE_VIEWPORT,
-    //     VK_DYNAMIC_STATE_SCISSOR
-    // };
-    // VkPipelineDynamicStateCreateInfo dynamicState {};
-    // dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    // dynamicState.pDynamicStates = dynamicStateEnables.data();
-    // dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-    // dynamicState.flags = 0;
-
-    // prt::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
-
-    // VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-    // pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    // pipelineCreateInfo.layout = pipelineLayout;
-    // pipelineCreateInfo.renderPass = renderPass;
-    // pipelineCreateInfo.flags = 0;
-    // pipelineCreateInfo.basePipelineIndex = -1;
-    // pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-    // pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
-    // pipelineCreateInfo.pRasterizationState = &rasterizationState;
-    // pipelineCreateInfo.pColorBlendState = &colorBlendState;
-    // pipelineCreateInfo.pMultisampleState = &multisampleState;
-    // pipelineCreateInfo.pViewportState = &viewportState;
-    // pipelineCreateInfo.pDepthStencilState = &depthStencilState;
-    // pipelineCreateInfo.pDynamicState = &dynamicState;
-    // pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
-    // pipelineCreateInfo.pStages = shaderStages.data();
-
-    // // Vertex bindings an attributes based on ImGui vertex definition
-    // VkVertexInputBindingDescription vInputBindDescription {};
-    // vInputBindDescription.binding = 0;
-    // vInputBindDescription.stride = sizeof(ImDrawVert);
-    // vInputBindDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    // prt::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-    //     vInputBindDescription
-    // };
-    // VkVertexInputAttributeDescription vInputAttribDescription0 {};
-    // vInputAttribDescription0.binding = 0;
-    // vInputAttribDescription0.location = 0;
-    // vInputAttribDescription0.format = VK_FORMAT_R32G32_SFLOAT;
-    // vInputAttribDescription0.offset = offsetof(ImDrawVert, pos);
-    // VkVertexInputAttributeDescription vInputAttribDescription1 {};
-    // vInputAttribDescription1.binding = 0;
-    // vInputAttribDescription1.location = 1;
-    // vInputAttribDescription1.format = VK_FORMAT_R32G32_SFLOAT;
-    // vInputAttribDescription1.offset = offsetof(ImDrawVert, uv);
-    // VkVertexInputAttributeDescription vInputAttribDescription2 {};
-    // vInputAttribDescription2.binding = 0;
-    // vInputAttribDescription2.location = 2;
-    // vInputAttribDescription2.format = VK_FORMAT_R8G8B8A8_UNORM;
-    // vInputAttribDescription2.offset = offsetof(ImDrawVert, col);
-    // prt::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-    //     vInputAttribDescription0,	// Location 0: Position
-    //     vInputAttribDescription1,	// Location 1: UV
-    //     vInputAttribDescription2	// Location 0: Color
-    // };
-    // VkPipelineVertexInputStateCreateInfo vertexInputState = {};
-    // vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    // vertexInputState.vertexBindingDescriptionCount = static_cast<uint32_t>(vertexInputBindings.size());
-    // vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
-    // vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
-    // vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
-
-    // pipelineCreateInfo.pVertexInputState = &vertexInputState;
-
-    // //shaderStages[0] = example->loadShader(ASSET_PATH "shaders/imgui/ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    // //shaderStages[1] = example->loadShader(ASSET_PATH "shaders/imgui/ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    // auto vertShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.vert.spv"));
-    // auto fragShaderCode = io_util::readFile(RESOURCE_PATH + std::string("shaders/imgui.frag.spv"));
-
-    // VkShaderModule vertShaderModule = vkutil::createShaderModule(m_device, vertShaderCode);
-    // VkShaderModule fragShaderModule = vkutil::createShaderModule(m_device, fragShaderCode);
-    
-    // VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
-    // vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    // vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    // vertShaderStageInfo.module = vertShaderModule;
-    // vertShaderStageInfo.pName = "main";
-    
-    // VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
-    // fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    // fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    // fragShaderStageInfo.module = fragShaderModule;
-    // fragShaderStageInfo.pName = "main";
-
-    // shaderStages[0] = vertShaderStageInfo;
-    // shaderStages[1] = fragShaderStageInfo;
-    
-    // if (vkCreateGraphicsPipelines(m_device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline) != VK_SUCCESS) {
-    //     assert(false && "failed to create graphics pipeline!");
-    // }
-
-    // vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
-    // vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
 }
 
 void ImGuiApplication::update(float width, float height,
                               float deltaTime,
-                              size_t imageIndex, VkCommandPool commandPool, VkQueue queue,
-                            //   VkFence *pFence, uint32_t nFence, 
+                              size_t imageIndex, 
                               DynamicAssets & asset,
                               GraphicsPipeline & pipeline) {
     updateInput(width, height, deltaTime);
     newFrame(!initFrameGraph);
     initFrameGraph = true;
 
-    updateBuffers(imageIndex, commandPool, queue, asset);
+    updateBuffers(imageIndex, asset);
 
     updateDrawCommands(pipeline.guiDrawCalls);
 
@@ -543,24 +291,14 @@ void ImGuiApplication::createPipeline(unsigned int renderGroup,
     pipeline.descriptorSets.resize(swapchainImageCount);
     pipeline.descriptorWrites.resize(swapchainImageCount);
 
-    // pipeline.uboAttachments.resize(1);
-    // pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchainImageCount);
-    // pipeline.uboAttachments[0].descriptorIndex = 0;
-
     fontDescriptor.sampler = sampler;
     fontDescriptor.imageView = fontView;
     fontDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     for (size_t i = 0; i < swapchainImageCount; ++i) {
-        // pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
-        // pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
-        // pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
-        
-
         pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
         
         pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        // pipeline.descriptorWrites[i][0].dstSet = descriptorSet;
         pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         pipeline.descriptorWrites[i][0].dstBinding = 0;
         pipeline.descriptorWrites[i][0].pImageInfo = &fontDescriptor;
@@ -686,8 +424,7 @@ void ImGuiApplication::newFrame(bool updateFrameGraph)
 }
 
 // Update vertex and index buffer containing the imGui elements when required
-void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool /*commandPool*/, VkQueue /*queue*/,
-                                    //  VkFence* pFence, uint32_t nFence, 
+void ImGuiApplication::updateBuffers(size_t imageIndex,
                                      DynamicAssets & assets) {
     assert(sizeof(ImDrawIdx) == sizeof(uint16_t) && "short length mismatch!");
 
@@ -702,20 +439,9 @@ void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool /*commandP
     if ((vertexBufferSize == 0) || (indexBufferSize == 0)) {
         return;
     }
-    // Update buffers only if vertex or index count has been changed compared to current buffer size
-    // auto & vertexBuffer = assets.vertexData[imageIndex].vertexBuffer;
-    // auto & vertexMemory = assets.vertexData[imageIndex].vertexBufferMemory;
-    
-    // auto & indexBuffer = assets.vertexData[imageIndex].indexBuffer;
-    // auto & indexMemory = assets.vertexData[imageIndex].indexBufferMemory;
 
-    // copy data to linear memory range
-    // prt::vector<char> vertexBufferData;
-    // prt::vector<char> indexBufferData;
     assets.vertexData[imageIndex].vertexData.resize(vertexBufferSize);
     assets.vertexData[imageIndex].indexData.resize(vertexBufferSize);
-    // vertexBufferData.resize(vertexBufferSize);
-    // indexBufferData.resize(indexBufferSize);
 
     char * vtxDst = assets.vertexData[imageIndex].vertexData.data();
     char * idxDst = assets.vertexData[imageIndex].indexData.data();
@@ -727,44 +453,6 @@ void ImGuiApplication::updateBuffers(size_t imageIndex, VkCommandPool /*commandP
         vtxDst += cmd_list->VtxBuffer.Size * sizeof(ImDrawVert);
         idxDst += cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx);
     }
-
-    // // Vertex buffer
-    // if ((vertexBuffer == VK_NULL_HANDLE) || (vertexCount != imDrawData->TotalVtxCount)) {
-    //     // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    //     if (vertexBuffer != VK_NULL_HANDLE) {
-    //         vkDestroyBuffer(m_device, vertexBuffer, nullptr);
-    //         vkFreeMemory(m_device, vertexMemory, nullptr);
-    //     }
-
-    //     vkutil::createAndMapBuffer(m_physicalDevice, m_device,
-    //                                commandPool, queue,
-    //                                vertexBufferData.data(), vertexBufferData.size(),
-    //                                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-    //                                vertexBuffer,
-    //                                vertexMemory);
-
-    //     vertexCount = imDrawData->TotalVtxCount;
-    // }
-
-    // // Index buffer
-    // if ((indexBuffer == VK_NULL_HANDLE) || (indexCount < imDrawData->TotalIdxCount)) {
-    //     // vkWaitForFences(m_device, nFence, pFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    //     if (indexBuffer != VK_NULL_HANDLE) {
-    //         vkDestroyBuffer(m_device, indexBuffer, nullptr);
-    //         vkFreeMemory(m_device, indexMemory, nullptr);
-    //     }
-
-    //     vkutil::createAndMapBuffer(m_physicalDevice, m_device,
-    //                                commandPool, queue,
-    //                                indexBufferData.data(), indexBufferData.size(),
-    //                                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-    //                                indexBuffer,
-    //                                indexMemory);
-
-    //     indexCount = imDrawData->TotalIdxCount;
-    // }
 }
 
 void ImGuiApplication::updateInput(float width, float height, float deltaTime) {
@@ -832,58 +520,6 @@ void ImGuiApplication::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) 
         }
     }
 }
-
-// Draw current imGui frame into a command buffer
-// void ImGuiApplication::drawFrame(VkCommandBuffer commandBuffer)
-// {
-//     ImGuiIO& io = ImGui::GetIO();
-
-//     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-//     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-//     //VkViewport viewport = vks::initializers::viewport(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y, 0.0f, 1.0f);
-//     VkViewport viewport {};
-//     viewport.width = ImGui::GetIO().DisplaySize.x;
-//     viewport.height = ImGui::GetIO().DisplaySize.y;
-//     viewport.minDepth = 0.0f;
-//     viewport.maxDepth = 1.0f;
-//     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-//     // UI scale and translate via push constants
-//     pushConstBlock.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-//     pushConstBlock.translate = glm::vec2(-1.0f);
-//     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock), &pushConstBlock);
-
-//     // Render commands
-//     ImDrawData* imDrawData = ImGui::GetDrawData();
-//     int32_t vertexOffset = 0;
-//     int32_t indexOffset = 0;
-
-//     if (imDrawData->CmdListsCount > 0) {
-
-//         VkDeviceSize offsets[1] = { 0 };
-//         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
-//         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-//         for (int32_t i = 0; i < imDrawData->CmdListsCount; i++)
-//         {
-//             const ImDrawList* cmd_list = imDrawData->CmdLists[i];
-//             for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++)
-//             {
-//                 const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[j];
-//                 VkRect2D scissorRect;
-//                 scissorRect.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
-//                 scissorRect.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
-//                 scissorRect.extent.width = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-//                 scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-//                 vkCmdSetScissor(commandBuffer, 0, 1, &scissorRect);
-//                 vkCmdDrawIndexed(commandBuffer, pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
-//                 indexOffset += pcmd->ElemCount;
-//             }
-//             vertexOffset += cmd_list->VtxBuffer.Size;
-//         }
-//     }
-// }
 
 void setImageLayout(
     VkCommandBuffer cmdbuffer,

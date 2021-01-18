@@ -40,7 +40,6 @@ public:
     // Initialize all Vulkan resources used by the ui
     void initResources(VkCommandPool &commandPool,
                        VkQueue &copyQueue, size_t swapchainCount,
-                       VkSampleCountFlagBits msaaSamples,
                        size_t renderPass,
                        size_t subpass,
                        unsigned int renderGroup,
@@ -49,8 +48,7 @@ public:
 
     void update(float width, float height,
                 float deltaTime,
-                size_t imageIndex, VkCommandPool commandPool, VkQueue queue,
-                // VkFence *pFence, uint32_t nFence, 
+                size_t imageIndex,
                 DynamicAssets & asset,
                 GraphicsPipeline & pipeline);
 
@@ -58,16 +56,7 @@ private:
     // Vulkan resources for rendering the UI
     VkSampler sampler;
     VkDescriptorImageInfo fontDescriptor;
-    //vk::Buffer vertexBuffer;
-    //vk::Buffer indexBuffer;
-    // VkBuffer vertexBuffer;
-    // VkDeviceMemory vertexBufferMemory;
-    // void *vertexBufferMapped = nullptr;
-    // VkBuffer indexBuffer;
-    // VkDeviceMemory indexBufferMemory;
-    // void *indexBufferMapped = nullptr;
-    // int32_t vertexCount = 0;
-    // int32_t indexCount = 0;
+
     float dpiScaleFactor = 1.0f;
 
     bool initFrameGraph = false;
@@ -78,12 +67,7 @@ private:
     VkDeviceMemory fontMemory = VK_NULL_HANDLE;
     VkImage fontImage = VK_NULL_HANDLE;
     VkImageView fontView = VK_NULL_HANDLE;
-    // VkPipelineCache pipelineCache;
-    // VkPipelineLayout pipelineLayout;
-    // VkPipeline pipeline;
-    // VkDescriptorPool descriptorPool;
-    // VkDescriptorSetLayout descriptorSetLayout;
-    // VkDescriptorSet descriptorSet;
+
     VkPhysicalDevice m_physicalDevice;
     VkDevice m_device;
 
@@ -98,18 +82,12 @@ private:
                         size_t dynamicAssetIndex,
                         GraphicsPipeline & pipeline);
 
-        // Starts a new imGui frame and sets up windows and ui elements
     void newFrame(bool updateFrameGraph);
 
-    // Update vertex and index buffer containing the imGui elements when required
-    void updateBuffers(size_t imageIndex, VkCommandPool commandPool, VkQueue queue,
-                    //    VkFence *pFence, uint32_t nFence, 
+    void updateBuffers(size_t imageIndex,
                        DynamicAssets & asset);
 
     void updateInput(float width, float height, float deltaTime);
-
-    // Draw current imGui frame into a command buffer
-    // void drawFrame(VkCommandBuffer commandBuffer);
 
     void updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls);
 
