@@ -4,9 +4,9 @@
 
 #include "src/game/scene/entity.h"
 
-GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & input)
+GameRenderer::GameRenderer(unsigned int width, unsigned int height)
     : VulkanApplication(width, height),
-      m_imguiRenderer(getPhysicalDevice(), getDevice(), input, width, height) {
+      m_imguiRenderer(getPhysicalDevice(), getDevice()) {
 
     pushBackObjectFBA();
     pushBackDepthFBA(depthFBAIndex);

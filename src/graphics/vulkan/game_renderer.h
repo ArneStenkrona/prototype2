@@ -26,7 +26,7 @@ public:
      * @param width frame width
      * @param heght frame height
      */
-    GameRenderer(unsigned int width, unsigned int height, Input & input);
+    GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
     /**

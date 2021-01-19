@@ -2,15 +2,16 @@
 
 #include "glm/gtx/string_cast.hpp"
 
-Editor::Editor(Scene & scene, Input & input)
+Editor::Editor(Scene & scene, Input & input, int width, int height)
     : m_scene(scene),
       m_input(input),
-      m_camera(input) {
+      m_camera(input),
+      m_gui(width, height) {
 }
 
-void Editor::update(float deltaTime, int w, int h) {
+void Editor::update(float deltaTime, int width, int height) {
     updateInput(deltaTime);
-    m_gui.update(m_input, w, h, deltaTime);
+    m_gui.update(m_input, width, height, deltaTime);
     render();
 }
 

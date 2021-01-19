@@ -6,8 +6,8 @@
 
 class Editor {
 public:
-    Editor(Scene & scene, Input & input);
-    void update(float deltaTime, int w, int h);
+    Editor(Scene & scene, Input & input, int width, int height);
+    void update(float deltaTime, int width, int height);
 private:
     void updateInput(float deltaTime);
     void render();

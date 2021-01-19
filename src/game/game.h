@@ -43,6 +43,9 @@ private:
     uint64_t m_currentFrame;
     float m_time;
 
+    static constexpr int DEFAULT_WIDTH = 800;
+    static constexpr int DEFAULT_HEIGHT = 600;
+
     void update(float deltaTime);
     void updateMode();
 

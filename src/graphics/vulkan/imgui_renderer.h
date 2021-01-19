@@ -32,8 +32,7 @@ public:
         glm::vec2 translate;
     } pushConstBlock;
 
-    ImGuiRenderer(VkPhysicalDevice physicalDevice, VkDevice device,
-                     Input &input, float width, float height);
+    ImGuiRenderer(VkPhysicalDevice physicalDevice, VkDevice device);
 
     ~ImGuiRenderer();
 
@@ -56,11 +55,10 @@ private:
     // Vulkan resources for rendering the UI
     VkSampler sampler;
     VkDescriptorImageInfo fontDescriptor;
-
-    float dpiScaleFactor = 1.0f;
+    // TODO: set this in a dynamic, cross-platform manner 
+    float dpiScaleFactor = 2.0f;
 
     size_t swapchainImageCount;
-    // VkExtent2D swapchainExtent;
 
     VkDeviceMemory fontMemory = VK_NULL_HANDLE;
     VkImage fontImage = VK_NULL_HANDLE;
@@ -68,11 +66,6 @@ private:
 
     VkPhysicalDevice m_physicalDevice;
     VkDevice m_device;
-
-    // Input &m_input;
-
-    // Initialize styles, keys, etc.
-    void init(float width, float height);
 
     void createPipeline(unsigned int renderGroup,
                         size_t renderPass,

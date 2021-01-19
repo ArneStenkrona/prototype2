@@ -3,18 +3,6 @@
 #include "vulkan_util.h"
 #include "src/util/io_util.h"
 
-// Options and values to display/toggle from the UI
-struct UISettings {
-	bool displayModels = true;
-	bool displayLogos = true;
-	bool displayBackground = true;
-	bool animateLight = false;
-	float lightSpeed = 0.25f;
-	std::array<float, 50> frameTimes{};
-	float frameTimeMin = 9999.0f, frameTimeMax = 0.0f;
-	float lightTimer = 0.0f;
-} uiSettings;
-
 void setImageLayout(
     VkCommandBuffer cmdbuffer,
     VkImage image,
@@ -24,13 +12,9 @@ void setImageLayout(
     VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask);
 
-ImGuiRenderer::ImGuiRenderer(VkPhysicalDevice physicalDevice, VkDevice device,
-                             Input& /*input*/, float width, float height)
-    : m_physicalDevice(physicalDevice), m_device(device)/*, m_input(input)*/ {
+ImGuiRenderer::ImGuiRenderer(VkPhysicalDevice physicalDevice, VkDevice device)
+    : m_physicalDevice(physicalDevice), m_device(device) {
     ImGui::CreateContext(); 
-    init(width, height);
-
-    dpiScaleFactor = 2.0f;
 }
 
 ImGuiRenderer::~ImGuiRenderer() {
@@ -43,23 +27,6 @@ ImGuiRenderer::~ImGuiRenderer() {
     }
     
     ImGui::DestroyContext();
-}
-
-// Initialize styles, keys, etc.
-void ImGuiRenderer::init(float width, float height) {
-    // Color scheme
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
-    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_Header] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-    // Dimensions
-    ImGuiIO& io = ImGui::GetIO();
-    io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
-    io.DisplaySize = ImVec2{width / dpiScaleFactor, height / dpiScaleFactor};
-
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
 // Initialize all Vulkan resources used by the ui
@@ -77,6 +44,7 @@ void ImGuiRenderer::initResources(VkCommandPool& commandPool,
     // Create font texture
     unsigned char* fontData;
     int texWidth, texHeight;
+    io.FontGlobalScale = dpiScaleFactor;
     io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
     VkDeviceSize uploadSize = texWidth*texHeight * 4 * sizeof(char);
 
@@ -438,13 +406,13 @@ void ImGuiRenderer::updateDrawCommands(prt::vector<GUIDrawCall> & drawCalls) {
                 drawCall.indexCount = pcmd->ElemCount;
                 drawCall.vertexOffset = vertexOffset;
 
-                drawCall.scissor.offset.x = std::max((int32_t)(dpiScaleFactor * pcmd->ClipRect.x), 0);
-                drawCall.scissor.offset.y = std::max((int32_t)(dpiScaleFactor * pcmd->ClipRect.y), 0);
-                drawCall.scissor.extent.width = (uint32_t)(dpiScaleFactor * (pcmd->ClipRect.z - pcmd->ClipRect.x));
-                drawCall.scissor.extent.height = (uint32_t)(dpiScaleFactor * (pcmd->ClipRect.w - pcmd->ClipRect.y));
+                drawCall.scissor.offset.x = std::max((int32_t)(pcmd->ClipRect.x), 0);
+                drawCall.scissor.offset.y = std::max((int32_t)(pcmd->ClipRect.y), 0);
+                drawCall.scissor.extent.width = (uint32_t)((pcmd->ClipRect.z - pcmd->ClipRect.x));
+                drawCall.scissor.extent.height = (uint32_t)((pcmd->ClipRect.w - pcmd->ClipRect.y));
 
                 PushConstBlock & pc = *reinterpret_cast<PushConstBlock*>(drawCall.pushConstants.data());
-                pc.scale = glm::vec2(dpiScaleFactor * 2.0f / io.DisplaySize.x, dpiScaleFactor * 2.0f / io.DisplaySize.y);
+                pc.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
                 pc.translate = glm::vec2(-1.0f, -1.0f);
 
                 indexOffset += pcmd->ElemCount;
