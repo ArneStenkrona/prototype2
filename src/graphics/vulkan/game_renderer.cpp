@@ -6,7 +6,7 @@
 
 GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & input)
     : VulkanApplication(width, height),
-      m_imguiApplication(getPhysicalDevice(), getDevice(), input, width, height) {
+      m_imguiRenderer(getPhysicalDevice(), getDevice(), input, width, height) {
 
     pushBackObjectFBA();
     pushBackDepthFBA(depthFBAIndex);
@@ -37,13 +37,13 @@ GameRenderer::GameRenderer(unsigned int width, unsigned int height, Input & inpu
 
     size_t guiAssetIndex = pushBackDynamicAssets();
 
-    m_imguiApplication.initResources(commandPools[0], graphicsQueue,
-                                     swapchain.swapchainImageCount,
-                                     scenePassIndex,
-                                     3,
-                                     EDITOR_RENDER_GROUP,
-                                     guiAssetIndex,
-                                     guiPipeline);
+    m_imguiRenderer.initResources(commandPools[0], graphicsQueue,
+                                  swapchain.swapchainImageCount,
+                                  scenePassIndex,
+                                  3,
+                                  EDITOR_RENDER_GROUP,
+                                  guiAssetIndex,
+                                  guiPipeline);
 }
 
 GameRenderer::~GameRenderer() {
@@ -58,10 +58,12 @@ void GameRenderer::render(float deltaTime, uint16_t renderGroupMask) {
 
     GraphicsPipeline & guiPipeline = getPipeline(guiPipelineIndex);
 
-    m_imguiApplication.update(float(w), float(h), deltaTime,
-                              imageIndex,
-                              getDynamicAssets(guiPipeline.dynamicAssetsIndex),
-                              guiPipeline);
+    if (checkMask(renderGroupMask, guiPipeline.renderGroup)) {
+        m_imguiRenderer.update(float(w), float(h), deltaTime,
+                               imageIndex,
+                               getDynamicAssets(guiPipeline.dynamicAssetsIndex),
+                               guiPipeline);
+    }
 
     drawFrame(imageIndex);
 }

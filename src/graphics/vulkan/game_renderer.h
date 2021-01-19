@@ -8,7 +8,7 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/geometry/billboard.h"
 
-#include "src/graphics/vulkan/imgui_application.h"
+#include "src/graphics/vulkan/imgui_renderer.h"
 
 #include "src/game/scene/entity.h"
 
@@ -71,7 +71,7 @@ public:
     static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
-    ImGuiApplication m_imguiApplication;
+    ImGuiRenderer m_imguiRenderer;
 
     static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
     static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;

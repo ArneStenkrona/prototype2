@@ -1,12 +1,13 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include "editor_gui.h"
 #include "src/game/scene/scene.h"
 
 class Editor {
 public:
     Editor(Scene & scene, Input & input);
-    void update(float deltaTime);
+    void update(float deltaTime, int w, int h);
 private:
     void updateInput(float deltaTime);
     void render();
@@ -18,6 +19,8 @@ private:
     Scene & m_scene;
     Input & m_input;
     Camera m_camera;
+
+    EditorGui m_gui;
 };
 
 #endif

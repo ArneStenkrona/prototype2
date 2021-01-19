@@ -74,8 +74,10 @@ void Game::update(float deltaTime) {
             m_scene.update(deltaTime);
             break;
         case Mode::EDITOR:
+            int w,h;
+            m_gameRenderer.getWindowSize(w,h);
             m_renderMask = GameRenderer::EDITOR_RENDER_MASK;
-            m_editor.update(deltaTime);
+            m_editor.update(deltaTime,w,h);
             break;
     }
 }

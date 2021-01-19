@@ -1813,7 +1813,8 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex,
                       pipeline.depthBiasClamp,
                       pipeline.depthBiasSlope);
 
-    if (pipeline.type == PIPELINE_TYPE_GUI) {
+    if (pipeline.type == PIPELINE_TYPE_GUI &&
+        !pipeline.guiDrawCalls.empty()) {
         DynamicAssets & asset = dynamicAssets[pipeline.dynamicAssetsIndex];
 
         VkDeviceSize offsets[1] = { 0 };
@@ -1832,7 +1833,7 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex,
             vkCmdSetScissor(sub.commandBuffers[imageIndex][framebufferIndex], 0, 1, &drawCall.scissor);
             vkCmdDrawIndexed(sub.commandBuffers[imageIndex][framebufferIndex], drawCall.indexCount, 1, drawCall.indexOffset, drawCall.vertexOffset, 0);
         }
-    } else {
+    } else if (!pipeline.drawCalls.empty()){
         Assets& asset = assets[pipeline.assetsIndex];
         vkCmdBindVertexBuffers(sub.commandBuffers[imageIndex][framebufferIndex], 0, 1, &asset.vertexData.vertexBuffer, &offset);
         vkCmdBindIndexBuffer(sub.commandBuffers[imageIndex][framebufferIndex], asset.vertexData.indexBuffer, 0, VK_INDEX_TYPE_UINT32);

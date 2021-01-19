@@ -6,11 +6,11 @@ Editor::Editor(Scene & scene, Input & input)
     : m_scene(scene),
       m_input(input),
       m_camera(input) {
-
 }
 
-void Editor::update(float deltaTime) {
+void Editor::update(float deltaTime, int w, int h) {
     updateInput(deltaTime);
+    m_gui.update(m_input, w, h, deltaTime);
     render();
 }
 
