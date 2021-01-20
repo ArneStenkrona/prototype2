@@ -162,7 +162,7 @@ namespace prt {
                 }
 
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-                counter++;
+                ++counter;
             }
             return end();
         }
@@ -176,7 +176,7 @@ namespace prt {
                 }
 
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-                counter++;
+                ++counter;
             }
             return end();
         }

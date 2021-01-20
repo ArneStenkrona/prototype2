@@ -46,6 +46,9 @@ public:
     Camera & getCamera() { return m_camera; }
 
     Entities & getEntities() { return m_entities; }
+
+    bool hasModel(EntityID id) { return m_entities.modelIDs[id] != -1; }
+    Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]) ; }
     
 private:
     struct Lights {

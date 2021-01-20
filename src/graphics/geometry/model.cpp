@@ -42,7 +42,8 @@ void Model::load(bool loadAnimation, TextureManager & textureManager) {
         std::cout << importer.GetErrorString() << std::endl;
         assert(false && "failed to load file!");
     }
-    strcpy(name, strchr(mPath, '/'));
+    
+    strcpy(name, strrchr(mPath, '/') + 1);
 
     // parse materials
     materials.resize(scene->mNumMaterials);

@@ -74,6 +74,9 @@ public:
     inline bool isloaded() const { return mLoaded; }
     inline bool isAnimated() const { return mAnimated; }
 
+    char const * getPath() const { return mPath; };
+    char const * getName() const { return name; };
+
 private:
     void calcTangentSpace();
     int32_t getTexture(aiMaterial &aiMat, aiTextureType type, const char * modelPath, 

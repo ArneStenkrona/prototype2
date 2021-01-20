@@ -86,6 +86,7 @@ include_directories(
   "${PROJECT_SOURCE_DIR}/test"
   "${PROJECT_SOURCE_DIR}/external"
   "${PROJECT_SOURCE_DIR}/external/imgui"
+  "${PROJECT_SOURCE_DIR}/external/imgui-filebrowser"
 )
 
 file(GLOB SOURCES

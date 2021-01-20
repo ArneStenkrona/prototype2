@@ -1,11 +1,14 @@
 #include "editor_gui.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include "imgui/backends/imgui_impl_glfw.h"
 
-#include <cstdio>
+#include "glm/gtx/euler_angles.hpp"
+#include "glm/gtx/string_cast.hpp"
 
+#include <cstdio>
 
 EditorGui::EditorGui(GLFWwindow * window, float width, float height) {
     init(width, height);
@@ -114,10 +117,10 @@ void EditorGui::buildEditor(Scene & scene) {
             //   window ID to split, direction, fraction (between 0 and 1), the final two setting let's us choose which id we want (which ever one we DON'T set as NULL, will be returned by the function)
             //                                                              out_id_at_dir is the id of the node in the direction we specified earlier, out_id_at_opposite_dir is in the opposite direction
             auto dock_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.2f, nullptr, &dockspace_id);
-            auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
+            auto dock_id_right = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.25f, nullptr, &dockspace_id);
 
             // we now dock our windows into the docking node we made above
-            ImGui::DockBuilderDockWindow("Inspector", dock_id_down);
+            ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
             ImGui::DockBuilderFinish(dockspace_id);
         }
@@ -125,17 +128,14 @@ void EditorGui::buildEditor(Scene & scene) {
 
     ImGui::End();
 
-    ImGui::Begin("Scene");
-
     Entities & entities = scene.getEntities();
-    entityList(scene, entities);
 
+    ImGui::Begin("Scene");
+    entityList(scene, entities);
     ImGui::End();
 
     ImGui::Begin("Inspector");
-
     entityInfo(scene, entities);
-
     ImGui::End();
 }
 
@@ -157,12 +157,31 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     if (selectedEntity == -1) return;
 
     char * name = entities.names[selectedEntity];
+    
+    ImGui::PushID(selectedEntity);
+    ImGui::PushItemWidth(200);
 
     ImGui::InputText("Name", name, Entities::SIZE_STR);
+
+    ImGui::PopID();
+    ImGui::PopItemWidth();
     
-    glm::vec3 & position = entities.transforms[selectedEntity].position;
-    glm::quat & rotation = entities.transforms[selectedEntity].rotation;
-    glm::vec3 & scale = entities.transforms[selectedEntity].scale;
+    showTransform(scene, entities.transforms[selectedEntity]);
+
+    if (scene.hasModel(selectedEntity)) {
+        showModel(scene, scene.getModel(selectedEntity));
+    }
+}
+
+void EditorGui::showTransform(Scene & scene, Transform & transform) {
+    beginGroupPanel("Transform");
+    
+    glm::vec3 & position = transform.position;
+    glm::quat & rotation = transform.rotation;
+    glm::vec3 & scale = transform.scale;
+
+    ImGui::PushID(selectedEntity);
+    ImGui::PushItemWidth(300);
 
     float* vecp = reinterpret_cast<float*>(&position);
     if (ImGui::InputFloat3("Position", vecp, "%.3f")) {
@@ -170,9 +189,11 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     }
 
     glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(rotation));
+
     float* rotp = reinterpret_cast<float*>(&eulerAngles);
-    if (ImGui::InputFloat3("Rotation", rotp, "%.3f")) {
+    if (ImGui::InputFloat3("Rotation", rotp, "%.3f")) {     
         rotation = glm::quat(glm::radians(eulerAngles));
+
         scene.addToColliderUpdateSet(selectedEntity);
     }
 
@@ -180,4 +201,118 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     if (ImGui::InputFloat3("Scale", scalep, "%.3f")) {
         scene.addToColliderUpdateSet(selectedEntity);
     }
+
+    ImGui::PopID();
+    ImGui::PopItemWidth();
+
+    endGroupPanel();
+}
+
+void EditorGui::showModel(Scene & /*scene*/, Model const & model) {
+    static bool open = false;
+    static double errorDeadline = 0.0;
+    beginGroupPanel("Model");
+
+    ImGui::Text("Name: %s", model.getName());
+
+    if(ImGui::Button("load")) {
+        open = true;
+        errorDeadline = 0.0;
+    }
+    if (open) {
+        ImGui::OpenPopup("Load model");
+
+        if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
+            // std::cout << file_dialog.selected_fn << std::endl;      // The name of the selected file or directory in case of Select Directory dialog mode
+            // std::cout << file_dialog.selected_path << std::endl;    // The absolute path to the selected file
+            errorDeadline =  ImGui::GetTime() + 5.0;
+        }
+        open = ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
+    }
+    
+    if (ImGui::GetTime() < errorDeadline) {
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s", "Failed to open models");
+    }
+
+    char buf[256] = {0};
+    strcpy(buf, model.getPath());
+
+    ImGui::InputText("Path", buf, 256, ImGuiInputTextFlags_ReadOnly);
+
+    endGroupPanel();
+}
+
+
+void EditorGui::beginGroupPanel(const char* name, const ImVec2& size) {
+    ImGui::BeginGroup();
+
+    auto itemSpacing = ImGui::GetStyle().ItemSpacing;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+
+    auto frameHeight = ImGui::GetFrameHeight();
+    ImGui::BeginGroup();
+
+    ImVec2 effectiveSize = size;
+    if (size.x < 0.0f)
+        effectiveSize.x = ImGui::GetContentRegionAvailWidth();
+    else
+        effectiveSize.x = size.x;
+    ImGui::Dummy(ImVec2(effectiveSize.x, 0.0f));
+
+    ImGui::Dummy(ImVec2(frameHeight * 0.5f, 0.0f));
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::BeginGroup();
+    ImGui::Dummy(ImVec2(frameHeight * 0.5f, 0.0f));
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::TextUnformatted(name);
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::Dummy(ImVec2(0.0, frameHeight + itemSpacing.y));
+    ImGui::BeginGroup();
+
+    ImGui::PopStyleVar(2);
+
+    ImGui::GetCurrentWindow()->ContentRegionRect.Max.x -= frameHeight * 0.5f;
+    ImGui::GetCurrentWindow()->Size.x                  -= frameHeight;
+
+    ImGui::PushItemWidth(effectiveSize.x - frameHeight);
+}
+
+void EditorGui::endGroupPanel() {
+    ImGui::PopItemWidth();
+
+    auto itemSpacing = ImGui::GetStyle().ItemSpacing;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+
+    auto frameHeight = ImGui::GetFrameHeight();
+
+    ImGui::EndGroup();
+
+    ImGui::EndGroup();
+
+    ImGui::SameLine(0.0f, 0.0f);
+    ImGui::Dummy(ImVec2(frameHeight * 0.5f, 0.0f));
+    ImGui::Dummy(ImVec2(0.0, frameHeight - frameHeight * 0.5f - itemSpacing.y));
+
+    ImGui::EndGroup();
+
+    auto itemMin = ImGui::GetItemRectMin();
+    auto itemMax = ImGui::GetItemRectMax();
+
+    ImVec2 halfFrame = ImVec2(frameHeight * 0.25f, frameHeight) * 0.5f;
+    ImGui::GetWindowDrawList()->AddRect(
+        itemMin + halfFrame, itemMax - ImVec2(halfFrame.x, 0.0f),
+        ImColor(ImGui::GetStyleColorVec4(ImGuiCol_Border)),
+        halfFrame.x);
+
+    ImGui::PopStyleVar(2);
+
+    ImGui::GetCurrentWindow()->ContentRegionRect.Max.x += frameHeight * 0.5f;
+    ImGui::GetCurrentWindow()->Size.x                  += frameHeight;
+
+    ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+    ImGui::EndGroup();
 }

@@ -167,9 +167,9 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         // bounds += velocity extents
         eAABB += { transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - m_ellipsoids[physics[i].colliderTag.index], 
                    transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + m_ellipsoids[physics[i].colliderTag.index] };
-        ++i;
 
         tagToCharacter.insert(physics[i].colliderTag.index, i);
+        ++i;
     }
     m_aabbTree.update(m_ellipsoidTreeIndices.data(), m_ellipsoidAABBs.data(), m_ellipsoids.size());
     
