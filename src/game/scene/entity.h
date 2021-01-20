@@ -3,6 +3,8 @@
 
 #include "src/game/component/component.h"
 
+#include "src/container/vector.h"
+
 #include <cstdint>
 
 typedef int32_t CharacterID;
@@ -10,11 +12,13 @@ typedef int32_t EntityID;
 typedef int32_t AnimationID;
 typedef int32_t ModelID;
 
-template<size_t N>
+static constexpr size_t N = 100;
+
+// template<size_t N>
 struct Entities {
 public:
     enum { maxSize = N };
-
+    char        names[N][64];
     Transform   transforms[N];
     ModelID     modelIDs[N];
     AnimationID animationIDs[N];

@@ -42,6 +42,8 @@ public:
 
     Input & getInput() { return m_input; }
     Camera & getCamera() { return m_camera; }
+
+    Entities & getEntities() { return m_entities; }
     
 private:
     struct Lights {
@@ -50,7 +52,7 @@ private:
         SkyLight sun;
     } m_lights;
 
-    Entities<100> m_entities;
+    Entities m_entities;
 
     prt::hash_set<EntityID> m_colliderUpdateSet;
 

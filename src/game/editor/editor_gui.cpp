@@ -9,9 +9,9 @@ EditorGui::EditorGui(float width, float height) {
     init(width, height);
 }
 
-void EditorGui::update(Input & input, int width, int height, float deltaTime) {
+void EditorGui::update(Input & input, int width, int height, float deltaTime, Scene & scene) {
     updateInput(input, width, height, deltaTime);
-    newFrame();
+    newFrame(scene);
 }
 
 void EditorGui::init(float width, float height) {
@@ -46,15 +46,15 @@ void EditorGui::updateInput(Input & input, int width, int height, float deltaTim
     io.MouseDown[1] = input.getKeyPress(INPUT_KEY::KEY_MOUSE_RIGHT) == GLFW_PRESS;
 }
 
-void EditorGui::newFrame() {
+void EditorGui::newFrame(Scene & scene) {
     ImGui::NewFrame();
 
-    buildEditor();
+    buildEditor(scene);
 
     ImGui::Render();
 }
 
-void EditorGui::buildEditor() {
+void EditorGui::buildEditor(Scene & scene) {
     static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
 
     // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -109,18 +109,36 @@ void EditorGui::buildEditor() {
 
             // we now dock our windows into the docking node we made above
             ImGui::DockBuilderDockWindow("Down", dock_id_down);
-            ImGui::DockBuilderDockWindow("Left", dock_id_left);
+            ImGui::DockBuilderDockWindow("Scene", dock_id_left);
             ImGui::DockBuilderFinish(dockspace_id);
         }
     }
 
     ImGui::End();
 
-    ImGui::Begin("Left");
-    ImGui::Text("Hello, left!");
+    ImGui::Begin("Scene");
+
+    Entities & entities = scene.getEntities();
+    entityList(entities);
+    
     ImGui::End();
 
     ImGui::Begin("Down");
     ImGui::Text("Hello, down!");
     ImGui::End();
+}
+
+// TODO: cache this operation
+void EditorGui::entityList(Entities & entities) {
+    int nEntities = entities.size();
+    prt::vector<char*> names;
+    names.resize(entities.size());
+
+    for (EntityID i = 0; i < entities.size(); ++i) {
+        names[i] = entities.names[i];
+    }
+
+    static int item_current = 1;
+    ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 20);
+    ImGui::ListBox("", &item_current, names.data(), nEntities);
 }

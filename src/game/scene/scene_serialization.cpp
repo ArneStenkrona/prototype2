@@ -10,6 +10,7 @@
 void SceneSerialization::loadScene(char const * file, Scene & scene) {
     // set components to undefined
     for (size_t i = 0; i < scene.m_entities.maxSize; ++i) {
+        sprintf(scene.m_entities.names[i], "entity_%lu", i);
         scene.m_entities.modelIDs[i] = -1;
         scene.m_entities.characterIDs[i] = -1;
         scene.m_entities.colliderTags[i].type = ColliderType::COLLIDER_TYPE_NONE;

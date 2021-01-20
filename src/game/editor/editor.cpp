@@ -11,7 +11,7 @@ Editor::Editor(Scene & scene, Input & input, int width, int height)
 
 void Editor::update(float deltaTime, int width, int height) {
     updateInput(deltaTime);
-    m_gui.update(m_input, width, height, deltaTime);
+    m_gui.update(m_input, width, height, deltaTime, m_scene);
     render();
 }
 
