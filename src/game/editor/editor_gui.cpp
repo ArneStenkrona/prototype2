@@ -181,18 +181,16 @@ void EditorGui::showTransform(Scene & scene, Transform & transform) {
     glm::vec3 & scale = transform.scale;
 
     ImGui::PushID(selectedEntity);
-    ImGui::PushItemWidth(300);
+    ImGui::PushItemWidth(400);
 
     float* vecp = reinterpret_cast<float*>(&position);
     if (ImGui::InputFloat3("Position", vecp, "%.3f")) {
         scene.addToColliderUpdateSet(selectedEntity);
     }
 
-    glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(rotation));
-
-    float* rotp = reinterpret_cast<float*>(&eulerAngles);
-    if (ImGui::InputFloat3("Rotation", rotp, "%.3f")) {     
-        rotation = glm::quat(glm::radians(eulerAngles));
+    float* rotp = reinterpret_cast<float*>(&rotation);
+    if (ImGui::InputFloat4("Rotation", rotp, "%.3f")) {
+        rotation = rotation;
 
         scene.addToColliderUpdateSet(selectedEntity);
     }

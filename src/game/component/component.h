@@ -18,7 +18,7 @@ struct Transform {
 
     glm::mat4 transformMatrix() const {
         glm::mat4 scaleM = glm::scale(scale);
-        glm::mat4 rotateM = glm::toMat4(rotation);
+        glm::mat4 rotateM = glm::toMat4(glm::normalize(rotation));
         glm::mat4 translateM = glm::translate(glm::mat4(1.0f), position);
         return translateM * rotateM * scaleM;
     }
