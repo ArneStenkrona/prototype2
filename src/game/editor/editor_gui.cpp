@@ -128,19 +128,19 @@ void EditorGui::buildEditor(Scene & scene) {
     ImGui::Begin("Scene");
 
     Entities & entities = scene.getEntities();
-    entityList(entities);
+    entityList(scene, entities);
 
     ImGui::End();
 
     ImGui::Begin("Inspector");
 
-    entityInfo(entities);
+    entityInfo(scene, entities);
 
     ImGui::End();
 }
 
 // TODO: cache this operation
-void EditorGui::entityList(Entities & entities) {
+void EditorGui::entityList(Scene & /*scene*/, Entities & entities) {
     int nEntities = entities.size();
     prt::vector<char*> names;
     names.resize(entities.size());
@@ -153,12 +153,31 @@ void EditorGui::entityList(Entities & entities) {
     ImGui::ListBox("", &selectedEntity, names.data(), nEntities);
 }
 
-void EditorGui::entityInfo(Entities & entities) {
+void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     if (selectedEntity == -1) return;
 
     char * name = entities.names[selectedEntity];
 
     ImGui::InputText("Name", name, Entities::SIZE_STR);
+    
+    glm::vec3 & position = entities.transforms[selectedEntity].position;
+    glm::quat & rotation = entities.transforms[selectedEntity].rotation;
+    glm::vec3 & scale = entities.transforms[selectedEntity].scale;
 
-    // ImGui::InputFloat("input float", &f0, 0.01f, 1.0f, "%.3f");
+    float* vecp = reinterpret_cast<float*>(&position);
+    if (ImGui::InputFloat3("Position", vecp, "%.3f")) {
+        scene.addToColliderUpdateSet(selectedEntity);
+    }
+
+    glm::vec3 eulerAngles = glm::degrees(glm::eulerAngles(rotation));
+    float* rotp = reinterpret_cast<float*>(&eulerAngles);
+    if (ImGui::InputFloat3("Rotation", rotp, "%.3f")) {
+        rotation = glm::quat(glm::radians(eulerAngles));
+        scene.addToColliderUpdateSet(selectedEntity);
+    }
+
+    float* scalep = reinterpret_cast<float*>(&scale);
+    if (ImGui::InputFloat3("Scale", scalep, "%.3f")) {
+        scene.addToColliderUpdateSet(selectedEntity);
+    }
 }

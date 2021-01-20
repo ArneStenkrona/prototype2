@@ -29,8 +29,8 @@ private:
     void updateInput(Input & input, int width, int height, float deltaTime);
     void newFrame(Scene & scene);
     void buildEditor(Scene & scene);
-    void entityList(Entities & entities);
-    void entityInfo(Entities & entities);
+    void entityList(Scene & scene, Entities & entities);
+    void entityInfo(Scene & scene, Entities & entities);
 };
 
 #endif

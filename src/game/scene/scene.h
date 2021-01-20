@@ -38,6 +38,8 @@ public:
 
     void renderScene(Camera & camera);
 
+    void addToColliderUpdateSet(EntityID id) { m_colliderUpdateSet.insert(id); }
+
     Transform & getTransform(EntityID id) { return m_entities.transforms[id]; }
 
     Input & getInput() { return m_input; }
