@@ -9,14 +9,20 @@
 
 // TODO: move to separate source files
 
+struct EditorUpdate {
+    EntityID selectedEntity;
+};
+
 class EditorGui {
 public:
-    EditorGui(float width, float height);
+    EditorGui(GLFWwindow * window, float width, float height);
 
-    void update(Input & input, int width, int height, float deltaTime, Scene & scene);
+    void update(Input & input, int width, int height, float deltaTime, Scene & scene, EditorUpdate const & updatePackage);
 private:
     // TODO: set this in a dynamic, cross-platform manner 
     float dpiScaleFactor = 2.0f;
+
+    EntityID selectedEntity = -1;
 
     void init(float width, float height);
 
@@ -24,6 +30,7 @@ private:
     void newFrame(Scene & scene);
     void buildEditor(Scene & scene);
     void entityList(Entities & entities);
+    void entityInfo(Entities & entities);
 };
 
 #endif

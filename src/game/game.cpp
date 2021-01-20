@@ -14,7 +14,7 @@ Game::Game()
   m_assetManager(RESOURCE_PATH),
   m_physicsSystem(),
   m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
-  m_editor(m_scene, m_input, DEFAULT_WIDTH, DEFAULT_HEIGHT),
+  m_editor(m_scene, m_input, m_gameRenderer.getWindow(), DEFAULT_WIDTH, DEFAULT_HEIGHT),
   m_frameRate(FRAME_RATE),
   m_microsecondsPerFrame(1000000 / m_frameRate),
   m_currentFrame(0),

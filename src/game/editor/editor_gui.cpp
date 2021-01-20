@@ -2,15 +2,23 @@
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
+#include "imgui/backends/imgui_impl_glfw.h"
 
 #include <cstdio>
 
-EditorGui::EditorGui(float width, float height) {
+
+EditorGui::EditorGui(GLFWwindow * window, float width, float height) {
     init(width, height);
+    ImGui_ImplGlfw_InitForVulkan(window, true);
 }
 
-void EditorGui::update(Input & input, int width, int height, float deltaTime, Scene & scene) {
+void EditorGui::update(Input & input, int width, int height, float deltaTime, Scene & scene, EditorUpdate const & updatePackage) {
     updateInput(input, width, height, deltaTime);
+
+    if (updatePackage.selectedEntity != -1) {
+        selectedEntity = updatePackage.selectedEntity;
+    }
+
     newFrame(scene);
 }
 
@@ -42,8 +50,9 @@ void EditorGui::updateInput(Input & input, int width, int height, float deltaTim
     double mouseX, mouseY;
     input.getCursorPos(mouseX, mouseY);
     io.MousePos = ImVec2(mouseX, mouseY);
-    io.MouseDown[0] = input.getKeyPress(INPUT_KEY::KEY_MOUSE_LEFT) == GLFW_PRESS;
-    io.MouseDown[1] = input.getKeyPress(INPUT_KEY::KEY_MOUSE_RIGHT) == GLFW_PRESS;
+    io.MouseDown[0] = input.getKeyPress(INPUT_KEY::KEY_MOUSE_LEFT);
+    io.MouseDown[1] = input.getKeyPress(INPUT_KEY::KEY_MOUSE_RIGHT);
+
 }
 
 void EditorGui::newFrame(Scene & scene) {
@@ -76,9 +85,9 @@ void EditorGui::buildEditor(Scene & scene) {
     window_flags |= ImGuiWindowFlags_NoBackground;
 
     // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-    // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive, 
+    // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
     // all active windows docked into it will lose their parent and become undocked.
-    // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise 
+    // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
     // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ImGui::Begin("DockSpace", nullptr, window_flags);
@@ -108,7 +117,7 @@ void EditorGui::buildEditor(Scene & scene) {
             auto dock_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
 
             // we now dock our windows into the docking node we made above
-            ImGui::DockBuilderDockWindow("Down", dock_id_down);
+            ImGui::DockBuilderDockWindow("Inspector", dock_id_down);
             ImGui::DockBuilderDockWindow("Scene", dock_id_left);
             ImGui::DockBuilderFinish(dockspace_id);
         }
@@ -120,11 +129,13 @@ void EditorGui::buildEditor(Scene & scene) {
 
     Entities & entities = scene.getEntities();
     entityList(entities);
-    
+
     ImGui::End();
 
-    ImGui::Begin("Down");
-    ImGui::Text("Hello, down!");
+    ImGui::Begin("Inspector");
+
+    entityInfo(entities);
+
     ImGui::End();
 }
 
@@ -138,7 +149,16 @@ void EditorGui::entityList(Entities & entities) {
         names[i] = entities.names[i];
     }
 
-    static int item_current = 1;
     ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 20);
-    ImGui::ListBox("", &item_current, names.data(), nEntities);
+    ImGui::ListBox("", &selectedEntity, names.data(), nEntities);
+}
+
+void EditorGui::entityInfo(Entities & entities) {
+    if (selectedEntity == -1) return;
+
+    char * name = entities.names[selectedEntity];
+
+    ImGui::InputText("Name", name, Entities::SIZE_STR);
+
+    // ImGui::InputFloat("input float", &f0, 0.01f, 1.0f, "%.3f");
 }

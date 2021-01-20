@@ -12,13 +12,15 @@ typedef int32_t EntityID;
 typedef int32_t AnimationID;
 typedef int32_t ModelID;
 
-static constexpr size_t N = 100;
 
 // template<size_t N>
 struct Entities {
 public:
+    static constexpr size_t N = 100;
+    static constexpr size_t SIZE_STR = 64;
+
     enum { maxSize = N };
-    char        names[N][64];
+    char        names[N][SIZE_STR];
     Transform   transforms[N];
     ModelID     modelIDs[N];
     AnimationID animationIDs[N];

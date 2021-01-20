@@ -6,7 +6,7 @@
 
 class Editor {
 public:
-    Editor(Scene & scene, Input & input, int width, int height);
+    Editor(Scene & scene, Input & input, GLFWwindow * window, int width, int height);
     void update(float deltaTime, int width, int height);
 private:
     void updateInput(float deltaTime);

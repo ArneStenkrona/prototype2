@@ -85,6 +85,7 @@ include_directories(
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_SOURCE_DIR}/test"
   "${PROJECT_SOURCE_DIR}/external"
+  "${PROJECT_SOURCE_DIR}/external/imgui"
 )
 
 file(GLOB SOURCES
@@ -111,6 +112,7 @@ file(GLOB SOURCES
     "src/system/assets/*.cpp"
     # external
     "external/*/*.cpp"
+    "external/imgui/backends/imgui_impl_glfw.cpp"
 )
 
 file(GLOB TESTSOURCES
