@@ -128,19 +128,19 @@ void EditorGui::buildEditor(Scene & scene) {
 
     ImGui::End();
 
-    Entities & entities = scene.getEntities();
-
     ImGui::Begin("Scene");
-    entityList(scene, entities);
+    entityList(scene);
     ImGui::End();
 
     ImGui::Begin("Inspector");
-    entityInfo(scene, entities);
+    entityInfo(scene);
     ImGui::End();
 }
 
 // TODO: cache this operation
-void EditorGui::entityList(Scene & /*scene*/, Entities & entities) {
+void EditorGui::entityList(Scene & scene) {
+    Entities & entities = scene.getEntities();
+
     int nEntities = entities.size();
     prt::vector<char*> names;
     names.resize(entities.size());
@@ -151,10 +151,14 @@ void EditorGui::entityList(Scene & /*scene*/, Entities & entities) {
 
     ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 20);
     ImGui::ListBox("", &selectedEntity, names.data(), nEntities);
+
+    showAddEntity(scene);
 }
 
-void EditorGui::entityInfo(Scene & scene, Entities & entities) {
+void EditorGui::entityInfo(Scene & scene) {
     if (selectedEntity == -1) return;
+
+    Entities & entities = scene.getEntities();
 
     char * name = entities.names[selectedEntity];
     
@@ -179,6 +183,8 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     if (scene.isCharacter(selectedEntity)) {
         showCharacter(scene, entities.characterIDs[selectedEntity]);
     }
+
+    showAddComponent(scene);
 }
 
 void EditorGui::showTransform(Scene & scene, Transform & transform) {
@@ -313,6 +319,18 @@ void EditorGui::showCharacter(Scene & scene, CharacterID const & /*id*/) {
     ImGui::PopID();
 
     endGroupPanel();
+}
+
+void EditorGui::showAddComponent(Scene & /*scene*/) {
+    ImGui::NewLine();
+    ImGui::Button("Add Component");
+}
+
+void EditorGui::showAddEntity(Scene & scene) {
+    ImGui::NewLine();
+    if (ImGui::Button("Add Entity")) {
+        scene.getEntities().addEntity();
+    }
 }
 
 void EditorGui::beginGroupPanel(const char* name, const ImVec2& size) {

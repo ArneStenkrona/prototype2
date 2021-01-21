@@ -33,12 +33,14 @@ private:
     void updateInput(Input & input, int width, int height, float deltaTime);
     void newFrame(Scene & scene);
     void buildEditor(Scene & scene);
-    void entityList(Scene & scene, Entities & entities);
-    void entityInfo(Scene & scene, Entities & entities);
+    void entityList(Scene & scene);
+    void entityInfo(Scene & scene);
     void showTransform(Scene & scene, Transform & transform);
     void showModel(Scene & scene, Model const & model);
     void showCollider(Scene & scene, ColliderTag const & tag);
     void showCharacter(Scene & scene, CharacterID const & id);
+    void showAddComponent(Scene & scene);
+    void showAddEntity(Scene & scene);
 
     // Thanks thedmd: https://github.com/ocornut/imgui/issues/1496#issuecomment-569892444
     static void beginGroupPanel(const char* name, const ImVec2& size = ImVec2(-1.0f, -1.0f));
