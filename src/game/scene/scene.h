@@ -47,10 +47,14 @@ public:
 
     Entities & getEntities() { return m_entities; }
 
-    bool hasModel(EntityID id) { return m_entities.modelIDs[id] != -1; }
+    bool hasModel(EntityID id) const { return m_entities.modelIDs[id] != -1; }
     Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
 
+    bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
     glm::vec3 getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
+
+    bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
+    CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
     
 private:
     struct Lights {

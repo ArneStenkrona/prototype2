@@ -13,6 +13,12 @@
 
 class Scene;
 
+enum CharacterType {
+    CHARACTER_TYPE_NONE,
+    CHARACTER_TYPE_PLAYER,
+    CHARACTER_TYPE_NPC
+};
+
 class CharacterSystem {
 public:
     CharacterSystem(Scene * scene, 
@@ -26,6 +32,11 @@ public:
     void updatePhysics(float deltaTime);
 
     EntityID getPlayer() const { return m_characters.entityIDs[PLAYER_ID]; }
+
+    // TODO: better way to set and denote
+    // character types
+    CharacterType getType(CharacterID id) const { if (id == -1) return CHARACTER_TYPE_NONE; 
+                                                  return id == PLAYER_ID ? CHARACTER_TYPE_PLAYER : CHARACTER_TYPE_NPC; }
 
 private:
     template<size_t N>

@@ -172,7 +172,13 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
         showModel(scene, scene.getModel(selectedEntity));
     }
 
-    showCollider(scene, entities.colliderTags[selectedEntity]);
+    if (scene.hasCollider(selectedEntity)) {
+        showCollider(scene, entities.colliderTags[selectedEntity]);
+    }
+
+    if (scene.isCharacter(selectedEntity)) {
+        showCharacter(scene, entities.characterIDs[selectedEntity]);
+    }
 }
 
 void EditorGui::showTransform(Scene & scene, Transform & transform) {
@@ -253,21 +259,18 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
 
     static int typeInd = 0;
     switch (tag.type) {
-        case COLLIDER_TYPE_NONE:
+        case COLLIDER_TYPE_ELLIPSOID:
             typeInd = 0;
             break;
-        case COLLIDER_TYPE_ELLIPSOID:
-            typeInd = 1;
-            break;
         case COLLIDER_TYPE_MODEL:
-            typeInd = 2;
+            typeInd = 1;
             break;
         default:
             typeInd = 0;
     }
 
-    const char* types[] = { "None", "Ellipsoid", "Model" };
-    ImGui::Combo("Type", &typeInd, types, IM_ARRAYSIZE(types));
+    const char* types[] = { "Ellipsoid", "Model" };
+    ImGui::Combo("Type##Collider", &typeInd, types, IM_ARRAYSIZE(types));
 
     if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
         glm::vec3 size = scene.getEllipsoidCollider(selectedEntity);
@@ -276,6 +279,35 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
             // scene.addToColliderUpdateSet(selectedEntity);
         }
     }
+
+    ImGui::PopItemWidth();
+    ImGui::PopID();
+
+    endGroupPanel();
+}
+
+void EditorGui::showCharacter(Scene & scene, CharacterID const & /*id*/) {
+    beginGroupPanel("Character");
+
+    ImGui::PushID(selectedEntity);
+    ImGui::PushItemWidth(300);
+
+    CharacterType type = scene.getCharacterType(selectedEntity);
+
+    static int typeInd = 0;
+    switch (type) {
+        case CHARACTER_TYPE_NPC:
+            typeInd = 0;
+            break;
+        case CHARACTER_TYPE_PLAYER:
+            typeInd = 1;
+            break;
+        default:
+            typeInd = 0;
+    }
+
+    const char* types[] = { "NPC", "Player" };
+    ImGui::Combo("Type##Character", &typeInd, types, IM_ARRAYSIZE(types));
 
     ImGui::PopItemWidth();
     ImGui::PopID();
