@@ -48,7 +48,9 @@ public:
     Entities & getEntities() { return m_entities; }
 
     bool hasModel(EntityID id) { return m_entities.modelIDs[id] != -1; }
-    Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]) ; }
+    Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
+
+    glm::vec3 getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
     
 private:
     struct Lights {
@@ -84,14 +86,14 @@ private:
         Model const * models;
         size_t nModels;
 
-        prt::vector<glm::mat4>       staticTransforms;
-        prt::vector<EntityID>         staticEntityIDs;
-        prt::vector<ModelID>         staticModelIDs;
+        prt::vector<glm::mat4> staticTransforms;
+        prt::vector<EntityID>  staticEntityIDs;
+        prt::vector<ModelID>   staticModelIDs;
 
-        prt::vector<glm::mat4>       animatedTransforms;
-        prt::vector<EntityID>         animatedEntityIDs;
-        prt::vector<ModelID>         animatedModelIDs;
-        prt::vector<uint32_t>        boneOffsets;
+        prt::vector<glm::mat4> animatedTransforms;
+        prt::vector<EntityID>  animatedEntityIDs;
+        prt::vector<ModelID>   animatedModelIDs;
+        prt::vector<uint32_t>  boneOffsets;
     };
     
     RenderData m_renderData;

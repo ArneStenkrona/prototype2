@@ -37,6 +37,7 @@ private:
     void entityInfo(Scene & scene, Entities & entities);
     void showTransform(Scene & scene, Transform & transform);
     void showModel(Scene & scene, Model const & model);
+    void showCollider(Scene & scene, ColliderTag const & tag);
 
     // Thanks thedmd: https://github.com/ocornut/imgui/issues/1496#issuecomment-569892444
     static void beginGroupPanel(const char* name, const ImVec2& size = ImVec2(-1.0f, -1.0f));

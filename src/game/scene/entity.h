@@ -12,7 +12,6 @@ typedef int32_t EntityID;
 typedef int32_t AnimationID;
 typedef int32_t ModelID;
 
-
 // template<size_t N>
 struct Entities {
 public:

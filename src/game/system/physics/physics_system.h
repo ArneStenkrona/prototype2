@@ -53,6 +53,8 @@ public:
     ColliderTag addEllipsoidCollider(glm::vec3 const & ellipsoid);
     ColliderTag addModelCollider(Model const & model, Transform const & transform);
 
+    glm::vec3 getEllipsoidCollider(ColliderTag tag) const { assert(tag.type == COLLIDER_TYPE_ELLIPSOID); return m_ellipsoids[tag.index]; }
+
     float getGravity() const { return m_gravity; }
         
 private:

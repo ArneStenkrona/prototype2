@@ -171,6 +171,8 @@ void EditorGui::entityInfo(Scene & scene, Entities & entities) {
     if (scene.hasModel(selectedEntity)) {
         showModel(scene, scene.getModel(selectedEntity));
     }
+
+    showCollider(scene, entities.colliderTags[selectedEntity]);
 }
 
 void EditorGui::showTransform(Scene & scene, Transform & transform) {
@@ -211,6 +213,8 @@ void EditorGui::showModel(Scene & /*scene*/, Model const & model) {
     static double errorDeadline = 0.0;
     beginGroupPanel("Model");
 
+    ImGui::PushID(selectedEntity);
+
     ImGui::Text("Name: %s", model.getName());
 
     if(ImGui::Button("load")) {
@@ -236,10 +240,48 @@ void EditorGui::showModel(Scene & /*scene*/, Model const & model) {
     strcpy(buf, model.getPath());
 
     ImGui::InputText("Path", buf, 256, ImGuiInputTextFlags_ReadOnly);
+    ImGui::PopID();
 
     endGroupPanel();
 }
 
+void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
+    beginGroupPanel("Collider");
+
+    ImGui::PushID(selectedEntity);
+    ImGui::PushItemWidth(300);
+
+    static int typeInd = 0;
+    switch (tag.type) {
+        case COLLIDER_TYPE_NONE:
+            typeInd = 0;
+            break;
+        case COLLIDER_TYPE_ELLIPSOID:
+            typeInd = 1;
+            break;
+        case COLLIDER_TYPE_MODEL:
+            typeInd = 2;
+            break;
+        default:
+            typeInd = 0;
+    }
+
+    const char* types[] = { "None", "Ellipsoid", "Model" };
+    ImGui::Combo("Type", &typeInd, types, IM_ARRAYSIZE(types));
+
+    if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
+        glm::vec3 size = scene.getEllipsoidCollider(selectedEntity);
+        float* sizep = reinterpret_cast<float*>(&size);
+        if (ImGui::InputFloat3("size", sizep, "%.3f")) {
+            // scene.addToColliderUpdateSet(selectedEntity);
+        }
+    }
+
+    ImGui::PopItemWidth();
+    ImGui::PopID();
+
+    endGroupPanel();
+}
 
 void EditorGui::beginGroupPanel(const char* name, const ImVec2& size) {
     ImGui::BeginGroup();
