@@ -59,7 +59,7 @@ public:
 
     Model(char const * path);
 
-    void load(bool loadAnimation, TextureManager & textureManager);
+    bool load(bool loadAnimation, TextureManager & textureManager);
     // TODO: add unload method
 
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;

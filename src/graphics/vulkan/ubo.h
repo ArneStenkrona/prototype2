@@ -13,8 +13,9 @@
 struct ModelUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 invTransposeModel[NUMBER_SUPPORTED_MODEL_MATRICES];
+    alignas(16) glm::mat4 viewProjection;
     alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    // alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
     alignas(4)  float t = 0;
     // unsigned char pad12[12];

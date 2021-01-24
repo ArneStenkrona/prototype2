@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include "src/util/io_util.h"
+
 Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSystem & physicsSystem, 
              Input & input)
     : m_gameRenderer(gameRenderer),
@@ -12,25 +14,34 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
     initSky();
 }
 
-void Scene::bindToRenderer(GameRenderer & gameRenderer) {
+void Scene::bindToRenderer() {
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
 
     bindRenderData();
     
-    gameRenderer.bindAssets(m_renderData.models,
-                            m_renderData.nModels,
-                            m_renderData.staticModelIDs.data(), m_renderData.staticEntityIDs.data(),
-                            m_renderData.staticModelIDs.size(),
-                            m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
-                            m_renderData.boneOffsets.data(),
-                            m_renderData.animatedModelIDs.size(),
-                            &m_moon.billboard, 1,
-                            m_renderData.textures, m_renderData.nTextures,
-                            skybox);
+    m_gameRenderer.bindAssets(m_renderData.models,
+                              m_renderData.nModels,
+                              m_renderData.staticModelIDs.data(), m_renderData.staticEntityIDs.data(),
+                              m_renderData.staticModelIDs.size(),
+                              m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
+                              m_renderData.boneOffsets.data(),
+                              m_renderData.animatedModelIDs.size(),
+                              &m_moon.billboard, 1,
+                              m_renderData.textures, m_renderData.nTextures,
+                              skybox);
 }
 
 void Scene::bindRenderData() {
+    // clear previouus render data
+    m_renderData.staticTransforms.resize(0);
+    m_renderData.staticEntityIDs.resize(0);
+    m_renderData.staticModelIDs.resize(0);
+    m_renderData.animatedTransforms.resize(0);
+    m_renderData.animatedEntityIDs.resize(0);
+    m_renderData.animatedModelIDs.resize(0);
+    m_renderData.boneOffsets.resize(0);
+
     m_assetManager.getModelManager().getModels(m_renderData.models, m_renderData.nModels);
     Model const * models = m_renderData.models;
 
@@ -149,6 +160,7 @@ prt::vector<PackedBoxLight> Scene::getBoxLights() {
 }
 
 void Scene::update(float deltaTime) {
+    updateModels();
     time+=deltaTime;
     updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
@@ -209,6 +221,13 @@ void Scene::updateColliders() {
     m_colliderUpdateSet = prt::hash_set<EntityID>();
 }
 
+void Scene::updateModels() {
+    if (m_updateModels) {
+        bindToRenderer();
+        m_updateModels = false;
+    }
+}
+
 void Scene::updateCamera(float deltaTime) {
     m_camera.update(deltaTime);
     
@@ -265,3 +284,24 @@ void Scene::initSky() {
     m_moon.distance = 200.0f;
 }
 
+ModelID Scene::loadModel(char const * path, bool loadAnimation, bool isAbsolute) {
+    bool alreadyLoaded;
+
+    ModelID id;
+    if (isAbsolute) {
+        char relative[512] = {0};
+
+        io_util::getRelativePath(m_assetManager.getDirectory().c_str(), path, relative);
+
+        id = m_assetManager.getModelManager().loadModel(relative, loadAnimation, alreadyLoaded);
+    } else {
+        id = m_assetManager.getModelManager().loadModel(path, loadAnimation, alreadyLoaded);
+    }
+
+
+    if (!alreadyLoaded) {
+        m_updateModels = true;
+    }
+
+    return id;
+}

@@ -20,6 +20,8 @@ namespace imgui_addons
                 SAVE    //Save File mode.
             };
 
+            void setCurrentPath(const std::string& path) { current_path = path; }
+
             /* Use this to show an open file dialog. The function takes label for the window,
              * the size, a DialogMode enum value defining in which mode the dialog should operate and optionally the extensions that are valid for opening.
              * Note that the select directory mode doesn't need any extensions.

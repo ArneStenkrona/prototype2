@@ -173,7 +173,7 @@ void EditorGui::entityInfo(Scene & scene) {
     showTransform(scene, entities.transforms[selectedEntity]);
 
     if (scene.hasModel(selectedEntity)) {
-        showModel(scene, scene.getModel(selectedEntity));
+        showModel(scene);
     }
 
     if (scene.hasCollider(selectedEntity)) {
@@ -220,7 +220,9 @@ void EditorGui::showTransform(Scene & scene, Transform & transform) {
     endGroupPanel();
 }
 
-void EditorGui::showModel(Scene & /*scene*/, Model const & model) {
+void EditorGui::showModel(Scene & scene) {
+    Model const & model = scene.getModel(selectedEntity);
+
     static bool open = false;
     static double errorDeadline = 0.0;
     beginGroupPanel("Model");
@@ -239,7 +241,13 @@ void EditorGui::showModel(Scene & /*scene*/, Model const & model) {
         if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
             // std::cout << file_dialog.selected_fn << std::endl;      // The name of the selected file or directory in case of Select Directory dialog mode
             // std::cout << file_dialog.selected_path << std::endl;    // The absolute path to the selected file
-            errorDeadline =  ImGui::GetTime() + 5.0;
+            ModelID id = scene.loadModel(file_dialog.selected_path.c_str(), false, true);
+            if (id == - 1) {
+                // failed to load
+                errorDeadline =  ImGui::GetTime() + 10.0;
+            } else {
+                scene.getEntities().modelIDs[selectedEntity] = id;
+            }
         }
         open = ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
     }

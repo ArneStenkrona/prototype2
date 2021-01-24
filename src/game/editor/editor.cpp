@@ -16,6 +16,7 @@ void Editor::update(float deltaTime, int width, int height) {
     updatePackage.selectedEntity = m_selectedEntityID;
 
     m_gui.update(m_input, width, height, deltaTime, m_scene, updatePackage);
+    m_scene.updateModels();
     render();
 }
 

@@ -83,7 +83,8 @@
         "gzstream.C": "cpp",
         "__memory": "cpp",
         "*.prt": "c",
-        "bit": "cpp"
+        "bit": "cpp",
+        "filesystem": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

@@ -255,8 +255,6 @@ protected:
     void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void recreateSwapchain();
-    void reprepareSwapchain();
-    void completeSwapchain();
     void cleanupSwapchain();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,

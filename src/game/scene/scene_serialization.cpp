@@ -106,11 +106,10 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
 void SceneSerialization::parseStaticSolidEntity(char const *& buf, Scene & scene) {
     EntityID id = scene.m_entities.addEntity();
 
-    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
-    scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, false);
+    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, false);
 
     scene.m_entities.modelIDs[id] = modelID;
     scene.m_entities.transforms[id].position = parseVec3(buf);
@@ -155,11 +154,10 @@ void SceneSerialization::parseBoxLight(char const *& buf, Scene & scene) {
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     EntityID id = scene.m_entities.addEntity();
 
-    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
-    scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, true);
+    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, true);
 
     scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
 

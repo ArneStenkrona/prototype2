@@ -235,12 +235,7 @@ void VulkanApplication::cleanup() {
 }
 
 void VulkanApplication::recreateSwapchain() {
-    reprepareSwapchain();
-    completeSwapchain();
-}
-
-void VulkanApplication::reprepareSwapchain() {
-     _width = 0;
+    _width = 0;
     _height = 0;
     while (_width == 0 || _height == 0) {
         glfwGetFramebufferSize(_window, &_width, &_height);
@@ -253,9 +248,6 @@ void VulkanApplication::reprepareSwapchain() {
 
     createSwapchain();
     createSwapchainImageViews();
-}
-
-void VulkanApplication::completeSwapchain() {
     createRenderPasses();
     prepareGraphicsPipelines();
     createFramebufferAttachments();
@@ -264,7 +256,6 @@ void VulkanApplication::completeSwapchain() {
     createShadowMaps();
     createDescriptorPools();
     createDescriptorSets();
-    // createDynamicCommandBuffers();
     createCommandBuffers();
 }
 
@@ -1410,6 +1401,11 @@ void VulkanApplication::createDescriptorSets() {
                 descriptorWrite.dstSet = pipeline.descriptorSets[i];
             }
 
+            if (pipeline.textureDescriptorIndex != -1) {
+                Assets & asset = getAssets(pipeline.assetsIndex);
+                pipeline.descriptorWrites[i][pipeline.textureDescriptorIndex].pImageInfo = asset.textureImages.descriptorImageInfos.data();
+            }
+
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(pipeline.descriptorWrites[i].size()), 
                                    pipeline.descriptorWrites[i].data(), 0, nullptr);       
         }
@@ -1823,7 +1819,7 @@ void VulkanApplication::createDrawCommands(size_t const imageIndex,
         vkCmdBindIndexBuffer(sub.commandBuffers[imageIndex][framebufferIndex], asset.vertexData[imageIndex].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         // GUI draw calls
-        for (GUIDrawCall & drawCall : pipeline.guiDrawCalls) {
+        for (GUIDrawCall const & drawCall : pipeline.guiDrawCalls) {
             vkCmdPushConstants(sub.commandBuffers[imageIndex][framebufferIndex], 
                                pipeline.pipelineLayout, 
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, // TODO: FRAG stage is unnecessary

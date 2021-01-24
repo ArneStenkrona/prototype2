@@ -18,7 +18,7 @@ Model::Model(char const * path)
     strcpy(mPath, path);
 }
 
-void Model::load(bool loadAnimation, TextureManager & textureManager) {
+bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     assert(!mLoaded && "Model is already loaded!");
 
     mAnimated = loadAnimation;
@@ -40,7 +40,8 @@ void Model::load(bool loadAnimation, TextureManager & textureManager) {
     // check if import failed
     if(!scene) {
         std::cout << importer.GetErrorString() << std::endl;
-        assert(false && "failed to load file!");
+        // assert(false && "failed to load file!");
+        return false;
     }
     
     strcpy(name, strrchr(mPath, '/') + 1);
@@ -249,6 +250,7 @@ void Model::load(bool loadAnimation, TextureManager & textureManager) {
     calcTangentSpace();
 
     mLoaded = true;
+    return true;
 }
 
 uint32_t Model::getAnimationIndex(char const * name) const {

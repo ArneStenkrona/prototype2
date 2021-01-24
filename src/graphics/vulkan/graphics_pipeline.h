@@ -38,7 +38,7 @@ enum PipelineType {
 
 struct ImageAttachment {
     size_t descriptorIndex;
-    prt::vector<size_t> FBAIndices;
+    prt::vector<unsigned int> FBAIndices;
     VkImageLayout layout;
     VkSampler sampler;
 };
@@ -97,6 +97,7 @@ struct GraphicsPipeline {
     PipelineType type;
     unsigned int renderGroup = 0;
 
+    int textureDescriptorIndex = -1;
     prt::vector<ImageAttachment> imageAttachments;
     prt::vector<UBOAttachment> uboAttachments;
 

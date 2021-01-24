@@ -36,7 +36,7 @@ private:
     void entityList(Scene & scene);
     void entityInfo(Scene & scene);
     void showTransform(Scene & scene, Transform & transform);
-    void showModel(Scene & scene, Model const & model);
+    void showModel(Scene & scene);
     void showCollider(Scene & scene, ColliderTag const & tag);
     void showCharacter(Scene & scene, CharacterID const & id);
     void showAddComponent(Scene & scene);

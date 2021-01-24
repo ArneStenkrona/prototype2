@@ -28,7 +28,7 @@ public:
           PhysicsSystem & physicsSystem,
           Input & input);
 
-    void bindToRenderer(GameRenderer & gameRenderer);
+    void bindToRenderer();
 
     void update(float deltaTime);
 
@@ -55,6 +55,10 @@ public:
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
     CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
+
+    ModelID loadModel(char const * path, bool loadAnimation, bool isAbsolute = true);
+
+    char const * getAssetDirectory() const {  return m_assetManager.getDirectory().c_str(); }
     
 private:
     struct Lights {
@@ -66,6 +70,7 @@ private:
     Entities m_entities;
 
     prt::hash_set<EntityID> m_colliderUpdateSet;
+    bool m_updateModels = false;
 
     struct {
         Billboard billboard;
@@ -113,6 +118,7 @@ private:
     void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateColliders();
+    void updateModels();
     void updateCamera(float deltaTime);
     void updateRenderData();
 

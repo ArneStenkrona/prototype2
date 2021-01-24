@@ -24,7 +24,7 @@ Game::Game()
 }
 
 void Game::loadScene() {
-    m_scene.bindToRenderer(m_gameRenderer);
+    m_scene.bindToRenderer();
 }
 
 Game::~Game() {
