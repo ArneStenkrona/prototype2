@@ -2,6 +2,7 @@
 #define VULKAN_APPLICATION_H
 
 #include "src/graphics/vulkan/render_pass.h"
+#include "src/graphics/vulkan/assets.h"
 
 #include "src/graphics/geometry/model.h"
 
@@ -52,48 +53,11 @@ struct SwapchainSupportDetails {
     prt::vector<VkPresentModeKHR>   presentModes;
 };
 
-struct VertexData {
-    VkBuffer       vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer       indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-};
-
-struct TextureImages {
-    prt::vector<VkImage>               images;
-    prt::vector<VkDeviceMemory>        imageMemories;
-    prt::vector<VkImageView>           imageViews;
-    prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
-};
-
 struct UniformBufferData {
     prt::vector<char>           uboData{prt::getAlignment(alignof(std::max_align_t))};
     prt::vector<void*>          mappedMemories;
     prt::vector<VkBuffer>       uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBufferMemories;
-};
-
-struct Assets {
-    VertexData vertexData;
-    TextureImages textureImages;
-};
-
-struct DynamicVertexData {
-    VkBuffer          vertexBuffer;
-    VkDeviceMemory    vertexBufferMemory;
-    VkDeviceSize      vertexBufferSize;
-    VkBuffer          indexBuffer;
-    VkDeviceMemory    indexBufferMemory;
-    VkDeviceSize      indexBufferSize;
-    prt::vector<char> vertexData{prt::getAlignment(alignof(std::max_align_t))};
-    prt::vector<char> indexData{prt::getAlignment(alignof(std::max_align_t))};
-    bool              updated;
-    // prt::vector<void*> mappedMemories;
-};
-
-struct DynamicAssets {
-    prt::vector<DynamicVertexData> vertexData;
-    prt::vector<TextureImages>     textureImages;
 };
 
 struct FramebufferAttachment {
@@ -247,6 +211,9 @@ protected:
 
     size_t pushBackRenderPass(bool isPresentPass = false);
     size_t pushBackShadowMap(size_t renderPassIndex);
+
+    void createTexture(TextureImages & textureImages, Texture const & texture, size_t i);
+    void destroyTexture(TextureImages & textureImages, size_t i);
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);

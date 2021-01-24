@@ -121,7 +121,12 @@ private:
     void init();
     void initFBAs();
     void initPipelines();
-    void initBuffers();
+    void initBuffersAndTextures(size_t standardAssetIndex, 
+                                size_t animatedStandardAssetIndex,
+                                size_t gridAssetIndex, 
+                                size_t skyboxAssetIndex);
+    void initTextures(size_t standardAssetIndex,
+                      size_t animatedStandardAssetIndex);
 
     void createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
                                           size_t shadowmapUboIndex, 
@@ -172,6 +177,13 @@ private:
                     size_t animatedAssetIndex,
                     prt::hash_map<int, int> & staticTextureIndices,
                     prt::hash_map<int, int> & animatedTextureIndices);
+
+    void loadTextures(size_t staticAssetIndex,
+                      size_t animatedAssetIndex,
+                      Model const * models, size_t nModels,
+                      Texture const * textures,
+                      prt::hash_map<int, int> & staticTextureIndices,
+                      prt::hash_map<int, int> & animatedTextureIndices);
 
     void loadBillboards(Billboard const * billboards, size_t nBillboards, 
                         Texture const * textures, size_t nTextures,

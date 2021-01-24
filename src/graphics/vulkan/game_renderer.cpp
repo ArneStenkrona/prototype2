@@ -106,21 +106,24 @@ void GameRenderer::initPipelines() {
     /* billboards */
     size_t billboardAssetIndex = pushBackAssets();
     size_t billboardUboIndex = pushBackUniformBufferData(sizeof(BillboardUBO));
+
+    initBuffersAndTextures(standardAssetIndex, animatedStandardAssetIndex,
+                           gridAssetIndex, skyboxAssetIndex);
     
-    createGridBuffers(gridAssetIndex);
-    createCubeMapBuffers(skyboxAssetIndex);
+    // createGridBuffers(gridAssetIndex);
+    // createCubeMapBuffers(skyboxAssetIndex);
 
 
     /* grid */
     createGridPipeline(gridAssetIndex, gridUboIndex);
     createGridDrawCalls();
 
-    prt::hash_map<int, int> standardTextureIndices;
-    prt::hash_map<int, int> animatedTextureIndices;
-    loadModels(nullptr, 0, nullptr, 0,
-               standardAssetIndex, animatedStandardAssetIndex,
-               standardTextureIndices,
-               animatedTextureIndices);
+    // prt::hash_map<int, int> standardTextureIndices;
+    // prt::hash_map<int, int> animatedTextureIndices;
+    // loadModels(nullptr, 0, nullptr, 0,
+    //            standardAssetIndex, animatedStandardAssetIndex,
+    //            standardTextureIndices,
+    //            animatedTextureIndices);
 
     /* non-animated */
     createStandardAndShadowPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
@@ -173,6 +176,32 @@ void GameRenderer::initPipelines() {
     /* composition */
     createCompositionPipeline();
     createCompositionDrawCalls(pipelineIndices.composition);
+}
+
+void GameRenderer::initBuffersAndTextures(size_t standardAssetIndex, 
+                                          size_t animatedStandardAssetIndex,
+                                          size_t gridAssetIndex, 
+                                          size_t skyboxAssetIndex) {
+    createGridBuffers(gridAssetIndex);
+    createCubeMapBuffers(skyboxAssetIndex);
+    initTextures(standardAssetIndex, animatedStandardAssetIndex);
+}
+
+void GameRenderer::initTextures(size_t standardAssetIndex,
+                                size_t animatedStandardAssetIndex) {
+    Assets & staticAsset = getAssets(standardAssetIndex);
+    staticAsset.textureImages.resize(NUMBER_SUPPORTED_TEXTURES);
+
+    staticAsset.textureImages.numTextures = 0;
+    
+    Assets & animatedAsset = getAssets(animatedStandardAssetIndex);
+    animatedAsset.textureImages.resize(NUMBER_SUPPORTED_TEXTURES);
+    animatedAsset.textureImages.numTextures = 0;
+
+    for (size_t i = 0; i < NUMBER_SUPPORTED_TEXTURES; ++i) {
+        createTexture(staticAsset.textureImages, *Texture::defaultTexture(), i);
+        createTexture(animatedAsset.textureImages, *Texture::defaultTexture(), i);
+    }
 }
 
 void GameRenderer::createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
@@ -1341,40 +1370,27 @@ void GameRenderer::loadModels(Model const * models, size_t nModels,
     createVertexBuffers(models, nModels, staticAssetIndex, animatedAssetIndex);
     createIndexBuffers(models, nModels, staticAssetIndex, animatedAssetIndex);
 
-    // clean up previous texture images
-    // TODO: instead of deleting all  on rebind, just
-    // update necessary
+    loadTextures(staticAssetIndex,
+                 animatedAssetIndex,
+                 models, nModels,
+                 textures,
+                 staticTextureIndices,
+                 animatedTextureIndices);
+}
+
+void GameRenderer::loadTextures(size_t staticAssetIndex,
+                                size_t animatedAssetIndex,
+                                Model const * models, size_t nModels,
+                                Texture const * textures,
+                                prt::hash_map<int, int> & staticTextureIndices,
+                                prt::hash_map<int, int> & animatedTextureIndices) {
     Assets & staticAsset = getAssets(staticAssetIndex);
-    for (size_t i = 0; i < staticAsset.textureImages.imageViews.size(); i++) {
-        if (staticAsset.textureImages.images[i] != VK_NULL_HANDLE) {
-            vkDestroyImageView(getDevice(), staticAsset.textureImages.imageViews[i], nullptr);
-            vkDestroyImage(getDevice(), staticAsset.textureImages.images[i], nullptr);
-            vkFreeMemory(getDevice(), staticAsset.textureImages.imageMemories[i], nullptr);
-        }
-    }
     Assets & animatedAsset = getAssets(animatedAssetIndex);
-    for (size_t i = 0; i < animatedAsset.textureImages.imageViews.size(); i++) {
-        if (animatedAsset.textureImages.images[i] != VK_NULL_HANDLE) {
-            vkDestroyImageView(getDevice(), animatedAsset.textureImages.imageViews[i], nullptr);
-            vkDestroyImage(getDevice(), animatedAsset.textureImages.images[i], nullptr);
-            vkFreeMemory(getDevice(), animatedAsset.textureImages.imageMemories[i], nullptr);
-        }
-    }
 
     size_t numStaticTex = 0;
-    staticAsset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
-    staticAsset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
-    staticAsset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
-    staticAsset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
+    size_t numAnimatedTex = 0;
     
     staticTextureIndices.insert(-1, -1);
-
-    size_t numAnimatedTex = 0;
-    animatedAsset.textureImages.images.resize(NUMBER_SUPPORTED_TEXTURES);
-    animatedAsset.textureImages.imageViews.resize(NUMBER_SUPPORTED_TEXTURES);
-    animatedAsset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_TEXTURES);
-    animatedAsset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_TEXTURES);
-
     animatedTextureIndices.insert(-1, -1);
 
     for (size_t i = 0; i < nModels; ++i) {
@@ -1386,17 +1402,13 @@ void GameRenderer::loadModels(Model const * models, size_t nModels,
 
         for (auto const & material: models[i].materials) {
             prt::array<int, 3> indices = { material.albedoIndex,
-                                               material.normalIndex,
-                                               material.specularIndex };
+                                           material.normalIndex,
+                                           material.specularIndex };
             for (int ind : indices) {
                 if (ind != -1 && textureIndices.find(ind) == textureIndices.end()) {
                     Texture const & texture = textures[ind];
-                    createTextureImage(asset.textureImages.images[numTex], 
-                                       asset.textureImages.imageMemories[numTex], 
-                                       texture);
-                    createTextureImageView(asset.textureImages.imageViews[numTex], 
-                                           asset.textureImages.images[numTex], 
-                                           texture.mipLevels);
+                    destroyTexture(asset.textureImages, numTex);
+                    createTexture(asset.textureImages, texture, numTex);
 
                     textureIndices.insert(ind, numTex);
                      ++numTex;
@@ -1405,35 +1417,17 @@ void GameRenderer::loadModels(Model const * models, size_t nModels,
         }
     }
 
-    for (size_t i = numStaticTex; i < staticAsset.textureImages.images.size(); ++i) {
-        createTextureImage(staticAsset.textureImages.images[i], 
-                           staticAsset.textureImages.imageMemories[i], 
-                           *Texture::defaultTexture());
-        createTextureImageView(staticAsset.textureImages.imageViews[i], 
-                               staticAsset.textureImages.images[i], 
-                               Texture::defaultTexture()->mipLevels);
+    for (size_t i = numStaticTex; i < staticAsset.textureImages.numTextures; ++i) {
+        destroyTexture(staticAsset.textureImages, i);
+        createTexture(staticAsset.textureImages, *Texture::defaultTexture(), i);
     }
+    staticAsset.textureImages.numTextures = numStaticTex;
 
-    for (size_t i = numAnimatedTex; i < animatedAsset.textureImages.images.size(); ++i) {
-        createTextureImage(animatedAsset.textureImages.images[i], 
-                           animatedAsset.textureImages.imageMemories[i], 
-                           *Texture::defaultTexture());
-        createTextureImageView(animatedAsset.textureImages.imageViews[i], 
-                               animatedAsset.textureImages.images[i], 
-                               Texture::defaultTexture()->mipLevels);
+    for (size_t i = numAnimatedTex; i < animatedAsset.textureImages.numTextures; ++i) {
+        destroyTexture(animatedAsset.textureImages, i);
+        createTexture(animatedAsset.textureImages, *Texture::defaultTexture(), i);
     }
-
-    for (size_t j = 0; j < staticAsset.textureImages.descriptorImageInfos.size(); ++j) {
-        staticAsset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-        staticAsset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        staticAsset.textureImages.descriptorImageInfos[j].imageView = staticAsset.textureImages.imageViews[j];
-    }
-
-    for (size_t j = 0; j < animatedAsset.textureImages.descriptorImageInfos.size(); ++j) {
-        animatedAsset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-        animatedAsset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        animatedAsset.textureImages.descriptorImageInfos[j].imageView = animatedAsset.textureImages.imageViews[j];
-    }
+    animatedAsset.textureImages.numTextures = numAnimatedTex;
 }
 
 void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboards, 
@@ -1443,9 +1437,7 @@ void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboar
     Assets & asset = getAssets(assetIndex);
     for (size_t i = 0; i < asset.textureImages.imageViews.size(); i++) {
         if (asset.textureImages.images[i] != VK_NULL_HANDLE) {
-            vkDestroyImageView(getDevice(), asset.textureImages.imageViews[i], nullptr);
-            vkDestroyImage(getDevice(), asset.textureImages.images[i], nullptr);
-            vkFreeMemory(getDevice(), asset.textureImages.imageMemories[i], nullptr);
+            destroyTexture(asset.textureImages, i);
         }
     }
 
@@ -1454,10 +1446,7 @@ void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboar
     prt::vector<bool> loaded;
     loaded.resize(nTextures);
 
-    asset.textureImages.images.resize(NUMBER_SUPPORTED_BILLBOARD_TEXTURES);
-    asset.textureImages.imageViews.resize(NUMBER_SUPPORTED_BILLBOARD_TEXTURES);
-    asset.textureImages.imageMemories.resize(NUMBER_SUPPORTED_BILLBOARD_TEXTURES);
-    asset.textureImages.descriptorImageInfos.resize(NUMBER_SUPPORTED_BILLBOARD_TEXTURES);
+    asset.textureImages.resize(NUMBER_SUPPORTED_BILLBOARD_TEXTURES);
 
     textureIndices.insert(-1, -1);
 
@@ -1466,12 +1455,7 @@ void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboar
         if (ind != -1 && !loaded[ind]) {
             loaded[ind] = true;
             Texture const & texture = textures[ind];
-            createTextureImage(asset.textureImages.images[numTex], 
-                            asset.textureImages.imageMemories[numTex], 
-                            texture);
-            createTextureImageView(asset.textureImages.imageViews[numTex], 
-                                asset.textureImages.images[numTex], 
-                                texture.mipLevels);
+            createTexture(asset.textureImages, texture, numTex);
 
             textureIndices.insert(ind, numTex);
             ++numTex;
@@ -1479,33 +1463,17 @@ void GameRenderer::loadBillboards(Billboard const * billboards, size_t nBillboar
     }
 
     for (size_t i = numTex; i < asset.textureImages.images.size(); ++i) {
-        createTextureImage(asset.textureImages.images[i], 
-                           asset.textureImages.imageMemories[i], 
-                           *Texture::defaultTexture());
-        createTextureImageView(asset.textureImages.imageViews[i], 
-                               asset.textureImages.images[i], 
-                               Texture::defaultTexture()->mipLevels);
-    }
-
-    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
-        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+        createTexture(asset.textureImages, *Texture::defaultTexture(), i);
     }
 }
 
 void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex) {  
     Assets& asset = getAssets(assetIndex);
 
-    asset.textureImages.images.resize(1);
-    asset.textureImages.imageViews.resize(1);
-    asset.textureImages.imageMemories.resize(1);
-    asset.textureImages.descriptorImageInfos.resize(1);
+    asset.textureImages.resize(1);
 
     if (asset.textureImages.images[0] != VK_NULL_HANDLE) {
-        vkDestroyImageView(getDevice(), asset.textureImages.imageViews[0], nullptr);
-        vkDestroyImage(getDevice(), asset.textureImages.images[0], nullptr);
-        vkFreeMemory(getDevice(), asset.textureImages.imageMemories[0], nullptr);
+        destroyTexture(asset.textureImages, 0);
     }
 
     createCubeMapImage(asset.textureImages.images[0], 
@@ -1515,10 +1483,10 @@ void GameRenderer::loadCubeMap(prt::array<Texture, 6> const & skybox, size_t ass
                            asset.textureImages.images[0], 
                            skybox[0].mipLevels);
 
-    for (size_t j = 0; j < asset.textureImages.descriptorImageInfos.size(); ++j) {
-        asset.textureImages.descriptorImageInfos[j].sampler = textureSampler;
-        asset.textureImages.descriptorImageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        asset.textureImages.descriptorImageInfos[j].imageView = asset.textureImages.imageViews[j];
+    for (size_t i = 0; i < asset.textureImages.images.size(); ++i) {
+        asset.textureImages.descriptorImageInfos[i].sampler = textureSampler;
+        asset.textureImages.descriptorImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        asset.textureImages.descriptorImageInfos[i].imageView = asset.textureImages.imageViews[i];
     }
 }
 

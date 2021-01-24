@@ -936,6 +936,25 @@ bool VulkanApplication::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
+void VulkanApplication::createTexture(TextureImages & textureImages, Texture const & texture, size_t i) {
+    createTextureImage(textureImages.images[i], 
+                       textureImages.imageMemories[i], 
+                       texture);
+    createTextureImageView(textureImages.imageViews[i], 
+                           textureImages.images[i], 
+                           texture.mipLevels);
+
+    textureImages.descriptorImageInfos[i].sampler = textureSampler;
+    textureImages.descriptorImageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textureImages.descriptorImageInfos[i].imageView = textureImages.imageViews[i];
+}
+
+void VulkanApplication::destroyTexture(TextureImages & textureImages, size_t i) {
+    vkDestroyImageView(getDevice(), textureImages.imageViews[i], nullptr);
+    vkDestroyImage(getDevice(), textureImages.images[i], nullptr);
+    vkFreeMemory(getDevice(), textureImages.imageMemories[i], nullptr);
+}
+
 void VulkanApplication::createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, 
                                            const Texture& texture) {
     VkDeviceSize imageSize = texture.texWidth * texture.texHeight * 4;
