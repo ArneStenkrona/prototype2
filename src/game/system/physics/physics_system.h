@@ -62,13 +62,6 @@ public:
 private:
     prt::vector<glm::vec3> m_ellipsoids;
 
-    // prt::vector<ModelCollider> m_modelColliders;
-    // prt::vector<MeshCollider> m_meshColliders;
-
-    // caches geometry after applying transforms
-    // prt::vector<glm::vec3> m_geometryCache;
-    // prt::vector<glm::vec3> m_geometry;
-
     // geometric data for model colliders
     struct Geometry {
         // raw geometric data

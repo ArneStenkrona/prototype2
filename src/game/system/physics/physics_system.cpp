@@ -95,66 +95,6 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
     return tag;
 }
 
-// ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const & transform) {
-//     // get next index of geometry container
-//     size_t i = m_geometry.size();
-//     // insert new model collider
-//     size_t modelIndex = m_modelColliders.size();
-//     m_modelColliders.push_back({m_meshColliders.size(), model.meshes.size()});
-//     // resize geometry container
-//     m_geometry.resize(m_geometry.size() + model.indexBuffer.size());
-//     m_geometryCache.resize(m_geometry.size() + model.indexBuffer.size());
-//     // create colliders from meshes
-//     for (auto const & mesh : model.meshes) {
-//         size_t index = mesh.startIndex;
-//         size_t endIndex = index + mesh.numIndices;
-//         // insert new mesh collider
-//         m_meshColliders.push_back({});
-//         MeshCollider & col = m_meshColliders.back();
-//         col.transform = transform;
-//         col.startIndex = i;
-//         col.numIndices = mesh.numIndices;
-
-//         glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
-//         glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
-
-//         glm::mat4 mat = transform.transformMatrix();
-//         while (index < endIndex) {
-//             m_geometry[i] = model.vertexBuffer[model.indexBuffer[index]].pos;
-//             m_geometryCache[i] = mat * glm::vec4(m_geometry[i], 1.0f);
-//             min = glm::min(min, m_geometryCache[i]);
-//             max = glm::max(max, m_geometryCache[i]);
-//             ++i;
-//             ++index;
-//         }
-//         m_aabbData.meshAABBs.push_back({min, max});
-//     }
-
-//     size_t prevSize = m_aabbData.meshIndices.size();
-//     size_t numMesh = m_meshColliders.size() - prevSize;
-//     m_aabbData.meshIndices.resize(prevSize + numMesh);
-//     prt::vector<ColliderTag> tags;
-//     for (size_t i = prevSize; i < prevSize + numMesh; ++i) {
-//         assert(i < std::numeric_limits<uint16_t>::max() && "Too many mesh colliders!");
-//         tags.push_back({uint16_t(i), ColliderType::COLLIDER_TYPE_MESH});
-//     }
-//     m_aabbData.tree.insert(tags.data(), m_aabbData.meshAABBs.data() + prevSize, numMesh, m_aabbData.meshIndices.data() + prevSize);
-
-//     ColliderTag tag = { uint16_t(modelIndex), ColliderType::COLLIDER_TYPE_MODEL };
-//     return tag;
-// }
-
-// void PhysicsSystem::removeCollider(ColliderTag const & tag) {
-//     switch (tag.type) {
-//         case COLLIDER_TYPE_MODEL:
-//         case COLLIDER_TYPE_ELLIPSOID:
-//             assert(false && "Not yet implemeneted!");
-//         default:
-//             assert(false && "This collider type can not be removed!");
-
-//     }
-// }
-
 void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
                                          Transform const *transforms,
                                          size_t count) {
