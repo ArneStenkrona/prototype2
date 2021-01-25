@@ -118,13 +118,6 @@ void GameRenderer::initPipelines() {
     createGridPipeline(gridAssetIndex, gridUboIndex);
     createGridDrawCalls();
 
-    // prt::hash_map<int, int> standardTextureIndices;
-    // prt::hash_map<int, int> animatedTextureIndices;
-    // loadModels(nullptr, 0, nullptr, 0,
-    //            standardAssetIndex, animatedStandardAssetIndex,
-    //            standardTextureIndices,
-    //            animatedTextureIndices);
-
     /* non-animated */
     createStandardAndShadowPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
                                      "shaders/standard.vert.spv", "shaders/standard.frag.spv",
@@ -997,6 +990,8 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                               Texture const * textures,
                               size_t nTextures,
                               prt::array<Texture, 6> const & skybox) {
+    vkDeviceWaitIdle(getDevice());
+
     prt::hash_map<int, int> standardTextureIndices;
     prt::hash_map<int, int> animatedTextureIndices;
     loadModels(models, nModels, textures, nTextures,
@@ -1530,7 +1525,7 @@ void GameRenderer::createBillboardDrawCalls(Billboard const * billboards,
     }
 }
 
-void GameRenderer::createModelDrawCalls(Model    const * models, size_t nModels,
+void GameRenderer::createModelDrawCalls(Model const * models, size_t nModels,
                                         ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
                                         size_t nStaticModelIDs,
                                         ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
@@ -1554,9 +1549,9 @@ void GameRenderer::createModelDrawCalls(Model    const * models, size_t nModels,
     shadowAnimated.resize(0);
 
     /* non-animated */
-    prt::vector<uint32_t> indexOffsets = { 0 };
-    size_t animatedOffset = 0;
-    size_t staticOffset = 0;
+    prt::vector<uint32_t> indexOffsets;
+    uint32_t animatedOffset = 0;
+    uint32_t staticOffset = 0;
     for (size_t i = 0; i < nModels; ++i) {
         if (models[i].isAnimated()) {
             indexOffsets.push_back(animatedOffset);
@@ -1664,13 +1659,13 @@ void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
     // TODO: On rebind only add new assets instead
     // of recreating everything
     Assets & staticAssets = getAssets(staticAssetIndex);
-    if (staticAssets.vertexData.vertexBuffer == VK_NULL_HANDLE) {
+    if (staticAssets.vertexData.vertexBuffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(getDevice(), staticAssets.vertexData.vertexBuffer, nullptr);
         vkFreeMemory(getDevice(), staticAssets.vertexData.vertexBufferMemory, nullptr);
     }
 
     Assets & animatedAssets = getAssets(animatedAssetIndex);
-    if (animatedAssets.vertexData.vertexBuffer == VK_NULL_HANDLE) {
+    if (animatedAssets.vertexData.vertexBuffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(getDevice(), animatedAssets.vertexData.vertexBuffer, nullptr);
         vkFreeMemory(getDevice(), animatedAssets.vertexData.vertexBufferMemory, nullptr);
     }
@@ -1688,7 +1683,7 @@ void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
         size_t prevSize = vertexData.size();
 
         vertexData.resize(prevSize + vertexSize * models[i].vertexBuffer.size());
-        unsigned char* dest = vertexData.data() + prevSize;
+        unsigned char* dest = &vertexData[prevSize];
 
         if (animated) {
             assert(models[i].vertexBuffer.size() == models[i].vertexBoneBuffer.size());
@@ -1703,13 +1698,13 @@ void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
     }    
 
     VertexData & staticData = staticAssets.vertexData;
-    createAndMapBuffer(staticVertexData.data(), sizeof(Model::Vertex) * staticVertexData.size(),
+    createAndMapBuffer(staticVertexData.data(), staticVertexData.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                        staticData.vertexBuffer, 
                        staticData.vertexBufferMemory);
 
     VertexData & animatedData = animatedAssets.vertexData;
-    createAndMapBuffer(animatedVertexData.data(), sizeof(Model::BonedVertex) * animatedVertexData.size(),
+    createAndMapBuffer(animatedVertexData.data(), animatedVertexData.size(),
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                        animatedData.vertexBuffer, 
                        animatedData.vertexBufferMemory);  
@@ -1718,13 +1713,13 @@ void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
 void GameRenderer::createIndexBuffers(Model const * models, size_t nModels, 
                                       size_t staticAssetIndex, size_t animatedAssetIndex) {
     Assets & staticAssets = getAssets(staticAssetIndex);
-    if (staticAssets.vertexData.indexBuffer == VK_NULL_HANDLE) {
+    if (staticAssets.vertexData.indexBuffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(getDevice(), staticAssets.vertexData.indexBuffer, nullptr);
         vkFreeMemory(getDevice(), staticAssets.vertexData.indexBufferMemory, nullptr);
     }
 
     Assets & animatedAssets = getAssets(animatedAssetIndex);
-    if (animatedAssets.vertexData.indexBuffer == VK_NULL_HANDLE) {
+    if (animatedAssets.vertexData.indexBuffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(getDevice(), animatedAssets.vertexData.indexBuffer, nullptr);
         vkFreeMemory(getDevice(), animatedAssets.vertexData.indexBufferMemory, nullptr);
     }
@@ -1734,13 +1729,13 @@ void GameRenderer::createIndexBuffers(Model const * models, size_t nModels,
     prt::vector<uint32_t> allStaticIndices;
     prt::vector<uint32_t> allAnimatedIndices;
 
-    size_t staticVertexOffset = 0;
-    size_t animatedVertexOffset = 0;
+    uint32_t staticVertexOffset = 0;
+    uint32_t animatedVertexOffset = 0;
 
     for (size_t i = 0; i < nModels; i++) {
         bool animated = models[i].isAnimated();
         prt::vector<uint32_t> & allIndices = animated ? allAnimatedIndices : allStaticIndices;
-        size_t & vertexOffset = animated ? animatedVertexOffset : staticVertexOffset;
+        uint32_t & vertexOffset = animated ? animatedVertexOffset : staticVertexOffset;
 
         for (size_t j = 0; j < models[i].indexBuffer.size(); j++) {
             allIndices.push_back(models[i].indexBuffer[j] + vertexOffset);

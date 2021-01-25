@@ -224,6 +224,8 @@ protected:
     void recreateSwapchain();
     void cleanupSwapchain();
 
+    void freeCommandBuffers();
+
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                             VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     

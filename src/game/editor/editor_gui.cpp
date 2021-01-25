@@ -241,12 +241,10 @@ void EditorGui::showModel(Scene & scene) {
         if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
             // std::cout << file_dialog.selected_fn << std::endl;      // The name of the selected file or directory in case of Select Directory dialog mode
             // std::cout << file_dialog.selected_path << std::endl;    // The absolute path to the selected file
-            ModelID id = scene.loadModel(file_dialog.selected_path.c_str(), false, true);
-            if (id == - 1) {
+            bool success = scene.loadModel(selectedEntity, file_dialog.selected_path.c_str(), false, true);
+            if (!success) {
                 // failed to load
                 errorDeadline =  ImGui::GetTime() + 10.0;
-            } else {
-                scene.getEntities().modelIDs[selectedEntity] = id;
             }
         }
         open = ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);

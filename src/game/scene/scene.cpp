@@ -284,7 +284,7 @@ void Scene::initSky() {
     m_moon.distance = 200.0f;
 }
 
-ModelID Scene::loadModel(char const * path, bool loadAnimation, bool isAbsolute) {
+bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute) {
     bool alreadyLoaded;
 
     ModelID id;
@@ -298,10 +298,20 @@ ModelID Scene::loadModel(char const * path, bool loadAnimation, bool isAbsolute)
         id = m_assetManager.getModelManager().loadModel(path, loadAnimation, alreadyLoaded);
     }
 
+    if (id != -1) {
+        m_entities.modelIDs[entityID] = id;
 
-    if (!alreadyLoaded) {
-        m_updateModels = true;
+        // if (m_entities.colliderTags[entityID].type == COLLIDER_TYPE_MODEL) {
+        //     // m_physicsSystem.removeCollider(m_entities.colliderTags[entityID]);
+        //     m_entities.colliderTags[entityID] = m_physicsSystem.addModelCollider(m_assetManager.getModelManager().getModel(id), 
+        //                                                                          m_entities.transforms[entityID]);
+        //     addToColliderUpdateSet(entityID);
+        // }
+
+        if (!alreadyLoaded) {
+            m_updateModels = true;
+        }
     }
 
-    return id;
+    return id != -1;
 }

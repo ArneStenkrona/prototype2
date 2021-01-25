@@ -17,9 +17,11 @@ struct MeshCollider {
 
     BoundingBox boundingBox;
     // AABB aabb;
+    
+    unsigned int startIndex;
+    unsigned int numIndices;
 
-    size_t startIndex;
-    size_t numIndices;
+    unsigned int geometryIndex;
 
     bool hasMoved;
 };
@@ -28,11 +30,13 @@ struct ModelCollider {
     // transform applied to mesh colliders
     // Transform transform;
     // index of the first mesh collider
-    size_t startIndex;
-    // number of mesh colliders
-    size_t numIndices;
+    unsigned int startIndex;
+    // // number of mesh colliders
+    unsigned int numIndices;
     // has the model moved since last computation?
     // bool hasMoved;
+    // geometry index
+    unsigned int geometryIndex;
 };
 
 #endif

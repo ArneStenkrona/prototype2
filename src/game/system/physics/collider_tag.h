@@ -9,8 +9,10 @@ enum ColliderType : uint16_t {
     TOTAL_NUM_COLLIDER_TYPES
 };
 
+typedef uint16_t ColliderIndex;
+
 struct ColliderTag {
-    uint16_t index;
+    ColliderIndex index;
     ColliderType type = ColliderType::COLLIDER_TYPE_NONE;
     friend bool operator== (ColliderTag const & c1, ColliderTag const & c2) {
         return (c1.index == c2.index &&

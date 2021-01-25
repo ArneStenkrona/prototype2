@@ -76,9 +76,7 @@ void VulkanApplication::updateRenderGroupMask(int16_t renderGroupMask) {
         commandBufferRenderGroupMask = renderGroupMask;
         /* rebuild command buffers */
         vkDeviceWaitIdle(device); // could perhaps do something more performant than vkDeviceWaitIdle()
-        for (size_t i = 0; i < commandBuffers.size(); ++i) {
-            vkFreeCommandBuffers(device, commandPools[i], 1, &commandBuffers[i]);
-        }
+        freeCommandBuffers();
         createCommandBuffers();
     }
 }
@@ -114,9 +112,7 @@ void VulkanApplication::cleanupSwapchain() {
         }
     }
     
-    for (size_t i = 0; i < commandBuffers.size(); ++i) {
-        vkFreeCommandBuffers(device, commandPools[i], 1, &commandBuffers[i]);
-    }
+    freeCommandBuffers();
 
     for (auto & graphicsPipeline : graphicsPipelines) {
         vkDestroyPipelineCache(device, graphicsPipeline.pipelineCache, nullptr);
@@ -1592,6 +1588,12 @@ void VulkanApplication::createCommandBuffers() {
     // allocate and create sub pass command buffers
     for (RenderPass & pass : renderPasses) {
         createRenderPassCommandBuffers(pass);
+    }
+}
+
+void VulkanApplication::freeCommandBuffers() {
+    for (size_t i = 0; i < commandBuffers.size(); ++i) {
+        vkFreeCommandBuffers(device, commandPools[i], 1, &commandBuffers[i]);
     }
 }
 

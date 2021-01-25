@@ -56,7 +56,7 @@ public:
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
     CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
 
-    ModelID loadModel(char const * path, bool loadAnimation, bool isAbsolute = true);
+    bool loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute = true);
 
     char const * getAssetDirectory() const {  return m_assetManager.getDirectory().c_str(); }
     
