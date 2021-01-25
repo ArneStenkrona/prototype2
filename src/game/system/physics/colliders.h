@@ -21,7 +21,7 @@ struct MeshCollider {
     unsigned int startIndex;
     unsigned int numIndices;
 
-    unsigned int geometryIndex;
+    unsigned int modelIndex;
 
     bool hasMoved;
 };
@@ -32,7 +32,7 @@ struct ModelCollider {
     // // number of mesh colliders
     unsigned int numIndices;
     // geometry index
-    unsigned int geometryIndex;
+    // unsigned int geometryIndex;
 };
 
 #endif

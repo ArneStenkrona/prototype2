@@ -302,7 +302,7 @@ bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, 
         m_entities.modelIDs[entityID] = id;
 
         if (m_entities.colliderTags[entityID].type == COLLIDER_TYPE_MODEL) {
-            // m_physicsSystem.removeCollider(m_entities.colliderTags[entityID]);
+            m_physicsSystem.removeCollider(m_entities.colliderTags[entityID]);
             m_entities.colliderTags[entityID] = m_physicsSystem.addModelCollider(m_assetManager.getModelManager().getModel(id), 
                                                                                  m_entities.transforms[entityID]);
             addToColliderUpdateSet(entityID);

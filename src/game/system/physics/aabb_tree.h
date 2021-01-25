@@ -54,11 +54,27 @@ public:
      * Updates the nodes given by a range of tree indices which is then
      * made up-to-date
      * @param treeIndices address of the start of the range of tree indices
-     *                    these will be updated
+     *                    that will be updated
      * @param aabbs address of the start of the range of aabbs
      * @param n number of aabbs to be inserted
      */
     void update(int32_t * treeIndices, AABB const * aabbs, size_t n);
+
+    /**
+     * Updates the tags of nodes given by a range of tree indices
+     * @param treeIndices address of the start of the range of tree indices
+     *                    that will be updated
+     * @param colliderTags new tags
+     * @param n number of tags to be updated
+     */
+    void updateTags(int32_t * treeIndices, ColliderTag const * colliderTags, size_t n);
+
+    /**
+     * @param treeIndices address of the start of the range of tree indices
+     *                    that will be removed
+     * @param n number of nodes to be removed
+     */
+    void remove(int32_t * treeIndices, size_t n);
 
     /**
      * The cost heuristic is defined as
@@ -71,14 +87,16 @@ public:
 private:
     struct Node;
     static constexpr float buffer = 0.05f; 
-    int32_t rootIndex;
+    int32_t rootIndex = Node::NULL_INDEX;
 
-    int32_t freeHead = Node::nullIndex; // free list
+    int32_t freeHead = Node::NULL_INDEX; // free list
     int32_t m_size = 0;
     prt::vector<Node> m_nodes;
 
     int32_t insertLeaf(ColliderTag tag, AABB const & aabb);
     void remove(int32_t index);
+
+    void freeNode(int32_t index);
 
     int32_t allocateNode();
 
@@ -96,19 +114,19 @@ private:
         // leaf = 0, free nodes = -1
         int32_t height = 0;
 
-        static constexpr int32_t nullIndex = -1;
+        static constexpr int32_t NULL_INDEX = -1;
 
-        bool isLeaf() const { return right == nullIndex; }
+        bool isLeaf() const { return right == NULL_INDEX; }
 
         union {
-            int32_t parent = nullIndex;
+            int32_t parent = NULL_INDEX;
             int32_t next; // free list
         };
 
         // union {
             // struct {
-                int32_t left = nullIndex;
-                int32_t right = nullIndex;
+                int32_t left = NULL_INDEX;
+                int32_t right = NULL_INDEX;
             // };
             // struct {
                 ColliderTag colliderTag;

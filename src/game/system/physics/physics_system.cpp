@@ -30,25 +30,23 @@ ColliderTag PhysicsSystem::addEllipsoidCollider(glm::vec3 const & ellipsoid) {
 
 ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const & transform) {
     ColliderTag tag;
-    tag.index = m_models.models.size();
     tag.type = COLLIDER_TYPE_MODEL;
 
-    m_models.models.push_back({});
-    ModelCollider & col = m_models.models.back();
 
-    unsigned int geometryIndex;
     if (!m_models.freeList.empty()) {
-        geometryIndex = m_models.freeList.back();
+        tag.index = m_models.freeList.back();
         m_models.freeList.pop_back();
     } else {
-        geometryIndex = m_models.geometries.size();
+        tag.index = m_models.models.size();
         m_models.geometries.push_back({});
+        m_models.models.push_back({});
     }
-    col.geometryIndex = geometryIndex;
+    ModelCollider & col = m_models.models[tag.index];
+
     col.startIndex = m_models.meshes.size();
     col.numIndices = model.meshes.size();
 
-    Geometry & geometry = m_models.geometries[geometryIndex];
+    Geometry & geometry = m_models.geometries[tag.index];
     geometry.raw.resize(model.indexBuffer.size());
     geometry.cache.resize(model.indexBuffer.size());
 
@@ -64,7 +62,7 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
         mcol.transform = transform;
         mcol.startIndex = i;
         mcol.numIndices = mesh.numIndices;
-        mcol.geometryIndex = geometryIndex;
+        mcol.modelIndex = tag.index;
 
         glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
         glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
@@ -98,16 +96,43 @@ void PhysicsSystem::removeCollider(ColliderTag const & tag) {
     switch (tag.type) {
         case COLLIDER_TYPE_MODEL:
             removeModelCollider(tag.index);
+            break;
         case COLLIDER_TYPE_ELLIPSOID:
             assert(false && "Not yet implemeneted!");
+            break;
         default:
             assert(false && "This collider type can not be removed!");
 
     }
 }
 
-void PhysicsSystem::removeModelCollider(ColliderIndex /*index*/) {
-    assert(false && "Not yet implemeneted!");
+void PhysicsSystem::removeModelCollider(ColliderIndex colliderIndex) {
+    m_models.freeList.push_back(colliderIndex);
+
+    ModelCollider & col = m_models.models[colliderIndex];
+    unsigned int index = col.startIndex;
+    unsigned int numIndices = col.numIndices;
+    unsigned int endIndex = index + numIndices;
+
+    for (ModelCollider & mc : m_models.models) {
+        if (mc.startIndex > index) {
+            mc.startIndex -= numIndices;
+        }
+    }
+
+    m_aabbData.tree.remove(&m_aabbData.meshIndices[index], numIndices);
+
+    if (endIndex < m_aabbData.meshIndices.size()) {
+        m_aabbData.tree.update(&m_aabbData.meshIndices[endIndex], 
+                               &m_aabbData.meshAABBs[endIndex], m_aabbData.meshIndices.size() - endIndex);
+    }
+
+    m_models.meshes.remove(index, numIndices);
+    m_aabbData.meshAABBs.remove(index, numIndices);
+    m_aabbData.meshIndices.remove(index, numIndices);
+
+    col = ModelCollider{};
+    m_models.geometries[index] = Geometry{};
 }
 
 void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
@@ -118,14 +143,13 @@ void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
     }
     for (size_t i = 0; i < count; ++i) {
         ModelCollider const & col = m_models.models[tags[i].index];
+        Geometry & geometry = m_models.geometries[tags[i].index];
 
         size_t startIndex = col.startIndex;
         size_t currIndex = startIndex;
         size_t numIndices = col.numIndices;
         size_t endIndex = currIndex + numIndices;
         glm::mat4 mat = transforms[i].transformMatrix();
-
-        Geometry & geometry = m_models.geometries[col.geometryIndex];
 
         while (currIndex < endIndex) {
             MeshCollider & curr = m_models.meshes[currIndex];
@@ -149,7 +173,7 @@ void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
         }
 
         m_aabbData.tree.update(&m_aabbData.meshIndices[startIndex], 
-                          &m_aabbData.meshAABBs[startIndex], numIndices);
+                               &m_aabbData.meshAABBs[startIndex], numIndices);
     }
 }
 
@@ -166,7 +190,7 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
     for (auto tag : tags) {
         MeshCollider & meshCollider = m_models.meshes[tag.index];
 
-        Geometry & geometry = m_models.geometries[meshCollider.geometryIndex];
+        Geometry & geometry = m_models.geometries[meshCollider.modelIndex];
 
         size_t index = meshCollider.startIndex;
         for (size_t i = 0; i < meshCollider.numIndices; i+=3) {
@@ -351,7 +375,7 @@ bool PhysicsSystem::collideCharacterWithMeshes(glm::vec3 const & position,
     for (uint32_t colliderIndex : colliderIndices) {
         MeshCollider & meshCollider = m_models.meshes[colliderIndex];
 
-        Geometry & geometry = m_models.geometries[meshCollider.geometryIndex];
+        Geometry & geometry = m_models.geometries[meshCollider.modelIndex];
         
         size_t endIndex = meshCollider.startIndex + meshCollider.numIndices;
         for (size_t i = meshCollider.startIndex; i < endIndex; ++i) {

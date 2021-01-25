@@ -74,7 +74,7 @@ private:
         prt::vector<ModelCollider> models;
         prt::vector<MeshCollider> meshes;
         prt::vector<Geometry> geometries;
-        
+
         prt::vector<unsigned int> freeList;
     } m_models;
 
@@ -91,7 +91,7 @@ private:
 
     float m_gravity = 1.0f;
 
-    void removeModelCollider(ColliderIndex index);
+    void removeModelCollider(ColliderIndex colliderIndex);
 
     void collideCharacterwithWorld(CharacterPhysics * physics,
                                    Transform * transforms,
