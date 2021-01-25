@@ -53,7 +53,7 @@ public:
     ColliderTag addEllipsoidCollider(glm::vec3 const & ellipsoid);
     ColliderTag addModelCollider(Model const & model, Transform const & transform);
 
-    // void removeCollider(ColliderTag const & tag);
+    void removeCollider(ColliderTag const & tag);
 
     glm::vec3 getEllipsoidCollider(ColliderTag tag) const { assert(tag.type == COLLIDER_TYPE_ELLIPSOID); return m_ellipsoids[tag.index]; }
 
@@ -74,7 +74,7 @@ private:
         prt::vector<ModelCollider> models;
         prt::vector<MeshCollider> meshes;
         prt::vector<Geometry> geometries;
-        // free list for geometries
+        
         prt::vector<unsigned int> freeList;
     } m_models;
 
@@ -90,6 +90,8 @@ private:
     // aabb tree
 
     float m_gravity = 1.0f;
+
+    void removeModelCollider(ColliderIndex index);
 
     void collideCharacterwithWorld(CharacterPhysics * physics,
                                    Transform * transforms,

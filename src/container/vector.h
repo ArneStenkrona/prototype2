@@ -137,6 +137,15 @@ namespace prt
             }
         }
 
+        void remove(size_t index) {
+            assert(index < m_size);
+            while (index < m_size) {
+                m_data[index] =  m_data[index+1];
+                ++index;
+            }
+            --m_size;
+        }
+
         void resize(size_t size) {
             if (size > m_size) {
                 reserve(size);
@@ -144,7 +153,7 @@ namespace prt
                     new (&m_data[i]) T();
                 }
             }
-                m_size = size;
+            m_size = size;
         }
 
 
@@ -155,7 +164,7 @@ namespace prt
                     new (&m_data[i]) T(value);
                 }
             }
-                m_size = size;
+            m_size = size;
         }
 
         void clear() {

@@ -40,7 +40,6 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
     if (!m_models.freeList.empty()) {
         geometryIndex = m_models.freeList.back();
         m_models.freeList.pop_back();
-        m_models.geometries[geometryIndex] = Geometry{};
     } else {
         geometryIndex = m_models.geometries.size();
         m_models.geometries.push_back({});
@@ -93,6 +92,22 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
 
 
     return tag;
+}
+
+void PhysicsSystem::removeCollider(ColliderTag const & tag) {
+    switch (tag.type) {
+        case COLLIDER_TYPE_MODEL:
+            removeModelCollider(tag.index);
+        case COLLIDER_TYPE_ELLIPSOID:
+            assert(false && "Not yet implemeneted!");
+        default:
+            assert(false && "This collider type can not be removed!");
+
+    }
+}
+
+void PhysicsSystem::removeModelCollider(ColliderIndex /*index*/) {
+    assert(false && "Not yet implemeneted!");
 }
 
 void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
