@@ -25,8 +25,9 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
     mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
@@ -126,7 +127,7 @@ void main() {
     vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
     // Directional lighting
-    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex) *
+    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);

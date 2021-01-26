@@ -10,11 +10,11 @@
 
 Game::Game()
 : m_input(),
-  m_gameRenderer(800, 600),
+  m_gameRenderer(DEFAULT_WIDTH, DEFAULT_HEIGHT),
   m_assetManager(RESOURCE_PATH),
-  m_physicsSystem(m_assetManager.getModelManager()),
+  m_physicsSystem(),
   m_scene(m_gameRenderer, m_assetManager, m_physicsSystem, m_input),
-  m_editor(m_scene, m_input),
+  m_editor(m_scene, m_input, m_gameRenderer.getWindow(), DEFAULT_WIDTH, DEFAULT_HEIGHT),
   m_frameRate(FRAME_RATE),
   m_microsecondsPerFrame(1000000 / m_frameRate),
   m_currentFrame(0),
@@ -24,7 +24,7 @@ Game::Game()
 }
 
 void Game::loadScene() {
-    m_scene.bindToRenderer(m_gameRenderer);
+    m_scene.bindToRenderer();
 }
 
 Game::~Game() {
@@ -48,7 +48,7 @@ void Game::run() {
         lastTime = currentTime;
         update(deltaTime);
 
-        m_gameRenderer.render(m_renderMask);   
+        m_gameRenderer.render(deltaTime, m_renderMask);   
 
 
         std::this_thread::sleep_until(deadLine);
@@ -74,8 +74,10 @@ void Game::update(float deltaTime) {
             m_scene.update(deltaTime);
             break;
         case Mode::EDITOR:
+            int w,h;
+            m_gameRenderer.getWindowSize(w,h);
             m_renderMask = GameRenderer::EDITOR_RENDER_MASK;
-            m_editor.update(deltaTime);
+            m_editor.update(deltaTime,w,h);
             break;
     }
 }

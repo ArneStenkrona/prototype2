@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include "src/util/io_util.h"
+
 Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSystem & physicsSystem, 
              Input & input)
     : m_gameRenderer(gameRenderer),
@@ -7,49 +9,69 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_physicsSystem(physicsSystem),
       m_input(input),
       m_camera(m_input),
-      m_characterSystem(m_input, m_camera, physicsSystem, assetManager) {
+      m_characterSystem(this, m_physicsSystem, m_animationSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
-    initColliders();
     initSky();
 }
 
-void Scene::bindToRenderer(GameRenderer & gameRenderer) {
-    uint32_t const * modelIDs;
-    size_t nModelIDs;
-    Model const * models;
-    size_t nModels = 0;
-    getNonAnimatedModels(models, nModels, modelIDs, nModelIDs);
-
-    uint32_t const * animatedModelIDs;
-    size_t nAnimatedModelIDs;
-    Model const * animatedModels;
-    size_t nAnimatedModels;
-    getAnimatedModels(animatedModels, nAnimatedModels, animatedModelIDs, nAnimatedModelIDs);
-
-    prt::vector<uint32_t> boneOffsets;
-    boneOffsets.resize(nAnimatedModelIDs);
-    m_assetManager.getModelManager().getBoneOffsets(animatedModelIDs, boneOffsets.data(), nAnimatedModelIDs);
-
+void Scene::bindToRenderer() {
     prt::array<Texture, 6> skybox;
     getSkybox(skybox);
 
-    Texture const * textures;
-    size_t nTextures;
-    m_assetManager.getTextureManager().getTextures(textures, nTextures);
+    bindRenderData();
+    
+    m_gameRenderer.bindAssets(m_renderData.models,
+                              m_renderData.nModels,
+                              m_renderData.staticModelIDs.data(), m_renderData.staticEntityIDs.data(),
+                              m_renderData.staticModelIDs.size(),
+                              m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
+                              m_renderData.boneOffsets.data(),
+                              m_renderData.animatedModelIDs.size(),
+                              &m_moon.billboard, 1,
+                              m_renderData.textures, m_renderData.nTextures,
+                              skybox);
+}
 
-    gameRenderer.bindAssets(models, nModels, modelIDs, nModelIDs,
-                            animatedModels, boneOffsets.data(), nAnimatedModels, 
-                            animatedModelIDs, nAnimatedModelIDs,
-                            &m_moon.billboard, 1,
-                            textures, nTextures,
-                            skybox);
+void Scene::bindRenderData() {
+    // clear previouus render data
+    m_renderData.staticTransforms.resize(0);
+    m_renderData.staticEntityIDs.resize(0);
+    m_renderData.staticModelIDs.resize(0);
+    m_renderData.animatedTransforms.resize(0);
+    m_renderData.animatedEntityIDs.resize(0);
+    m_renderData.animatedModelIDs.resize(0);
+    m_renderData.boneOffsets.resize(0);
+
+    m_assetManager.getModelManager().getModels(m_renderData.models, m_renderData.nModels);
+    Model const * models = m_renderData.models;
+
+    for (EntityID i = 0;  i < m_entities.size(); ++i) {
+        ModelID mid = m_entities.modelIDs[i];
+
+        if (mid != -1) {
+            if (models[mid].isAnimated()) {
+                m_renderData.animatedModelIDs.push_back(mid);
+                m_renderData.animatedEntityIDs.push_back(i);
+            } else {
+                m_renderData.staticModelIDs.push_back(mid);
+                m_renderData.staticEntityIDs.push_back(i);
+            }
+        }
+    }
+
+    m_renderData.staticTransforms.resize(m_renderData.staticModelIDs.size());
+    m_renderData.animatedTransforms.resize(m_renderData.animatedModelIDs.size());
+
+    m_renderData.boneOffsets.resize(m_renderData.animatedModelIDs.size());
+    m_assetManager.getModelManager().getBoneOffsets(m_renderData.animatedModelIDs.data(),
+                                                    m_renderData.boneOffsets.data(),
+                                                    m_renderData.animatedModelIDs.size());
+
+    m_assetManager.getTextureManager().getTextures(m_renderData.textures, m_renderData.nTextures);
 }
 
 void Scene::renderScene(Camera & camera) {
-    prt::vector<glm::mat4> modelMatrices; 
-    getTransformMatrices(modelMatrices, false);
-    prt::vector<glm::mat4> animatedModelMatrices; 
-    getTransformMatrices(animatedModelMatrices, true);
+    updateRenderData();
 
     prt::vector<glm::mat4> bones; 
     sampleAnimation(bones);
@@ -62,36 +84,21 @@ void Scene::renderScene(Camera & camera) {
 
     double x,y;
     m_input.getCursorPos(x,y);
-    m_gameRenderer.update(modelMatrices, 
-                          animatedModelMatrices,
-                          bones,
-                          billboardPositions,
-                          billboardColors,
-                          camera, 
-                          m_lights.sun,
-                          pointLights,
-                          boxLights,
-                          time,
-                          glm::vec2{x,y});
+    m_renderResult = m_gameRenderer.update(m_renderData.staticTransforms, 
+                                           m_renderData.animatedTransforms,
+                                           bones,
+                                           billboardPositions,
+                                           billboardColors,
+                                           camera, 
+                                           m_lights.sun,
+                                           pointLights,
+                                           boxLights,
+                                           time,
+                                           glm::vec2{x,y});
 }
 
 void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
     m_assetManager.loadCubeMap("stars", cubeMap);
-}
-
-uint32_t const * Scene::getModelIDs(size_t & nModelIDs, bool animated) const {
-    if (animated) {
-        return m_characterSystem.getModelIDs(nModelIDs);
-    } else {
-        nModelIDs = m_staticSolidEntities.size;
-        return m_staticSolidEntities.modelIDs;
-    }
-}
-
-void Scene::initColliders() {
-    m_physicsSystem.addModelColliders(m_staticSolidEntities.modelIDs, m_staticSolidEntities.transforms,
-                                      m_staticSolidEntities.size,
-                                      m_staticSolidEntities.colliderIDs);
 }
 
 struct IndexedDistance {
@@ -152,19 +159,8 @@ prt::vector<PackedBoxLight> Scene::getBoxLights() {
     return ret; 
 }
 
-void Scene::getTransformMatrices(prt::vector<glm::mat4>& transformMatrices, bool animated) const {
-    if (animated) {
-        m_characterSystem.getTransformMatrices(transformMatrices);
-    } else {
-        transformMatrices.resize(m_staticSolidEntities.size);
-        size_t iMatrix = 0;
-        for (size_t i = 0; i < m_staticSolidEntities.size; i++) {
-            transformMatrices[iMatrix++] = m_staticSolidEntities.transforms[i].transformMatrix();
-        }
-    }
-}
-
 void Scene::update(float deltaTime) {
+    updateModels();
     time+=deltaTime;
     updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
@@ -173,20 +169,16 @@ void Scene::update(float deltaTime) {
     renderScene(m_camera);
 }
 
-void Scene::getNonAnimatedModels(Model const * & models, size_t & nModels,
-                                 uint32_t const * & modelIDs, size_t & nModelIDs) const {
-    m_assetManager.getModelManager().getNonAnimatedModels(models, nModels);
-    modelIDs = getModelIDs(nModelIDs, false);
-}
-
-void Scene::getAnimatedModels(Model const * & models, size_t & nModels, 
-                              uint32_t const * & modelIDs, size_t & nModelIDs) {
-    m_assetManager.getModelManager().getAnimatedModels(models, nModels);
-    modelIDs = getModelIDs(nModelIDs, true);
-}
-
 void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {
-    m_characterSystem.sampleAnimation(bones);
+    BlendedAnimation * blends;
+    size_t nBlends;
+
+    m_animationSystem.getAnimationBlends(blends, nBlends);
+
+    m_assetManager.getModelManager().getSampledBlendedAnimation(m_renderData.animatedModelIDs.data(),
+                                                                blends,
+                                                                bones,
+                                                                m_renderData.animatedModelIDs.size());
 }
 
 void Scene::updateSun(float time) {
@@ -209,14 +201,96 @@ void Scene::updateSun(float time) {
 
 
 void Scene::updatePhysics(float deltaTime) {
+    updateColliders();
     m_characterSystem.updatePhysics(deltaTime);
+}
+
+void Scene::updateColliders() {
+    prt::vector<ColliderTag> modelTags;
+    prt::vector<Transform> modelTransforms;
+
+    for (auto it = m_colliderUpdateSet.begin(); it != m_colliderUpdateSet.end(); it++) {
+        ColliderTag tag =  m_entities.colliderTags[it->value()];
+        switch (tag.type) {
+            case COLLIDER_TYPE_MODEL:
+                modelTags.push_back(tag);
+                modelTransforms.push_back(m_entities.transforms[it->value()]);
+                break;
+            case COLLIDER_TYPE_ELLIPSOID:
+                break;
+            default:
+                break;
+        }
+    }
+
+    m_physicsSystem.updateModelColliders(modelTags.data(), modelTransforms.data(), modelTags.size());
+
+    m_colliderUpdateSet = prt::hash_set<EntityID>();
+}
+
+void Scene::addModelCollider(EntityID id) {
+    assert(hasModel(id));
+    m_entities.colliderTags[id] = m_physicsSystem.addModelCollider(getModel(id), m_entities.transforms[id]);
+}
+
+void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & ellipsoid) {
+    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(ellipsoid);
+}
+
+void Scene::updateModels() {
+    if (m_updateModels) {
+        bindToRenderer();
+        m_updateModels = false;
+    }
 }
 
 void Scene::updateCamera(float deltaTime) {
     m_camera.update(deltaTime);
-    m_characterSystem.updateCamera();
+    
+    // Make sure player is visible
+    glm::vec3 hit;
+    glm::vec3 corners[4];
+    float dist = 5.0f;
+    m_camera.getCameraCorners(corners[0], corners[1], corners[2], corners[3]);
+
+    EntityID playerID = m_characterSystem.getPlayer();
+
+    auto const & transform = m_entities.transforms[playerID];
+    for (size_t i = 0; i < 4; ++i) {
+        glm::vec3 dir = glm::normalize(corners[i] - transform.position);
+        if (m_physicsSystem.raycast(transform.position, dir, 
+                                    5.0f, hit)) {
+            dist = std::min(dist, glm::distance(transform.position, hit));
+
+        }
+    }
+    m_camera.setTargetDistance(dist);
+    m_camera.setTarget(transform.position);
+
     // move camera light to camera
     m_lights.pointLights[0].pos = m_camera.getPosition();
+}
+
+void Scene::updateRenderData() {
+    Model const * models = m_renderData.models;
+
+    size_t staticCount = 0;
+    size_t animatedCount = 0;
+
+    for (EntityID i = 0;  i < m_entities.size(); ++i) {
+        ModelID mid = m_entities.modelIDs[i];
+
+        if (mid != -1) {
+            glm::mat4 transform = m_entities.transforms[i].transformMatrix();
+            if (models[mid].isAnimated()) {
+                m_renderData.animatedTransforms[animatedCount] = transform;
+                ++animatedCount;
+            } else {
+                m_renderData.staticTransforms[staticCount] = transform;
+                ++staticCount;
+            }
+        }
+    }
 }
 
 void Scene::initSky() {
@@ -226,3 +300,34 @@ void Scene::initSky() {
     m_moon.distance = 200.0f;
 }
 
+bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute) {
+    bool alreadyLoaded;
+
+    ModelID id;
+    if (isAbsolute) {
+        char relative[512] = {0};
+
+        io_util::getRelativePath(m_assetManager.getDirectory().c_str(), path, relative);
+
+        id = m_assetManager.getModelManager().loadModel(relative, loadAnimation, alreadyLoaded);
+    } else {
+        id = m_assetManager.getModelManager().loadModel(path, loadAnimation, alreadyLoaded);
+    }
+
+    if (id != -1) {
+        m_entities.modelIDs[entityID] = id;
+
+        if (m_entities.colliderTags[entityID].type == COLLIDER_TYPE_MODEL) {
+            m_physicsSystem.removeCollider(m_entities.colliderTags[entityID]);
+            m_entities.colliderTags[entityID] = m_physicsSystem.addModelCollider(m_assetManager.getModelManager().getModel(id), 
+                                                                                 m_entities.transforms[entityID]);
+            addToColliderUpdateSet(entityID);
+        }
+
+        if (!alreadyLoaded) {
+            m_updateModels = true;
+        }
+    }
+
+    return id != -1;
+}

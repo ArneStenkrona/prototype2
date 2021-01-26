@@ -82,7 +82,9 @@
         "complex": "cpp",
         "gzstream.C": "cpp",
         "__memory": "cpp",
-        "*.prt": "c"
+        "*.prt": "c",
+        "bit": "cpp",
+        "filesystem": "cpp"
     },
     "C_Cpp.dimInactiveRegions": false
 }

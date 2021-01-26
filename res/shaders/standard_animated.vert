@@ -25,8 +25,9 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
     mat4 invTransposeModel[200];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
@@ -44,7 +45,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout(push_constant) uniform PER_OBJECT {
 	layout(offset = 0) int modelMatrixIdx;
-    layout(offset = 36) uint boneOffset;
+    layout(offset = 40) uint boneOffset;
 } pc;
 
 layout(location = 0) in vec3 inPosition;
@@ -100,5 +101,5 @@ void main() {
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
     
-    gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * bonedPos;
+    gl_Position = ubo.viewProjection * ubo.model[pc.modelMatrixIdx] * bonedPos;
 }

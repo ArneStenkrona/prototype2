@@ -25,8 +25,9 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
     mat4 invTransposeModel[200];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
@@ -52,6 +53,7 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 12) int specularIndex;
     layout(offset = 16) vec4 baseColor;
     layout(offset = 32) float baseSpecularity;
+    layout(offset = 36) int entityID;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -72,14 +74,14 @@ const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
 
 
 layout(location = 0) out vec4 outColor;
-layout(location = 1) out int outObject;
+layout(location = 1) out int outEntity;
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity);
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity);
 
-vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo);
+// vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo);
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
@@ -110,13 +112,13 @@ void main() {
                               albedo, specularity);
     }
     // box lights
-    for (int i = 0; i < ubo.noPointLights; ++i) {
-        res += CalcBoxLight(ubo.boxLights[i].min, 
-                            ubo.boxLights[i].max, 
-                            ubo.boxLights[i].color, 
-                            vec3(ubo.boxLights[i].invtransform * vec4(fs_in.fragPos, 1.0)), 
-                            albedo);
-    }
+    // for (int i = 0; i < ubo.noPointLights; ++i) {
+    //     res += CalcBoxLight(ubo.boxLights[i].min, 
+    //                         ubo.boxLights[i].max, 
+    //                         ubo.boxLights[i].color, 
+    //                         vec3(ubo.boxLights[i].invtransform * vec4(fs_in.fragPos, 1.0)), 
+    //                         albedo);
+    // }
 
     int cascadeIndex = 0;
     for (int i = 0; i < 5 - 1; ++i) {
@@ -124,16 +126,18 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
+
     vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
+
     // Directional lighting
-    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex) *
+    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r  *
            CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
     outColor = vec4(res, 1.0);
 
-    outObject = -1;
+    outEntity = material.entityID;
 }
 
 // Screen-door transparency: Discard pixel if below threshold.
@@ -185,14 +189,14 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     return diffuse + specular;
 }
 
-vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo) {
-    if (min.x < position.x && position.x < max.x &&
-        min.y < position.y && position.y < max.y &&
-        min.z < position.z && position.z < max.z) {
-        return lightColor * albedo;
-    }
-    return vec3(0.0,0.0,0.0);
-}
+// vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo) {
+//     if (min.x < position.x && position.x < max.x &&
+//         min.y < position.y && position.y < max.y &&
+//         min.z < position.z && position.z < max.z) {
+//         return lightColor * albedo;
+//     }
+//     return vec3(0.0,0.0,0.0);
+// }
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
     float shadow = 1.0f;
@@ -213,7 +217,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
 
     float shadowFactor = 0.0;
     int count = 0;
-    int range = 2;
+    int range = 1;
 
     for (int x = -range; x <= range; ++x) {
         for (int y = -range; y <= range; ++y) {
@@ -221,5 +225,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
             ++count;
         }
     }
+
+
     return shadowFactor / count;
 }

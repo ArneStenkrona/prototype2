@@ -85,6 +85,8 @@ include_directories(
   "${PROJECT_SOURCE_DIR}/include"
   "${PROJECT_SOURCE_DIR}/test"
   "${PROJECT_SOURCE_DIR}/external"
+  "${PROJECT_SOURCE_DIR}/external/imgui"
+  "${PROJECT_SOURCE_DIR}/external/imgui-filebrowser"
 )
 
 file(GLOB SOURCES
@@ -100,6 +102,7 @@ file(GLOB SOURCES
     "src/game/scene/*.cpp"
     "src/game/system/*.cpp"
     "src/game/system/physics/*.cpp"
+    "src/game/system/animation/*.cpp"
     "src/game/system/character/*.cpp"
     "src/entity_component_system/entity/*.cpp"
     "src/entity_component_system/component/*.cpp"
@@ -110,6 +113,7 @@ file(GLOB SOURCES
     "src/system/assets/*.cpp"
     # external
     "external/*/*.cpp"
+    "external/imgui/backends/imgui_impl_glfw.cpp"
 )
 
 file(GLOB TESTSOURCES
@@ -166,8 +170,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=undefined)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)

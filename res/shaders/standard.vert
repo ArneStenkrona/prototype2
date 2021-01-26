@@ -25,8 +25,9 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
     mat4 invTransposeModel[200];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
@@ -83,5 +84,5 @@ void main() {
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
 
-    gl_Position = ubo.proj * ubo.view * worldPos;
+    gl_Position = ubo.viewProjection * worldPos;
 }

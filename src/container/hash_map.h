@@ -35,6 +35,8 @@ namespace prt {
             assert(_present);
             return reinterpret_cast<V const&>(_value);
         }
+
+        bool present() const { return _present; }
         
     private:
         alignas(K) char _key[sizeof(K)];
@@ -160,7 +162,7 @@ namespace prt {
                 }
 
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-                counter++;
+                ++counter;
             }
             return end();
         }
@@ -174,7 +176,7 @@ namespace prt {
                 }
 
                 ind = ind == _vector.size() - 1 ? 0 : ind + 1;
-                counter++;
+                ++counter;
             }
             return end();
         }

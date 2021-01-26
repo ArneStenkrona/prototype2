@@ -43,7 +43,8 @@ namespace std {
     };
 }
 
-struct Model {
+class Model {
+public:
     struct Mesh;
     struct Material;
     struct Vertex;
@@ -55,19 +56,12 @@ struct Model {
     struct AnimationKey;
     struct AnimationNode;
     struct Node;
-    // TODO: rewrite model as
-    // proper RAII class
-    prt::vector<Mesh> meshes;
-    prt::vector<Animation> animations;
-    prt::vector<Material> materials;
-    // prt::vector<Texture> textures;
-    prt::vector<Vertex> vertexBuffer;
-    prt::vector<BoneData> vertexBoneBuffer;
-    prt::vector<uint32_t> indexBuffer;
-    prt::vector<Bone> bones;
-    char name[256];
 
-    void load(char const * path, bool loadAnimation, TextureManager & textureManager);
+    Model(char const * path);
+
+    bool load(bool loadAnimation, TextureManager & textureManager);
+    // TODO: add unload method
+
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
     void blendAnimation(float clipTime, 
                         float blendFactor,
@@ -77,6 +71,12 @@ struct Model {
 
     uint32_t getAnimationIndex(char const * name) const;
 
+    inline bool isloaded() const { return mLoaded; }
+    inline bool isAnimated() const { return mAnimated; }
+
+    char const * getPath() const { return mPath; };
+    char const * getName() const { return name; };
+
 private:
     void calcTangentSpace();
     int32_t getTexture(aiMaterial &aiMat, aiTextureType type, const char * modelPath, 
@@ -85,12 +85,29 @@ private:
     prt::vector<Node> mNodes;
     glm::mat4 mGlobalInverseTransform;
 
-    bool mLoaded = false;
+    bool mLoaded;
+    bool mAnimated;
+    char mPath[256] = {};
 
-    bool mAnimated = false;
+    prt::vector<Mesh> meshes;
+    prt::vector<Animation> animations;
+    prt::vector<Material> materials;
+    prt::vector<Vertex> vertexBuffer;
+    prt::vector<BoneData> vertexBoneBuffer;
+    prt::vector<uint32_t> indexBuffer;
+    prt::vector<Bone> bones;
+    char name[256] = {};
+
     // maps animation names to animations
-    // TODO replace with own string type
+    // TODO: replace with own string type
     prt::hash_map<aiString, uint32_t> nameToAnimation;
+
+    // TODO: expose necessary fields
+    // through const refs instead of
+    // friend classes
+    friend class ModelManager;
+    friend class GameRenderer;
+    friend class PhysicsSystem;
 };
 
 struct Model::Node {

@@ -1,6 +1,9 @@
 #ifndef VULKAN_APPLICATION_H
 #define VULKAN_APPLICATION_H
 
+#include "src/graphics/vulkan/render_pass.h"
+#include "src/graphics/vulkan/assets.h"
+
 #include "src/graphics/geometry/model.h"
 
 #include "graphics_pipeline.h"
@@ -50,30 +53,11 @@ struct SwapchainSupportDetails {
     prt::vector<VkPresentModeKHR>   presentModes;
 };
 
-struct VertexData {
-    VkBuffer       vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer       indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-};
-
-struct TextureImages {
-    prt::vector<VkImage>               images;
-    prt::vector<VkDeviceMemory>        imageMemories;
-    prt::vector<VkImageView>           imageViews;
-    prt::vector<VkDescriptorImageInfo> descriptorImageInfos;
-};
-
 struct UniformBufferData {
     prt::vector<char>           uboData{prt::getAlignment(alignof(std::max_align_t))};
     prt::vector<void*>          mappedMemories;
     prt::vector<VkBuffer>       uniformBuffers;
     prt::vector<VkDeviceMemory> uniformBufferMemories;
-};
-
-struct Assets {
-    VertexData vertexData;
-    TextureImages textureImages;
 };
 
 struct FramebufferAttachment {
@@ -100,6 +84,7 @@ struct Cascade {
 
 struct CascadeShadowMap {
     prt::vector<prt::array<Cascade, NUMBER_SHADOWMAP_CASCADES> > cascades;
+    size_t renderPassIndex;
 };
 
 struct SwapchainFBACopy {
@@ -116,7 +101,7 @@ struct SwapchainFBACopy {
 struct Swapchain {
     // Swapchain data
     uint32_t                                    swapchainImageCount;
-    uint32_t                                    previousImageIndex;
+    uint32_t                                    previousImageIndex = 0;
     VkSwapchainKHR                              swapchain;
     prt::vector<VkImage>                        swapchainImages;
     VkFormat                                    swapchainImageFormat;
@@ -127,48 +112,6 @@ struct Swapchain {
     prt::vector<prt::vector<SwapchainFBACopy> > swapchainFBACopies;
 
 };
-
-struct SubPass {
-    VkPipelineBindPoint                bindPoint;
-    prt::vector<VkAttachmentReference> colorReferences;
-    VkAttachmentReference              depthReference = {0,VK_IMAGE_LAYOUT_END_RANGE}; // use VK_IMAGE_LAYOUT_END_RANGE to signify no depth reference
-    prt::vector<VkAttachmentReference> inputReferences;
-
-    prt::vector<size_t> pipelineIndices;
-};
-
-struct RenderPass {
-    VkExtent2D                           extent;
-    prt::vector<VkAttachmentDescription> attachments;
-    prt::vector<SubPass>                 subpasses;
-    prt::vector<VkSubpassDependency>     dependencies;
-
-    VkRenderPass renderPass;
-
-    prt::vector<prt::vector<VkFramebuffer> > framebuffers; // RenderPass will be performed once on each frame buffer for each command buffer
-    prt::vector<VkClearValue>                clearValues;
-
-    /*
-     * TODO: find better solution to
-     * swapchain recreation issues
-     **/
-    enum RenderOutputType {
-        RENDER_OUTPUT_TYPE_SWAPCHAIN,
-        RENDER_OUTPUT_TYPE_SHADOWMAP
-    };
-    RenderOutputType outputType;
-
-    size_t shadowMapIndex; // only used for RENDER_OUTPUT_TYPE_SHADOWMAP
-
-    /*
-     * TODO: Refactor this monstrosity
-     * It is only used to set the current
-     * cascade index through push constant
-     * when rendering to shadow map
-     **/
-    int pushConstantFBIndexByteOffset = -1;
-};
-
 
 enum RenderGroupFlags : uint16_t {
     RENDER_GROUP_FLAG_0 = 1<<0,
@@ -208,13 +151,18 @@ public:
     void initWindow(unsigned int width, unsigned int height);
     void initVulkan();
 
-    void render(uint16_t renderGroupMask = RENDER_GROUP_FLAG_ALL);
+    // void render(uint16_t renderGroupMask = RENDER_GROUP_FLAG_ALL);
+
+    void updateRenderGroupMask(int16_t renderGroupMask);
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = _width; h = _height; };
     
     bool isWindowOpen() { return !glfwWindowShouldClose(_window); }
 protected:
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+
     /*
      * TODO: Move this to where appropriate
      **/
@@ -225,10 +173,9 @@ protected:
     uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
 
     // command data
-    VkCommandPool commandPool; // TODO: rename to reflect that pool is for static commands
-    VkCommandPool dynamicCommandPool;
-    prt::vector<VkCommandBuffer> commandBuffers; // TODO: rename to reflect that these are static command buffers
-    prt::vector<VkCommandBuffer> dynamicCommandBuffers;
+    prt::vector<VkCommandPool> commandPools;
+    VkCommandPool secondaryCommandPool;
+    prt::vector<VkCommandBuffer> commandBuffers; 
     
     // Samplers
     VkSampler textureSampler;
@@ -239,8 +186,7 @@ protected:
 
     // Render passes
     prt::vector<RenderPass> renderPasses;
-    size_t scenePassIndex;
-    size_t offscreenPassIndex;
+    size_t presentPassIndex;
 
     /*
      * TODO: Differentiate between swapchain-dependent FBAs
@@ -251,9 +197,11 @@ protected:
 
     prt::vector<CascadeShadowMap> shadowMaps;
 
-    prt::vector<GraphicsPipeline> graphicsPipelines;
+    uint32_t waitForNextImageIndex();
+    void drawFrame(uint32_t imageIndex);
 
-    VkDevice& getDevice() { return device; }
+    VkDevice & getDevice() { return device; }
+    VkPhysicalDevice & getPhysicalDevice() { return physicalDevice; }
 
     size_t pushBackFramebufferAttachment();
 
@@ -261,8 +209,11 @@ protected:
     size_t addSwapchainFBACopy(size_t swapchainIndex, size_t swapchainFBAIndex,
                                uint32_t width, uint32_t height, VkImageAspectFlags aspectFlags);
 
-    size_t pushBackRenderPass();
-    size_t pushBackShadowMap();
+    size_t pushBackRenderPass(bool isPresentPass = false);
+    size_t pushBackShadowMap(size_t renderPassIndex);
+
+    void createTexture(TextureImages & textureImages, Texture const & texture, size_t i);
+    void destroyTexture(TextureImages & textureImages, size_t i);
     
     void createTextureImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const Texture& texture);
     void createCubeMapImage(VkImage& texImage, VkDeviceMemory& texImageMemory, const prt::array<Texture, 6>& textures);
@@ -271,17 +222,27 @@ protected:
     void createCubeMapImageView(VkImageView& imageView, VkImage &image, uint32_t mipLevels);
 
     void recreateSwapchain();
-    void reprepareSwapchain();
-    void completeSwapchain();
     void cleanupSwapchain();
+
+    void freeCommandBuffers();
 
     void createAndMapBuffer(void* bufferData, VkDeviceSize bufferSize, VkBufferUsageFlagBits bufferUsageFlagBits,
                             VkBuffer& destinationBuffer, VkDeviceMemory& destinationBufferMemory);
     
+    size_t pushBackPipeline();
+
+    inline GraphicsPipeline & getPipeline(size_t index) { return graphicsPipelines[index]; }
+    inline GraphicsPipeline const & getPipeline(size_t index) const { return graphicsPipelines[index]; }
+
     size_t pushBackAssets();
 
-    inline Assets& getAssets(size_t index) { return assets[index]; } 
+    inline Assets & getAssets(size_t index) { return assets[index]; } 
     inline Assets const & getAssets(size_t index) const { return assets[index]; } 
+
+    size_t pushBackDynamicAssets();
+
+    inline DynamicAssets& getDynamicAssets(size_t index) { return dynamicAssets[index]; } 
+    inline DynamicAssets const & getDynamicAssets(size_t index) const { return dynamicAssets[index]; } 
 
     size_t pushBackUniformBufferData(size_t uboSize);
 
@@ -289,6 +250,9 @@ protected:
     inline UniformBufferData const & getUniformBufferData(size_t index) const { return uniformBufferDatas[index]; } 
     
     prt::vector<size_t> getPipelineIndicesByType(PipelineType type);
+    prt::vector<size_t> getPipelineIndicesBySubPass(SubPass const & subpass);
+
+    prt::vector<VkFramebuffer> getFramebuffers(RenderPass const & renderPass, size_t imageIndex);
     
     VkFormat findDepthFormat();
     float depthToFloat(void * depthValue, VkFormat depthFormat);
@@ -314,9 +278,6 @@ private:
     
     VkPhysicalDevice physicalDevice;
     VkDevice device;
-    
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
 
     // Synchronization
     prt::vector<VkSemaphore> imageAvailableSemaphores;
@@ -325,7 +286,10 @@ private:
     prt::vector<VkFence> imagesInFlight;
     unsigned int currentFrame = 0;
 
+    prt::vector<GraphicsPipeline> graphicsPipelines;
+
     prt::vector<Assets> assets;
+    prt::vector<DynamicAssets> dynamicAssets;
     prt::vector<UniformBufferData> uniformBufferDatas;
     
     bool framebufferResized = false;
@@ -352,7 +316,7 @@ private:
     
     void createSwapchainImageViews();
     
-    void createOffscreenSampler();
+    void createShadowMapSampler();
 
     void prepareGraphicsPipelines();
     
@@ -366,15 +330,27 @@ private:
     void createGraphicsPipeline(GraphicsPipeline & materialPipeline);
     
     void createCommandPool(VkCommandPool & pool, VkCommandPoolCreateFlags flags); 
+    
     void createCommandBuffers();
-    void createDynamicCommandBuffers();
-    void createCommandBuffer(size_t const imageIndex);
-    void updateDynamicCommandBuffer(size_t const imageIndex);
+    void createRenderPassCommandBuffers(RenderPass & pass);
+    void recordCommandBuffer(size_t const imageIndex);
 
     void createSwapchainFrameBuffers();
     void createSwapchainFBACopies();
     
-    void createDrawCommands(size_t const imageIndex, GraphicsPipeline & pipeline);
+    void createDrawCommands(size_t const imageIndex, 
+                            VkFramebuffer framebuffer,
+                            size_t framebufferIndex,
+                            RenderPass & renderPass,
+                            size_t subIndex);
+
+    void createDrawCommands(size_t const imageIndex,
+                            VkFramebuffer framebuffer,
+                            size_t framebufferIndex,
+                            RenderPass & renderPass,
+                            size_t subIndex, 
+                            GraphicsPipeline & pipeline);
+
     void createRenderPassCommands(size_t const imageIndex, RenderPass & renderPass);
 
     void createRenderPasses();
@@ -434,8 +410,8 @@ private:
     void createSyncObjects();
 
     void updateUniformBuffers(uint32_t currentImage);
-    
-    void drawFrame();
+
+    void updateDynamicAssets(uint32_t const imageIndex);
     
     VkShaderModule createShaderModule(const char* filename);
     VkShaderModule createShaderModule(const prt::vector<char>& code);
