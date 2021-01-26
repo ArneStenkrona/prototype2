@@ -139,6 +139,7 @@ void EditorGui::buildEditor(Scene & scene) {
 
 // TODO: cache this operation
 void EditorGui::entityList(Scene & scene) {
+    beginGroupPanel("Entities");
     Entities & entities = scene.getEntities();
 
     int nEntities = entities.size();
@@ -150,7 +151,9 @@ void EditorGui::entityList(Scene & scene) {
     }
 
     ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 20);
-    ImGui::ListBox("", &selectedEntity, names.data(), nEntities);
+    ImGui::ListBox("##Entities", &selectedEntity, names.data(), nEntities);
+
+    endGroupPanel();
 
     showAddEntity(scene);
 }
@@ -239,8 +242,6 @@ void EditorGui::showModel(Scene & scene) {
         ImGui::OpenPopup("Load model");
 
         if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
-            // std::cout << file_dialog.selected_fn << std::endl;      // The name of the selected file or directory in case of Select Directory dialog mode
-            // std::cout << file_dialog.selected_path << std::endl;    // The absolute path to the selected file
             bool success = scene.loadModel(selectedEntity, file_dialog.selected_path.c_str(), false, true);
             if (!success) {
                 // failed to load
@@ -327,15 +328,85 @@ void EditorGui::showCharacter(Scene & scene, CharacterID const & /*id*/) {
     endGroupPanel();
 }
 
-void EditorGui::showAddComponent(Scene & /*scene*/) {
+void EditorGui::showAddComponent(Scene & scene) {
+    const char* compStrs[] = { "Model", "Character", "Collider" };
+    int imodel = -1;
+    int icharacter = -1;
+    int icollider = -1;
+    prt::vector<char const *> components;
+
+    if (!scene.hasModel(selectedEntity)) {
+        imodel = components.size();
+        components.push_back(compStrs[0]);
+    }
+    if (!scene.isCharacter(selectedEntity)) {
+        icharacter = components.size();
+        components.push_back(compStrs[1]);
+    }
+    if (!scene.hasCollider(selectedEntity)) {
+        icollider = components.size();
+        components.push_back(compStrs[2]);
+    }
+
+    if (components.empty()) return;
+
+    static int current = 0;
+    static bool open = false;
+    static bool loadModel = false;
     ImGui::NewLine();
-    ImGui::Button("Add Component");
+
+    ImGui::PushID(selectedEntity);
+
+    if(ImGui::Button("Add Component")) {
+        open = true;
+    }
+    if (open) {
+        ImGui::OpenPopup("Select Component");
+
+        ImGui::ListBox("Type##Component", &current, components.data(), components.size());
+
+        if (ImGui::Button("Select")) {
+            if (current == imodel) loadModel = true;
+            open = false;
+        } 
+
+        if (ImGui::Button("Cancel")) {
+            open = false;
+        } 
+
+        ImGui::CloseCurrentPopup();
+    }
+
+    if (loadModel) {
+        loadModel = addModel(scene);
+    }
+
+    ImGui::PopID();
 }
 
 void EditorGui::showAddEntity(Scene & scene) {
     ImGui::NewLine();
     if (ImGui::Button("Add Entity")) {
         scene.getEntities().addEntity();
+    }
+}
+
+bool EditorGui::addModel(Scene & scene) {
+    static double errorDeadline = 0.0;
+    
+    ImGui::OpenPopup("Load model");
+
+    if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
+        bool success = scene.loadModel(selectedEntity, file_dialog.selected_path.c_str(), false, true);
+        if (!success) {
+            // failed to load
+            errorDeadline =  ImGui::GetTime() + 10.0;
+        }
+    }
+    return ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
+    
+    if (ImGui::GetTime() < errorDeadline) {
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s", "Failed to open models");
     }
 }
 

@@ -42,6 +42,8 @@ private:
     void showAddComponent(Scene & scene);
     void showAddEntity(Scene & scene);
 
+    bool addModel(Scene & scene);
+
     // Thanks thedmd: https://github.com/ocornut/imgui/issues/1496#issuecomment-569892444
     static void beginGroupPanel(const char* name, const ImVec2& size = ImVec2(-1.0f, -1.0f));
     static void endGroupPanel();
