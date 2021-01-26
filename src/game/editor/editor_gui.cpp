@@ -289,7 +289,7 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
         glm::vec3 size = scene.getEllipsoidCollider(selectedEntity);
         float* sizep = reinterpret_cast<float*>(&size);
         if (ImGui::InputFloat3("size", sizep, "%.3f")) {
-            // scene.addToColliderUpdateSet(selectedEntity);
+            scene.updateEllipsoidCollider(selectedEntity, size);
         }
     }
 

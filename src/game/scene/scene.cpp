@@ -206,17 +206,24 @@ void Scene::updatePhysics(float deltaTime) {
 }
 
 void Scene::updateColliders() {
-    prt::vector<ColliderTag> tags;
-    prt::vector<Transform> transforms;
+    prt::vector<ColliderTag> modelTags;
+    prt::vector<Transform> modelTransforms;
 
     for (auto it = m_colliderUpdateSet.begin(); it != m_colliderUpdateSet.end(); it++) {
         ColliderTag tag =  m_entities.colliderTags[it->value()];
-        if (tag.type != ColliderType::COLLIDER_TYPE_MODEL) continue;
-        tags.push_back(tag);
-        transforms.push_back(m_entities.transforms[it->value()]);
+        switch (tag.type) {
+            case COLLIDER_TYPE_MODEL:
+                modelTags.push_back(tag);
+                modelTransforms.push_back(m_entities.transforms[it->value()]);
+                break;
+            case COLLIDER_TYPE_ELLIPSOID:
+                break;
+            default:
+                break;
+        }
     }
 
-    m_physicsSystem.updateModelColliders(tags.data(),  transforms.data(), tags.size());
+    m_physicsSystem.updateModelColliders(modelTags.data(), modelTransforms.data(), modelTags.size());
 
     m_colliderUpdateSet = prt::hash_set<EntityID>();
 }

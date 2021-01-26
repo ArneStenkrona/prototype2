@@ -135,6 +135,11 @@ void PhysicsSystem::removeModelCollider(ColliderIndex colliderIndex) {
     m_models.geometries[index] = Geometry{};
 }
 
+void PhysicsSystem::updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & dimensions) {
+    assert(tag.type == COLLIDER_TYPE_ELLIPSOID);
+    m_ellipsoids[tag.index] = dimensions;
+}
+
 void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
                                          Transform const *transforms,
                                          size_t count) {
@@ -142,6 +147,7 @@ void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
         meshCollider.hasMoved = false;
     }
     for (size_t i = 0; i < count; ++i) {
+        assert(tags[i].type == COLLIDER_TYPE_MODEL);
         ModelCollider const & col = m_models.models[tags[i].index];
         Geometry & geometry = m_models.geometries[tags[i].index];
 

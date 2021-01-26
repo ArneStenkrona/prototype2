@@ -20,7 +20,8 @@
 class PhysicsSystem {
 public:
     PhysicsSystem();
-
+    
+    void updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & dimensions);
     void updateModelColliders(ColliderTag const * tags,
                               Transform const * transforms,
                               size_t count);
