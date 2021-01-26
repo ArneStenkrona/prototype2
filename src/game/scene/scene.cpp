@@ -221,6 +221,15 @@ void Scene::updateColliders() {
     m_colliderUpdateSet = prt::hash_set<EntityID>();
 }
 
+void Scene::addModelCollider(EntityID id) {
+    assert(hasModel(id));
+    m_entities.colliderTags[id] = m_physicsSystem.addModelCollider(getModel(id), m_entities.transforms[id]);
+}
+
+void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & ellipsoid) {
+    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(ellipsoid);
+}
+
 void Scene::updateModels() {
     if (m_updateModels) {
         bindToRenderer();

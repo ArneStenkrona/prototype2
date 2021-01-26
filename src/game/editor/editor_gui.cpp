@@ -330,6 +330,8 @@ void EditorGui::showCharacter(Scene & scene, CharacterID const & /*id*/) {
 
 void EditorGui::showAddComponent(Scene & scene) {
     const char* compStrs[] = { "Model", "Character", "Collider" };
+    static bool loadModel = false;
+    static bool loadCollider = false;
     int imodel = -1;
     int icharacter = -1;
     int icollider = -1;
@@ -352,7 +354,6 @@ void EditorGui::showAddComponent(Scene & scene) {
 
     static int current = 0;
     static bool open = false;
-    static bool loadModel = false;
     ImGui::NewLine();
 
     ImGui::PushID(selectedEntity);
@@ -363,22 +364,29 @@ void EditorGui::showAddComponent(Scene & scene) {
     if (open) {
         ImGui::OpenPopup("Select Component");
 
-        ImGui::ListBox("Type##Component", &current, components.data(), components.size());
+        if (ImGui::BeginPopup("Select Component")) {
 
-        if (ImGui::Button("Select")) {
-            if (current == imodel) loadModel = true;
-            open = false;
-        } 
+            ImGui::ListBox("Type##Component", &current, components.data(), components.size());
 
-        if (ImGui::Button("Cancel")) {
-            open = false;
-        } 
+            if (ImGui::Button("Cancel")) {
+                open = false;
+            } 
+            ImGui::SameLine();
+            if (ImGui::Button("Select")) {
+                if (current == imodel) loadModel = true;
+                if (current == icollider) loadCollider = true;
+                open = false;
+            } 
 
-        ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
     }
 
     if (loadModel) {
         loadModel = addModel(scene);
+    }
+    if (loadCollider) {
+        loadCollider = addCollider(scene);
     }
 
     ImGui::PopID();
@@ -403,12 +411,42 @@ bool EditorGui::addModel(Scene & scene) {
             errorDeadline =  ImGui::GetTime() + 10.0;
         }
     }
-    return ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
-    
+
     if (ImGui::GetTime() < errorDeadline) {
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s", "Failed to open models");
     }
+
+    return ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
 }
+
+bool EditorGui::addCollider(Scene & scene) {
+    static int current = 0;
+    const char* types[] = { "Ellipsoid", "Model" };
+
+    bool open = true;
+    
+    ImGui::OpenPopup("Add Collider");
+
+    if (ImGui::BeginPopup("Add Collider")) {
+
+        ImGui::ListBox("Type##Collider", &current, types, IM_ARRAYSIZE(types));
+
+        if (ImGui::Button("Cancel")) {
+            open = false;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Select")) {
+            if (current == 0) scene.addEllipsoidCollider(selectedEntity, glm::vec3{1.0f});
+            if (current == 1) scene.addModelCollider(selectedEntity);
+            open = false;
+        } 
+
+        ImGui::EndPopup();
+    }
+
+    return open;
+}
+
 
 void EditorGui::beginGroupPanel(const char* name, const ImVec2& size) {
     ImGui::BeginGroup();
