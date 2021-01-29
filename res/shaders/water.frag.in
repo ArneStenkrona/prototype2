@@ -87,7 +87,7 @@ vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albed
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
-void transparencyDither(float alpha);
+void transparencyDither(float alpha);   
 
 void main() {
     // get albedo
@@ -98,21 +98,21 @@ void main() {
     vec2 tex2 = fs_in.fragTexCoord + vec2(sin(0.2*t), cos(0.14*t));
     float col2 = (material.albedoIndex < 0 ? material.baseColor :
                                         (texture(sampler2D(textures[material.albedoIndex], samp), tex2)) * material.baseColor).r;
-    float col = mix(col1,col2,0.5);
-    // TODO: get near and far plane from UBO
-    float d = linearizeDepth(gl_FragCoord.z, 0.03, 500.0);
-    col *= min(0.1*d, 1.0);
-    if ((col > 0.4 && col < 0.7) || col > 0.85) col = 0;
-    vec4 waterColor = vec4(0.52, 0.90, 1, 0.1);
+    float col = mix(col1, col2,0.5);
+
+    if ((col > 0.5 && col < 0.6) || col > 0.96) col = 0;
+    vec4 waterColor = vec4(0.52, 0.90, 1, 0.3);
     vec4 albedo = mix(waterColor, vec4(1), col);
 
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
     // get normal
-    vec3 normal = material.normalIndex < 0 ? vec3(0,0,1) :
-                                         2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
-    normal = normalize(normal);
+    vec3 n1 = material.albedoIndex < 0 ? vec3(0,0,1) :
+                                         2.0 * texture(sampler2D(textures[material.albedoIndex], samp), tex1).rgb - 1.0;
+    vec3 n2 = material.albedoIndex < 0 ? vec3(0,0,1) :
+                                         2.0 * texture(sampler2D(textures[material.albedoIndex], samp), tex2).rgb - 1.0;
+    vec3 normal = normalize(mix(vec3(0,0,1), mix(n1,n2,0.5) , 0.2));
 
 
     // get view direction
@@ -141,13 +141,14 @@ void main() {
             cascadeIndex = i + 1;
         }
     }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01 * fs_in.fragNormal, 1.0));
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
     // Directional lighting
     res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
+    // float brightness = length(res);
     vec4 color = vec4(res, albedo.a);
 
     // Insert your favorite weighting function here. The color-based factor
@@ -188,7 +189,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
     float shininess = 32.0;
-    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess); 
+    float spec = 0.5 * pow(max(dot(normal, halfwayDir), 0.0), shininess); 
     // attenuation
     float distance = length(light.pos - fs_in.fragPos);
     float attenuation = 1.0 / (light.c + light.b * distance + light.a * distance * distance);
@@ -208,8 +209,9 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     // specular shading
     // vec3 reflectDir = reflect(-lightDir, normal); // phong
     vec3 halfwayDir = normalize(-lightDir + viewDir); // blinn-phong
-    float shininess = 32.0;
-    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess);
+
+    float shininess = 128.0;
+    float spec = 1.0 * pow(max(dot(normal, halfwayDir), 0.0), shininess);
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
     vec3 specular = lightColor * spec;
