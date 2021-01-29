@@ -131,7 +131,7 @@ void main() {
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
 
     // Directional lighting
-    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r  *
+    res += filterPCF(sunShadowCoord, cascadeIndex).r  *
            CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
                          albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
@@ -211,7 +211,7 @@ float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
 
 float filterPCF(vec4 shadowCoord, int cascadeIndex) {
     ivec2 textDim = textureSize(shadowMap, 0).xy;
-    float scale = 0.5;
+    float scale = 1.0;
     float dx = scale * 1.0 / float(textDim.x);
     float dy = scale * 1.0 / float(textDim.y);
 
