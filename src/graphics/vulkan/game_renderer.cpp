@@ -143,11 +143,11 @@ void GameRenderer::initPipelines() {
     /* water */
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
-    strcat(vert, "shaders/water.vert.spv");
-    strcat(frag, "shaders/standard_transparent.frag.spv");
+    strcat(vert, "shaders/standard.vert.spv");
+    strcat(frag, "shaders/water.frag.spv");
     pipelineIndices.water = createStandardPipeline(standardAssetIndex, standardUboIndex, vert, frag,
-                                             Model::Vertex::getBindingDescription(),
-                                             Model::Vertex::getAttributeDescriptions(), true);
+                                                   Model::Vertex::getBindingDescription(),
+                                                   Model::Vertex::getAttributeDescriptions(), true);
 
     /* billboard */
     prt::hash_map<int, int> billboardTextureIndices;

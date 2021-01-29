@@ -64,9 +64,9 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         if (materials[i].baseColor.a < 1.0f) {
             materials[i].type = Material::Type::transparent;
         }
-        // if (strstr(materials[i].name, "[water]") != NULL) {
-        //     materials[i].type = Material::Type::water;
-        // }
+        if (strstr(materials[i].name, "[water]") != NULL) {
+            materials[i].type = Material::Type::water;
+        }
 
         materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, mPath, textureManager);
         materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, mPath, textureManager);

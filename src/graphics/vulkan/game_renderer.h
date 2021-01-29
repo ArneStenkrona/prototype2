@@ -148,10 +148,10 @@ private:
     void createBillboardPipeline(size_t assetIndex, size_t uboIndex);
 
     int createStandardPipeline(size_t assetIndex, size_t uboIndex, 
-                                   char const * vertexShader, char const * fragmentShader,
-                                   VkVertexInputBindingDescription bindingDescription,
-                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                   bool transparent);
+                               char const * vertexShader, char const * fragmentShader,
+                               VkVertexInputBindingDescription bindingDescription,
+                               prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                               bool transparent);
                                           
     int createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
                                     char const * vertexShader,
