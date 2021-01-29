@@ -750,7 +750,7 @@ void PhysicsSystem::collisionResponse(bool collision,
             otherPosition += intersectionTime * otherPhysics.velocity;
             slideNormal = -collisionNormal;
             // project remaining velocity onto slide normal
-            otherPhysics.velocity =  otherPhysics.velocity - ((glm::dot( otherPhysics.velocity, slideNormal)) * slideNormal);
+            otherPhysics.velocity = otherPhysics.velocity - ((glm::dot( otherPhysics.velocity, slideNormal)) * slideNormal);
 
             // by pushing out the character along the slide normal we gain
             // tolerance against small numerical errors
