@@ -101,7 +101,7 @@ void main() {
     float col = mix(col1, col2,0.5);
 
     if ((col > 0.5 && col < 0.6) || col > 0.96) col = 0;
-    vec4 waterColor = vec4(0.52, 0.90, 1, 0.3);
+    vec4 waterColor = vec4(0.4, 0.8, 1, 0.3);
     vec4 albedo = mix(waterColor, vec4(1), col);
 
     // get specularity
@@ -117,6 +117,9 @@ void main() {
 
     // get view direction
     vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
+
+    float r = dot(viewDir, normal);
+    albedo.a += pow(1.0-r,10.0);
 
     // light
     vec3 res = ubo.ambientLight * albedo.rgb;
@@ -144,11 +147,10 @@ void main() {
     vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01 * fs_in.fragNormal, 1.0));
     sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
     // Directional lighting
-    res += textureProj(sunShadowCoord, vec2(0), cascadeIndex).r *
+    res += filterPCF(sunShadowCoord, cascadeIndex).r *
            CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
                          albedo.rgb, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    // float brightness = length(res);
     vec4 color = vec4(res, albedo.a);
 
     // Insert your favorite weighting function here. The color-based factor
@@ -161,6 +163,7 @@ void main() {
 
     // Blend Func: GL_ONE, GL_ONE
     // Switch to premultiplied alpha and weight
+    
     accumColor = vec4(color.rgb * color.a, color.a) * weight;
 
     // Blend Func: GL_ZERO, GL_ONE_MINUS_SRC_ALPHA
@@ -240,7 +243,7 @@ float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
 
 float filterPCF(vec4 shadowCoord, int cascadeIndex) {
     ivec2 textDim = textureSize(shadowMap, 0).xy;
-    float scale = 0.5;
+    float scale = 1.0;
     float dx = scale * 1.0 / float(textDim.x);
     float dy = scale * 1.0 / float(textDim.y);
 
