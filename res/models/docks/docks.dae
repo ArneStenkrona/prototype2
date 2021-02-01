@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.90.1 commit date:2020-09-23, commit time:06:43, hash:3e85bb34d0d7</authoring_tool>
     </contributor>
-    <created>2021-01-29T17:29:59</created>
-    <modified>2021-01-29T17:29:59</modified>
+    <created>2021-02-01T04:41:09</created>
+    <modified>2021-02-01T04:41:09</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -71,6 +71,33 @@
             </emission>
             <diffuse>
               <texture texture="concrete_albedo_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="blue_wall-effect">
+      <profile_COMMON>
+        <newparam sid="blue_wall_png-surface">
+          <surface type="2D">
+            <init_from>blue_wall_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="blue_wall_png-sampler">
+          <sampler2D>
+            <source>blue_wall_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="blue_wall_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -882,33 +909,6 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="concrete_dark-effect">
-      <profile_COMMON>
-        <newparam sid="concrete_dark_albedo_png-surface">
-          <surface type="2D">
-            <init_from>concrete_dark_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="concrete_dark_albedo_png-sampler">
-          <sampler2D>
-            <source>concrete_dark_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="concrete_dark_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
     <effect id="billboard_1-effect">
       <profile_COMMON>
         <newparam sid="ceiling_dark_albedo_png-surface">
@@ -1260,87 +1260,6 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="lamp-effect">
-      <profile_COMMON>
-        <newparam sid="lamp_albedo_png-surface">
-          <surface type="2D">
-            <init_from>lamp_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="lamp_albedo_png-sampler">
-          <sampler2D>
-            <source>lamp_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="lamp_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="bar_area_tiles-effect">
-      <profile_COMMON>
-        <newparam sid="bar_area_tiles_albedo_png-surface">
-          <surface type="2D">
-            <init_from>bar_area_tiles_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="bar_area_tiles_albedo_png-sampler">
-          <sampler2D>
-            <source>bar_area_tiles_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="bar_area_tiles_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="bar_counter_overhang-effect">
-      <profile_COMMON>
-        <newparam sid="bar_counter_overhang_albedo_png-surface">
-          <surface type="2D">
-            <init_from>bar_counter_overhang_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="bar_counter_overhang_albedo_png-sampler">
-          <sampler2D>
-            <source>bar_counter_overhang_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="bar_counter_overhang_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
     <effect id="wall_purple-effect">
       <profile_COMMON>
         <newparam sid="wall_purple_albedo_png-surface">
@@ -1360,33 +1279,6 @@
             </emission>
             <diffuse>
               <texture texture="wall_purple_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="bar_counter_side-effect">
-      <profile_COMMON>
-        <newparam sid="bar_counter_side_albedo_png-surface">
-          <surface type="2D">
-            <init_from>bar_counter_side_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="bar_counter_side_albedo_png-sampler">
-          <sampler2D>
-            <source>bar_counter_side_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="bar_counter_side_albedo_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -1451,14 +1343,14 @@
     </effect>
     <effect id="wooden_floor-effect">
       <profile_COMMON>
-        <newparam sid="wooden_floor_albedo_png-surface">
+        <newparam sid="planks_alternate_albedo_png-surface">
           <surface type="2D">
-            <init_from>wooden_floor_albedo_png</init_from>
+            <init_from>planks_alternate_albedo_png</init_from>
           </surface>
         </newparam>
-        <newparam sid="wooden_floor_albedo_png-sampler">
+        <newparam sid="planks_alternate_albedo_png-sampler">
           <sampler2D>
-            <source>wooden_floor_albedo_png-surface</source>
+            <source>planks_alternate_albedo_png-surface</source>
           </sampler2D>
         </newparam>
         <technique sid="common">
@@ -1467,34 +1359,7 @@
               <color sid="emission">0 0 0 1</color>
             </emission>
             <diffuse>
-              <texture texture="wooden_floor_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="marble_tan-effect">
-      <profile_COMMON>
-        <newparam sid="wall_tan_albedo_png-surface">
-          <surface type="2D">
-            <init_from>wall_tan_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="wall_tan_albedo_png-sampler">
-          <sampler2D>
-            <source>wall_tan_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="wall_tan_albedo_png-sampler" texcoord="UVMap"/>
+              <texture texture="planks_alternate_albedo_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -1562,15 +1427,6 @@
     <image id="asphalt_albedo_png" name="asphalt_albedo_png">
       <init_from>asphalt_albedo.png</init_from>
     </image>
-    <image id="bar_area_tiles_albedo_png" name="bar_area_tiles_albedo_png">
-      <init_from>bar_area_tiles_albedo.png</init_from>
-    </image>
-    <image id="bar_counter_overhang_albedo_png" name="bar_counter_overhang_albedo_png">
-      <init_from>bar_counter_overhang_albedo.png</init_from>
-    </image>
-    <image id="bar_counter_side_albedo_png" name="bar_counter_side_albedo_png">
-      <init_from>bar_counter_side_albedo.png</init_from>
-    </image>
     <image id="bathroom_tile_albedo_png" name="bathroom_tile_albedo_png">
       <init_from>bathroom_tile_albedo.png</init_from>
     </image>
@@ -1583,6 +1439,9 @@
     <image id="blue_tile_light_albedo_png" name="blue_tile_light_albedo_png">
       <init_from>blue_tile_light_albedo.png</init_from>
     </image>
+    <image id="blue_wall_png" name="blue_wall_png">
+      <init_from>blue_wall.png</init_from>
+    </image>
     <image id="bufflehead_docks_sign_albedo_png" name="bufflehead_docks_sign_albedo_png">
       <init_from>bufflehead_docks_sign_albedo.png</init_from>
     </image>
@@ -1594,9 +1453,6 @@
     </image>
     <image id="concrete_albedo_png" name="concrete_albedo_png">
       <init_from>concrete_albedo.png</init_from>
-    </image>
-    <image id="concrete_dark_albedo_png" name="concrete_dark_albedo_png">
-      <init_from>concrete_dark_albedo.png</init_from>
     </image>
     <image id="concrete_darkened_albedo_png" name="concrete_darkened_albedo_png">
       <init_from>concrete_darkened_albedo.png</init_from>
@@ -1628,9 +1484,6 @@
     <image id="grass_albedo_png" name="grass_albedo_png">
       <init_from>grass_albedo.png</init_from>
     </image>
-    <image id="lamp_albedo_png" name="lamp_albedo_png">
-      <init_from>lamp_albedo.png</init_from>
-    </image>
     <image id="lobby_tiles_albedo_png" name="lobby_tiles_albedo_png">
       <init_from>lobby_tiles_albedo.png</init_from>
     </image>
@@ -1645,6 +1498,9 @@
     </image>
     <image id="planks_albedo_png" name="planks_albedo_png">
       <init_from>planks_albedo.png</init_from>
+    </image>
+    <image id="planks_alternate_albedo_png" name="planks_alternate_albedo_png">
+      <init_from>planks_alternate_albedo.png</init_from>
     </image>
     <image id="planks_fancy_albedo_png" name="planks_fancy_albedo_png">
       <init_from>planks_fancy_albedo.png</init_from>
@@ -1697,17 +1553,11 @@
     <image id="wall_purple_albedo_png" name="wall_purple_albedo_png">
       <init_from>wall_purple_albedo.png</init_from>
     </image>
-    <image id="wall_tan_albedo_png" name="wall_tan_albedo_png">
-      <init_from>wall_tan_albedo.png</init_from>
-    </image>
     <image id="water_normal_offset_png" name="water_normal_offset_png">
       <init_from>water_normal_offset.png</init_from>
     </image>
     <image id="wood_stairs_albedo_png" name="wood_stairs_albedo_png">
       <init_from>wood_stairs_albedo.png</init_from>
-    </image>
-    <image id="wooden_floor_albedo_png" name="wooden_floor_albedo_png">
-      <init_from>wooden_floor_albedo.png</init_from>
     </image>
     <image id="wooden_pillar_albedo_png" name="wooden_pillar_albedo_png">
       <init_from>wooden_pillar_albedo.png</init_from>
@@ -1716,6 +1566,9 @@
   <library_materials>
     <material id="metal_pole-material" name="metal_pole">
       <instance_effect url="#metal_pole-effect"/>
+    </material>
+    <material id="blue_wall-material" name="blue_wall">
+      <instance_effect url="#blue_wall-effect"/>
     </material>
     <material id="water_water_-material" name="water[water]">
       <instance_effect url="#water_water_-effect"/>
@@ -1810,9 +1663,6 @@
     <material id="docks_boardwalk-material" name="docks_boardwalk">
       <instance_effect url="#docks_boardwalk-effect"/>
     </material>
-    <material id="concrete_dark-material" name="concrete_dark">
-      <instance_effect url="#concrete_dark-effect"/>
-    </material>
     <material id="billboard_1-material" name="billboard_1">
       <instance_effect url="#billboard_1-effect"/>
     </material>
@@ -1852,20 +1702,8 @@
     <material id="bathroom_floor-material" name="bathroom_floor">
       <instance_effect url="#bathroom_floor-effect"/>
     </material>
-    <material id="lamp-material" name="lamp">
-      <instance_effect url="#lamp-effect"/>
-    </material>
-    <material id="bar_area_tiles-material" name="bar_area_tiles">
-      <instance_effect url="#bar_area_tiles-effect"/>
-    </material>
-    <material id="bar_counter_overhang-material" name="bar_counter_overhang">
-      <instance_effect url="#bar_counter_overhang-effect"/>
-    </material>
     <material id="wall_purple-material" name="wall_purple">
       <instance_effect url="#wall_purple-effect"/>
-    </material>
-    <material id="bar_counter_side-material" name="bar_counter_side">
-      <instance_effect url="#bar_counter_side-effect"/>
     </material>
     <material id="bufflehead_sign-material" name="bufflehead_sign">
       <instance_effect url="#bufflehead_sign-effect"/>
@@ -1875,9 +1713,6 @@
     </material>
     <material id="wooden_floor-material" name="wooden_floor">
       <instance_effect url="#wooden_floor-effect"/>
-    </material>
-    <material id="marble_tan-material" name="marble_tan">
-      <instance_effect url="#marble_tan-effect"/>
     </material>
     <material id="store_floor-material" name="store_floor">
       <instance_effect url="#store_floor-effect"/>
@@ -1926,6 +1761,48 @@
           <input semantic="NORMAL" source="#Circle_012-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Circle_012-mesh-map-0" offset="2" set="0"/>
           <p>15 0 0 6 1 1 7 2 2 13 3 3 4 4 4 5 5 5 11 6 6 2 7 7 3 8 8 9 9 9 0 10 10 1 11 11 8 12 12 7 2 13 0 10 14 14 13 15 5 5 16 6 1 17 12 14 18 3 8 19 4 4 20 10 15 21 1 11 22 2 7 23 19 16 24 10 15 25 11 6 26 17 17 27 8 12 28 9 9 29 16 18 30 15 0 31 8 12 32 22 19 33 13 3 34 14 13 35 12 14 36 19 16 37 11 6 38 10 15 39 17 17 40 9 9 41 23 20 42 14 13 43 15 0 44 21 21 45 12 14 46 13 3 47 16 18 48 24 22 49 23 20 50 22 19 51 24 22 52 21 21 53 20 23 54 24 22 55 19 16 56 18 24 57 24 22 58 17 17 59 23 20 60 24 22 61 22 19 62 21 21 63 24 22 64 20 23 65 19 16 66 24 22 67 18 24 68 17 17 69 24 22 70 16 18 71 46 25 72 29 4 73 30 25 74 51 4 75 36 26 76 35 4 77 47 27 78 30 25 79 31 27 80 52 26 81 37 22 82 36 26 83 48 28 84 31 27 85 32 28 86 53 22 87 38 29 88 37 22 89 41 10 90 32 28 91 25 10 92 42 29 93 25 10 94 26 29 95 54 29 96 39 10 97 38 29 98 55 10 99 40 28 100 39 10 101 43 22 102 26 29 103 27 22 104 56 28 105 33 27 106 40 28 107 44 26 108 27 22 109 28 26 110 49 27 111 34 25 112 33 27 113 45 4 114 28 26 115 29 4 116 50 25 117 35 4 118 34 25 119 70 25 120 61 4 121 62 25 122 71 27 123 62 25 124 63 27 125 72 28 126 63 27 127 64 28 128 65 10 129 64 28 130 57 10 131 66 29 132 57 10 133 58 29 134 67 22 135 58 29 136 59 22 137 68 26 138 59 22 139 60 26 140 69 4 141 60 26 142 61 4 143 77 30 144 86 31 145 85 32 146 76 33 147 83 34 148 75 35 149 73 36 150 82 37 151 81 38 152 73 36 153 88 39 154 80 40 155 78 41 156 87 42 157 86 31 158 77 30 159 84 43 160 76 33 161 74 44 162 83 34 163 82 37 164 80 40 165 87 42 166 79 45 167 88 39 168 89 46 169 96 47 170 86 31 171 95 48 172 94 49 173 85 32 174 92 50 175 84 43 176 83 34 177 90 51 178 82 37 179 88 39 180 95 48 181 87 42 182 86 31 183 93 52 184 85 32 185 83 34 186 92 50 187 91 53 188 81 38 189 90 51 190 89 46 191 91 53 192 92 50 193 97 22 194 89 46 195 90 51 196 97 22 197 96 47 198 89 46 199 97 22 200 94 49 201 95 48 202 97 22 203 92 50 204 93 52 205 97 22 206 90 51 207 91 53 208 97 22 209 95 48 210 96 47 211 97 22 212 93 52 213 94 49 214 97 22 215 75 35 216 74 44 217 78 41 218 15 0 219 14 13 220 6 1 221 13 3 222 12 14 223 4 4 224 11 6 225 10 15 226 2 7 227 9 9 228 8 12 229 0 10 230 8 12 231 15 0 232 7 2 233 14 13 234 13 3 235 5 5 236 12 14 237 11 6 238 3 8 239 10 15 240 9 9 241 1 11 242 19 16 243 18 24 244 10 15 245 17 17 246 16 18 247 8 12 248 16 18 249 23 20 250 15 0 251 22 19 252 21 21 253 13 3 254 12 14 255 20 23 256 19 16 257 10 15 258 18 24 259 17 17 260 23 20 261 22 19 262 14 13 263 21 21 264 20 23 265 12 14 266 46 25 267 45 4 268 29 4 269 51 4 270 52 26 271 36 26 272 47 27 273 46 25 274 30 25 275 52 26 276 53 22 277 37 22 278 48 28 279 47 27 280 31 27 281 53 22 282 54 29 283 38 29 284 41 10 285 48 28 286 32 28 287 42 29 288 41 10 289 25 10 290 54 29 291 55 10 292 39 10 293 55 10 294 56 28 295 40 28 296 43 22 297 42 29 298 26 29 299 56 28 300 49 27 301 33 27 302 44 26 303 43 22 304 27 22 305 49 27 306 50 25 307 34 25 308 45 4 309 44 26 310 28 26 311 50 25 312 51 4 313 35 4 314 70 25 315 69 4 316 61 4 317 71 27 318 70 25 319 62 25 320 72 28 321 71 27 322 63 27 323 65 10 324 72 28 325 64 28 326 66 29 327 65 10 328 57 10 329 67 22 330 66 29 331 58 29 332 68 26 333 67 22 334 59 22 335 69 4 336 68 26 337 60 26 338 77 30 339 78 41 340 86 31 341 76 33 342 84 43 343 83 34 344 73 36 345 74 44 346 82 37 347 73 36 348 81 38 349 88 39 350 78 41 351 79 45 352 87 42 353 77 30 354 85 32 355 84 43 356 74 44 357 75 35 358 83 34 359 80 40 360 88 39 361 87 42 362 88 39 363 81 38 364 89 46 365 86 31 366 87 42 367 95 48 368 85 32 369 93 52 370 92 50 371 83 34 372 91 53 373 90 51 374 88 39 375 96 47 376 95 48 377 86 31 378 94 49 379 93 52 380 83 34 381 84 43 382 92 50 383 81 38 384 82 37 385 90 51 386 74 44 387 73 36 388 78 41 389 73 36 390 80 40 391 78 41 392 80 40 393 79 45 394 78 41 395 78 41 396 77 30 397 76 33 398 76 33 399 75 35 400 78 41 401</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="Plane_274-mesh" name="Plane.274">
+      <mesh>
+        <source id="Plane_274-mesh-positions">
+          <float_array id="Plane_274-mesh-positions-array" count="18">14.7 -0.2999992 1.5 2.3 -0.2999992 1.5 14.7 -7.7 1.5 14.7 -7.7 5.5 2.3 -0.2999992 5.5 14.7 -0.2999992 5.5</float_array>
+          <technique_common>
+            <accessor source="#Plane_274-mesh-positions-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_274-mesh-normals">
+          <float_array id="Plane_274-mesh-normals-array" count="6">0 -1 0 -1 0 0</float_array>
+          <technique_common>
+            <accessor source="#Plane_274-mesh-normals-array" count="2" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_274-mesh-map-0">
+          <float_array id="Plane_274-mesh-map-0-array" count="24">6.207262 -4.03468e-4 4.45819e-4 1.000696 4.45306e-4 -4.03468e-4 9.91133 -4.03762e-4 6.207262 1.000696 6.207262 -4.03468e-4 6.207262 -4.03468e-4 6.207262 1.000696 4.45819e-4 1.000696 9.91133 -4.03762e-4 9.91133 1.000696 6.207262 1.000696</float_array>
+          <technique_common>
+            <accessor source="#Plane_274-mesh-map-0-array" count="12" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Plane_274-mesh-vertices">
+          <input semantic="POSITION" source="#Plane_274-mesh-positions"/>
+        </vertices>
+        <triangles material="blue_wall-material" count="4">
+          <input semantic="VERTEX" source="#Plane_274-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Plane_274-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Plane_274-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 4 0 1 1 0 2 2 1 3 5 1 4 0 1 5 0 0 6 5 0 7 4 0 8 2 1 9 3 1 10 5 1 11</p>
         </triangles>
       </mesh>
     </geometry>
@@ -4242,7 +4119,7 @@
     <geometry id="Plane_241-mesh" name="Plane.241">
       <mesh>
         <source id="Plane_241-mesh-positions">
-          <float_array id="Plane_241-mesh-positions-array" count="24">-1000 -1000 0 -1000 1000 0 1000 1000 0 1000 -1000 0 9.99997 40.00003 0 9.99997 9.99997 0 30.00003 9.99997 0 30.00003 40.00003 0</float_array>
+          <float_array id="Plane_241-mesh-positions-array" count="24">-1000 -1000 0 -1000 1000 0 1000 1000 0 1000 -1000 0 15.99997 36.00003 0 15.99997 5.999969 0 36.00003 5.999969 0 36.00003 36.00003 0</float_array>
           <technique_common>
             <accessor source="#Plane_241-mesh-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
@@ -4262,7 +4139,7 @@
           </technique_common>
         </source>
         <source id="Plane_241-mesh-map-0">
-          <float_array id="Plane_241-mesh-map-0-array" count="48">491.4494 496.1325 128.6687 851.7294 128.6687 133.3518 491.4494 496.1325 847.0465 133.3518 498.6333 496.1325 498.6333 496.1325 847.0465 851.7294 498.6333 506.9081 491.4494 506.9081 847.0465 851.7294 128.6687 851.7294 491.4494 496.1325 491.4494 506.9081 128.6687 851.7294 491.4494 496.1325 128.6687 133.3518 847.0465 133.3518 498.6333 496.1325 847.0465 133.3518 847.0465 851.7294 491.4494 506.9081 498.6333 506.9081 847.0465 851.7294</float_array>
+          <float_array id="Plane_241-mesh-map-0-array" count="48">389.153 382.9209 -1.171343 764.7933 -1.171343 -3.561704 389.153 382.9209 767.1837 -3.561704 396.8366 382.9209 396.8366 382.9209 767.1837 764.7933 396.8366 394.4463 389.153 394.4463 767.1837 764.7933 -1.171343 764.7933 389.153 382.9209 389.153 394.4463 -1.171343 764.7933 389.153 382.9209 -1.171343 -3.561704 767.1837 -3.561704 396.8366 382.9209 767.1837 -3.561704 767.1837 764.7933 389.153 394.4463 396.8366 394.4463 767.1837 764.7933</float_array>
           <technique_common>
             <accessor source="#Plane_241-mesh-map-0-array" count="24" stride="2">
               <param name="S" type="float"/>
@@ -5842,7 +5719,7 @@
     <geometry id="Cube_028-mesh" name="Cube.028">
       <mesh>
         <source id="Cube_028-mesh-positions">
-          <float_array id="Cube_028-mesh-positions-array" count="24">0.2999997 -0.01000016 -1.1 0.2999997 -0.01000016 2.3 0.2999997 0.009999752 -1.1 0.2999997 0.009999752 2.3 1.8 -0.009999811 -1.1 1.8 -0.009999811 2.3 1.8 0.0100001 -1.1 1.8 0.0100001 2.3</float_array>
+          <float_array id="Cube_028-mesh-positions-array" count="24">0.2999997 -0.01000016 -1.2 0.2999997 -0.01000016 2.3 0.2999997 0.009999752 -1.1 0.2999997 0.009999752 2.3 1.8 -0.009999811 -1.2 1.8 -0.009999811 2.3 1.8 0.0100001 -1.1 1.8 0.0100001 2.3</float_array>
           <technique_common>
             <accessor source="#Cube_028-mesh-positions-array" count="8" stride="3">
               <param name="X" type="float"/>
@@ -5852,9 +5729,9 @@
           </technique_common>
         </source>
         <source id="Cube_028-mesh-normals">
-          <float_array id="Cube_028-mesh-normals-array" count="30">-1 0 0 -2.35314e-7 1 0 1 0 0 2.35314e-7 -1 0 -1.24177e-7 0 -1 0 0 1 -2.35314e-7 1 0 2.35314e-7 -1 0 0 0 -1 0 0 1</float_array>
+          <float_array id="Cube_028-mesh-normals-array" count="36">-1 -3.19311e-6 0 -2.35314e-7 1 0 1 1.36239e-5 0 2.35314e-7 -1 0 -2.67883e-7 0.9805808 -0.1961157 0 0 1 -1 0 0 -2.35314e-7 1 0 1 0 0 2.35314e-7 -1 0 -2.04565e-7 0.9805808 -0.1961158 0 0 1</float_array>
           <technique_common>
-            <accessor source="#Cube_028-mesh-normals-array" count="10" stride="3">
+            <accessor source="#Cube_028-mesh-normals-array" count="12" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -5862,7 +5739,7 @@
           </technique_common>
         </source>
         <source id="Cube_028-mesh-map-0">
-          <float_array id="Cube_028-mesh-map-0-array" count="72">0.625 0 0.375 0.25 0.375 0 0.625 0.25 0.375 0.5 0.375 0.25 0.625 0.5 0.375 0.75 0.375 0.5 0.625 0.75 0.375 1 0.375 0.75 0.375 0.5 0.125 0.75 0.125 0.5 0.875 0.5 0.625 0.75 0.625 0.5 0.625 0 0.625 0.25 0.375 0.25 0.625 0.25 0.625 0.5 0.375 0.5 0.625 0.5 0.625 0.75 0.375 0.75 0.625 0.75 0.625 1 0.375 1 0.375 0.5 0.375 0.75 0.125 0.75 0.875 0.5 0.875 0.75 0.625 0.75</float_array>
+          <float_array id="Cube_028-mesh-map-0-array" count="72">0.625 0 0.375 0.25 0.375 0 0.625 0.25 0.375 0.5 0.375 0.25 0.375 0.5 0.625 0.75 0.375 0.75 0.625 0.75 0.375 1 0.375 0.75 0.375 0.5 0.125 0.75 0.125 0.5 0.875 0.5 0.625 0.75 0.625 0.5 0.625 0 0.625 0.25 0.375 0.25 0.625 0.25 0.625 0.5 0.375 0.5 0.375 0.5 0.625 0.5 0.625 0.75 0.625 0.75 0.625 1 0.375 1 0.375 0.5 0.375 0.75 0.125 0.75 0.875 0.5 0.875 0.75 0.625 0.75</float_array>
           <technique_common>
             <accessor source="#Cube_028-mesh-map-0-array" count="36" stride="2">
               <param name="S" type="float"/>
@@ -5877,7 +5754,7 @@
           <input semantic="VERTEX" source="#Cube_028-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Cube_028-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Cube_028-mesh-map-0" offset="2" set="0"/>
-          <p>1 0 0 2 0 1 0 0 2 3 1 3 6 1 4 2 1 5 7 2 6 4 2 7 6 2 8 5 3 9 0 3 10 4 3 11 6 4 12 0 4 13 2 4 14 3 5 15 5 5 16 7 5 17 1 0 18 3 0 19 2 0 20 3 6 21 7 6 22 6 6 23 7 2 24 5 2 25 4 2 26 5 7 27 1 7 28 0 7 29 6 8 30 4 8 31 0 8 32 3 9 33 1 9 34 5 9 35</p>
+          <p>1 0 0 2 0 1 0 0 2 3 1 3 6 1 4 2 1 5 6 2 6 5 2 7 4 2 8 5 3 9 0 3 10 4 3 11 6 4 12 0 4 13 2 4 14 3 5 15 5 5 16 7 5 17 1 6 18 3 6 19 2 6 20 3 7 21 7 7 22 6 7 23 6 8 24 7 8 25 5 8 26 5 9 27 1 9 28 0 9 29 6 10 30 4 10 31 0 10 32 3 11 33 1 11 34 5 11 35</p>
         </triangles>
       </mesh>
     </geometry>
@@ -6220,7 +6097,7 @@
     <geometry id="Plane_169-mesh" name="Plane.169">
       <mesh>
         <source id="Plane_169-mesh-positions">
-          <float_array id="Plane_169-mesh-positions-array" count="72">1.299999 13.5 1.4 0.9999992 13.5 1.4 0.9999992 13 1.4 1.299999 13 1.4 1.299999 13.5 4.799999 0.9999992 13.5 4.799999 0.9999992 13 4.799999 1.299999 13 4.799999 1.299999 9.700001 1.4 0.9999992 9.700001 1.4 0.9999992 9.200001 1.4 1.299999 9.200001 1.4 1.299999 9.700001 4.799999 0.9999992 9.700001 4.799999 0.9999992 9.200001 4.799999 1.299999 9.200001 4.799999 1.299999 11.5 1.4 0.9999992 11.5 1.4 0.9999992 11.2 1.4 1.299999 11.2 1.4 1.299999 11.5 4.799999 0.9999992 11.5 4.799999 0.9999992 11.2 4.799999 1.299999 11.2 4.799999</float_array>
+          <float_array id="Plane_169-mesh-positions-array" count="72">1.299999 13.5 1.3 0.9999992 13.5 1.3 0.9999992 13 1.3 1.299999 13 1.3 1.299999 13.5 4.799999 0.9999992 13.5 4.799999 0.9999992 13 4.799999 1.299999 13 4.799999 1.299999 9.700001 1.3 0.9999992 9.700001 1.3 0.9999992 9.200001 1.3 1.299999 9.200001 1.3 1.299999 9.700001 4.799999 0.9999992 9.700001 4.799999 0.9999992 9.200001 4.799999 1.299999 9.200001 4.799999 1.299999 11.5 1.3 0.9999992 11.5 1.3 0.9999992 11.2 1.3 1.299999 11.2 1.3 1.299999 11.5 4.799999 0.9999992 11.5 4.799999 0.9999992 11.2 4.799999 1.299999 11.2 4.799999</float_array>
           <technique_common>
             <accessor source="#Plane_169-mesh-positions-array" count="24" stride="3">
               <param name="X" type="float"/>
@@ -8568,174 +8445,6 @@
           <input semantic="NORMAL" source="#Plane_119-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_119-mesh-map-0" offset="2" set="0"/>
           <p>3 0 0 4 0 1 0 0 2 2 0 3 7 0 4 6 0 5 0 0 6 7 0 7 1 0 8 3 0 9 5 0 10 4 0 11 2 0 12 1 0 13 7 0 14 0 1 15 4 1 16 7 1 17</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_118-mesh" name="Plane.118">
-      <mesh>
-        <source id="Plane_118-mesh-positions">
-          <float_array id="Plane_118-mesh-positions-array" count="36">-5.1 -4.1 0 7.1 -4.1 0 -5.1 4.1 0 7.1 4.1 0 -5 4 0 -5 -4 0 7 -4 0 7 4 0 -5.1 -4.1 -0.1 7.1 -4.1 -0.1 -5.1 4.1 -0.1 7.1 4.1 -0.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_118-mesh-positions-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_118-mesh-normals">
-          <float_array id="Plane_118-mesh-normals-array" count="15">0 1 0 0 0 1 0 -1 0 1 0 0 -1 0 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_118-mesh-normals-array" count="5" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_118-mesh-map-0">
-          <float_array id="Plane_118-mesh-map-0-array" count="96">4.767439 0 4.82558 5 4.76744 5 0.05813968 0.04902046 4.767438 0 4.709298 0.04901951 4.709298 0.04901951 4.767439 4.999999 4.709299 4.95098 4.709299 4.95098 1.10892e-6 5 0.05814105 4.950981 0.05814105 4.950981 0 9.34975e-7 0.05813968 0.04902046 4.883719 5 4.825579 0 4.883719 0 4.883719 0 4.94186 4.019608 4.883721 4.019608 4.94186 0 5 4.019608 4.941861 4.019608 4.767439 0 4.825578 0 4.82558 5 0.05813968 0.04902046 0 9.34975e-7 4.767438 0 4.709298 0.04901951 4.767438 0 4.767439 4.999999 4.709299 4.95098 4.767439 4.999999 1.10892e-6 5 0.05814105 4.950981 1.10892e-6 5 0 9.34975e-7 4.883719 5 4.82558 5 4.825579 0 4.883719 0 4.941859 0 4.94186 4.019608 4.94186 0 5 0 5 4.019608</float_array>
-          <technique_common>
-            <accessor source="#Plane_118-mesh-map-0-array" count="48" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_118-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_118-mesh-positions"/>
-        </vertices>
-        <triangles material="concrete_dark-material" count="16">
-          <input semantic="VERTEX" source="#Plane_118-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_118-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_118-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 10 0 1 2 0 2 4 1 3 0 1 4 5 1 5 5 1 6 1 1 7 6 1 8 6 1 9 3 1 10 7 1 11 7 1 12 2 1 13 4 1 14 0 2 15 9 2 16 1 2 17 1 3 18 11 3 19 3 3 20 2 4 21 8 4 22 0 4 23 3 0 24 11 0 25 10 0 26 4 1 27 2 1 28 0 1 29 5 1 30 0 1 31 1 1 32 6 1 33 1 1 34 3 1 35 7 1 36 3 1 37 2 1 38 0 2 39 8 2 40 9 2 41 1 3 42 9 3 43 11 3 44 2 4 45 10 4 46 8 4 47</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_117-mesh" name="Plane.117">
-      <mesh>
-        <source id="Plane_117-mesh-positions">
-          <float_array id="Plane_117-mesh-positions-array" count="36">-5.1 -2.1 0 7.1 -2.1 0 -5.1 6.1 0 7.1 6.1 0 -5 6 0 -5 -2 0 7 -2 0 7 6 0 -5.1 -2.1 -0.1 7.1 -2.1 -0.1 -5.1 6.1 -0.1 7.1 6.1 -0.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_117-mesh-positions-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_117-mesh-normals">
-          <float_array id="Plane_117-mesh-normals-array" count="15">0 1 0 0 0 1 0 -1 0 1 0 0 -1 0 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_117-mesh-normals-array" count="5" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_117-mesh-map-0">
-          <float_array id="Plane_117-mesh-map-0-array" count="96">4.767438 0 4.825579 5 4.767439 5 4.709299 4.959016 1.10892e-6 5 0.05814069 4.959017 0.05814069 4.959017 0 5.86275e-7 0.05813968 0.04098415 0.05813968 0.04098415 4.767437 0 4.709297 0.04098355 4.709297 0.04098355 4.767438 5 4.709299 4.959016 4.825579 0 4.883719 5 4.825579 5 4.883718 0 4.94186 3.360656 4.88372 3.360656 4.94186 0 5 3.360656 4.94186 3.360656 4.767438 0 4.825578 0 4.825579 5 4.709299 4.959016 4.767438 5 1.10892e-6 5 0.05814069 4.959017 1.10892e-6 5 0 5.86275e-7 0.05813968 0.04098415 0 5.86275e-7 4.767437 0 4.709297 0.04098355 4.767437 0 4.767438 5 4.825579 0 4.883718 0 4.883719 5 4.883718 0 4.941858 0 4.94186 3.360656 4.94186 0 5 0 5 3.360656</float_array>
-          <technique_common>
-            <accessor source="#Plane_117-mesh-map-0-array" count="48" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_117-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_117-mesh-positions"/>
-        </vertices>
-        <triangles material="concrete_dark-material" count="16">
-          <input semantic="VERTEX" source="#Plane_117-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_117-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_117-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 10 0 1 2 0 2 4 1 3 0 1 4 5 1 5 5 1 6 1 1 7 6 1 8 6 1 9 3 1 10 7 1 11 7 1 12 2 1 13 4 1 14 0 2 15 9 2 16 1 2 17 1 3 18 11 3 19 3 3 20 2 4 21 8 4 22 0 4 23 3 0 24 11 0 25 10 0 26 4 1 27 2 1 28 0 1 29 5 1 30 0 1 31 1 1 32 6 1 33 1 1 34 3 1 35 7 1 36 3 1 37 2 1 38 0 2 39 8 2 40 9 2 41 1 3 42 9 3 43 11 3 44 2 4 45 10 4 46 8 4 47</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_116-mesh" name="Plane.116">
-      <mesh>
-        <source id="Plane_116-mesh-positions">
-          <float_array id="Plane_116-mesh-positions-array" count="36">-6.1 -2.1 0 7.1 -2.1 0 -6.1 6.1 0 7.1 6.1 0 -6 6 0 -6 -2 0 7 -2 0 7 6 0 -6.1 -2.1 -0.1 7.1 -2.1 -0.1 -6.1 6.1 -0.1 7.1 6.1 -0.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_116-mesh-positions-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_116-mesh-normals">
-          <float_array id="Plane_116-mesh-normals-array" count="15">0 1 0 0 0 1 0 -1 0 1 0 0 -1 0 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_116-mesh-normals-array" count="5" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_116-mesh-map-0">
-          <float_array id="Plane_116-mesh-map-0-array" count="96">4.825578 0 4.883719 5 4.825579 5 4.709298 4.962121 1.10892e-6 5 0.05814075 4.962121 0.05814075 4.962121 0 5.4186e-7 0.05813968 0.03787928 0.05813968 0.03787928 4.767436 0 4.709296 0.03787875 4.709296 0.03787875 4.767437 5 4.709298 4.962121 4.825578 5 4.767437 0 4.825577 0 4.883719 0 4.94186 3.106061 4.88372 3.106061 4.94186 0 5 3.106061 4.941861 3.106061 4.825578 0 4.883718 0 4.883719 5 4.709298 4.962121 4.767437 5 1.10892e-6 5 0.05814075 4.962121 1.10892e-6 5 0 5.4186e-7 0.05813968 0.03787928 0 5.4186e-7 4.767436 0 4.709296 0.03787875 4.767436 0 4.767437 5 4.825578 5 4.767439 5 4.767437 0 4.883719 0 4.941859 0 4.94186 3.106061 4.94186 0 5 0 5 3.106061</float_array>
-          <technique_common>
-            <accessor source="#Plane_116-mesh-map-0-array" count="48" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_116-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_116-mesh-positions"/>
-        </vertices>
-        <triangles material="concrete_dark-material" count="16">
-          <input semantic="VERTEX" source="#Plane_116-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_116-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_116-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 10 0 1 2 0 2 4 1 3 0 1 4 5 1 5 5 1 6 1 1 7 6 1 8 6 1 9 3 1 10 7 1 11 7 1 12 2 1 13 4 1 14 0 2 15 9 2 16 1 2 17 1 3 18 11 3 19 3 3 20 2 4 21 8 4 22 0 4 23 3 0 24 11 0 25 10 0 26 4 1 27 2 1 28 0 1 29 5 1 30 0 1 31 1 1 32 6 1 33 1 1 34 3 1 35 7 1 36 3 1 37 2 1 38 0 2 39 8 2 40 9 2 41 1 3 42 9 3 43 11 3 44 2 4 45 10 4 46 8 4 47</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_115-mesh" name="Plane.115">
-      <mesh>
-        <source id="Plane_115-mesh-positions">
-          <float_array id="Plane_115-mesh-positions-array" count="36">-5.1 -8.100001 0 7.1 -8.100001 0 -5.1 8.100001 0 7.1 8.100001 0 -5 8 0 -5 -8 0 7 -8 0 7 8 0 -5.1 -8.100001 -0.1 7.1 -8.100001 -0.1 -5.1 8.100001 -0.1 7.1 8.100001 -0.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_115-mesh-positions-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_115-mesh-normals">
-          <float_array id="Plane_115-mesh-normals-array" count="15">0 1 0 0 0 1 0 -1 0 1 0 0 -1 0 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_115-mesh-normals-array" count="5" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_115-mesh-map-0">
-          <float_array id="Plane_115-mesh-map-0-array" count="96">9.920635 0 10 7.530863 9.920636 7.530863 0.07936495 9.938271 7.56884e-7 0 0.07936567 0.06172859 0.07936567 0.06172859 9.682536 1.17738e-6 9.603171 0.06172978 9.603171 0.06172978 9.682535 10 9.603169 9.938271 9.603169 9.938271 0 10 0.07936495 9.938271 9.84127 0 9.920636 7.530864 9.84127 7.530864 9.682536 0 9.761904 10 9.682538 10 9.761904 0 9.84127 10 9.761905 10 9.920635 0 10 0 10 7.530863 0.07936495 9.938271 0 10 7.56884e-7 0 0.07936567 0.06172859 7.56884e-7 0 9.682536 1.17738e-6 9.603171 0.06172978 9.682536 1.17738e-6 9.682535 10 9.603169 9.938271 9.682535 10 0 10 9.84127 0 9.920635 0 9.920636 7.530864 9.682536 0 9.7619 0 9.761904 10 9.761904 0 9.841269 0 9.84127 10</float_array>
-          <technique_common>
-            <accessor source="#Plane_115-mesh-map-0-array" count="48" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_115-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_115-mesh-positions"/>
-        </vertices>
-        <triangles material="concrete_dark-material" count="16">
-          <input semantic="VERTEX" source="#Plane_115-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_115-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_115-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 10 0 1 2 0 2 4 1 3 0 1 4 5 1 5 5 1 6 1 1 7 6 1 8 6 1 9 3 1 10 7 1 11 7 1 12 2 1 13 4 1 14 0 2 15 9 2 16 1 2 17 1 3 18 11 3 19 3 3 20 2 4 21 8 4 22 0 4 23 3 0 24 11 0 25 10 0 26 4 1 27 2 1 28 0 1 29 5 1 30 0 1 31 1 1 32 6 1 33 1 1 34 3 1 35 7 1 36 3 1 37 2 1 38 0 2 39 8 2 40 9 2 41 1 3 42 9 3 43 11 3 44 2 4 45 10 4 46 8 4 47</p>
         </triangles>
       </mesh>
     </geometry>
@@ -11259,90 +10968,6 @@
         </triangles>
       </mesh>
     </geometry>
-    <geometry id="Plane_066-mesh" name="Plane.066">
-      <mesh>
-        <source id="Plane_066-mesh-positions">
-          <float_array id="Plane_066-mesh-positions-array" count="60">-0.1979898 0 0 0 -0.1979898 0 0 0.1979898 0 0.1979898 0 0 -0.07599771 0 0.2 0 -0.07599771 0.2 0 0.07599771 0.2 0.07599771 0 0.2 -0.0335713 0 0.2267609 0 -0.0335713 0.2267609 0 0.0335713 0.2267609 0.0335713 0 0.2267609 0 0.07599771 0.2267609 -0.07599771 0 0.2267609 0 -0.07599771 0.2267609 0.07599771 0 0.2267609 -0.0335713 0 0.6 0 -0.0335713 0.6 0 0.0335713 0.6 0.0335713 0 0.6</float_array>
-          <technique_common>
-            <accessor source="#Plane_066-mesh-positions-array" count="20" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_066-mesh-normals">
-          <float_array id="Plane_066-mesh-normals-array" count="84">0 0 -1 0.7071065 0.7071071 0 0.6492888 -0.6492888 0.3960406 -0.6492888 0.6492888 0.3960406 0.6492888 0.6492888 0.3960406 -0.6492888 -0.6492888 0.3960406 0.7071068 -0.7071068 0 -0.7071065 -0.7071071 0 0.7071065 -0.7071071 0 -0.7071065 0.7071071 0 0 0 1 1.30775e-6 0 1 -1.30775e-6 0 1 -0.7071068 0.7071068 0 0.7071068 0.7071068 0 -0.7071068 -0.7071068 0 0.7071075 0.7071062 0 0.6492888 -0.6492889 0.3960406 -0.6492888 0.6492889 0.3960406 0.6492888 0.6492888 0.3960407 -0.6492888 -0.6492888 0.3960407 0.7071068 -0.7071068 0 -0.7071075 -0.7071062 0 0.7071075 -0.7071062 0 -0.7071075 0.7071062 0 -0.7071068 0.7071068 0 0.7071068 0.7071068 0 -0.7071068 -0.7071068 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_066-mesh-normals-array" count="28" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_066-mesh-map-0">
-          <float_array id="Plane_066-mesh-map-0-array" count="216">0.3790872 0.4426453 0.6085112 0.6720693 0.3790872 0.6720693 0.2856686 0.7226235 0.3426181 1 0.2856687 1 0.001001 0.001001 0.998999 0.4032959 0.998999 0.001001 0.001001 0.001001 0.998999 0.4006233 0.998999 0.001001 0.001001 0.001001 0.998999 0.4037237 0.998999 0.001001 0.001001 0.001001 0.998999 0.4037237 0.998999 0.001001 0.7994787 0.6976398 0.6009255 0.9940064 0.6009253 0.6976397 0.3995675 0.7226235 0.4565169 1 0.3995675 1 0.3426181 0.7226235 0.3995674 1 0.3426181 1 0.2856686 1 0.2287191 0.7226235 0.2856686 0.7226235 0.1648769 0.9225761 0 1 0.06384223 0.9225761 0.06384223 0.9225761 0 0.7226235 0.06384223 0.8000474 0.06384223 0.8000474 0.2287191 0.7226235 0.1648769 0.8000474 0.1648769 0.8000474 0.2287191 1 0.1648769 0.9225761 0.4565169 0.7226235 0.5575516 0.8451521 0.4565169 0.8451521 0.5987498 0.6952486 0.3962202 0.9914761 0.3962203 0.6952486 0.8012792 0.6952486 0.5987499 0.9914761 0.5987498 0.6952486 0.600925 0.6976397 0.4023719 0.9940064 0.4023715 0.6976397 0.3790872 0.4426453 0.6085113 0.4426453 0.6085112 0.6720693 0.2856686 0.7226235 0.342618 0.7226235 0.3426181 1 0.001001 0.001001 0.001001 0.4032959 0.998999 0.4032959 0.001001 0.001001 0.001001 0.4006233 0.998999 0.4006233 0.001001 0.001001 0.001001 0.4037237 0.998999 0.4037237 0.001001 0.001001 0.001001 0.4037237 0.998999 0.4037237 0.7994787 0.6976398 0.7994788 0.9940064 0.6009255 0.9940064 0.3995675 0.7226235 0.4565169 0.7226235 0.4565169 1 0.3426181 0.7226235 0.3995675 0.7226235 0.3995674 1 0.2856686 1 0.2287192 1 0.2287191 0.7226235 0.1648769 0.9225761 0.2287191 1 0 1 0.06384223 0.9225761 0 1 0 0.7226235 0.06384223 0.8000474 0 0.7226235 0.2287191 0.7226235 0.1648769 0.8000474 0.2287191 0.7226235 0.2287191 1 0.4565169 0.7226235 0.5575516 0.7226235 0.5575516 0.8451521 0.5987498 0.6952486 0.5987496 0.9914761 0.3962202 0.9914761 0.8012792 0.6952486 0.8012792 0.9914761 0.5987499 0.9914761 0.600925 0.6976397 0.6009253 0.9940064 0.4023719 0.9940064</float_array>
-          <technique_common>
-            <accessor source="#Plane_066-mesh-map-0-array" count="108" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_066-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_066-mesh-positions"/>
-        </vertices>
-        <triangles material="lamp-material" count="36">
-          <input semantic="VERTEX" source="#Plane_066-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_066-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_066-mesh-map-0" offset="2" set="0"/>
-          <p>2 0 0 1 0 1 0 0 2 6 1 3 15 1 4 7 1 5 3 2 6 5 2 7 1 2 8 0 3 9 6 3 10 2 3 11 2 4 12 7 4 13 3 4 14 1 5 15 4 5 16 0 5 17 11 6 18 17 6 19 9 6 20 5 7 21 13 7 22 4 7 23 7 8 24 14 8 25 5 8 26 4 9 27 12 9 28 6 9 29 10 10 30 13 10 31 8 10 32 8 11 33 14 11 34 9 11 35 9 10 36 15 10 37 11 10 38 11 12 39 12 12 40 10 12 41 17 10 42 18 10 43 16 10 44 8 13 45 18 13 46 10 13 47 10 14 48 19 14 49 11 14 50 9 15 51 16 15 52 8 15 53 2 0 54 3 0 55 1 0 56 6 16 57 12 16 58 15 16 59 3 17 60 7 17 61 5 17 62 0 18 63 4 18 64 6 18 65 2 19 66 6 19 67 7 19 68 1 20 69 5 20 70 4 20 71 11 21 72 19 21 73 17 21 74 5 22 75 14 22 76 13 22 77 7 23 78 15 23 79 14 23 80 4 24 81 13 24 82 12 24 83 10 10 84 12 10 85 13 10 86 8 10 87 13 10 88 14 10 89 9 10 90 14 10 91 15 10 92 11 10 93 15 10 94 12 10 95 17 10 96 19 10 97 18 10 98 8 25 99 16 25 100 18 25 101 10 26 102 18 26 103 19 26 104 9 27 105 17 27 106 16 27 107</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_065-mesh" name="Plane.065">
-      <mesh>
-        <source id="Plane_065-mesh-positions">
-          <float_array id="Plane_065-mesh-positions-array" count="60">-0.1979898 0 0 0 -0.1979898 0 0 0.1979898 0 0.1979898 0 0 -0.07599771 0 0.2 0 -0.07599771 0.2 0 0.07599771 0.2 0.07599771 0 0.2 -0.0335713 0 0.2267609 0 -0.0335713 0.2267609 0 0.0335713 0.2267609 0.0335713 0 0.2267609 0 0.07599771 0.2267609 -0.07599771 0 0.2267609 0 -0.07599771 0.2267609 0.07599771 0 0.2267609 -0.0335713 0 0.6 0 -0.0335713 0.6 0 0.0335713 0.6 0.0335713 0 0.6</float_array>
-          <technique_common>
-            <accessor source="#Plane_065-mesh-positions-array" count="20" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_065-mesh-normals">
-          <float_array id="Plane_065-mesh-normals-array" count="84">0 0 -1 0.7071065 0.7071071 0 0.6492888 -0.6492888 0.3960406 -0.6492888 0.6492888 0.3960406 0.6492888 0.6492888 0.3960406 -0.6492888 -0.6492888 0.3960406 0.7071068 -0.7071068 0 -0.7071065 -0.7071071 0 0.7071065 -0.7071071 0 -0.7071065 0.7071071 0 0 0 1 1.30775e-6 0 1 -1.30775e-6 0 1 -0.7071068 0.7071068 0 0.7071068 0.7071068 0 -0.7071068 -0.7071068 0 0.7071075 0.7071062 0 0.6492888 -0.6492889 0.3960406 -0.6492888 0.6492889 0.3960406 0.6492888 0.6492888 0.3960407 -0.6492888 -0.6492888 0.3960407 0.7071068 -0.7071068 0 -0.7071075 -0.7071062 0 0.7071075 -0.7071062 0 -0.7071075 0.7071062 0 -0.7071068 0.7071068 0 0.7071068 0.7071068 0 -0.7071068 -0.7071068 0</float_array>
-          <technique_common>
-            <accessor source="#Plane_065-mesh-normals-array" count="28" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_065-mesh-map-0">
-          <float_array id="Plane_065-mesh-map-0-array" count="216">0.3790872 0.4426453 0.6085112 0.6720693 0.3790872 0.6720693 0.2856686 0.7226235 0.3426181 1 0.2856687 1 0.001001 0.001001 0.998999 0.4032959 0.998999 0.001001 0.001001 0.001001 0.998999 0.4006233 0.998999 0.001001 0.001001 0.001001 0.998999 0.4037237 0.998999 0.001001 0.001001 0.001001 0.998999 0.4037237 0.998999 0.001001 0.7994787 0.6976398 0.6009255 0.9940064 0.6009253 0.6976397 0.3995675 0.7226235 0.4565169 1 0.3995675 1 0.3426181 0.7226235 0.3995674 1 0.3426181 1 0.2856686 1 0.2287191 0.7226235 0.2856686 0.7226235 0.1648769 0.9225761 0 1 0.06384223 0.9225761 0.06384223 0.9225761 0 0.7226235 0.06384223 0.8000474 0.06384223 0.8000474 0.2287191 0.7226235 0.1648769 0.8000474 0.1648769 0.8000474 0.2287191 1 0.1648769 0.9225761 0.4565169 0.7226235 0.5575516 0.8451521 0.4565169 0.8451521 0.5987498 0.6952486 0.3962202 0.9914761 0.3962203 0.6952486 0.8012792 0.6952486 0.5987499 0.9914761 0.5987498 0.6952486 0.600925 0.6976397 0.4023719 0.9940064 0.4023715 0.6976397 0.3790872 0.4426453 0.6085113 0.4426453 0.6085112 0.6720693 0.2856686 0.7226235 0.342618 0.7226235 0.3426181 1 0.001001 0.001001 0.001001 0.4032959 0.998999 0.4032959 0.001001 0.001001 0.001001 0.4006233 0.998999 0.4006233 0.001001 0.001001 0.001001 0.4037237 0.998999 0.4037237 0.001001 0.001001 0.001001 0.4037237 0.998999 0.4037237 0.7994787 0.6976398 0.7994788 0.9940064 0.6009255 0.9940064 0.3995675 0.7226235 0.4565169 0.7226235 0.4565169 1 0.3426181 0.7226235 0.3995675 0.7226235 0.3995674 1 0.2856686 1 0.2287192 1 0.2287191 0.7226235 0.1648769 0.9225761 0.2287191 1 0 1 0.06384223 0.9225761 0 1 0 0.7226235 0.06384223 0.8000474 0 0.7226235 0.2287191 0.7226235 0.1648769 0.8000474 0.2287191 0.7226235 0.2287191 1 0.4565169 0.7226235 0.5575516 0.7226235 0.5575516 0.8451521 0.5987498 0.6952486 0.5987496 0.9914761 0.3962202 0.9914761 0.8012792 0.6952486 0.8012792 0.9914761 0.5987499 0.9914761 0.600925 0.6976397 0.6009253 0.9940064 0.4023719 0.9940064</float_array>
-          <technique_common>
-            <accessor source="#Plane_065-mesh-map-0-array" count="108" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_065-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_065-mesh-positions"/>
-        </vertices>
-        <triangles material="lamp-material" count="36">
-          <input semantic="VERTEX" source="#Plane_065-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_065-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_065-mesh-map-0" offset="2" set="0"/>
-          <p>2 0 0 1 0 1 0 0 2 6 1 3 15 1 4 7 1 5 3 2 6 5 2 7 1 2 8 0 3 9 6 3 10 2 3 11 2 4 12 7 4 13 3 4 14 1 5 15 4 5 16 0 5 17 11 6 18 17 6 19 9 6 20 5 7 21 13 7 22 4 7 23 7 8 24 14 8 25 5 8 26 4 9 27 12 9 28 6 9 29 10 10 30 13 10 31 8 10 32 8 11 33 14 11 34 9 11 35 9 10 36 15 10 37 11 10 38 11 12 39 12 12 40 10 12 41 17 10 42 18 10 43 16 10 44 8 13 45 18 13 46 10 13 47 10 14 48 19 14 49 11 14 50 9 15 51 16 15 52 8 15 53 2 0 54 3 0 55 1 0 56 6 16 57 12 16 58 15 16 59 3 17 60 7 17 61 5 17 62 0 18 63 4 18 64 6 18 65 2 19 66 6 19 67 7 19 68 1 20 69 5 20 70 4 20 71 11 21 72 19 21 73 17 21 74 5 22 75 14 22 76 13 22 77 7 23 78 15 23 79 14 23 80 4 24 81 13 24 82 12 24 83 10 10 84 12 10 85 13 10 86 8 10 87 13 10 88 14 10 89 9 10 90 14 10 91 15 10 92 11 10 93 15 10 94 12 10 95 17 10 96 19 10 97 18 10 98 8 25 99 16 25 100 18 25 101 10 26 102 18 26 103 19 26 104 9 27 105 17 27 106 16 27 107</p>
-        </triangles>
-      </mesh>
-    </geometry>
     <geometry id="Plane_064-mesh" name="Plane.064">
       <mesh>
         <source id="Plane_064-mesh-positions">
@@ -11377,7 +11002,7 @@
         <vertices id="Plane_064-mesh-vertices">
           <input semantic="POSITION" source="#Plane_064-mesh-positions"/>
         </vertices>
-        <triangles material="bar_area_tiles-material" count="2">
+        <triangles material="turqoise_tiles-material" count="2">
           <input semantic="VERTEX" source="#Plane_064-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_064-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_064-mesh-map-0" offset="2" set="0"/>
@@ -11450,7 +11075,7 @@
           </technique_common>
         </source>
         <source id="Plane_059-mesh-map-0">
-          <float_array id="Plane_059-mesh-map-0-array" count="12">0 1 1 0 0 0 0 1 1 1 1 0</float_array>
+          <float_array id="Plane_059-mesh-map-0-array" count="12">0 2 1 0 0 0 0 2 1 2 1 0</float_array>
           <technique_common>
             <accessor source="#Plane_059-mesh-map-0-array" count="6" stride="2">
               <param name="S" type="float"/>
@@ -11461,7 +11086,7 @@
         <vertices id="Plane_059-mesh-vertices">
           <input semantic="POSITION" source="#Plane_059-mesh-positions"/>
         </vertices>
-        <triangles material="dark_wood-material" count="2">
+        <triangles material="ceiling_dark-material" count="2">
           <input semantic="VERTEX" source="#Plane_059-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_059-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_059-mesh-map-0" offset="2" set="0"/>
@@ -11492,7 +11117,7 @@
           </technique_common>
         </source>
         <source id="Plane_052-mesh-map-0">
-          <float_array id="Plane_052-mesh-map-0-array" count="48">5.89683 0.006934463 9.238198 0.9896908 5.89683 0.9896908 5.602004 0.006934463 5.89683 0.9896908 5.602004 0.9896908 3.02036e-4 0.006933927 5.307177 0.9896908 3.01307e-4 0.9896889 5.307177 0.006934463 5.602004 0.9896908 5.307177 0.9896908 5.89683 0.006934463 9.2382 0.006934463 9.238198 0.9896908 5.602004 0.006934463 5.89683 0.006934463 5.89683 0.9896908 3.02036e-4 0.006933927 5.307177 0.006934463 5.307177 0.9896908 5.307177 0.006934463 5.602004 0.006934463 5.602004 0.9896908</float_array>
+          <float_array id="Plane_052-mesh-map-0-array" count="48">0.3024356 1.005524 3.723361 -6.31353e-4 0.3024356 -6.31353e-4 5.90003e-4 1.005524 0.3024356 -6.31353e-4 5.90003e-4 -6.31353e-4 -1.5442e-4 1.001028 5.405437 -7.64243e-6 -1.5442e-4 -7.64243e-6 5.405437 1.001028 5.705748 -7.64243e-6 5.405437 -7.64243e-6 0.3024356 1.005524 3.723361 1.005524 3.723361 -6.31353e-4 5.90003e-4 1.005524 0.3024356 1.005524 0.3024356 -6.31353e-4 -1.5442e-4 1.001028 5.405437 1.001028 5.405437 -7.64243e-6 5.405437 1.001028 5.705748 1.001028 5.705748 -7.64243e-6</float_array>
           <technique_common>
             <accessor source="#Plane_052-mesh-map-0-array" count="24" stride="2">
               <param name="S" type="float"/>
@@ -11503,7 +11128,7 @@
         <vertices id="Plane_052-mesh-vertices">
           <input semantic="POSITION" source="#Plane_052-mesh-positions"/>
         </vertices>
-        <triangles material="bar_counter_overhang-material" count="8">
+        <triangles material="ceiling_dark-material" count="8">
           <input semantic="VERTEX" source="#Plane_052-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_052-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_052-mesh-map-0" offset="2" set="0"/>
@@ -11545,7 +11170,7 @@
         <vertices id="Plane_047-mesh-vertices">
           <input semantic="POSITION" source="#Plane_047-mesh-positions"/>
         </vertices>
-        <triangles material="steel_beams-material" count="20">
+        <triangles material="ceiling_dark-material" count="20">
           <input semantic="VERTEX" source="#Plane_047-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_047-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_047-mesh-map-0" offset="2" set="0"/>
@@ -11839,7 +11464,7 @@
         <vertices id="Plane_058-mesh-vertices">
           <input semantic="POSITION" source="#Plane_058-mesh-positions"/>
         </vertices>
-        <triangles material="marble_counter_top-material" count="8">
+        <triangles material="ceiling_dark-material" count="8">
           <input semantic="VERTEX" source="#Plane_058-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_058-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_058-mesh-map-0" offset="2" set="0"/>
@@ -11870,7 +11495,7 @@
           </technique_common>
         </source>
         <source id="Plane_057-mesh-map-0">
-          <float_array id="Plane_057-mesh-map-0-array" count="192">0 1 1 0 0 0 1 0 0 0 1 0 1 0 1 0 1 0 0 0 0 0 0 0 1.443057 0.001128375 0.3123567 0.9976465 0.3123567 0.001128375 2.740861 -0.001479983 2.356171 0.9995679 2.356171 -0.001479983 -5.59975e-5 0.9995679 0.1442029 -0.001479983 -5.59975e-5 -0.001479983 0.8174106 -0.001479983 2.356171 0.9995679 2.356171 -0.001479983 0.3123567 0.001127243 1.443057 0.9976465 1.443057 0.001127243 0.1442029 0.9995679 -5.59975e-5 -0.001479983 0.1442029 -0.001479983 4.39599e-4 0.001127243 0.3123567 0.9976465 0.3123567 0.001127243 4.39599e-4 0.9976465 0.3123567 0.001127243 4.39599e-4 0.001127243 2.356171 -0.001479983 0.8174106 0.9995679 0.8174106 -0.001479983 2.356171 -0.001479983 2.740861 0.9995679 2.740861 -0.001479983 0.3123567 0.001128375 4.39599e-4 0.9976465 4.39599e-4 0.001128375 0.3123567 0.9976465 4.39599e-4 0.001127243 0.3123567 0.001127243 0 1 1 1 1 0 1 0 0 0 0 0 1 0 1 0 1 0 0 0 0 0 0 0 1.443057 0.001128375 1.443057 0.9976465 0.3123567 0.9976465 2.740861 -0.001479983 2.740861 0.9995679 2.356171 0.9995679 -5.59975e-5 0.9995679 0.1442029 0.9995679 0.1442029 -0.001479983 0.8174106 -0.001479983 0.8174106 0.9995679 2.356171 0.9995679 0.3123567 0.001127243 0.3123567 0.9976465 1.443057 0.9976465 0.1442029 0.9995679 -5.59975e-5 0.9995679 -5.59975e-5 -0.001479983 4.39599e-4 0.001127243 4.39599e-4 0.9976465 0.3123567 0.9976465 4.39599e-4 0.9976465 0.3123567 0.9976465 0.3123567 0.001127243 2.356171 -0.001479983 2.356171 0.9995679 0.8174106 0.9995679 2.356171 -0.001479983 2.356171 0.9995679 2.740861 0.9995679 0.3123567 0.001128375 0.3123567 0.9976465 4.39599e-4 0.9976465 0.3123567 0.9976465 4.39599e-4 0.9976465 4.39599e-4 0.001127243</float_array>
+          <float_array id="Plane_057-mesh-map-0-array" count="192">0 1 2.356422 0 0 0 2.356422 0 0 0 2.356422 0 2.356422 0 2.356422 0 2.356422 0 0 0 0 0 0 0 3.723361 0.3013645 0.8055139 1.005673 0.8055139 0.3013645 4.004148 0.2992863 3.20332 1.000011 3.20332 0.2992863 1.50485e-4 0.9988488 0.3004608 0.2981237 1.50485e-4 0.2981237 1.701912 0.2981237 4.905225 0.9988488 4.905225 0.2981237 0.8055139 0.3013645 3.723361 1.005673 3.723361 0.3013645 0.3004608 0.9988488 1.50485e-4 0.2981237 0.3004608 0.2981237 5.90003e-4 0.3013642 0.8055139 1.005673 0.8055139 0.3013642 5.90003e-4 1.005672 0.8055139 0.3013639 5.90003e-4 0.3013639 3.20332 0.2992863 6.66879e-6 1.000011 6.66879e-6 0.2992863 4.905225 0.2981237 5.706053 0.9988488 5.706053 0.2981237 0.8055139 0.3013645 5.90003e-4 1.005673 5.90003e-4 0.3013645 0.8055139 1.005672 5.90003e-4 0.3013639 0.8055139 0.3013639 0 1 2.356422 1 2.356422 0 2.356422 0 0 0 0 0 2.356422 0 2.356422 0 2.356422 0 0 0 0 0 0 0 3.723361 0.3013645 3.723361 1.005673 0.8055139 1.005673 4.004148 0.2992863 4.004148 1.000011 3.20332 1.000011 1.50485e-4 0.9988488 0.3004608 0.9988488 0.3004608 0.2981237 1.701912 0.2981237 1.701912 0.9988488 4.905225 0.9988488 0.8055139 0.3013645 0.8055139 1.005673 3.723361 1.005673 0.3004608 0.9988488 1.50485e-4 0.9988488 1.50485e-4 0.2981237 5.90003e-4 0.3013642 5.90003e-4 1.005673 0.8055139 1.005673 5.90003e-4 1.005672 0.8055139 1.005672 0.8055139 0.3013639 3.20332 0.2992863 3.20332 1.000011 6.66879e-6 1.000011 4.905225 0.2981237 4.905225 0.9988488 5.706053 0.9988488 0.8055139 0.3013645 0.8055139 1.005673 5.90003e-4 1.005673 0.8055139 1.005672 5.90003e-4 1.005672 5.90003e-4 0.3013639</float_array>
           <technique_common>
             <accessor source="#Plane_057-mesh-map-0-array" count="96" stride="2">
               <param name="S" type="float"/>
@@ -11881,7 +11506,7 @@
         <vertices id="Plane_057-mesh-vertices">
           <input semantic="POSITION" source="#Plane_057-mesh-positions"/>
         </vertices>
-        <triangles material="bar_counter_side-material" count="32">
+        <triangles material="ceiling_dark-material" count="32">
           <input semantic="VERTEX" source="#Plane_057-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_057-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_057-mesh-map-0" offset="2" set="0"/>
@@ -12722,7 +12347,7 @@
           </technique_common>
         </source>
         <source id="Plane_036-mesh-map-0">
-          <float_array id="Plane_036-mesh-map-0-array" count="246">0 1.777776 1.545994 0 1.545994 1.777776 0 1.777776 1.545994 1.846153 0 1.846153 2 1.931624 1.697331 1.666667 1.69733 1.555556 0 1.777776 2.1682e-7 0 1.545994 0 0 1.777776 1.545994 1.777776 1.545994 1.846153 1.697331 1.444445 1.545997 1.367522 1.697332 1.333334 1.697332 1.333334 1.545994 1.25641 1.697329 1.222222 1.697329 1.222222 1.545995 1.145299 1.697329 1.111111 1.697329 1.111111 1.545994 1.034188 1.697328 0.9999997 1.697328 0.9999997 1.545994 0.9230773 1.697329 0.888889 1.697329 0.888889 1.545995 0.811966 1.69733 0.7777782 1.69733 0.7777782 1.545995 0.7008552 1.697328 0.6666663 1.697328 0.6666663 1.545994 0.5897433 1.697329 0.5555549 1.697329 0.5555549 1.545995 0.4786319 1.697329 0.4444442 1.697329 0.4444442 1.545994 0.3675218 1.697329 0.3333334 1.697329 0.3333334 1.545995 0.2564104 1.697329 0.2222226 1.697329 0.2222226 1.545995 0.1452996 1.69733 0.1111113 1.69733 0.1111113 1.545995 0.03418833 1.697329 0 1.697329 0 2 0.1538466 1.69733 0.1111113 2 0.1538466 2 1.931624 1.697328 0.9999997 1.69733 0.1111113 2 0.1538466 1.697329 0.2222226 2 1.931624 1.69733 2 1.69733 1.888889 1.69733 2 1.545995 1.923077 1.69733 1.888889 1.69733 1.888889 1.545996 1.811966 1.697331 1.777778 1.69733 0.7777782 2 0.1538466 1.697329 0.888889 1.697329 0.3333334 1.697329 0.2222226 2 0.1538466 1.697329 0.5555549 1.697329 0.4444442 2 0.1538466 1.697329 0.4444442 1.697329 0.3333334 2 0.1538466 1.69733 0.7777782 1.697328 0.6666663 2 0.1538466 1.697328 0.6666663 1.697329 0.5555549 2 0.1538466 1.697329 1.111111 1.697328 0.9999997 2 1.931624 1.697328 0.9999997 1.697329 0.888889 2 0.1538466 1.697329 1.222222 1.697329 1.111111 2 1.931624 1.697332 1.333334 1.697329 1.222222 2 1.931624 1.69733 1.555556 1.545996 1.478633 1.697331 1.444445 1.69733 1.555556 1.697331 1.444445 2 1.931624 1.697331 1.444445 1.697332 1.333334 2 1.931624 1.697331 1.666667 1.545996 1.589744 1.69733 1.555556 1.697331 1.777778 1.545997 1.700855 1.697331 1.666667 2 1.931624 1.69733 1.888889 1.697331 1.777778 2 1.931624 1.697331 1.777778 1.697331 1.666667</float_array>
+          <float_array id="Plane_036-mesh-map-0-array" count="246">0.989017 0.3259171 0 0.2763149 0.989017 0.2763148 0.004678547 0.284048 0.9868664 0.3202323 0.004678547 0.3202323 1.673077 0.2222224 1.375001 0.4912614 1.250001 0.4912622 0.989017 0.3259171 0 0.3259169 0 0.2763149 0.004678547 0.284048 0.9868665 0.284048 0.9868664 0.3202323 1.125001 0.4912615 1.038462 0.6257805 1.000001 0.4912607 1.000001 0.4912607 0.9134616 0.6257831 0.8749997 0.491263 0.8749997 0.491263 0.7884613 0.6257823 0.75 0.4912629 0.75 0.4912629 0.6634617 0.625783 0.6249998 0.4912637 0.6249998 0.4912637 0.5384621 0.6257831 0.5000002 0.4912629 0.5000002 0.4912629 0.4134618 0.6257823 0.3750006 0.4912622 0.3750006 0.4912622 0.2884622 0.6257823 0.2499996 0.4912637 0.2499996 0.4912637 0.1634612 0.6257829 0.1249994 0.4912627 0.1249994 0.4912627 0.03846108 0.6257823 -2.38419e-7 0.4912627 -2.38419e-7 0.4912627 -0.08653783 0.6257829 -0.1249997 0.4912627 -0.1249997 0.4912627 -0.2115381 0.6257821 -0.2499992 0.4912627 -0.2499992 0.4912627 -0.3365377 0.6257821 -0.3749997 0.4912621 -0.3749997 0.4912621 -0.461538 0.6257821 -0.4999999 0.4912627 -0.4999999 0.4912627 -0.3269224 0.2222223 -0.3749997 0.4912621 -0.3269224 0.2222223 1.673077 0.2222224 0.6249998 0.4912637 -0.3749997 0.4912621 -0.3269224 0.2222223 -0.2499992 0.4912627 1.673077 0.2222224 1.75 0.4912622 1.625 0.4912622 1.75 0.4912622 1.663462 0.6257823 1.625 0.4912622 1.625 0.4912622 1.538461 0.6257814 1.5 0.4912616 0.3750006 0.4912622 -0.3269224 0.2222223 0.5000002 0.4912629 -0.1249997 0.4912627 -0.2499992 0.4912627 -0.3269224 0.2222223 0.1249994 0.4912627 -2.38419e-7 0.4912627 -0.3269224 0.2222223 -2.38419e-7 0.4912627 -0.1249997 0.4912627 -0.3269224 0.2222223 0.3750006 0.4912622 0.2499996 0.4912637 -0.3269224 0.2222223 0.2499996 0.4912637 0.1249994 0.4912627 -0.3269224 0.2222223 0.75 0.4912629 0.6249998 0.4912637 1.673077 0.2222224 0.6249998 0.4912637 0.5000002 0.4912629 -0.3269224 0.2222223 0.8749997 0.491263 0.75 0.4912629 1.673077 0.2222224 1.000001 0.4912607 0.8749997 0.491263 1.673077 0.2222224 1.250001 0.4912622 1.163463 0.6257814 1.125001 0.4912615 1.250001 0.4912622 1.125001 0.4912615 1.673077 0.2222224 1.125001 0.4912615 1.000001 0.4912607 1.673077 0.2222224 1.375001 0.4912614 1.288462 0.6257814 1.250001 0.4912622 1.5 0.4912616 1.413462 0.6257804 1.375001 0.4912614 1.673077 0.2222224 1.625 0.4912622 1.5 0.4912616 1.673077 0.2222224 1.5 0.4912616 1.375001 0.4912614</float_array>
           <technique_common>
             <accessor source="#Plane_036-mesh-map-0-array" count="123" stride="2">
               <param name="S" type="float"/>
@@ -12733,7 +12358,7 @@
         <vertices id="Plane_036-mesh-vertices">
           <input semantic="POSITION" source="#Plane_036-mesh-positions"/>
         </vertices>
-        <triangles material="dark_wood-material" count="41">
+        <triangles material="wood_stairs-material" count="41">
           <input semantic="VERTEX" source="#Plane_036-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_036-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_036-mesh-map-0" offset="2" set="0"/>
@@ -12848,7 +12473,7 @@
           </technique_common>
         </source>
         <source id="Plane_033-mesh-map-0">
-          <float_array id="Plane_033-mesh-map-0-array" count="270">0 1.799999 1.545994 0 1.545994 1.799999 0 1.799999 1.545994 1.861537 0 1.861537 1.999999 1.938462 1.69733 1.8 1.69733 1.7 0 1.799999 0 0 1.545994 0 0 1.799999 1.545994 1.799999 1.545994 1.861537 1.697331 1.300001 1.545996 1.23077 1.697331 1.200001 1.697331 1.200001 1.545995 1.130769 1.697329 1.1 1.697329 1.1 1.545995 1.030769 1.697329 1 1.697329 1 1.545995 0.9307696 1.69733 0.9000003 1.69733 0.9000003 1.545995 0.8307695 1.69733 0.8000002 1.69733 0.8000002 1.545995 0.7307696 1.69733 0.7000004 1.69733 0.7000004 1.545996 0.6307696 1.697329 0.5999996 1.697329 0.5999996 1.545994 0.5307689 1.697329 0.4999996 1.697329 0.4999996 1.545995 0.430769 1.697329 0.3999997 1.697329 0.3999997 1.545994 0.3307691 1.697329 0.2999999 1.697329 0.2999999 1.545995 0.2307692 1.697329 0.1999999 1.697329 0.1999999 1.545995 0.1307691 1.697329 0.09999984 1.697329 0.09999984 1.545995 0.03076922 1.697329 0 1.697329 0 2 0.138462 1.697329 0.09999984 2 0.138462 1.999999 1.938462 1.697329 1 1.697329 0.09999984 2 0.138462 1.697329 0.1999999 1.999999 1.938462 1.697329 2 1.69733 1.9 1.697329 2 1.545995 1.93077 1.69733 1.9 1.69733 1.9 1.545995 1.83077 1.69733 1.8 1.69733 0.7000004 2 0.138462 1.69733 0.8000002 1.697329 0.2999999 1.697329 0.1999999 2 0.138462 1.697329 0.4999996 1.697329 0.3999997 2 0.138462 1.697329 0.3999997 1.697329 0.2999999 2 0.138462 1.69733 0.7000004 1.697329 0.5999996 2 0.138462 1.697329 0.5999996 1.697329 0.4999996 2 0.138462 1.697329 1 1.69733 0.9000003 2 0.138462 1.69733 0.9000003 1.69733 0.8000002 2 0.138462 1.697329 1.1 1.697329 1 1.999999 1.938462 1.697331 1.200001 1.697329 1.1 1.999999 1.938462 1.697331 1.400001 1.545996 1.33077 1.697331 1.300001 1.697331 1.400001 1.697331 1.300001 1.999999 1.938462 1.697331 1.300001 1.697331 1.200001 1.999999 1.938462 1.69733 1.500001 1.545996 1.43077 1.697331 1.400001 1.69733 1.6 1.545996 1.53077 1.69733 1.500001 1.69733 1.7 1.545996 1.63077 1.69733 1.6 1.69733 1.8 1.545995 1.73077 1.69733 1.7 1.999999 1.938462 1.69733 1.9 1.69733 1.8 1.69733 1.7 1.69733 1.6 1.999999 1.938462 1.69733 1.6 1.69733 1.500001 1.999999 1.938462 1.69733 1.500001 1.697331 1.400001 1.999999 1.938462</float_array>
+          <float_array id="Plane_033-mesh-map-0-array" count="270">0.9958189 0.3246528 0 0.2850762 0.9958189 0.2850762 0.003648698 0.2818196 0.9972485 0.3297941 0.003648698 0.3297941 1.493269 0.2222232 1.337501 0.4912624 1.225 0.4912621 0.9958189 0.3246528 0 0.3246528 0 0.2850762 0.003648698 0.2818196 0.9972485 0.2818196 0.9972485 0.3297941 0.7750009 0.4912616 0.6971164 0.6257813 0.662501 0.4912614 0.662501 0.4912614 0.5846156 0.6257823 0.5500002 0.4912629 0.5500002 0.4912629 0.4721155 0.6257821 0.4375001 0.4912627 0.4375001 0.4912627 0.3596159 0.6257823 0.3250004 0.4912626 0.3250004 0.4912626 0.2471158 0.6257821 0.2125003 0.4912623 0.2125003 0.4912623 0.1346158 0.6257821 0.1000005 0.4912622 0.1000005 0.4912622 0.02211594 0.6257817 -0.0125004 0.4912633 -0.0125004 0.4912633 -0.0903849 0.6257829 -0.1250003 0.491263 -0.1250003 0.491263 -0.2028847 0.6257823 -0.2375 0.4912635 -0.2375 0.4912635 -0.3153846 0.625783 -0.3499999 0.491263 -0.3499999 0.491263 -0.4278846 0.6257823 -0.4625 0.4912629 -0.4625 0.4912629 -0.5403847 0.6257824 -0.5750001 0.4912627 -0.5750001 0.4912627 -0.6528845 0.6257821 -0.6874999 0.4912626 -0.6874999 0.4912626 -0.5317302 0.2222222 -0.5750001 0.4912627 -0.5317302 0.2222222 1.493269 0.2222232 0.4375001 0.4912627 -0.5750001 0.4912627 -0.5317302 0.2222222 -0.4625 0.4912629 1.493269 0.2222232 1.5625 0.4912627 1.450001 0.4912624 1.5625 0.4912627 1.484616 0.625782 1.450001 0.4912624 1.450001 0.4912624 1.372116 0.625782 1.337501 0.4912624 0.1000005 0.4912622 -0.5317302 0.2222222 0.2125003 0.4912623 -0.3499999 0.491263 -0.4625 0.4912629 -0.5317302 0.2222222 -0.1250003 0.491263 -0.2375 0.4912635 -0.5317302 0.2222222 -0.2375 0.4912635 -0.3499999 0.491263 -0.5317302 0.2222222 0.1000005 0.4912622 -0.0125004 0.4912633 -0.5317302 0.2222222 -0.0125004 0.4912633 -0.1250003 0.491263 -0.5317302 0.2222222 0.4375001 0.4912627 0.3250004 0.4912626 -0.5317302 0.2222222 0.3250004 0.4912626 0.2125003 0.4912623 -0.5317302 0.2222222 0.5500002 0.4912629 0.4375001 0.4912627 1.493269 0.2222232 0.662501 0.4912614 0.5500002 0.4912629 1.493269 0.2222232 0.8875009 0.4912618 0.8096165 0.6257814 0.7750009 0.4912616 0.8875009 0.4912618 0.7750009 0.4912616 1.493269 0.2222232 0.7750009 0.4912616 0.662501 0.4912614 1.493269 0.2222232 1.000001 0.4912618 0.9221163 0.6257811 0.8875009 0.4912618 1.112501 0.491262 1.034616 0.6257814 1.000001 0.4912618 1.225 0.4912621 1.147116 0.6257813 1.112501 0.491262 1.337501 0.4912624 1.259616 0.625782 1.225 0.4912621 1.493269 0.2222232 1.450001 0.4912624 1.337501 0.4912624 1.225 0.4912621 1.112501 0.491262 1.493269 0.2222232 1.112501 0.491262 1.000001 0.4912618 1.493269 0.2222232 1.000001 0.4912618 0.8875009 0.4912618 1.493269 0.2222232</float_array>
           <technique_common>
             <accessor source="#Plane_033-mesh-map-0-array" count="135" stride="2">
               <param name="S" type="float"/>
@@ -12859,7 +12484,7 @@
         <vertices id="Plane_033-mesh-vertices">
           <input semantic="POSITION" source="#Plane_033-mesh-positions"/>
         </vertices>
-        <triangles material="dark_wood-material" count="45">
+        <triangles material="wood_stairs-material" count="45">
           <input semantic="VERTEX" source="#Plane_033-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_033-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_033-mesh-map-0" offset="2" set="0"/>
@@ -12996,7 +12621,7 @@
     <geometry id="Plane_028-mesh" name="Plane.028">
       <mesh>
         <source id="Plane_028-mesh-positions">
-          <float_array id="Plane_028-mesh-positions-array" count="180">1 2 5.2 13 2 5.2 1.3 2.3 18.4 1.3 17.7 18.4 12.7 17.7 18.4 12.7 2.3 18.4 1 2 18.4 1 18 18.4 13 18 18.4 13 2 18.4 13 2 9.100001 13 2 13.1 13 18 13.1 13 18 9.100001 1 18 9.100001 1 18 13.1 1 2 13.1 1 2 9.100001 1 2.3 13.4 1 2.3 16.8 1 17.7 16.8 1 17.7 13.4 1 2.3 9.4 1 2.3 12.8 1 17.7 12.8 1 17.7 9.400001 1 17.7 5.4 1 2.3 5.4 1 2.3 8.8 1 17.7 8.800001 1 2 1.3 1 18 1.3 13 18 1.3 13 2 1.3 13 18 5.2 1 18 5.2 1 17.7 1.5 1 2.3 1.5 1 2.3 4.899999 1 17.7 4.9 1 3.4 1.3 1 8.6 1.3 1 8.600001 1.5 1 3.4 1.5 1 13.1 1.3 1 13.4 1.3 1 13.4 1.5 1 13.1 1.5 1 13.1 4.9 1 13.4 4.9 1.3 17.7 1.5 1.3 17.7 4.9 1.3 13.4 1.5 1.3 13.4 4.9 1 3.400001 4.7 1 8.600002 4.7 1.3 3.400001 4.7 1.3 8.600002 4.7 1.3 17.7 1.4 1.3 13.4 1.4</float_array>
+          <float_array id="Plane_028-mesh-positions-array" count="180">1 2 5.2 13 2 5.2 1.3 2.3 18.4 1.3 17.7 18.4 12.7 17.7 18.4 12.7 2.3 18.4 1 2 18.4 1 18 18.4 13 18 18.4 13 2 18.4 13 2 9.100001 13 2 13.1 13 18 13.1 13 18 9.100001 1 18 9.100001 1 18 13.1 1 2 13.1 1 2 9.100001 1 2.3 13.4 1 2.3 16.8 1 17.7 16.8 1 17.7 13.4 1 2.3 9.4 1 2.3 12.8 1 17.7 12.8 1 17.7 9.400001 1 17.7 5.4 1 2.3 5.4 1 2.3 8.8 1 17.7 8.800001 1 2 1.3 1 18 1.3 13 18 1.3 13 2 1.3 13 18 5.2 1 18 5.2 1 17.7 1.4 1 2.3 1.5 1 2.3 4.899999 1 17.7 4.9 1 3.4 1.3 1 8.6 1.3 1 8.600001 1.5 1 3.4 1.5 1 13.1 1.3 1 13.4 1.3 1 13.4 1.4 1 13.1 1.5 1 13.1 4.9 1 13.4 4.9 1.3 17.7 1.4 1.3 17.7 4.9 1.3 13.4 1.4 1.3 13.4 4.9 1 3.400001 4.7 1 8.600002 4.7 1.3 3.400001 4.7 1.3 8.600002 4.7 1.3 17.7 1.4 1.3 13.4 1.4</float_array>
           <technique_common>
             <accessor source="#Plane_028-mesh-positions-array" count="60" stride="3">
               <param name="X" type="float"/>
@@ -13006,9 +12631,9 @@
           </technique_common>
         </source>
         <source id="Plane_028-mesh-normals">
-          <float_array id="Plane_028-mesh-normals-array" count="39">1 0 0 0 -1 0 0 1 0 0 0 1 -1.44496e-6 0 1 1 0 0 -1 0 0 0 0 -1 0 0 1 1.44496e-6 0 1 0 1 -9.34975e-7 0 0 1 1 0 0</float_array>
+          <float_array id="Plane_028-mesh-normals-array" count="36">1 0 0 0 -1 0 0 1 0 0 0 1 -1.44496e-6 0 1 1 0 0 -1 0 0 0 0 -1 0 0 1 1.44496e-6 0 1 0 1 -9.08262e-7 0 0 1</float_array>
           <technique_common>
-            <accessor source="#Plane_028-mesh-normals-array" count="13" stride="3">
+            <accessor source="#Plane_028-mesh-normals-array" count="12" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -13016,7 +12641,7 @@
           </technique_common>
         </source>
         <source id="Plane_028-mesh-map-0">
-          <float_array id="Plane_028-mesh-map-0-array" count="552">0.7037205 0.7840815 0.2149057 0.6221616 0.7037205 0.6221616 0.5819199 0.6226125 0.2148173 0.7847495 0.2148173 0.6226125 0.2148173 0.7847493 0.5819199 0.6226125 0.2148173 0.6226125 0.2188737 0.4797011 0.2148437 0.6896596 0.2148437 0.4756892 0.3720144 0.6856477 0.2148437 0.6896596 0.2188737 0.6856477 0.3720144 0.4797011 0.3760445 0.6896596 0.3720144 0.6856477 0.2188737 0.4797011 0.3760445 0.4756892 0.3720144 0.4797011 0.2148173 0.5002449 0.5819199 0.3809365 0.2148173 0.3809365 0.2148173 0.6226125 0.5819199 0.5002449 0.2148173 0.5002449 0.5819199 0.3809365 0.2148173 0.500245 0.2148173 0.3809365 0.5819199 0.500245 0.2148173 0.6226125 0.2148173 0.500245 0.7037205 0.4999577 0.2149057 0.3808091 0.7037205 0.3808091 0.7037205 0.6221616 0.2149057 0.4999577 0.7037205 0.4999577 0.2149057 0.6221616 0.2240709 0.7352002 0.2240709 0.6313267 0.7037205 0.7840815 0.2240709 0.7352002 0.2149057 0.7840815 0.7037205 0.6221616 0.6945552 0.7352002 0.7037205 0.7840815 0.7037205 0.6221616 0.2240709 0.6313267 0.6945552 0.6313267 0.2149057 0.4999577 0.2240709 0.6129961 0.2240709 0.5091231 0.7037205 0.6221616 0.2240709 0.6129961 0.2149057 0.6221616 0.7037205 0.4999577 0.6945552 0.6129961 0.7037205 0.6221616 0.7037205 0.4999577 0.2240709 0.5091231 0.6945552 0.5091231 0.2149057 0.3808091 0.2240709 0.4907925 0.2240709 0.3869193 0.7037205 0.4999577 0.2240709 0.4907925 0.2149057 0.4999577 0.7037205 0.3808091 0.6945552 0.4907925 0.7037205 0.4999577 0.7037205 0.3808091 0.2240709 0.3869193 0.6945552 0.3869193 -2.21125e-4 0.9994067 3.077212 -7.593e-4 -2.21125e-4 -7.593e-4 3.077212 -7.58765e-4 -2.21125e-4 0.999407 -2.21125e-4 -7.58765e-4 4.098271 0.9983392 5.19879e-4 -4.87975e-4 4.098271 -4.87975e-4 5.19879e-4 -4.87975e-4 0.0773518 0.9215059 0.0773518 0.05073457 4.098271 0.9983392 2.920167 0.9215064 2.843334 0.9215064 4.098271 -4.87975e-4 4.021438 0.9215064 4.098271 0.9983392 0.3590722 -4.87975e-4 0.0773518 0.05073457 0.3590722 0.0507341 2.843334 -4.87975e-4 1.690842 0.0507341 2.843334 0.0507341 2.920167 -4.87975e-4 4.021438 0.05073457 4.098271 -4.87975e-4 2.920167 -4.87975e-4 2.843334 0.0507341 2.920167 0.0507341 2.920167 0.0507341 2.843334 0.9215064 2.920167 0.9215064 1.081081 0.03363215 1.081081 0.6091179 1.081081 0.6091179 -2.21125e-4 0.9224711 0.07671451 0.05053138 -2.21125e-4 0.05053138 1.463963 0.2254608 1.463963 0.03363215 1.463963 0.03363215 -2.21125e-4 0.05053138 0.07671451 0.9224708 -2.21125e-4 0.9224708 2.843334 0.0507341 1.690843 0.8702843 2.843334 0.9215064 0.0773518 0.05073457 0.3590722 0.8702843 0.3590722 0.0507341 1.081081 1.376432 1.081081 1.568261 1.081081 1.568261 2.920167 0.0507341 4.021438 0.02512329 4.021438 0.05073457 0.7037205 0.7840815 0.2149057 0.7840815 0.2149057 0.6221616 0.5819199 0.6226125 0.5819199 0.7847495 0.2148173 0.7847495 0.2148173 0.7847493 0.5819199 0.7847493 0.5819199 0.6226125 0.2188737 0.4797011 0.2188737 0.6856477 0.2148437 0.6896596 0.3720144 0.6856477 0.3760445 0.6896596 0.2148437 0.6896596 0.3720144 0.4797011 0.3760445 0.4756892 0.3760445 0.6896596 0.2188737 0.4797011 0.2148437 0.4756892 0.3760445 0.4756892 0.2148173 0.5002449 0.5819199 0.5002449 0.5819199 0.3809365 0.2148173 0.6226125 0.5819199 0.6226125 0.5819199 0.5002449 0.5819199 0.3809365 0.5819199 0.500245 0.2148173 0.500245 0.5819199 0.500245 0.5819199 0.6226125 0.2148173 0.6226125 0.7037205 0.4999577 0.2149057 0.4999577 0.2149057 0.3808091 0.7037205 0.6221616 0.2149057 0.6221616 0.2149057 0.4999577 0.2149057 0.6221616 0.2149057 0.7840815 0.2240709 0.7352002 0.7037205 0.7840815 0.6945552 0.7352002 0.2240709 0.7352002 0.7037205 0.6221616 0.6945552 0.6313267 0.6945552 0.7352002 0.7037205 0.6221616 0.2149057 0.6221616 0.2240709 0.6313267 0.2149057 0.4999577 0.2149057 0.6221616 0.2240709 0.6129961 0.7037205 0.6221616 0.6945552 0.6129961 0.2240709 0.6129961 0.7037205 0.4999577 0.6945552 0.5091231 0.6945552 0.6129961 0.7037205 0.4999577 0.2149057 0.4999577 0.2240709 0.5091231 0.2149057 0.3808091 0.2149057 0.4999577 0.2240709 0.4907925 0.7037205 0.4999577 0.6945552 0.4907925 0.2240709 0.4907925 0.7037205 0.3808091 0.6945552 0.3869193 0.6945552 0.4907925 0.7037205 0.3808091 0.2149057 0.3808091 0.2240709 0.3869193 -2.21125e-4 0.9994067 3.077212 0.9994067 3.077212 -7.593e-4 3.077212 -7.58765e-4 3.077212 0.999407 -2.21125e-4 0.999407 4.098271 0.9983392 5.19879e-4 0.9983388 5.19879e-4 -4.87975e-4 5.19879e-4 -4.87975e-4 5.19879e-4 0.9983388 0.0773518 0.9215059 0.0773518 0.9215059 5.19879e-4 0.9983388 0.3590722 0.8702843 5.19879e-4 0.9983388 4.098271 0.9983392 2.843334 0.9215064 0.3590722 0.8702843 5.19879e-4 0.9983388 1.690843 0.8702843 4.098271 0.9983392 4.021438 0.9215064 2.920167 0.9215064 2.843334 0.9215064 1.690843 0.8702843 5.19879e-4 0.9983388 4.098271 -4.87975e-4 4.021438 0.05073457 4.021438 0.9215064 0.3590722 -4.87975e-4 5.19879e-4 -4.87975e-4 0.0773518 0.05073457 2.843334 -4.87975e-4 1.690842 -4.87975e-4 1.690842 0.0507341 2.920167 -4.87975e-4 2.920167 0.0507341 4.021438 0.05073457 2.920167 -4.87975e-4 2.843334 -4.87975e-4 2.843334 0.0507341 2.920167 0.0507341 2.843334 0.0507341 2.843334 0.9215064 1.081081 0.03363215 1.081081 0.03363215 1.081081 0.6091179 -2.21125e-4 0.9224711 0.07671451 0.9224711 0.07671451 0.05053138 1.463963 0.2254608 1.463963 0.2254608 1.463963 0.03363215 -2.21125e-4 0.05053138 0.07671451 0.05053138 0.07671451 0.9224708 2.843334 0.0507341 1.690842 0.0507341 1.690843 0.8702843 0.0773518 0.05073457 0.0773518 0.9215059 0.3590722 0.8702843 1.081081 1.376432 1.081081 1.376432 1.081081 1.568261 2.920167 0.0507341 2.920167 0.02512329 4.021438 0.02512329</float_array>
+          <float_array id="Plane_028-mesh-map-0-array" count="552">0.7037205 0.7840815 0.2149057 0.6221616 0.7037205 0.6221616 0.5819199 0.6226125 0.2148173 0.7847495 0.2148173 0.6226125 0.2148173 0.7847493 0.5819199 0.6226125 0.2148173 0.6226125 0.2188737 0.4797011 0.2148437 0.6896596 0.2148437 0.4756892 0.3720144 0.6856477 0.2148437 0.6896596 0.2188737 0.6856477 0.3720144 0.4797011 0.3760445 0.6896596 0.3720144 0.6856477 0.2188737 0.4797011 0.3760445 0.4756892 0.3720144 0.4797011 0.2148173 0.5002449 0.5819199 0.3809365 0.2148173 0.3809365 0.2148173 0.6226125 0.5819199 0.5002449 0.2148173 0.5002449 0.5819199 0.3809365 0.2148173 0.500245 0.2148173 0.3809365 0.5819199 0.500245 0.2148173 0.6226125 0.2148173 0.500245 0.7037205 0.4999577 0.2149057 0.3808091 0.7037205 0.3808091 0.7037205 0.6221616 0.2149057 0.4999577 0.7037205 0.4999577 0.2149057 0.6221616 0.2240709 0.7352002 0.2240709 0.6313267 0.7037205 0.7840815 0.2240709 0.7352002 0.2149057 0.7840815 0.7037205 0.6221616 0.6945552 0.7352002 0.7037205 0.7840815 0.7037205 0.6221616 0.2240709 0.6313267 0.6945552 0.6313267 0.2149057 0.4999577 0.2240709 0.6129961 0.2240709 0.5091231 0.7037205 0.6221616 0.2240709 0.6129961 0.2149057 0.6221616 0.7037205 0.4999577 0.6945552 0.6129961 0.7037205 0.6221616 0.7037205 0.4999577 0.2240709 0.5091231 0.6945552 0.5091231 0.2149057 0.3808091 0.2240709 0.4907925 0.2240709 0.3869193 0.7037205 0.4999577 0.2240709 0.4907925 0.2149057 0.4999577 0.7037205 0.3808091 0.6945552 0.4907925 0.7037205 0.4999577 0.7037205 0.3808091 0.2240709 0.3869193 0.6945552 0.3869193 -2.21125e-4 0.9994067 3.077212 -7.593e-4 -2.21125e-4 -7.593e-4 3.077212 -7.58765e-4 -2.21125e-4 0.999407 -2.21125e-4 -7.58765e-4 4.098271 0.9983392 5.19879e-4 -4.87975e-4 4.098271 -4.87975e-4 5.19879e-4 -4.87975e-4 0.0773518 0.9215059 0.0773518 0.05073457 4.098271 0.9983392 2.920167 0.9215064 2.843334 0.9215064 4.098271 -4.87975e-4 4.021438 0.9215064 4.098271 0.9983392 0.3590722 -4.87975e-4 0.0773518 0.05073457 0.3590722 0.0507341 2.843334 -4.87975e-4 1.690842 0.0507341 2.843334 0.0507341 2.920167 -4.87975e-4 4.021438 0.05073457 4.098271 -4.87975e-4 2.843334 -4.87975e-4 2.920167 0.0507341 2.920167 -4.87975e-4 2.843334 0.0507341 2.920167 0.9215064 2.920167 0.0507341 1.081081 0.03363215 1.081081 0.6091179 1.081081 0.6091179 -2.21125e-4 0.9224711 0.07671451 0.05053138 -2.21125e-4 0.05053138 1.463963 0.2254608 1.463963 0.03363215 1.463963 0.03363215 -2.21125e-4 0.05053138 0.07671451 0.9224708 -2.21125e-4 0.9224708 2.843334 0.0507341 1.690843 0.8702843 2.843334 0.9215064 0.0773518 0.05073457 0.3590722 0.8702843 0.3590722 0.0507341 1.081081 1.376432 1.081081 1.568261 1.081081 1.568261 2.920167 0.0507341 4.021438 0.02512329 4.021438 0.05073457 0.7037205 0.7840815 0.2149057 0.7840815 0.2149057 0.6221616 0.5819199 0.6226125 0.5819199 0.7847495 0.2148173 0.7847495 0.2148173 0.7847493 0.5819199 0.7847493 0.5819199 0.6226125 0.2188737 0.4797011 0.2188737 0.6856477 0.2148437 0.6896596 0.3720144 0.6856477 0.3760445 0.6896596 0.2148437 0.6896596 0.3720144 0.4797011 0.3760445 0.4756892 0.3760445 0.6896596 0.2188737 0.4797011 0.2148437 0.4756892 0.3760445 0.4756892 0.2148173 0.5002449 0.5819199 0.5002449 0.5819199 0.3809365 0.2148173 0.6226125 0.5819199 0.6226125 0.5819199 0.5002449 0.5819199 0.3809365 0.5819199 0.500245 0.2148173 0.500245 0.5819199 0.500245 0.5819199 0.6226125 0.2148173 0.6226125 0.7037205 0.4999577 0.2149057 0.4999577 0.2149057 0.3808091 0.7037205 0.6221616 0.2149057 0.6221616 0.2149057 0.4999577 0.2149057 0.6221616 0.2149057 0.7840815 0.2240709 0.7352002 0.7037205 0.7840815 0.6945552 0.7352002 0.2240709 0.7352002 0.7037205 0.6221616 0.6945552 0.6313267 0.6945552 0.7352002 0.7037205 0.6221616 0.2149057 0.6221616 0.2240709 0.6313267 0.2149057 0.4999577 0.2149057 0.6221616 0.2240709 0.6129961 0.7037205 0.6221616 0.6945552 0.6129961 0.2240709 0.6129961 0.7037205 0.4999577 0.6945552 0.5091231 0.6945552 0.6129961 0.7037205 0.4999577 0.2149057 0.4999577 0.2240709 0.5091231 0.2149057 0.3808091 0.2149057 0.4999577 0.2240709 0.4907925 0.7037205 0.4999577 0.6945552 0.4907925 0.2240709 0.4907925 0.7037205 0.3808091 0.6945552 0.3869193 0.6945552 0.4907925 0.7037205 0.3808091 0.2149057 0.3808091 0.2240709 0.3869193 -2.21125e-4 0.9994067 3.077212 0.9994067 3.077212 -7.593e-4 3.077212 -7.58765e-4 3.077212 0.999407 -2.21125e-4 0.999407 4.098271 0.9983392 5.19879e-4 0.9983388 5.19879e-4 -4.87975e-4 5.19879e-4 -4.87975e-4 5.19879e-4 0.9983388 0.0773518 0.9215059 0.0773518 0.9215059 5.19879e-4 0.9983388 0.3590722 0.8702843 5.19879e-4 0.9983388 4.098271 0.9983392 2.843334 0.9215064 0.3590722 0.8702843 5.19879e-4 0.9983388 1.690843 0.8702843 4.098271 0.9983392 4.021438 0.9215064 2.920167 0.9215064 2.843334 0.9215064 1.690843 0.8702843 5.19879e-4 0.9983388 4.098271 -4.87975e-4 4.021438 0.05073457 4.021438 0.9215064 0.3590722 -4.87975e-4 5.19879e-4 -4.87975e-4 0.0773518 0.05073457 2.843334 -4.87975e-4 1.690842 -4.87975e-4 1.690842 0.0507341 2.920167 -4.87975e-4 2.920167 0.0507341 4.021438 0.05073457 2.843334 -4.87975e-4 2.843334 0.0507341 2.920167 0.0507341 2.843334 0.0507341 2.843334 0.9215064 2.920167 0.9215064 1.081081 0.03363215 1.081081 0.03363215 1.081081 0.6091179 -2.21125e-4 0.9224711 0.07671451 0.9224711 0.07671451 0.05053138 1.463963 0.2254608 1.463963 0.2254608 1.463963 0.03363215 -2.21125e-4 0.05053138 0.07671451 0.05053138 0.07671451 0.9224708 2.843334 0.0507341 1.690842 0.0507341 1.690843 0.8702843 0.0773518 0.05073457 0.0773518 0.9215059 0.3590722 0.8702843 1.081081 1.376432 1.081081 1.376432 1.081081 1.568261 2.920167 0.0507341 2.920167 0.02512329 4.021438 0.02512329</float_array>
           <technique_common>
             <accessor source="#Plane_028-mesh-map-0-array" count="276" stride="2">
               <param name="S" type="float"/>
@@ -13031,7 +12656,7 @@
           <input semantic="VERTEX" source="#Plane_028-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_028-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_028-mesh-map-0" offset="2" set="0"/>
-          <p>8 0 0 11 0 1 12 0 2 11 1 3 6 1 4 16 1 5 7 2 6 12 2 7 15 2 8 2 3 9 7 3 10 6 3 11 4 3 12 7 3 13 3 3 14 5 4 15 8 4 16 4 4 17 2 3 18 9 3 19 5 3 20 14 2 21 34 2 22 35 2 23 15 2 24 13 2 25 14 2 26 1 1 27 17 1 28 0 1 29 10 1 30 16 1 31 17 1 32 13 5 33 1 5 34 34 5 35 12 0 36 10 0 37 13 0 38 16 6 39 19 6 40 18 6 41 7 6 42 19 6 43 6 6 44 15 6 45 20 6 46 7 6 47 15 6 48 18 6 49 21 6 50 17 6 51 23 6 52 22 6 53 15 6 54 23 6 55 16 6 56 14 6 57 24 6 58 15 6 59 14 6 60 22 6 61 25 6 62 0 6 63 28 6 64 27 6 65 14 6 66 28 6 67 17 6 68 35 6 69 29 6 70 14 6 71 35 6 72 27 6 73 26 6 74 35 2 75 32 2 76 31 2 77 33 1 78 0 1 79 30 1 80 34 0 81 33 0 82 32 0 83 30 6 84 38 6 85 37 6 86 35 6 87 49 6 88 48 6 89 31 6 90 39 6 91 35 6 92 40 6 93 37 6 94 43 6 95 44 6 96 42 6 97 47 6 98 45 6 99 36 6 100 31 6 101 45 6 102 47 6 103 46 6 104 46 6 105 48 6 106 49 6 107 39 7 108 53 7 109 49 7 110 49 2 111 52 2 112 46 2 113 46 8 114 50 8 115 36 8 116 36 1 117 51 1 118 39 1 119 47 6 120 55 6 121 48 6 122 37 6 123 54 6 124 43 6 125 55 7 126 56 7 127 54 7 128 52 0 129 58 0 130 50 0 131 8 0 132 9 0 133 11 0 134 11 1 135 9 1 136 6 1 137 7 2 138 8 2 139 12 2 140 2 9 141 3 9 142 7 9 143 4 3 144 8 3 145 7 3 146 5 3 147 9 3 148 8 3 149 2 3 150 6 3 151 9 3 152 14 2 153 13 2 154 34 2 155 15 2 156 12 2 157 13 2 158 1 1 159 10 1 160 17 1 161 10 1 162 11 1 163 16 1 164 13 0 165 10 0 166 1 0 167 12 0 168 11 0 169 10 0 170 16 6 171 6 6 172 19 6 173 7 6 174 20 6 175 19 6 176 15 6 177 21 6 178 20 6 179 15 6 180 16 6 181 18 6 182 17 6 183 16 6 184 23 6 185 15 6 186 24 6 187 23 6 188 14 6 189 25 6 190 24 6 191 14 6 192 17 6 193 22 6 194 0 6 195 17 6 196 28 6 197 14 6 198 29 6 199 28 6 200 35 6 201 26 6 202 29 6 203 35 6 204 0 6 205 27 6 206 35 2 207 34 2 208 32 2 209 33 1 210 1 1 211 0 1 212 34 0 213 1 0 214 33 0 215 30 6 216 0 6 217 38 6 218 38 6 219 0 6 220 54 6 221 0 6 222 35 6 223 48 6 224 54 6 225 0 6 226 55 6 227 35 6 228 39 6 229 49 6 230 48 6 231 55 6 232 0 6 233 31 6 234 36 6 235 39 6 236 40 6 237 30 6 238 37 6 239 44 6 240 41 6 241 42 6 242 45 6 243 46 6 244 36 6 245 45 6 246 44 6 247 47 6 248 46 6 249 47 6 250 48 6 251 39 7 252 51 7 253 53 7 254 49 10 255 53 10 256 52 10 257 46 11 258 52 11 259 50 11 260 36 1 261 50 1 262 51 1 263 47 6 264 42 6 265 55 6 266 37 6 267 38 6 268 54 6 269 55 7 270 57 7 271 56 7 272 52 12 273 59 12 274 58 12 275</p>
+          <p>8 0 0 11 0 1 12 0 2 11 1 3 6 1 4 16 1 5 7 2 6 12 2 7 15 2 8 2 3 9 7 3 10 6 3 11 4 3 12 7 3 13 3 3 14 5 4 15 8 4 16 4 4 17 2 3 18 9 3 19 5 3 20 14 2 21 34 2 22 35 2 23 15 2 24 13 2 25 14 2 26 1 1 27 17 1 28 0 1 29 10 1 30 16 1 31 17 1 32 13 5 33 1 5 34 34 5 35 12 0 36 10 0 37 13 0 38 16 6 39 19 6 40 18 6 41 7 6 42 19 6 43 6 6 44 15 6 45 20 6 46 7 6 47 15 6 48 18 6 49 21 6 50 17 6 51 23 6 52 22 6 53 15 6 54 23 6 55 16 6 56 14 6 57 24 6 58 15 6 59 14 6 60 22 6 61 25 6 62 0 6 63 28 6 64 27 6 65 14 6 66 28 6 67 17 6 68 35 6 69 29 6 70 14 6 71 35 6 72 27 6 73 26 6 74 35 2 75 32 2 76 31 2 77 33 1 78 0 1 79 30 1 80 34 0 81 33 0 82 32 0 83 30 6 84 38 6 85 37 6 86 35 6 87 49 6 88 48 6 89 31 6 90 39 6 91 35 6 92 40 6 93 37 6 94 43 6 95 44 6 96 42 6 97 47 6 98 45 6 99 36 6 100 31 6 101 44 6 102 46 6 103 45 6 104 47 6 105 49 6 106 46 6 107 39 7 108 53 7 109 49 7 110 49 2 111 52 2 112 46 2 113 46 8 114 50 8 115 36 8 116 36 1 117 51 1 118 39 1 119 47 6 120 55 6 121 48 6 122 37 6 123 54 6 124 43 6 125 55 7 126 56 7 127 54 7 128 52 3 129 58 3 130 50 3 131 8 0 132 9 0 133 11 0 134 11 1 135 9 1 136 6 1 137 7 2 138 8 2 139 12 2 140 2 9 141 3 9 142 7 9 143 4 3 144 8 3 145 7 3 146 5 3 147 9 3 148 8 3 149 2 3 150 6 3 151 9 3 152 14 2 153 13 2 154 34 2 155 15 2 156 12 2 157 13 2 158 1 1 159 10 1 160 17 1 161 10 1 162 11 1 163 16 1 164 13 0 165 10 0 166 1 0 167 12 0 168 11 0 169 10 0 170 16 6 171 6 6 172 19 6 173 7 6 174 20 6 175 19 6 176 15 6 177 21 6 178 20 6 179 15 6 180 16 6 181 18 6 182 17 6 183 16 6 184 23 6 185 15 6 186 24 6 187 23 6 188 14 6 189 25 6 190 24 6 191 14 6 192 17 6 193 22 6 194 0 6 195 17 6 196 28 6 197 14 6 198 29 6 199 28 6 200 35 6 201 26 6 202 29 6 203 35 6 204 0 6 205 27 6 206 35 2 207 34 2 208 32 2 209 33 1 210 1 1 211 0 1 212 34 0 213 1 0 214 33 0 215 30 6 216 0 6 217 38 6 218 38 6 219 0 6 220 54 6 221 0 6 222 35 6 223 48 6 224 54 6 225 0 6 226 55 6 227 35 6 228 39 6 229 49 6 230 48 6 231 55 6 232 0 6 233 31 6 234 36 6 235 39 6 236 40 6 237 30 6 238 37 6 239 44 6 240 41 6 241 42 6 242 45 6 243 46 6 244 36 6 245 44 6 246 47 6 247 46 6 248 47 6 249 48 6 250 49 6 251 39 7 252 51 7 253 53 7 254 49 10 255 53 10 256 52 10 257 46 11 258 52 11 259 50 11 260 36 1 261 50 1 262 51 1 263 47 6 264 42 6 265 55 6 266 37 6 267 38 6 268 54 6 269 55 7 270 57 7 271 56 7 272 52 3 273 59 3 274 58 3 275</p>
         </triangles>
       </mesh>
     </geometry>
@@ -13122,9 +12747,9 @@
     <geometry id="Plane_025-mesh" name="Plane.025">
       <mesh>
         <source id="Plane_025-mesh-positions">
-          <float_array id="Plane_025-mesh-positions-array" count="27">2.3 -0.2999992 1.5 14.7 -0.2999992 1.5 14.7 -7.7 1.5 14.7 -7.7 5.5 2.3 -0.2999992 5.5 14.7 -0.2999992 5.5 14.7 -7.7 8 2.3 -0.2999992 8 14.7 -0.2999992 8</float_array>
+          <float_array id="Plane_025-mesh-positions-array" count="18">14.7 -7.7 5.5 2.3 -0.2999992 5.5 14.7 -0.2999992 5.5 14.7 -7.7 8 2.3 -0.2999992 8 14.7 -0.2999992 8</float_array>
           <technique_common>
-            <accessor source="#Plane_025-mesh-positions-array" count="9" stride="3">
+            <accessor source="#Plane_025-mesh-positions-array" count="6" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -13132,7 +12757,7 @@
           </technique_common>
         </source>
         <source id="Plane_025-mesh-normals">
-          <float_array id="Plane_025-mesh-normals-array" count="6">-1 0 0 0 -1 0</float_array>
+          <float_array id="Plane_025-mesh-normals-array" count="6">0 -1 0 -1 0 0</float_array>
           <technique_common>
             <accessor source="#Plane_025-mesh-normals-array" count="2" stride="3">
               <param name="X" type="float"/>
@@ -13142,9 +12767,9 @@
           </technique_common>
         </source>
         <source id="Plane_025-mesh-map-0">
-          <float_array id="Plane_025-mesh-map-0-array" count="48">1.69676e-4 0.9970433 1.135072 1.69676e-4 1.135072 0.9970433 1.135072 0.9970433 2.883435 1.69857e-4 2.883435 0.9970429 2.955824 0.9996421 7.908354 0.00114876 7.908354 0.9996426 2.81001e-4 0.9996419 2.955824 0.001147568 2.955824 0.9996421 1.69676e-4 0.9970433 1.70226e-4 1.69676e-4 1.135072 1.69676e-4 1.135072 0.9970433 1.135072 1.69676e-4 2.883435 1.69857e-4 2.955824 0.9996421 2.955824 0.001147568 7.908354 0.00114876 2.81001e-4 0.9996419 2.81067e-4 0.001147449 2.955824 0.001147568</float_array>
+          <float_array id="Plane_025-mesh-map-0-array" count="24">2.955824 0.9996421 7.908354 0.00114876 7.908354 0.9996426 2.81001e-4 0.9996419 2.955824 0.001147568 2.955824 0.9996421 2.955824 0.9996421 2.955824 0.001147568 7.908354 0.00114876 2.81001e-4 0.9996419 2.81067e-4 0.001147449 2.955824 0.001147568</float_array>
           <technique_common>
-            <accessor source="#Plane_025-mesh-map-0-array" count="24" stride="2">
+            <accessor source="#Plane_025-mesh-map-0-array" count="12" stride="2">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
             </accessor>
@@ -13153,11 +12778,11 @@
         <vertices id="Plane_025-mesh-vertices">
           <input semantic="POSITION" source="#Plane_025-mesh-positions"/>
         </vertices>
-        <triangles material="marble_tan-material" count="8">
+        <triangles material="blue_wall-material" count="4">
           <input semantic="VERTEX" source="#Plane_025-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_025-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_025-mesh-map-0" offset="2" set="0"/>
-          <p>2 0 0 5 0 1 1 0 2 1 1 3 4 1 4 0 1 5 5 1 6 7 1 7 4 1 8 3 0 9 8 0 10 5 0 11 2 0 12 3 0 13 5 0 14 1 1 15 5 1 16 4 1 17 5 1 18 8 1 19 7 1 20 3 0 21 6 0 22 8 0 23</p>
+          <p>2 0 0 4 0 1 1 0 2 0 1 3 5 1 4 2 1 5 2 0 6 5 0 7 4 0 8 0 1 9 3 1 10 5 1 11</p>
         </triangles>
       </mesh>
     </geometry>
@@ -13756,6 +13381,18 @@
           <bind_material>
             <technique_common>
               <instance_material symbol="metal_pole-material" target="#metal_pole-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="docks_006" name="docks.006" type="NODE">
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
+        <instance_geometry url="#Plane_274-mesh" name="docks.006">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="blue_wall-material" target="#blue_wall-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -14615,7 +14252,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_052" name="Plane.052" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 10.1 -1 -4.37114e-8 0 22 0 0 1 1.53 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 10.1 -1 -4.37114e-8 0 22 0 0 1 1.33 0 0 0 1</matrix>
         <instance_geometry url="#Plane_203-mesh" name="Plane.052">
           <bind_material>
             <technique_common>
@@ -14627,7 +14264,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_035" name="Plane.035" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 10.1 -1 -4.37114e-8 0 22 0 0 1 1.53 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 10.1 -1 -4.37114e-8 0 22 0 0 1 1.33 0 0 0 1</matrix>
         <instance_geometry url="#Plane_202-mesh" name="Plane.035">
           <bind_material>
             <technique_common>
@@ -14639,7 +14276,7 @@
         </instance_geometry>
       </node>
       <node id="docks_136" name="docks.136" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_201-mesh" name="docks.136">
           <bind_material>
             <technique_common>
@@ -14651,7 +14288,7 @@
         </instance_geometry>
       </node>
       <node id="docks_135" name="docks.135" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 12 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 11.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_200-mesh" name="docks.135">
           <bind_material>
             <technique_common>
@@ -14663,7 +14300,7 @@
         </instance_geometry>
       </node>
       <node id="docks_134" name="docks.134" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 7.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_199-mesh" name="docks.134">
           <bind_material>
             <technique_common>
@@ -14675,7 +14312,7 @@
         </instance_geometry>
       </node>
       <node id="docks_133" name="docks.133" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_198-mesh" name="docks.133">
           <bind_material>
             <technique_common>
@@ -14687,7 +14324,7 @@
         </instance_geometry>
       </node>
       <node id="docks_132" name="docks.132" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_197-mesh" name="docks.132">
           <bind_material>
             <technique_common>
@@ -14699,7 +14336,7 @@
         </instance_geometry>
       </node>
       <node id="docks_131" name="docks.131" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_196-mesh" name="docks.131">
           <bind_material>
             <technique_common>
@@ -14711,7 +14348,7 @@
         </instance_geometry>
       </node>
       <node id="docks_130" name="docks.130" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_195-mesh" name="docks.130">
           <bind_material>
             <technique_common>
@@ -14723,7 +14360,7 @@
         </instance_geometry>
       </node>
       <node id="docks_106" name="docks.106" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_194-mesh" name="docks.106">
           <bind_material>
             <technique_common>
@@ -14735,7 +14372,7 @@
         </instance_geometry>
       </node>
       <node id="docks_129" name="docks.129" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 8 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 7.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_193-mesh" name="docks.129">
           <bind_material>
             <technique_common>
@@ -14747,7 +14384,7 @@
         </instance_geometry>
       </node>
       <node id="docks_128" name="docks.128" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_192-mesh" name="docks.128">
           <bind_material>
             <technique_common>
@@ -14759,7 +14396,7 @@
         </instance_geometry>
       </node>
       <node id="docks_127" name="docks.127" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 -7.5 -1 -4.37114e-8 0 17.8 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_191-mesh" name="docks.127">
           <bind_material>
             <technique_common>
@@ -14771,7 +14408,7 @@
         </instance_geometry>
       </node>
       <node id="docks_125" name="docks.125" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 7.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_190-mesh" name="docks.125">
           <bind_material>
             <technique_common>
@@ -14783,7 +14420,7 @@
         </instance_geometry>
       </node>
       <node id="docks_107" name="docks.107" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_189-mesh" name="docks.107">
           <bind_material>
             <technique_common>
@@ -14795,7 +14432,7 @@
         </instance_geometry>
       </node>
       <node id="docks_126" name="docks.126" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_188-mesh" name="docks.126">
           <bind_material>
             <technique_common>
@@ -14807,7 +14444,7 @@
         </instance_geometry>
       </node>
       <node id="docks_124" name="docks.124" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 12 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 11.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_186-mesh" name="docks.124">
           <bind_material>
             <technique_common>
@@ -14819,7 +14456,7 @@
         </instance_geometry>
       </node>
       <node id="docks_123" name="docks.123" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 7.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_185-mesh" name="docks.123">
           <bind_material>
             <technique_common>
@@ -14831,7 +14468,7 @@
         </instance_geometry>
       </node>
       <node id="docks_122" name="docks.122" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 12 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 11.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_184-mesh" name="docks.122">
           <bind_material>
             <technique_common>
@@ -14843,7 +14480,7 @@
         </instance_geometry>
       </node>
       <node id="docks_121" name="docks.121" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 7.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_183-mesh" name="docks.121">
           <bind_material>
             <technique_common>
@@ -14855,7 +14492,7 @@
         </instance_geometry>
       </node>
       <node id="docks_119" name="docks.119" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_182-mesh" name="docks.119">
           <bind_material>
             <technique_common>
@@ -14867,7 +14504,7 @@
         </instance_geometry>
       </node>
       <node id="docks_120" name="docks.120" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_179-mesh" name="docks.120">
           <bind_material>
             <technique_common>
@@ -14879,7 +14516,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_024" name="Cube.024" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 2.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 2.5 0 0 0 1</matrix>
         <instance_geometry url="#Cube_028-mesh" name="Cube.024">
           <bind_material>
             <technique_common>
@@ -14891,7 +14528,7 @@
         </instance_geometry>
       </node>
       <node id="docks_118" name="docks.118" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 15.1 0 0 1 4.2 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 15.1 0 0 1 4.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_177-mesh" name="docks.118">
           <bind_material>
             <technique_common>
@@ -14903,7 +14540,7 @@
         </instance_geometry>
       </node>
       <node id="docks_117" name="docks.117" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_176-mesh" name="docks.117">
           <bind_material>
             <technique_common>
@@ -14915,7 +14552,7 @@
         </instance_geometry>
       </node>
       <node id="docks_116" name="docks.116" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_175-mesh" name="docks.116">
           <bind_material>
             <technique_common>
@@ -14927,7 +14564,7 @@
         </instance_geometry>
       </node>
       <node id="docks_115" name="docks.115" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_174-mesh" name="docks.115">
           <bind_material>
             <technique_common>
@@ -14939,19 +14576,19 @@
         </instance_geometry>
       </node>
       <node id="docks_114" name="docks.114" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_173-mesh" name="docks.114"/>
       </node>
       <node id="docks_113" name="docks.113" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_172-mesh" name="docks.113"/>
       </node>
       <node id="Plane_054" name="Plane.054" type="NODE">
-        <matrix sid="transform">1 0 0 7 0 1 0 7.9 0 0 1 4.9 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 7 0 1 0 7.9 0 0 1 4.8 0 0 0 1</matrix>
         <instance_geometry url="#Plane_171-mesh" name="Plane.054"/>
       </node>
       <node id="Plane_051" name="Plane.051" type="NODE">
-        <matrix sid="transform">1 0 0 1.3 0 1 0 6 0 0 1 2 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1.3 0 1 0 6 0 0 1 1.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_170-mesh" name="Plane.051">
           <bind_material>
             <technique_common>
@@ -14963,7 +14600,7 @@
         </instance_geometry>
       </node>
       <node id="docks_112" name="docks.112" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 4.2 0 0 1 0.1 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 4.2 0 0 1 0 0 0 0 1</matrix>
         <instance_geometry url="#Plane_169-mesh" name="docks.112">
           <bind_material>
             <technique_common>
@@ -14975,11 +14612,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_050" name="Plane.050" type="NODE">
-        <matrix sid="transform">1 0 0 7 0 1 0 7.9 0 0 1 1.5 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 7 0 1 0 7.9 0 0 1 1.4 0 0 0 1</matrix>
         <instance_geometry url="#Plane_168-mesh" name="Plane.050"/>
       </node>
       <node id="docks_111" name="docks.111" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_167-mesh" name="docks.111">
           <bind_material>
             <technique_common>
@@ -14991,7 +14628,7 @@
         </instance_geometry>
       </node>
       <node id="docks_110" name="docks.110" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_166-mesh" name="docks.110">
           <bind_material>
             <technique_common>
@@ -15003,7 +14640,7 @@
         </instance_geometry>
       </node>
       <node id="docks_109" name="docks.109" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_165-mesh" name="docks.109">
           <bind_material>
             <technique_common>
@@ -15015,7 +14652,7 @@
         </instance_geometry>
       </node>
       <node id="docks_108" name="docks.108" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_164-mesh" name="docks.108">
           <bind_material>
             <technique_common>
@@ -15027,7 +14664,7 @@
         </instance_geometry>
       </node>
       <node id="docks_105" name="docks.105" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_161-mesh" name="docks.105">
           <bind_material>
             <technique_common>
@@ -15039,7 +14676,7 @@
         </instance_geometry>
       </node>
       <node id="docks_104" name="docks.104" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_160-mesh" name="docks.104">
           <bind_material>
             <technique_common>
@@ -15051,7 +14688,7 @@
         </instance_geometry>
       </node>
       <node id="docks_103" name="docks.103" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_159-mesh" name="docks.103">
           <bind_material>
             <technique_common>
@@ -15063,7 +14700,7 @@
         </instance_geometry>
       </node>
       <node id="docks_102" name="docks.102" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_158-mesh" name="docks.102">
           <bind_material>
             <technique_common>
@@ -15075,7 +14712,7 @@
         </instance_geometry>
       </node>
       <node id="docks_101" name="docks.101" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_157-mesh" name="docks.101">
           <bind_material>
             <technique_common>
@@ -15087,7 +14724,7 @@
         </instance_geometry>
       </node>
       <node id="docks_100" name="docks.100" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_156-mesh" name="docks.100">
           <bind_material>
             <technique_common>
@@ -15099,7 +14736,7 @@
         </instance_geometry>
       </node>
       <node id="docks_099" name="docks.099" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_155-mesh" name="docks.099">
           <bind_material>
             <technique_common>
@@ -15111,7 +14748,7 @@
         </instance_geometry>
       </node>
       <node id="docks_098" name="docks.098" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_154-mesh" name="docks.098">
           <bind_material>
             <technique_common>
@@ -15123,7 +14760,7 @@
         </instance_geometry>
       </node>
       <node id="docks_097" name="docks.097" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_153-mesh" name="docks.097">
           <bind_material>
             <technique_common>
@@ -15135,7 +14772,7 @@
         </instance_geometry>
       </node>
       <node id="docks_096" name="docks.096" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_152-mesh" name="docks.096">
           <bind_material>
             <technique_common>
@@ -15147,7 +14784,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_023" name="Cube.023" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 6.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 6.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_027-mesh" name="Cube.023">
           <bind_material>
             <technique_common>
@@ -15159,7 +14796,7 @@
         </instance_geometry>
       </node>
       <node id="docks_090" name="docks.090" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_151-mesh" name="docks.090">
           <bind_material>
             <technique_common>
@@ -15171,7 +14808,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_026" name="Cube.026" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 8.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 8.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_026-mesh" name="Cube.026">
           <bind_material>
             <technique_common>
@@ -15183,7 +14820,7 @@
         </instance_geometry>
       </node>
       <node id="docks_089" name="docks.089" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 4.8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 4.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_150-mesh" name="docks.089">
           <bind_material>
             <technique_common>
@@ -15195,7 +14832,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_025" name="Cube.025" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 6.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 6.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_025-mesh" name="Cube.025">
           <bind_material>
             <technique_common>
@@ -15207,7 +14844,7 @@
         </instance_geometry>
       </node>
       <node id="docks_095" name="docks.095" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_149-mesh" name="docks.095">
           <bind_material>
             <technique_common>
@@ -15219,7 +14856,7 @@
         </instance_geometry>
       </node>
       <node id="docks_094" name="docks.094" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_148-mesh" name="docks.094">
           <bind_material>
             <technique_common>
@@ -15231,7 +14868,7 @@
         </instance_geometry>
       </node>
       <node id="docks_093" name="docks.093" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_147-mesh" name="docks.093">
           <bind_material>
             <technique_common>
@@ -15243,7 +14880,7 @@
         </instance_geometry>
       </node>
       <node id="docks_092" name="docks.092" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_146-mesh" name="docks.092">
           <bind_material>
             <technique_common>
@@ -15255,7 +14892,7 @@
         </instance_geometry>
       </node>
       <node id="docks_091" name="docks.091" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_145-mesh" name="docks.091">
           <bind_material>
             <technique_common>
@@ -15339,7 +14976,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_043" name="Plane.043" type="NODE">
-        <matrix sid="transform">-1 1.50996e-7 0 11.3 -1.50996e-7 -1 0 3.299999 0 0 1 20.8 0 0 0 1</matrix>
+        <matrix sid="transform">-1 1.50996e-7 0 11.3 -1.50996e-7 -1 0 3.299999 0 0 1 20.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_135-mesh" name="Plane.043">
           <bind_material>
             <technique_common>
@@ -15351,7 +14988,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_042" name="Plane.042" type="NODE">
-        <matrix sid="transform">-1 1.50996e-7 0 9.500001 -1.50996e-7 -1 0 22.2 0 0 1 9.6 0 0 0 1</matrix>
+        <matrix sid="transform">-1 1.50996e-7 0 9.500001 -1.50996e-7 -1 0 22.2 0 0 1 9.400001 0 0 0 1</matrix>
         <instance_geometry url="#Plane_134-mesh" name="Plane.042">
           <bind_material>
             <technique_common>
@@ -15363,7 +15000,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_041" name="Plane.041" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 27.4 -1 7.54979e-8 0 -3.3 0 0 1 9.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 27.4 -1 7.54979e-8 0 -3.3 0 0 1 9.400001 0 0 0 1</matrix>
         <instance_geometry url="#Plane_133-mesh" name="Plane.041">
           <bind_material>
             <technique_common>
@@ -15375,7 +15012,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_040" name="Plane.040" type="NODE">
-        <matrix sid="transform">-1 1.50996e-7 0 12.5 -1.50996e-7 -1 0 -1.800001 0 0 1 10.6 0 0 0 1</matrix>
+        <matrix sid="transform">-1 1.50996e-7 0 12.5 -1.50996e-7 -1 0 -1.800001 0 0 1 10.4 0 0 0 1</matrix>
         <instance_geometry url="#Plane_132-mesh" name="Plane.040">
           <bind_material>
             <technique_common>
@@ -15387,7 +15024,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_022" name="Cube.022" type="NODE">
-        <matrix sid="transform">-1 1.50996e-7 0 7.693501 -1.50996e-7 -1 0 -8.403887 0 0 1 9.6 0 0 0 1</matrix>
+        <matrix sid="transform">-1 1.50996e-7 0 7.693501 -1.50996e-7 -1 0 -8.403887 0 0 1 9.400001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_023-mesh" name="Cube.022">
           <bind_material>
             <technique_common>
@@ -15399,7 +15036,7 @@
         </instance_geometry>
       </node>
       <node id="docks_086" name="docks.086" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 -17.3065 -1 -4.37114e-8 0 -7.303886 0 0 1 5.900001 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 -17.3065 -1 -4.37114e-8 0 -7.303886 0 0 1 5.700001 0 0 0 1</matrix>
         <instance_geometry url="#Plane_131-mesh" name="docks.086">
           <bind_material>
             <technique_common>
@@ -15411,7 +15048,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_021" name="Cube.021" type="NODE">
-        <matrix sid="transform">-1 1.50996e-7 0 22.6935 -1.50996e-7 -1 0 -7.403887 0 0 1 8.6 0 0 0 1</matrix>
+        <matrix sid="transform">-1 1.50996e-7 0 22.6935 -1.50996e-7 -1 0 -7.403887 0 0 1 8.400001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_022-mesh" name="Cube.021">
           <bind_material>
             <technique_common>
@@ -15423,7 +15060,7 @@
         </instance_geometry>
       </node>
       <node id="docks_088" name="docks.088" type="NODE">
-        <matrix sid="transform">-4.37114e-8 1 0 -2.306503 -1 -4.37114e-8 0 -6.303886 0 0 1 4.900001 0 0 0 1</matrix>
+        <matrix sid="transform">-4.37114e-8 1 0 -2.306503 -1 -4.37114e-8 0 -6.303886 0 0 1 4.700001 0 0 0 1</matrix>
         <instance_geometry url="#Plane_130-mesh" name="docks.088">
           <bind_material>
             <technique_common>
@@ -15435,7 +15072,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_020" name="Cube.020" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 19.1 -1 7.54979e-8 0 -6.000002 0 0 1 8.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 19.1 -1 7.54979e-8 0 -6.000002 0 0 1 8.400001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_021-mesh" name="Cube.020">
           <bind_material>
             <technique_common>
@@ -15447,7 +15084,7 @@
         </instance_geometry>
       </node>
       <node id="docks_087" name="docks.087" type="NODE">
-        <matrix sid="transform">1 0 0 18 0 1 0 -31 0 0 1 4.9 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 18 0 1 0 -31 0 0 1 4.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_129-mesh" name="docks.087">
           <bind_material>
             <technique_common>
@@ -15459,7 +15096,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_019" name="Cube.019" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 19.1 -1 7.54979e-8 0 -6.000002 0 0 1 8.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 19.1 -1 7.54979e-8 0 -6.000002 0 0 1 8.400001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_020-mesh" name="Cube.019">
           <bind_material>
             <technique_common>
@@ -15471,7 +15108,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_018" name="Cube.018" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -5.000002 0 0 1 9.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -5.000002 0 0 1 9.400001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_019-mesh" name="Cube.018">
           <bind_material>
             <technique_common>
@@ -15483,7 +15120,7 @@
         </instance_geometry>
       </node>
       <node id="docks_085" name="docks.085" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -30 0 0 1 5.9 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -30 0 0 1 5.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_127-mesh" name="docks.085">
           <bind_material>
             <technique_common>
@@ -15495,7 +15132,7 @@
         </instance_geometry>
       </node>
       <node id="docks_084" name="docks.084" type="NODE">
-        <matrix sid="transform">1 0 0 18 0 1 0 -17 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 18 0 1 0 -17 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_126-mesh" name="docks.084">
           <bind_material>
             <technique_common>
@@ -15507,7 +15144,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_017" name="Cube.017" type="NODE">
-        <matrix sid="transform">1 0 0 19.9 0 1 0 -9.900002 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 19.9 0 1 0 -9.900002 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube_018-mesh" name="Cube.017">
           <bind_material>
             <technique_common>
@@ -15519,7 +15156,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_016" name="Cube.016" type="NODE">
-        <matrix sid="transform">1 0 0 28.3 0 1 0 -9.900001 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 28.3 0 1 0 -9.900001 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube_017-mesh" name="Cube.016">
           <bind_material>
             <technique_common>
@@ -15531,7 +15168,7 @@
         </instance_geometry>
       </node>
       <node id="docks_083" name="docks.083" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -16 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -16 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_125-mesh" name="docks.083">
           <bind_material>
             <technique_common>
@@ -15543,7 +15180,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_015" name="Cube.015" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 16.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 16.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_015-mesh" name="Cube.015">
           <bind_material>
             <technique_common>
@@ -15555,7 +15192,7 @@
         </instance_geometry>
       </node>
       <node id="docks_082" name="docks.082" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 12.8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 12.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_123-mesh" name="docks.082">
           <bind_material>
             <technique_common>
@@ -15567,7 +15204,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_014" name="Cube.014" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 12.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 5.599998 0 0 1 12.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_014-mesh" name="Cube.014">
           <bind_material>
             <technique_common>
@@ -15579,7 +15216,7 @@
         </instance_geometry>
       </node>
       <node id="docks_081" name="docks.081" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 8.8 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -19.4 0 0 1 8.7 0 0 0 1</matrix>
         <instance_geometry url="#Plane_122-mesh" name="docks.081">
           <bind_material>
             <technique_common>
@@ -15591,7 +15228,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_013" name="Cube.013" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 25 0 0 1 8.1 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 25 0 0 1 7.900001 0 0 0 1</matrix>
         <instance_geometry url="#Cube_013-mesh" name="Cube.013">
           <bind_material>
             <technique_common>
@@ -15603,7 +15240,7 @@
         </instance_geometry>
       </node>
       <node id="docks_080" name="docks.080" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 3.72529e-8 0 0 1 4.4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 3.72529e-8 0 0 1 4.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_120-mesh" name="docks.080">
           <bind_material>
             <technique_common>
@@ -15615,7 +15252,7 @@
         </instance_geometry>
       </node>
       <node id="docks_079" name="docks.079" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_119-mesh" name="docks.079">
           <bind_material>
             <technique_common>
@@ -15626,56 +15263,8 @@
           </bind_material>
         </instance_geometry>
       </node>
-      <node id="Plane_039" name="Plane.039" type="NODE">
-        <matrix sid="transform">1 0 0 6 0 1 0 25 0 0 1 1.3 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_118-mesh" name="Plane.039">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="concrete_dark-material" target="#concrete_dark-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="Plane_038" name="Plane.038" type="NODE">
-        <matrix sid="transform">1 0 0 22 0 1 0 -8 0 0 1 1.3 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_117-mesh" name="Plane.038">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="concrete_dark-material" target="#concrete_dark-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="Plane_037" name="Plane.037" type="NODE">
-        <matrix sid="transform">1 0 0 7 0 1 0 -7 0 0 1 1.3 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_116-mesh" name="Plane.037">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="concrete_dark-material" target="#concrete_dark-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="Plane_036" name="Plane.036" type="NODE">
-        <matrix sid="transform">1 0 0 6 0 1 0 10 0 0 1 1.3 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_115-mesh" name="Plane.036">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="concrete_dark-material" target="#concrete_dark-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
       <node id="docks_078" name="docks.078" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_114-mesh" name="docks.078">
           <bind_material>
             <technique_common>
@@ -15687,7 +15276,7 @@
         </instance_geometry>
       </node>
       <node id="docks_077" name="docks.077" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_113-mesh" name="docks.077">
           <bind_material>
             <technique_common>
@@ -15699,7 +15288,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_012" name="Cube.012" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 4.5 -1 7.54979e-8 0 6.899999 0 0 1 18.8 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 4.5 -1 7.54979e-8 0 6.899999 0 0 1 18.7 0 0 0 1</matrix>
         <instance_geometry url="#Cube_012-mesh" name="Cube.012">
           <bind_material>
             <technique_common>
@@ -15711,7 +15300,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_011" name="Cube.011" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 4.5 -1 7.54979e-8 0 3.299999 0 0 1 19.9 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 4.5 -1 7.54979e-8 0 3.299999 0 0 1 19.8 0 0 0 1</matrix>
         <instance_geometry url="#Cube_011-mesh" name="Cube.011">
           <bind_material>
             <technique_common>
@@ -15723,7 +15312,7 @@
         </instance_geometry>
       </node>
       <node id="docks_076" name="docks.076" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_112-mesh" name="docks.076">
           <bind_material>
             <technique_common>
@@ -15735,7 +15324,7 @@
         </instance_geometry>
       </node>
       <node id="docks_075" name="docks.075" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_110-mesh" name="docks.075">
           <bind_material>
             <technique_common>
@@ -15747,7 +15336,7 @@
         </instance_geometry>
       </node>
       <node id="docks_074" name="docks.074" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_109-mesh" name="docks.074">
           <bind_material>
             <technique_common>
@@ -15759,7 +15348,7 @@
         </instance_geometry>
       </node>
       <node id="docks_073" name="docks.073" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_085-mesh" name="docks.073">
           <bind_material>
             <technique_common>
@@ -15771,7 +15360,7 @@
         </instance_geometry>
       </node>
       <node id="docks_072" name="docks.072" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_084-mesh" name="docks.072">
           <bind_material>
             <technique_common>
@@ -15783,7 +15372,7 @@
         </instance_geometry>
       </node>
       <node id="docks_071" name="docks.071" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -0.3 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -0.3 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_082-mesh" name="docks.071">
           <bind_material>
             <technique_common>
@@ -15795,7 +15384,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_010" name="Cube.010" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 22.5 0 0 1 2.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 22.5 0 0 1 2.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_010-mesh" name="Cube.010">
           <bind_material>
             <technique_common>
@@ -15807,7 +15396,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_009" name="Cube.009" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 27.4 0 0 1 2.6 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 27.4 0 0 1 2.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_009-mesh" name="Cube.009">
           <bind_material>
             <technique_common>
@@ -15819,7 +15408,7 @@
         </instance_geometry>
       </node>
       <node id="docks_070" name="docks.070" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0.3 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_079-mesh" name="docks.070">
           <bind_material>
             <technique_common>
@@ -15831,7 +15420,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_008" name="Cube.008" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 25 0 0 1 3.8 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 25 0 0 1 3.6 0 0 0 1</matrix>
         <instance_geometry url="#Cube_008-mesh" name="Cube.008">
           <bind_material>
             <technique_common>
@@ -15843,7 +15432,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_007" name="Cube.007" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 14.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 14.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_007-mesh" name="Cube.007">
           <bind_material>
             <technique_common>
@@ -15855,7 +15444,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_006" name="Cube.006" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 10.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 11 0 0 1 10.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_006-mesh" name="Cube.006">
           <bind_material>
             <technique_common>
@@ -15867,7 +15456,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_005" name="Cube.005" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 14.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 14.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_005-mesh" name="Cube.005">
           <bind_material>
             <technique_common>
@@ -15879,7 +15468,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_004" name="Cube.004" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 10.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 15.7 0 0 1 10.4 0 0 0 1</matrix>
         <instance_geometry url="#Cube_004-mesh" name="Cube.004">
           <bind_material>
             <technique_common>
@@ -15891,7 +15480,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_003" name="Cube.003" type="NODE">
-        <matrix sid="transform">1 0 0 1.900001 0 1 0 -8.900002 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1.900001 0 1 0 -8.900002 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube_003-mesh" name="Cube.003">
           <bind_material>
             <technique_common>
@@ -15903,7 +15492,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_002" name="Cube.002" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -8.100001 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -8.100001 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube_002-mesh" name="Cube.002">
           <bind_material>
             <technique_common>
@@ -15915,7 +15504,7 @@
         </instance_geometry>
       </node>
       <node id="Cube_001" name="Cube.001" type="NODE">
-        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -1.900001 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 1 0 1.099999 -1 7.54979e-8 0 -1.900001 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube_001-mesh" name="Cube.001">
           <bind_material>
             <technique_common>
@@ -15927,7 +15516,7 @@
         </instance_geometry>
       </node>
       <node id="Cube" name="Cube" type="NODE">
-        <matrix sid="transform">1 0 0 10.3 0 1 0 -8.900001 0 0 1 2.5 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 10.3 0 1 0 -8.900001 0 0 1 2.3 0 0 0 1</matrix>
         <instance_geometry url="#Cube-mesh" name="Cube">
           <bind_material>
             <technique_common>
@@ -15939,7 +15528,7 @@
         </instance_geometry>
       </node>
       <node id="docks_069" name="docks.069" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -16 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -16 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_078-mesh" name="docks.069">
           <bind_material>
             <technique_common>
@@ -16351,7 +15940,7 @@
         </instance_geometry>
       </node>
       <node id="docks_051" name="docks.051" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_069-mesh" name="docks.051">
           <bind_material>
             <technique_common>
@@ -16363,7 +15952,7 @@
         </instance_geometry>
       </node>
       <node id="docks_050" name="docks.050" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_068-mesh" name="docks.050">
           <bind_material>
             <technique_common>
@@ -16375,7 +15964,7 @@
         </instance_geometry>
       </node>
       <node id="docks_049" name="docks.049" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_067-mesh" name="docks.049">
           <bind_material>
             <technique_common>
@@ -16386,36 +15975,12 @@
           </bind_material>
         </instance_geometry>
       </node>
-      <node id="Plane_017" name="Plane.017" type="NODE">
-        <matrix sid="transform">1 0 0 11.45 0 1 0 -6.65 0 0 1 3.6 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_066-mesh" name="Plane.017">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="lamp-material" target="#lamp-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="Plane_016" name="Plane.016" type="NODE">
-        <matrix sid="transform">1 0 0 10.35 0 1 0 -6.65 0 0 1 3.6 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_065-mesh" name="Plane.016">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="lamp-material" target="#lamp-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
       <node id="docks_048" name="docks.048" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0.03 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.17 0 0 0 1</matrix>
         <instance_geometry url="#Plane_064-mesh" name="docks.048">
           <bind_material>
             <technique_common>
-              <instance_material symbol="bar_area_tiles-material" target="#bar_area_tiles-material">
+              <instance_material symbol="turqoise_tiles-material" target="#turqoise_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16423,7 +15988,7 @@
         </instance_geometry>
       </node>
       <node id="docks_047" name="docks.047" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0.03 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.17 0 0 0 1</matrix>
         <instance_geometry url="#Plane_063-mesh" name="docks.047">
           <bind_material>
             <technique_common>
@@ -16435,11 +16000,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_015" name="Plane.015" type="NODE">
-        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_059-mesh" name="Plane.015">
           <bind_material>
             <technique_common>
-              <instance_material symbol="dark_wood-material" target="#dark_wood-material">
+              <instance_material symbol="ceiling_dark-material" target="#ceiling_dark-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16447,11 +16012,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_014" name="Plane.014" type="NODE">
-        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 0.2 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 0 0 0 0 1</matrix>
         <instance_geometry url="#Plane_052-mesh" name="Plane.014">
           <bind_material>
             <technique_common>
-              <instance_material symbol="bar_counter_overhang-material" target="#bar_counter_overhang-material">
+              <instance_material symbol="ceiling_dark-material" target="#ceiling_dark-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16459,11 +16024,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_013" name="Plane.013" type="NODE">
-        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 13.7 0 1 0 -1.3 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_047-mesh" name="Plane.013">
           <bind_material>
             <technique_common>
-              <instance_material symbol="steel_beams-material" target="#steel_beams-material">
+              <instance_material symbol="ceiling_dark-material" target="#ceiling_dark-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16471,7 +16036,7 @@
         </instance_geometry>
       </node>
       <node id="docks_046" name="docks.046" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_044-mesh" name="docks.046">
           <bind_material>
             <technique_common>
@@ -16483,7 +16048,7 @@
         </instance_geometry>
       </node>
       <node id="docks_045" name="docks.045" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_042-mesh" name="docks.045">
           <bind_material>
             <technique_common>
@@ -16495,7 +16060,7 @@
         </instance_geometry>
       </node>
       <node id="docks_044" name="docks.044" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_030-mesh" name="docks.044">
           <bind_material>
             <technique_common>
@@ -16507,7 +16072,7 @@
         </instance_geometry>
       </node>
       <node id="docks_043" name="docks.043" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_062-mesh" name="docks.043">
           <bind_material>
             <technique_common>
@@ -16519,7 +16084,7 @@
         </instance_geometry>
       </node>
       <node id="docks_042" name="docks.042" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_061-mesh" name="docks.042">
           <bind_material>
             <technique_common>
@@ -16531,7 +16096,7 @@
         </instance_geometry>
       </node>
       <node id="docks_041" name="docks.041" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_060-mesh" name="docks.041">
           <bind_material>
             <technique_common>
@@ -16543,11 +16108,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_012" name="Plane.012" type="NODE">
-        <matrix sid="transform">1 0 0 13 0 1 0 -2 0 0 1 1.53 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 13 0 1 0 -2 0 0 1 1.33 0 0 0 1</matrix>
         <instance_geometry url="#Plane_058-mesh" name="Plane.012">
           <bind_material>
             <technique_common>
-              <instance_material symbol="marble_counter_top-material" target="#marble_counter_top-material">
+              <instance_material symbol="ceiling_dark-material" target="#ceiling_dark-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16555,11 +16120,11 @@
         </instance_geometry>
       </node>
       <node id="Plane_011" name="Plane.011" type="NODE">
-        <matrix sid="transform">1 0 0 13 0 1 0 -2 0 0 1 1.53 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 13 0 1 0 -2 0 0 1 1.33 0 0 0 1</matrix>
         <instance_geometry url="#Plane_057-mesh" name="Plane.011">
           <bind_material>
             <technique_common>
-              <instance_material symbol="bar_counter_side-material" target="#bar_counter_side-material">
+              <instance_material symbol="ceiling_dark-material" target="#ceiling_dark-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16567,7 +16132,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_010" name="Plane.010" type="NODE">
-        <matrix sid="transform">1 0 0 1 0 1 0 24 0 0 1 9.3 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1 0 1 0 24 0 0 1 9.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_056-mesh" name="Plane.010">
           <bind_material>
             <technique_common>
@@ -16579,7 +16144,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_009" name="Plane.009" type="NODE">
-        <matrix sid="transform">1 0 0 2.34 0 1 0 28.8 0 0 1 10.58 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 2.34 0 1 0 28.8 0 0 1 10.38 0 0 0 1</matrix>
         <instance_geometry url="#Plane_055-mesh" name="Plane.009">
           <bind_material>
             <technique_common>
@@ -16591,7 +16156,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_004" name="Plane.004" type="NODE">
-        <matrix sid="transform">1 0 0 1 0 1 0 24 0 0 1 9.3 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1 0 1 0 24 0 0 1 9.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_054-mesh" name="Plane.004">
           <bind_material>
             <technique_common>
@@ -16603,7 +16168,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_003" name="Plane.003" type="NODE">
-        <matrix sid="transform">1 0 0 1 0 1 0 -6 0 0 1 10.3 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1 0 1 0 -6 0 0 1 10.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_053-mesh" name="Plane.003">
           <bind_material>
             <technique_common>
@@ -16615,7 +16180,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_002" name="Plane.002" type="NODE">
-        <matrix sid="transform">1 0 0 2.34 0 1 0 -1.2 0 0 1 11.58 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 2.34 0 1 0 -1.2 0 0 1 11.38 0 0 0 1</matrix>
         <instance_geometry url="#Plane_051-mesh" name="Plane.002">
           <bind_material>
             <technique_common>
@@ -16627,7 +16192,7 @@
         </instance_geometry>
       </node>
       <node id="Plane_001" name="Plane.001" type="NODE">
-        <matrix sid="transform">1 0 0 1 0 1 0 -6 0 0 1 10.3 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 1 0 1 0 -6 0 0 1 10.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_050-mesh" name="Plane.001">
           <bind_material>
             <technique_common>
@@ -16639,7 +16204,7 @@
         </instance_geometry>
       </node>
       <node id="docks_039" name="docks.039" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_049-mesh" name="docks.039">
           <bind_material>
             <technique_common>
@@ -16651,7 +16216,7 @@
         </instance_geometry>
       </node>
       <node id="docks_040" name="docks.040" type="NODE">
-        <matrix sid="transform">7.54979e-8 -1 0 15.4 1 7.54979e-8 0 -0.6 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 -1 0 15.4 1 7.54979e-8 0 -0.6 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_048-mesh" name="docks.040">
           <bind_material>
             <technique_common>
@@ -16663,7 +16228,7 @@
         </instance_geometry>
       </node>
       <node id="docks_038" name="docks.038" type="NODE">
-        <matrix sid="transform">7.54979e-8 -1 0 15.4 1 7.54979e-8 0 -0.6 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">7.54979e-8 -1 0 15.4 1 7.54979e-8 0 -0.6 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_046-mesh" name="docks.038">
           <bind_material>
             <technique_common>
@@ -16675,7 +16240,7 @@
         </instance_geometry>
       </node>
       <node id="docks_037" name="docks.037" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_045-mesh" name="docks.037">
           <bind_material>
             <technique_common>
@@ -16687,11 +16252,11 @@
         </instance_geometry>
       </node>
       <node id="docks_036" name="docks.036" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_043-mesh" name="docks.036"/>
       </node>
       <node id="docks_035" name="docks.035" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_041-mesh" name="docks.035">
           <bind_material>
             <technique_common>
@@ -16739,7 +16304,7 @@
         </instance_geometry>
       </node>
       <node id="docks_034" name="docks.034" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_040-mesh" name="docks.034">
           <bind_material>
             <technique_common>
@@ -16751,7 +16316,7 @@
         </instance_geometry>
       </node>
       <node id="docks_033" name="docks.033" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_039-mesh" name="docks.033">
           <bind_material>
             <technique_common>
@@ -16763,7 +16328,7 @@
         </instance_geometry>
       </node>
       <node id="docks_032" name="docks.032" type="NODE">
-        <matrix sid="transform">1 0 0 2 0 1 0 0.05000002 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 2 0 1 0 0.05000002 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_038-mesh" name="docks.032">
           <bind_material>
             <technique_common>
@@ -16775,7 +16340,7 @@
         </instance_geometry>
       </node>
       <node id="docks_031" name="docks.031" type="NODE">
-        <matrix sid="transform">1 0 0 2 0 1 0 0.05000002 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 2 0 1 0 0.05000002 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_037-mesh" name="docks.031">
           <bind_material>
             <technique_common>
@@ -16787,11 +16352,11 @@
         </instance_geometry>
       </node>
       <node id="docks_030" name="docks.030" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_036-mesh" name="docks.030">
           <bind_material>
             <technique_common>
-              <instance_material symbol="dark_wood-material" target="#dark_wood-material">
+              <instance_material symbol="wood_stairs-material" target="#wood_stairs-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16799,7 +16364,7 @@
         </instance_geometry>
       </node>
       <node id="docks_029" name="docks.029" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_035-mesh" name="docks.029">
           <bind_material>
             <technique_common>
@@ -16811,7 +16376,7 @@
         </instance_geometry>
       </node>
       <node id="docks_028" name="docks.028" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_034-mesh" name="docks.028">
           <bind_material>
             <technique_common>
@@ -16823,11 +16388,11 @@
         </instance_geometry>
       </node>
       <node id="docks_027" name="docks.027" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_033-mesh" name="docks.027">
           <bind_material>
             <technique_common>
-              <instance_material symbol="dark_wood-material" target="#dark_wood-material">
+              <instance_material symbol="wood_stairs-material" target="#wood_stairs-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16835,7 +16400,7 @@
         </instance_geometry>
       </node>
       <node id="docks_026" name="docks.026" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_032-mesh" name="docks.026">
           <bind_material>
             <technique_common>
@@ -16847,7 +16412,7 @@
         </instance_geometry>
       </node>
       <node id="docks_025" name="docks.025" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_031-mesh" name="docks.025">
           <bind_material>
             <technique_common>
@@ -16859,7 +16424,7 @@
         </instance_geometry>
       </node>
       <node id="docks_024" name="docks.024" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_029-mesh" name="docks.024">
           <bind_material>
             <technique_common>
@@ -16871,7 +16436,7 @@
         </instance_geometry>
       </node>
       <node id="docks_023" name="docks.023" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.1 0 0 0 1</matrix>
         <instance_geometry url="#Plane_028-mesh" name="docks.023">
           <bind_material>
             <technique_common>
@@ -16883,7 +16448,7 @@
         </instance_geometry>
       </node>
       <node id="docks_022" name="docks.022" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_027-mesh" name="docks.022">
           <bind_material>
             <technique_common>
@@ -16895,7 +16460,7 @@
         </instance_geometry>
       </node>
       <node id="docks_021" name="docks.021" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_026-mesh" name="docks.021">
           <bind_material>
             <technique_common>
@@ -16907,11 +16472,11 @@
         </instance_geometry>
       </node>
       <node id="docks_020" name="docks.020" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_025-mesh" name="docks.020">
           <bind_material>
             <technique_common>
-              <instance_material symbol="marble_tan-material" target="#marble_tan-material">
+              <instance_material symbol="blue_wall-material" target="#blue_wall-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16919,7 +16484,7 @@
         </instance_geometry>
       </node>
       <node id="docks_019" name="docks.019" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_024-mesh" name="docks.019">
           <bind_material>
             <technique_common>
@@ -16931,7 +16496,7 @@
         </instance_geometry>
       </node>
       <node id="docks_018" name="docks.018" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_023-mesh" name="docks.018">
           <bind_material>
             <technique_common>
@@ -16955,7 +16520,7 @@
         </instance_geometry>
       </node>
       <node id="docks_016" name="docks.016" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_020-mesh" name="docks.016">
           <bind_material>
             <technique_common>
@@ -16967,7 +16532,7 @@
         </instance_geometry>
       </node>
       <node id="docks_015" name="docks.015" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_019-mesh" name="docks.015">
           <bind_material>
             <technique_common>
@@ -16979,7 +16544,7 @@
         </instance_geometry>
       </node>
       <node id="docks_014" name="docks.014" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane_005-mesh" name="docks.014">
           <bind_material>
             <technique_common>
@@ -16991,7 +16556,7 @@
         </instance_geometry>
       </node>
       <node id="docks_013" name="docks.013" type="NODE">
-        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 -1 0 1 0 -1 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_004-mesh" name="docks.013">
           <bind_material>
             <technique_common>
@@ -17003,7 +16568,7 @@
         </instance_geometry>
       </node>
       <node id="docks_012" name="docks.012" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -0.2 0 0 0 1</matrix>
         <instance_geometry url="#Plane_003-mesh" name="docks.012">
           <bind_material>
             <technique_common>
@@ -17075,11 +16640,11 @@
         </instance_geometry>
       </node>
       <node id="Sun" name="Sun" type="NODE">
-        <matrix sid="transform">0.4269755 -0.05899658 -0.9023366 0 0.008665746 0.9980906 -0.06115663 0 0.9042217 0.01829296 0.4266715 24 0 0 0 1</matrix>
+        <matrix sid="transform">0.4269755 -0.05899658 -0.9023366 0 0.008665746 0.9980906 -0.06115663 0 0.9042217 0.01829296 0.4266715 23.7 0 0 0 1</matrix>
         <instance_light url="#Sun-light"/>
       </node>
       <node id="docks" name="docks" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 4 0 0 0 1</matrix>
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 3.9 0 0 0 1</matrix>
         <instance_geometry url="#Plane-mesh" name="docks">
           <bind_material>
             <technique_common>
