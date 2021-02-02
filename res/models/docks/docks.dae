@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.90.1 commit date:2020-09-23, commit time:06:43, hash:3e85bb34d0d7</authoring_tool>
     </contributor>
-    <created>2021-02-02T18:54:30</created>
-    <modified>2021-02-02T18:54:30</modified>
+    <created>2021-02-02T19:53:38</created>
+    <modified>2021-02-02T19:53:38</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -71,6 +71,50 @@
             </emission>
             <diffuse>
               <texture texture="concrete_albedo_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="steel_beams-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <color sid="diffuse">0.01884864 0.01884864 0.01884864 1</color>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="turqoise_tiles-effect">
+      <profile_COMMON>
+        <newparam sid="turqoise_tiles_png-surface">
+          <surface type="2D">
+            <init_from>turqoise_tiles_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="turqoise_tiles_png-sampler">
+          <sampler2D>
+            <source>turqoise_tiles_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="turqoise_tiles_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -218,25 +262,8 @@
               <float sid="specular">0.5</float>
             </reflectivity>
             <transparent opaque="A_ONE">
-              <color sid="alpha">0 0 0 0.707143</color>
+              <color sid="alpha">0 0 0 0.707</color>
             </transparent>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="steel_beams-effect">
-      <profile_COMMON>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <color sid="diffuse">0.01884864 0.01884864 0.01884864 1</color>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
           </lambert>
         </technique>
       </profile_COMMON>
@@ -317,33 +344,6 @@
             </emission>
             <diffuse>
               <texture texture="docks_bricks_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="turqoise_tiles-effect">
-      <profile_COMMON>
-        <newparam sid="turqoise_tiles_png-surface">
-          <surface type="2D">
-            <init_from>turqoise_tiles_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="turqoise_tiles_png-sampler">
-          <sampler2D>
-            <source>turqoise_tiles_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="turqoise_tiles_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -990,33 +990,6 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="subway_wall_2-effect">
-      <profile_COMMON>
-        <newparam sid="subway_wall_2_albedo_png-surface">
-          <surface type="2D">
-            <init_from>subway_wall_2_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="subway_wall_2_albedo_png-sampler">
-          <sampler2D>
-            <source>subway_wall_2_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="subway_wall_2_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
     <effect id="subway_floor_1-effect">
       <profile_COMMON>
         <newparam sid="subway_floor_1_albedo_png-surface">
@@ -1071,33 +1044,6 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="subway_floor_tiles-effect">
-      <profile_COMMON>
-        <newparam sid="subway_floor_tiles_albedo_png-surface">
-          <surface type="2D">
-            <init_from>subway_floor_tiles_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="subway_floor_tiles_albedo_png-sampler">
-          <sampler2D>
-            <source>subway_floor_tiles_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="subway_floor_tiles_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
     <effect id="subway_tactical_1-effect">
       <profile_COMMON>
         <newparam sid="subway_tactical_albedo_1_png-surface">
@@ -1117,33 +1063,6 @@
             </emission>
             <diffuse>
               <texture texture="subway_tactical_albedo_1_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
-    <effect id="docks_concrete-effect">
-      <profile_COMMON>
-        <newparam sid="concrete_tan_darkened_albedo_png-surface">
-          <surface type="2D">
-            <init_from>concrete_tan_darkened_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="concrete_tan_darkened_albedo_png-sampler">
-          <sampler2D>
-            <source>concrete_tan_darkened_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="concrete_tan_darkened_albedo_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -1233,33 +1152,6 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="subway_wall_1-effect">
-      <profile_COMMON>
-        <newparam sid="subway_wall_1_albedo_png-surface">
-          <surface type="2D">
-            <init_from>subway_wall_1_albedo_png</init_from>
-          </surface>
-        </newparam>
-        <newparam sid="subway_wall_1_albedo_png-sampler">
-          <sampler2D>
-            <source>subway_wall_1_albedo_png-surface</source>
-          </sampler2D>
-        </newparam>
-        <technique sid="common">
-          <lambert>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <diffuse>
-              <texture texture="subway_wall_1_albedo_png-sampler" texcoord="UVMap"/>
-            </diffuse>
-            <index_of_refraction>
-              <float sid="ior">1.45</float>
-            </index_of_refraction>
-          </lambert>
-        </technique>
-      </profile_COMMON>
-    </effect>
     <effect id="bathroom_floor-effect">
       <profile_COMMON>
         <newparam sid="bathroom_tile_albedo_png-surface">
@@ -1289,14 +1181,14 @@
     </effect>
     <effect id="wall_purple-effect">
       <profile_COMMON>
-        <newparam sid="wall_purple_albedo_png-surface">
+        <newparam sid="purple_wall_png-surface">
           <surface type="2D">
-            <init_from>wall_purple_albedo_png</init_from>
+            <init_from>purple_wall_png</init_from>
           </surface>
         </newparam>
-        <newparam sid="wall_purple_albedo_png-sampler">
+        <newparam sid="purple_wall_png-sampler">
           <sampler2D>
-            <source>wall_purple_albedo_png-surface</source>
+            <source>purple_wall_png-surface</source>
           </sampler2D>
         </newparam>
         <technique sid="common">
@@ -1305,7 +1197,7 @@
               <color sid="emission">0 0 0 1</color>
             </emission>
             <diffuse>
-              <texture texture="wall_purple_albedo_png-sampler" texcoord="UVMap"/>
+              <texture texture="purple_wall_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -1460,9 +1352,6 @@
     <image id="concrete_stairs_light_albedo_png" name="concrete_stairs_light_albedo_png">
       <init_from>concrete_stairs_light_albedo.png</init_from>
     </image>
-    <image id="concrete_tan_darkened_albedo_png" name="concrete_tan_darkened_albedo_png">
-      <init_from>concrete_tan_darkened_albedo.png</init_from>
-    </image>
     <image id="dark_wood_albedo_png" name="dark_wood_albedo_png">
       <init_from>dark_wood_albedo.png</init_from>
     </image>
@@ -1502,6 +1391,9 @@
     <image id="planks_pale_albedo_png" name="planks_pale_albedo_png">
       <init_from>planks_pale_albedo.png</init_from>
     </image>
+    <image id="purple_wall_png" name="purple_wall_png">
+      <init_from>purple_wall.png</init_from>
+    </image>
     <image id="sand_albedo_png" name="sand_albedo_png">
       <init_from>sand_albedo.png</init_from>
     </image>
@@ -1523,9 +1415,6 @@
     <image id="subway_floor_1_dirty_albedo_png" name="subway_floor_1_dirty_albedo_png">
       <init_from>subway_floor_1_dirty_albedo.png</init_from>
     </image>
-    <image id="subway_floor_tiles_albedo_png" name="subway_floor_tiles_albedo_png">
-      <init_from>subway_floor_tiles_albedo.png</init_from>
-    </image>
     <image id="subway_tactical_albedo_1_png" name="subway_tactical_albedo_1_png">
       <init_from>subway_tactical_albedo_1.png</init_from>
     </image>
@@ -1535,20 +1424,11 @@
     <image id="subway_tunnel_wall_albedo_png" name="subway_tunnel_wall_albedo_png">
       <init_from>subway_tunnel_wall_albedo.png</init_from>
     </image>
-    <image id="subway_wall_1_albedo_png" name="subway_wall_1_albedo_png">
-      <init_from>subway_wall_1_albedo.png</init_from>
-    </image>
-    <image id="subway_wall_2_albedo_png" name="subway_wall_2_albedo_png">
-      <init_from>subway_wall_2_albedo.png</init_from>
-    </image>
     <image id="turqoise_tiles_png" name="turqoise_tiles_png">
       <init_from>turqoise_tiles.png</init_from>
     </image>
     <image id="wall_light_albedo_png" name="wall_light_albedo_png">
       <init_from>wall_light_albedo.png</init_from>
-    </image>
-    <image id="wall_purple_albedo_png" name="wall_purple_albedo_png">
-      <init_from>wall_purple_albedo.png</init_from>
     </image>
     <image id="water_normal_offset_png" name="water_normal_offset_png">
       <init_from>water_normal_offset.png</init_from>
@@ -1566,6 +1446,12 @@
   <library_materials>
     <material id="metal_pole-material" name="metal_pole">
       <instance_effect url="#metal_pole-effect"/>
+    </material>
+    <material id="steel_beams-material" name="steel_beams">
+      <instance_effect url="#steel_beams-effect"/>
+    </material>
+    <material id="turqoise_tiles-material" name="turqoise_tiles">
+      <instance_effect url="#turqoise_tiles-effect"/>
     </material>
     <material id="dark_wood-material" name="dark_wood">
       <instance_effect url="#dark_wood-effect"/>
@@ -1585,9 +1471,6 @@
     <material id="window-material" name="window">
       <instance_effect url="#window-effect"/>
     </material>
-    <material id="steel_beams-material" name="steel_beams">
-      <instance_effect url="#steel_beams-effect"/>
-    </material>
     <material id="blue_wall-material" name="blue_wall">
       <instance_effect url="#blue_wall-effect"/>
     </material>
@@ -1596,9 +1479,6 @@
     </material>
     <material id="docks_bricks-material" name="docks_bricks">
       <instance_effect url="#docks_bricks-effect"/>
-    </material>
-    <material id="turqoise_tiles-material" name="turqoise_tiles">
-      <instance_effect url="#turqoise_tiles-effect"/>
     </material>
     <material id="steps_blue-material" name="steps_blue">
       <instance_effect url="#steps_blue-effect"/>
@@ -1672,23 +1552,14 @@
     <material id="billboard_1-material" name="billboard_1">
       <instance_effect url="#billboard_1-effect"/>
     </material>
-    <material id="subway_wall_2-material" name="subway_wall_2">
-      <instance_effect url="#subway_wall_2-effect"/>
-    </material>
     <material id="subway_floor_1-material" name="subway_floor_1">
       <instance_effect url="#subway_floor_1-effect"/>
     </material>
     <material id="subway_floor_1_dirty-material" name="subway_floor_1_dirty">
       <instance_effect url="#subway_floor_1_dirty-effect"/>
     </material>
-    <material id="subway_floor_tiles-material" name="subway_floor_tiles">
-      <instance_effect url="#subway_floor_tiles-effect"/>
-    </material>
     <material id="subway_tactical_1-material" name="subway_tactical_1">
       <instance_effect url="#subway_tactical_1-effect"/>
-    </material>
-    <material id="docks_concrete-material" name="docks_concrete">
-      <instance_effect url="#docks_concrete-effect"/>
     </material>
     <material id="wooden_pillar-material" name="wooden_pillar">
       <instance_effect url="#wooden_pillar-effect"/>
@@ -1698,9 +1569,6 @@
     </material>
     <material id="sidewalk_concrete-material" name="sidewalk_concrete">
       <instance_effect url="#sidewalk_concrete-effect"/>
-    </material>
-    <material id="subway_wall_1-material" name="subway_wall_1">
-      <instance_effect url="#subway_wall_1-effect"/>
     </material>
     <material id="bathroom_floor-material" name="bathroom_floor">
       <instance_effect url="#bathroom_floor-effect"/>
@@ -1761,6 +1629,90 @@
           <input semantic="NORMAL" source="#Circle_012-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Circle_012-mesh-map-0" offset="2" set="0"/>
           <p>15 0 0 6 1 1 7 2 2 13 3 3 4 4 4 5 5 5 11 6 6 2 7 7 3 8 8 9 9 9 0 10 10 1 11 11 8 12 12 7 2 13 0 10 14 14 13 15 5 5 16 6 1 17 12 14 18 3 8 19 4 4 20 10 15 21 1 11 22 2 7 23 19 16 24 10 15 25 11 6 26 17 17 27 8 12 28 9 9 29 16 18 30 15 0 31 8 12 32 22 19 33 13 3 34 14 13 35 12 14 36 19 16 37 11 6 38 10 15 39 17 17 40 9 9 41 23 20 42 14 13 43 15 0 44 21 21 45 12 14 46 13 3 47 16 18 48 24 22 49 23 20 50 22 19 51 24 22 52 21 21 53 20 23 54 24 22 55 19 16 56 18 24 57 24 22 58 17 17 59 23 20 60 24 22 61 22 19 62 21 21 63 24 22 64 20 23 65 19 16 66 24 22 67 18 24 68 17 17 69 24 22 70 16 18 71 46 25 72 29 4 73 30 25 74 51 4 75 36 26 76 35 4 77 47 27 78 30 25 79 31 27 80 52 26 81 37 22 82 36 26 83 48 28 84 31 27 85 32 28 86 53 22 87 38 29 88 37 22 89 41 10 90 32 28 91 25 10 92 42 29 93 25 10 94 26 29 95 54 29 96 39 10 97 38 29 98 55 10 99 40 28 100 39 10 101 43 22 102 26 29 103 27 22 104 56 28 105 33 27 106 40 28 107 44 26 108 27 22 109 28 26 110 49 27 111 34 25 112 33 27 113 45 4 114 28 26 115 29 4 116 50 25 117 35 4 118 34 25 119 70 25 120 61 4 121 62 25 122 71 27 123 62 25 124 63 27 125 72 28 126 63 27 127 64 28 128 65 10 129 64 28 130 57 10 131 66 29 132 57 10 133 58 29 134 67 22 135 58 29 136 59 22 137 68 26 138 59 22 139 60 26 140 69 4 141 60 26 142 61 4 143 77 30 144 86 31 145 85 32 146 76 33 147 83 34 148 75 35 149 73 36 150 82 37 151 81 38 152 73 36 153 88 39 154 80 40 155 78 41 156 87 42 157 86 31 158 77 30 159 84 43 160 76 33 161 74 44 162 83 34 163 82 37 164 80 40 165 87 42 166 79 45 167 88 39 168 89 46 169 96 47 170 86 31 171 95 48 172 94 49 173 85 32 174 92 50 175 84 43 176 83 34 177 90 51 178 82 37 179 88 39 180 95 48 181 87 42 182 86 31 183 93 52 184 85 32 185 83 34 186 92 50 187 91 53 188 81 38 189 90 51 190 89 46 191 91 53 192 92 50 193 97 22 194 89 46 195 90 51 196 97 22 197 96 47 198 89 46 199 97 22 200 94 49 201 95 48 202 97 22 203 92 50 204 93 52 205 97 22 206 90 51 207 91 53 208 97 22 209 95 48 210 96 47 211 97 22 212 93 52 213 94 49 214 97 22 215 75 35 216 74 44 217 78 41 218 15 0 219 14 13 220 6 1 221 13 3 222 12 14 223 4 4 224 11 6 225 10 15 226 2 7 227 9 9 228 8 12 229 0 10 230 8 12 231 15 0 232 7 2 233 14 13 234 13 3 235 5 5 236 12 14 237 11 6 238 3 8 239 10 15 240 9 9 241 1 11 242 19 16 243 18 24 244 10 15 245 17 17 246 16 18 247 8 12 248 16 18 249 23 20 250 15 0 251 22 19 252 21 21 253 13 3 254 12 14 255 20 23 256 19 16 257 10 15 258 18 24 259 17 17 260 23 20 261 22 19 262 14 13 263 21 21 264 20 23 265 12 14 266 46 25 267 45 4 268 29 4 269 51 4 270 52 26 271 36 26 272 47 27 273 46 25 274 30 25 275 52 26 276 53 22 277 37 22 278 48 28 279 47 27 280 31 27 281 53 22 282 54 29 283 38 29 284 41 10 285 48 28 286 32 28 287 42 29 288 41 10 289 25 10 290 54 29 291 55 10 292 39 10 293 55 10 294 56 28 295 40 28 296 43 22 297 42 29 298 26 29 299 56 28 300 49 27 301 33 27 302 44 26 303 43 22 304 27 22 305 49 27 306 50 25 307 34 25 308 45 4 309 44 26 310 28 26 311 50 25 312 51 4 313 35 4 314 70 25 315 69 4 316 61 4 317 71 27 318 70 25 319 62 25 320 72 28 321 71 27 322 63 27 323 65 10 324 72 28 325 64 28 326 66 29 327 65 10 328 57 10 329 67 22 330 66 29 331 58 29 332 68 26 333 67 22 334 59 22 335 69 4 336 68 26 337 60 26 338 77 30 339 78 41 340 86 31 341 76 33 342 84 43 343 83 34 344 73 36 345 74 44 346 82 37 347 73 36 348 81 38 349 88 39 350 78 41 351 79 45 352 87 42 353 77 30 354 85 32 355 84 43 356 74 44 357 75 35 358 83 34 359 80 40 360 88 39 361 87 42 362 88 39 363 81 38 364 89 46 365 86 31 366 87 42 367 95 48 368 85 32 369 93 52 370 92 50 371 83 34 372 91 53 373 90 51 374 88 39 375 96 47 376 95 48 377 86 31 378 94 49 379 93 52 380 83 34 381 84 43 382 92 50 383 81 38 384 82 37 385 90 51 386 74 44 387 73 36 388 78 41 389 73 36 390 80 40 391 78 41 392 80 40 393 79 45 394 78 41 395 78 41 396 77 30 397 76 33 398 76 33 399 75 35 400 78 41 401</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="Plane_065-mesh" name="Plane.065">
+      <mesh>
+        <source id="Plane_065-mesh-positions">
+          <float_array id="Plane_065-mesh-positions-array" count="36">24.9 24.9 5.7 24.9 15.1 5.7 20.1 15.1 5.7 25 25 5.2 20 25 5.2 25 15 5.2 20 15 5.2 25 25 5.6 20.1 24.9 5.7 20 25 5.6 25 15 5.6 20 15 5.6</float_array>
+          <technique_common>
+            <accessor source="#Plane_065-mesh-positions-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_065-mesh-normals">
+          <float_array id="Plane_065-mesh-normals-array" count="39">0 0 1 0 1 0 0 -1 0 -1 0 0 1 0 0 0 0.7070987 0.7071149 -0.7071009 0 0.7071126 0.7071011 0 0.7071125 0 -0.70711 0.7071037 0 0.7071163 0.7070974 -0.7071081 0 0.7071055 0.7071079 0 0.7071057 0 -0.7071053 0.7071083</float_array>
+          <technique_common>
+            <accessor source="#Plane_065-mesh-normals-array" count="13" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_065-mesh-map-0">
+          <float_array id="Plane_065-mesh-map-0-array" count="108">3.494525 0.009174346 3.932481 0.9082569 3.932481 0.009174346 4.790147 2.944954 4.826643 2.486239 4.790146 2.486239 4.835766 0.3394495 4.79927 0.7981652 4.835766 0.7981652 3.75 3.944954 3.713503 4.862386 3.75 4.862386 4.835766 3.027523 4.79927 3.944955 4.835766 3.944955 3.941605 0 3.494525 0.009174346 3.932481 0.009174346 3.485401 0 3.494525 0.9082569 3.494525 0.009174346 3.941605 0.9174312 3.932481 0.009174346 3.932481 0.9082569 3.485401 0.9174312 3.932481 0.9082569 3.494525 0.9082569 3.494525 0.009174346 3.494525 0.9082569 3.932481 0.9082569 4.790147 2.944954 4.826643 2.944954 4.826643 2.486239 4.835766 0.3394495 4.79927 0.3394495 4.79927 0.7981652 3.75 3.944954 3.713503 3.944954 3.713503 4.862386 4.835766 3.027523 4.79927 3.027523 4.79927 3.944955 3.941605 0 3.485401 0 3.494525 0.009174346 3.485401 0 3.485401 0.9174312 3.494525 0.9082569 3.941605 0.9174312 3.941605 0 3.932481 0.009174346 3.485401 0.9174312 3.941605 0.9174312 3.932481 0.9082569</float_array>
+          <technique_common>
+            <accessor source="#Plane_065-mesh-map-0-array" count="54" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Plane_065-mesh-vertices">
+          <input semantic="POSITION" source="#Plane_065-mesh-positions"/>
+        </vertices>
+        <triangles material="steel_beams-material" count="18">
+          <input semantic="VERTEX" source="#Plane_065-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Plane_065-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Plane_065-mesh-map-0" offset="2" set="0"/>
+          <p>8 0 0 1 0 1 0 0 2 4 1 3 7 1 4 3 1 5 5 2 6 11 2 7 6 2 8 6 3 9 9 3 10 4 3 11 3 4 12 10 4 13 5 4 14 7 5 15 8 5 16 0 5 17 9 6 18 2 6 19 8 6 20 10 7 21 0 7 22 1 7 23 11 8 24 1 8 25 2 8 26 8 0 27 2 0 28 1 0 29 4 1 30 9 1 31 7 1 32 5 2 33 10 2 34 11 2 35 6 3 36 11 3 37 9 3 38 3 4 39 7 4 40 10 4 41 7 9 42 9 9 43 8 9 44 9 10 45 11 10 46 2 10 47 10 11 48 7 11 49 0 11 50 11 12 51 10 12 52 1 12 53</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="Plane_064-mesh" name="Plane.064">
+      <mesh>
+        <source id="Plane_064-mesh-positions">
+          <float_array id="Plane_064-mesh-positions-array" count="36">24.6 24 -2.799998 20.4 24 -2.799998 24.6 30 -2.799998 20.4 30 -2.799998 34 25.8 -5.399998 29.8 25.8 -5.399998 34 30 -5.399998 29.8 30 -5.399998 34 11.9 -7.999998 29.8 11.9 -7.999998 34 20.6 -7.999998 29.8 20.6 -7.999998</float_array>
+          <technique_common>
+            <accessor source="#Plane_064-mesh-positions-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_064-mesh-normals">
+          <float_array id="Plane_064-mesh-normals-array" count="3">0 0 1</float_array>
+          <technique_common>
+            <accessor source="#Plane_064-mesh-normals-array" count="1" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Plane_064-mesh-map-0">
+          <float_array id="Plane_064-mesh-map-0-array" count="36">2.000656 2.858073 5.55736e-5 7.16528e-5 2.000656 7.16528e-5 2.000548 2.000593 -5.42991e-5 -7.73632e-6 2.000548 -7.73632e-6 2.000645 4.144099 4.25881e-5 -2.67294e-6 2.000645 -2.67294e-6 2.000656 2.858073 5.55736e-5 2.858073 5.55736e-5 7.16528e-5 2.000548 2.000593 -5.42991e-5 2.000593 -5.42991e-5 -7.73632e-6 2.000645 4.144099 4.25881e-5 4.144099 4.25881e-5 -2.67294e-6</float_array>
+          <technique_common>
+            <accessor source="#Plane_064-mesh-map-0-array" count="18" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="Plane_064-mesh-vertices">
+          <input semantic="POSITION" source="#Plane_064-mesh-positions"/>
+        </vertices>
+        <triangles material="turqoise_tiles-material" count="6">
+          <input semantic="VERTEX" source="#Plane_064-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#Plane_064-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#Plane_064-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 1 0 1 0 0 2 6 0 3 5 0 4 4 0 5 10 0 6 9 0 7 8 0 8 2 0 9 3 0 10 1 0 11 6 0 12 7 0 13 5 0 14 10 0 15 11 0 16 9 0 17</p>
         </triangles>
       </mesh>
     </geometry>
@@ -10907,7 +10859,7 @@
           </technique_common>
         </source>
         <source id="Plane_101-mesh-map-0">
-          <float_array id="Plane_101-mesh-map-0-array" count="12">1 0 0 1 1 1 1 0 0 0 0 1</float_array>
+          <float_array id="Plane_101-mesh-map-0-array" count="12">2 0 0 1 2 1 2 0 0 0 0 1</float_array>
           <technique_common>
             <accessor source="#Plane_101-mesh-map-0-array" count="6" stride="2">
               <param name="S" type="float"/>
@@ -10918,7 +10870,7 @@
         <vertices id="Plane_101-mesh-vertices">
           <input semantic="POSITION" source="#Plane_101-mesh-positions"/>
         </vertices>
-        <triangles material="subway_wall_2-material" count="2">
+        <triangles material="white_tiles-material" count="2">
           <input semantic="VERTEX" source="#Plane_101-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_101-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_101-mesh-map-0" offset="2" set="0"/>
@@ -11044,7 +10996,7 @@
         <vertices id="Plane_098-mesh-vertices">
           <input semantic="POSITION" source="#Plane_098-mesh-positions"/>
         </vertices>
-        <triangles material="subway_floor_tiles-material" count="2">
+        <triangles material="white_tiles-material" count="2">
           <input semantic="VERTEX" source="#Plane_098-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_098-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_098-mesh-map-0" offset="2" set="0"/>
@@ -11220,90 +11172,6 @@
         </triangles>
       </mesh>
     </geometry>
-    <geometry id="Plane_093-mesh" name="Plane.093">
-      <mesh>
-        <source id="Plane_093-mesh-positions">
-          <float_array id="Plane_093-mesh-positions-array" count="12">1.099998 -1.800001 1.1 1.099998 5.5 1.1 0.3999996 5.5 1.1 0.3999996 -1.800001 1.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_093-mesh-positions-array" count="4" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_093-mesh-normals">
-          <float_array id="Plane_093-mesh-normals-array" count="3">0 0 1</float_array>
-          <technique_common>
-            <accessor source="#Plane_093-mesh-normals-array" count="1" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_093-mesh-map-0">
-          <float_array id="Plane_093-mesh-map-0-array" count="12">1.4044e-4 0.04553055 0.4932563 3.95447 1.4057e-4 3.95447 1.4044e-4 0.04553055 0.4932562 0.04553061 0.4932563 3.95447</float_array>
-          <technique_common>
-            <accessor source="#Plane_093-mesh-map-0-array" count="6" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_093-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_093-mesh-positions"/>
-        </vertices>
-        <triangles material="grass-material" count="2">
-          <input semantic="VERTEX" source="#Plane_093-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_093-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_093-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 1 0 1 2 0 2 3 0 3 0 0 4 1 0 5</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_092-mesh" name="Plane.092">
-      <mesh>
-        <source id="Plane_092-mesh-positions">
-          <float_array id="Plane_092-mesh-positions-array" count="48">-0.6999992 5.7 1 0.3000001 5.7 1 -0.6999992 -2 1 0.3000001 -2 1 -0.6000004 5.5 1.2 0.09999847 5.5 1.2 -0.6000004 -1.800001 1.2 0.09999847 -1.800001 1.2 0.3000001 -2 1.2 0.3000001 5.7 1.2 -0.6999992 5.7 1.2 -0.6999992 -2 1.2 0.09999847 -1.800001 1.1 0.09999847 5.5 1.1 -0.6000004 5.5 1.1 -0.6000004 -1.800001 1.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_092-mesh-positions-array" count="16" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_092-mesh-normals">
-          <float_array id="Plane_092-mesh-normals-array" count="36">0 -1 0 -1 0 0 0 0 1 4.89907e-7 0 1 0 1 0 0 -5.96046e-7 1 0 5.9605e-7 1 1 0 0 0 0 -1 -2.44949e-7 0 1 0 -5.96049e-7 1 0 5.9605e-7 1</float_array>
-          <technique_common>
-            <accessor source="#Plane_092-mesh-normals-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_092-mesh-map-0">
-          <float_array id="Plane_092-mesh-map-0-array" count="156">1.835564 0.2397593 -1.219578 0.004748523 1.835564 0.004748523 2.670098 0.008880734 -2.049327 0.1463006 2.670098 0.1463006 0.8195644 0.3475806 0.1022939 0.3475806 0.8741421 0.3475806 0.8355485 0.8332967 0.1022946 0.8492813 0.1568713 0.8492813 -1.219578 0.2397587 1.835564 0.004747509 -1.219578 0.004747509 0.8355496 0.3635661 0.8741411 0.8492818 0.8355485 0.8332967 0.1022946 0.8492813 0.1408863 0.3635661 0.1408864 0.8332964 -1.193596 0.01151788 1.666854 0.1290235 -1.193596 0.1290235 1.621965 0.1407332 -1.096347 0.004817485 -1.096347 0.1407332 1.578266 0.006597101 -1.282184 0.1241025 1.578266 0.1241025 -2.049327 0.008880734 2.670098 0.1463006 -2.049327 0.1463006 0.4800003 0.3243243 0.6533334 0.2162162 0.6533334 0.3243243 1.621965 0.004817485 -1.096347 0.1407332 -1.096347 0.004817485 1.835564 0.2397593 -1.219578 0.2397593 -1.219578 0.004748523 2.670098 0.008880734 -2.049327 0.008880734 -2.049327 0.1463006 0.8195644 0.3475806 0.1408863 0.3635661 0.1022939 0.3475806 0.8355485 0.8332967 0.8741411 0.8492818 0.1022946 0.8492813 -1.219578 0.2397587 1.835564 0.2397587 1.835564 0.004747509 0.8355496 0.3635661 0.8741421 0.3475806 0.8741411 0.8492818 0.1022946 0.8492813 0.1022939 0.3475806 0.1408863 0.3635661 -1.193596 0.01151788 1.666854 0.01151788 1.666854 0.1290235 1.621965 0.1407332 1.621965 0.004817485 -1.096347 0.004817485 1.578266 0.006597101 -1.282184 0.006597101 -1.282184 0.1241025 -2.049327 0.008880734 2.670098 0.008880734 2.670098 0.1463006 0.4800003 0.3243243 0.48 0.2162162 0.6533334 0.2162162 1.621965 0.004817485 1.621965 0.1407332 -1.096347 0.1407332</float_array>
-          <technique_common>
-            <accessor source="#Plane_092-mesh-map-0-array" count="78" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_092-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_092-mesh-positions"/>
-        </vertices>
-        <triangles material="docks_concrete-material" count="26">
-          <input semantic="VERTEX" source="#Plane_092-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_092-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_092-mesh-map-0" offset="2" set="0"/>
-          <p>8 0 0 2 0 1 3 0 2 13 1 3 7 1 4 5 1 5 5 2 6 8 2 7 9 2 8 4 3 9 11 3 10 6 3 11 10 4 12 1 4 13 0 4 14 5 5 15 10 5 16 4 5 17 11 6 18 7 6 19 6 6 20 14 0 21 5 0 22 4 0 23 10 1 24 2 1 25 11 1 26 12 4 27 6 4 28 7 4 29 15 7 30 4 7 31 6 7 32 2 8 33 1 8 34 3 8 35 1 7 36 8 7 37 3 7 38 8 0 39 11 0 40 2 0 41 13 1 42 12 1 43 7 1 44 5 9 45 7 9 46 8 9 47 4 2 48 10 2 49 11 2 50 10 4 51 9 4 52 1 4 53 5 10 54 9 10 55 10 10 56 11 11 57 8 11 58 7 11 59 14 0 60 13 0 61 5 0 62 10 1 63 0 1 64 2 1 65 12 4 66 15 4 67 6 4 68 15 7 69 14 7 70 4 7 71 2 8 72 0 8 73 1 8 74 1 7 75 9 7 76 8 7 77</p>
-        </triangles>
-      </mesh>
-    </geometry>
     <geometry id="Circle_004-mesh" name="Circle.004">
       <mesh>
         <source id="Circle_004-mesh-positions">
@@ -11380,7 +11248,7 @@
         <vertices id="Plane_091-mesh-vertices">
           <input semantic="POSITION" source="#Plane_091-mesh-positions"/>
         </vertices>
-        <triangles material="subway_wall_2-material" count="12">
+        <triangles material="white_tiles-material" count="12">
           <input semantic="VERTEX" source="#Plane_091-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_091-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_091-mesh-map-0" offset="2" set="0"/>
@@ -11514,96 +11382,12 @@
         </triangles>
       </mesh>
     </geometry>
-    <geometry id="Plane_087-mesh" name="Plane.087">
-      <mesh>
-        <source id="Plane_087-mesh-positions">
-          <float_array id="Plane_087-mesh-positions-array" count="12">1.099998 -1.800001 1.1 1.099998 5.5 1.1 0.3999996 5.5 1.1 0.3999996 -1.800001 1.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_087-mesh-positions-array" count="4" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_087-mesh-normals">
-          <float_array id="Plane_087-mesh-normals-array" count="3">0 0 1</float_array>
-          <technique_common>
-            <accessor source="#Plane_087-mesh-normals-array" count="1" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_087-mesh-map-0">
-          <float_array id="Plane_087-mesh-map-0-array" count="12">1.4044e-4 0.04553055 0.4932563 3.95447 1.4057e-4 3.95447 1.4044e-4 0.04553055 0.4932562 0.04553061 0.4932563 3.95447</float_array>
-          <technique_common>
-            <accessor source="#Plane_087-mesh-map-0-array" count="6" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_087-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_087-mesh-positions"/>
-        </vertices>
-        <triangles material="grass-material" count="2">
-          <input semantic="VERTEX" source="#Plane_087-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_087-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_087-mesh-map-0" offset="2" set="0"/>
-          <p>3 0 0 1 0 1 2 0 2 3 0 3 0 0 4 1 0 5</p>
-        </triangles>
-      </mesh>
-    </geometry>
-    <geometry id="Plane_086-mesh" name="Plane.086">
-      <mesh>
-        <source id="Plane_086-mesh-positions">
-          <float_array id="Plane_086-mesh-positions-array" count="48">-0.6999992 5.7 1 0.3000001 5.7 1 -0.6999992 -2 1 0.3000001 -2 1 -0.6000004 5.5 1.2 0.09999847 5.5 1.2 -0.6000004 -1.800001 1.2 0.09999847 -1.800001 1.2 0.3000001 -2 1.2 0.3000001 5.7 1.2 -0.6999992 5.7 1.2 -0.6999992 -2 1.2 0.09999847 -1.800001 1.1 0.09999847 5.5 1.1 -0.6000004 5.5 1.1 -0.6000004 -1.800001 1.1</float_array>
-          <technique_common>
-            <accessor source="#Plane_086-mesh-positions-array" count="16" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_086-mesh-normals">
-          <float_array id="Plane_086-mesh-normals-array" count="36">0 -1 0 -1 0 0 0 0 1 4.89907e-7 0 1 0 1 0 0 -5.96046e-7 1 0 5.9605e-7 1 1 0 0 0 0 -1 -2.44949e-7 0 1 0 -5.96049e-7 1 0 5.9605e-7 1</float_array>
-          <technique_common>
-            <accessor source="#Plane_086-mesh-normals-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Plane_086-mesh-map-0">
-          <float_array id="Plane_086-mesh-map-0-array" count="156">1.835564 0.2397593 -1.219578 0.004748523 1.835564 0.004748523 2.670098 0.008880734 -2.049327 0.1463006 2.670098 0.1463006 0.8195644 0.3475806 0.1022939 0.3475806 0.8741421 0.3475806 0.8355485 0.8332967 0.1022946 0.8492813 0.1568713 0.8492813 -1.219578 0.2397587 1.835564 0.004747509 -1.219578 0.004747509 0.8355496 0.3635661 0.8741411 0.8492818 0.8355485 0.8332967 0.1022946 0.8492813 0.1408863 0.3635661 0.1408864 0.8332964 -1.193596 0.01151788 1.666854 0.1290235 -1.193596 0.1290235 1.621965 0.1407332 -1.096347 0.004817485 -1.096347 0.1407332 1.578266 0.006597101 -1.282184 0.1241025 1.578266 0.1241025 -2.049327 0.008880734 2.670098 0.1463006 -2.049327 0.1463006 0.4800003 0.3243243 0.6533334 0.2162162 0.6533334 0.3243243 1.621965 0.004817485 -1.096347 0.1407332 -1.096347 0.004817485 1.835564 0.2397593 -1.219578 0.2397593 -1.219578 0.004748523 2.670098 0.008880734 -2.049327 0.008880734 -2.049327 0.1463006 0.8195644 0.3475806 0.1408863 0.3635661 0.1022939 0.3475806 0.8355485 0.8332967 0.8741411 0.8492818 0.1022946 0.8492813 -1.219578 0.2397587 1.835564 0.2397587 1.835564 0.004747509 0.8355496 0.3635661 0.8741421 0.3475806 0.8741411 0.8492818 0.1022946 0.8492813 0.1022939 0.3475806 0.1408863 0.3635661 -1.193596 0.01151788 1.666854 0.01151788 1.666854 0.1290235 1.621965 0.1407332 1.621965 0.004817485 -1.096347 0.004817485 1.578266 0.006597101 -1.282184 0.006597101 -1.282184 0.1241025 -2.049327 0.008880734 2.670098 0.008880734 2.670098 0.1463006 0.4800003 0.3243243 0.48 0.2162162 0.6533334 0.2162162 1.621965 0.004817485 1.621965 0.1407332 -1.096347 0.1407332</float_array>
-          <technique_common>
-            <accessor source="#Plane_086-mesh-map-0-array" count="78" stride="2">
-              <param name="S" type="float"/>
-              <param name="T" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Plane_086-mesh-vertices">
-          <input semantic="POSITION" source="#Plane_086-mesh-positions"/>
-        </vertices>
-        <triangles material="docks_concrete-material" count="26">
-          <input semantic="VERTEX" source="#Plane_086-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Plane_086-mesh-normals" offset="1"/>
-          <input semantic="TEXCOORD" source="#Plane_086-mesh-map-0" offset="2" set="0"/>
-          <p>8 0 0 2 0 1 3 0 2 13 1 3 7 1 4 5 1 5 5 2 6 8 2 7 9 2 8 4 3 9 11 3 10 6 3 11 10 4 12 1 4 13 0 4 14 5 5 15 10 5 16 4 5 17 11 6 18 7 6 19 6 6 20 14 0 21 5 0 22 4 0 23 10 1 24 2 1 25 11 1 26 12 4 27 6 4 28 7 4 29 15 7 30 4 7 31 6 7 32 2 8 33 1 8 34 3 8 35 1 7 36 8 7 37 3 7 38 8 0 39 11 0 40 2 0 41 13 1 42 12 1 43 7 1 44 5 9 45 7 9 46 8 9 47 4 2 48 10 2 49 11 2 50 10 4 51 9 4 52 1 4 53 5 10 54 9 10 55 10 10 56 11 11 57 8 11 58 7 11 59 14 0 60 13 0 61 5 0 62 10 1 63 0 1 64 2 1 65 12 4 66 15 4 67 6 4 68 15 7 69 14 7 70 4 7 71 2 8 72 0 8 73 1 8 74 1 7 75 9 7 76 8 7 77</p>
-        </triangles>
-      </mesh>
-    </geometry>
     <geometry id="Plane_083-mesh" name="Plane.083">
       <mesh>
         <source id="Plane_083-mesh-positions">
-          <float_array id="Plane_083-mesh-positions-array" count="108">24.9 24.9 5.7 24.9 15.1 5.7 20.1 15.1 5.7 25 25 1.2 20 25 1.2 25 16 1.2 20 16 1.2 24.6 24.6 1.2 20.4 24.6 1.2 24.6 16 1.2 20.4 16 1.2 20.4 16 2.2 25 25 2.2 20 16 2.2 25 16 2.2 24.6 24.6 2.2 20.4 24.6 2.2 24.6 16 2.2 20 25 2.2 25 25 5.2 20 25 5.2 25 15 5.2 20 15 5.2 25 25 5.6 20.1 24.9 5.7 20 25 5.6 25 15 5.6 20 15 5.6 24.7 24.7 2.2 24.9 24.7 2.2 24.7 24.9 2.2 24.9 24.9 2.2 24.7 24.9 5.2 24.7 24.7 5.2 24.9 24.7 5.2 24.9 24.9 5.2</float_array>
+          <float_array id="Plane_083-mesh-positions-array" count="48">25 25 1.2 20 25 1.2 25 16 1.2 20 16 1.2 24.6 24.6 1.2 20.4 24.6 1.2 24.6 16 1.2 20.4 16 1.2 20.4 16 2.2 25 25 2.2 20 16 2.2 25 16 2.2 24.6 24.6 2.2 20.4 24.6 2.2 24.6 16 2.2 20 25 2.2</float_array>
           <technique_common>
-            <accessor source="#Plane_083-mesh-positions-array" count="36" stride="3">
+            <accessor source="#Plane_083-mesh-positions-array" count="16" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -11611,9 +11395,9 @@
           </technique_common>
         </source>
         <source id="Plane_083-mesh-normals">
-          <float_array id="Plane_083-mesh-normals-array" count="45">0 0 1 0 0 -1 0 -1 0 -1 0 0 1 0 0 0 1 0 0 0.7070987 0.7071149 -0.7071009 0 0.7071126 0.7071011 0 0.7071125 0 -0.70711 0.7071037 0 0 -1 0 0.7071163 0.7070974 -0.7071081 0 0.7071055 0.7071079 0 0.7071057 0 -0.7071053 0.7071083</float_array>
+          <float_array id="Plane_083-mesh-normals-array" count="21">0 0 -1 0 -1 0 -1 0 0 1 0 0 0 1 0 0 0 1 0 0 -1</float_array>
           <technique_common>
-            <accessor source="#Plane_083-mesh-normals-array" count="15" stride="3">
+            <accessor source="#Plane_083-mesh-normals-array" count="7" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -11621,9 +11405,9 @@
           </technique_common>
         </source>
         <source id="Plane_083-mesh-map-0">
-          <float_array id="Plane_083-mesh-map-0-array" count="288">3.494525 0.009174346 3.932481 0.9082569 3.932481 0.009174346 0 3.321101 0.419708 3.357798 0.03649628 3.357798 0 4.146789 0.03649628 3.357798 0.03649628 4.146789 0.419708 3.357798 0.4562042 4.146789 0.419708 4.146789 2.801095 0.9908255 2.837591 0.8990824 2.837591 0.9908255 3.330292 4.045872 3.239051 3.220184 3.330292 3.220184 2.764598 0.9908255 2.801095 0.8990824 2.801095 0.9908255 0.5474454 4.146789 0.4562042 3.321101 0.5474452 3.321101 3.120438 4.045872 3.211679 4.504587 3.120438 4.504587 2.819343 3.256881 3.239051 3.220184 3.202555 3.256881 3.202555 3.256881 3.239051 4.045872 3.202555 4.045872 2.819343 3.256881 2.782847 4.045872 2.782847 3.220184 4.790147 2.944954 4.826643 2.486239 4.790146 2.486239 4.835766 0.3394495 4.79927 0.7981652 4.835766 0.7981652 3.75 3.944954 3.713503 4.862386 3.75 4.862386 4.835766 3.027523 4.79927 3.944955 4.835766 3.944955 3.941605 0 3.494525 0.009174346 3.932481 0.009174346 3.485401 0 3.494525 0.9082569 3.494525 0.009174346 3.941605 0.9174312 3.932481 0.009174346 3.932481 0.9082569 3.485401 0.9174312 3.932481 0.9082569 3.494525 0.9082569 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 3.494525 0.009174346 3.494525 0.9082569 3.932481 0.9082569 0 3.321101 0.4562042 3.321101 0.419708 3.357798 0 4.146789 0 3.321101 0.03649628 3.357798 0.419708 3.357798 0.4562042 3.321101 0.4562042 4.146789 2.801095 0.9908255 2.801095 0.8990824 2.837591 0.8990824 3.330292 4.045872 3.239051 4.045872 3.239051 3.220184 2.764598 0.9908255 2.764598 0.8990824 2.801095 0.8990824 0.5474454 4.146789 0.4562045 4.146789 0.4562042 3.321101 3.120438 4.045872 3.211679 4.045872 3.211679 4.504587 2.819343 3.256881 2.782847 3.220184 3.239051 3.220184 3.202555 3.256881 3.239051 3.220184 3.239051 4.045872 2.819343 3.256881 2.819343 4.045872 2.782847 4.045872 4.790147 2.944954 4.826643 2.944954 4.826643 2.486239 4.835766 0.3394495 4.79927 0.3394495 4.79927 0.7981652 3.75 3.944954 3.713503 3.944954 3.713503 4.862386 4.835766 3.027523 4.79927 3.027523 4.79927 3.944955 3.941605 0 3.485401 0 3.494525 0.009174346 3.485401 0 3.485401 0.9174312 3.494525 0.9082569 3.941605 0.9174312 3.941605 0 3.932481 0.009174346 3.485401 0.9174312 3.941605 0.9174312 3.932481 0.9082569 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679</float_array>
+          <float_array id="Plane_083-mesh-map-0-array" count="132">0 3.321101 0.419708 3.357798 0.03649628 3.357798 0 4.146789 0.03649628 3.357798 0.03649628 4.146789 0.419708 3.357798 0.4562042 4.146789 0.419708 4.146789 2.801095 0.9908255 2.837591 0.8990824 2.837591 0.9908255 3.330292 4.045872 3.239051 3.220184 3.330292 3.220184 2.764598 0.9908255 2.801095 0.8990824 2.801095 0.9908255 0.5474454 4.146789 0.4562042 3.321101 0.5474452 3.321101 3.120438 4.045872 3.211679 4.504587 3.120438 4.504587 2.819343 3.256881 3.239051 3.220184 3.202555 3.256881 3.202555 3.256881 3.239051 4.045872 3.202555 4.045872 2.819343 3.256881 2.782847 4.045872 2.782847 3.220184 0 3.321101 0.4562042 3.321101 0.419708 3.357798 0 4.146789 0 3.321101 0.03649628 3.357798 0.419708 3.357798 0.4562042 3.321101 0.4562042 4.146789 2.801095 0.9908255 2.801095 0.8990824 2.837591 0.8990824 3.330292 4.045872 3.239051 4.045872 3.239051 3.220184 2.764598 0.9908255 2.764598 0.8990824 2.801095 0.8990824 0.5474454 4.146789 0.4562045 4.146789 0.4562042 3.321101 3.120438 4.045872 3.211679 4.045872 3.211679 4.504587 2.819343 3.256881 2.782847 3.220184 3.239051 3.220184 3.202555 3.256881 3.239051 3.220184 3.239051 4.045872 2.819343 3.256881 2.819343 4.045872 2.782847 4.045872</float_array>
           <technique_common>
-            <accessor source="#Plane_083-mesh-map-0-array" count="144" stride="2">
+            <accessor source="#Plane_083-mesh-map-0-array" count="66" stride="2">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
             </accessor>
@@ -11632,11 +11416,11 @@
         <vertices id="Plane_083-mesh-vertices">
           <input semantic="POSITION" source="#Plane_083-mesh-positions"/>
         </vertices>
-        <triangles material="steel_beams-material" count="48">
+        <triangles material="steel_beams-material" count="22">
           <input semantic="VERTEX" source="#Plane_083-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_083-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_083-mesh-map-0" offset="2" set="0"/>
-          <p>24 0 0 1 0 1 0 0 2 4 1 3 7 1 4 8 1 5 6 1 6 8 1 7 10 1 8 7 1 9 5 1 10 9 1 11 5 2 12 17 2 13 9 2 14 6 3 15 18 3 16 4 3 17 10 2 18 13 2 19 6 2 20 3 4 21 14 4 22 5 4 23 4 5 24 12 5 25 3 5 26 15 0 27 18 0 28 16 0 29 16 0 30 13 0 31 11 0 32 15 0 33 14 0 34 12 0 35 20 5 36 23 5 37 19 5 38 21 2 39 27 2 40 22 2 41 22 3 42 25 3 43 20 3 44 19 4 45 26 4 46 21 4 47 23 6 48 24 6 49 0 6 50 25 7 51 2 7 52 24 7 53 26 8 54 0 8 55 1 8 56 27 9 57 1 9 58 2 9 59 29 2 60 33 2 61 28 2 62 30 5 63 35 5 64 31 5 65 31 4 66 34 4 67 29 4 68 28 3 69 32 3 70 30 3 71 24 0 72 2 0 73 1 0 74 4 1 75 3 1 76 7 1 77 6 10 78 4 10 79 8 10 80 7 1 81 3 1 82 5 1 83 5 2 84 14 2 85 17 2 86 6 3 87 13 3 88 18 3 89 10 2 90 11 2 91 13 2 92 3 4 93 12 4 94 14 4 95 4 5 96 18 5 97 12 5 98 15 0 99 12 0 100 18 0 101 16 0 102 18 0 103 13 0 104 15 0 105 17 0 106 14 0 107 20 5 108 25 5 109 23 5 110 21 2 111 26 2 112 27 2 113 22 3 114 27 3 115 25 3 116 19 4 117 23 4 118 26 4 119 23 11 120 25 11 121 24 11 122 25 12 123 27 12 124 2 12 125 26 13 126 23 13 127 0 13 128 27 14 129 26 14 130 1 14 131 29 2 132 34 2 133 33 2 134 30 5 135 32 5 136 35 5 137 31 4 138 35 4 139 34 4 140 28 3 141 33 3 142 32 3 143</p>
+          <p>1 0 0 4 0 1 5 0 2 3 0 3 5 0 4 7 0 5 4 0 6 2 0 7 6 0 8 2 1 9 14 1 10 6 1 11 3 2 12 15 2 13 1 2 14 7 1 15 10 1 16 3 1 17 0 3 18 11 3 19 2 3 20 1 4 21 9 4 22 0 4 23 12 5 24 15 5 25 13 5 26 13 5 27 10 5 28 8 5 29 12 5 30 11 5 31 9 5 32 1 0 33 0 0 34 4 0 35 3 6 36 1 6 37 5 6 38 4 0 39 0 0 40 2 0 41 2 1 42 11 1 43 14 1 44 3 2 45 10 2 46 15 2 47 7 1 48 8 1 49 10 1 50 0 3 51 9 3 52 11 3 53 1 4 54 15 4 55 9 4 56 12 5 57 9 5 58 15 5 59 13 5 60 15 5 61 10 5 62 12 5 63 14 5 64 11 5 65</p>
         </triangles>
       </mesh>
     </geometry>
@@ -11716,7 +11500,7 @@
         <vertices id="Plane_076-mesh-vertices">
           <input semantic="POSITION" source="#Plane_076-mesh-positions"/>
         </vertices>
-        <triangles material="subway_wall_1-material" count="30">
+        <triangles material="turqoise_tiles-material" count="30">
           <input semantic="VERTEX" source="#Plane_076-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_076-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_076-mesh-map-0" offset="2" set="0"/>
@@ -11727,9 +11511,9 @@
     <geometry id="Plane_075-mesh" name="Plane.075">
       <mesh>
         <source id="Plane_075-mesh-positions">
-          <float_array id="Plane_075-mesh-positions-array" count="138">24.6 24 -2.799998 20.4 24 -2.799998 24.6 30 -2.799998 20.4 30 -2.799998 24.6 24 0.2 20.4 24 0.2 24.6 16 0.2 20.4 16 0.2 24.6 24.6 0.2 20.4 24.6 0.2 24.6 25.8 0.2 20.4 30 0.2 24.6 24 1.2 20.4 24 1.2 24.6 16 1.2 20.4 16 1.2 24.6 24.6 1.2 20.4 24.6 1.2 29.8 30 0.2 29.8 25.8 0.2 24.6 24.6 1.2 20.4 24.6 1.2 24.6 16 1.2 20.4 16 1.2 24.6 24.6 2.2 20.4 24.6 2.2 20.4 16 2.2 24.6 16 2.2 34 25.8 -5.399998 29.8 25.8 -5.399998 34 30 -5.399998 29.8 30 -5.399998 34 11.9 -7.999998 29.8 11.9 -7.999998 34 20.6 -7.999998 29.8 20.6 -7.999998 34 30 0.2 34 25.8 0.2 29.8 20.6 -2.4 34 20.6 -2.4 29.8 16.1 -2.4 34 16.1 -2.4 29.8 11.9 -2.4 34 11.9 -2.4 21.8 16.1 -6.4 21.8 11.9 -6.4</float_array>
+          <float_array id="Plane_075-mesh-positions-array" count="102">24.6 24 0.2 20.4 24 0.2 24.6 16 0.2 20.4 16 0.2 24.6 24.6 0.2 20.4 24.6 0.2 24.6 25.8 0.2 20.4 30 0.2 24.6 24 1.2 20.4 24 1.2 24.6 16 1.2 20.4 16 1.2 24.6 24.6 1.2 20.4 24.6 1.2 29.8 30 0.2 29.8 25.8 0.2 24.6 24.6 1.2 20.4 24.6 1.2 24.6 16 1.2 20.4 16 1.2 24.6 24.6 2.2 20.4 24.6 2.2 20.4 16 2.2 24.6 16 2.2 34 30 0.2 34 25.8 0.2 29.8 20.6 -2.4 34 20.6 -2.4 29.8 16.1 -2.4 34 16.1 -2.4 29.8 11.9 -2.4 34 11.9 -2.4 21.8 16.1 -6.4 21.8 11.9 -6.4</float_array>
           <technique_common>
-            <accessor source="#Plane_075-mesh-positions-array" count="46" stride="3">
+            <accessor source="#Plane_075-mesh-positions-array" count="34" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -11737,7 +11521,7 @@
           </technique_common>
         </source>
         <source id="Plane_075-mesh-normals">
-          <float_array id="Plane_075-mesh-normals-array" count="27">0 0 1 -1 0 0 1 0 0 0 -1 0 0 0 -1 0 0.4472136 -0.8944272 0.4472136 0 -0.8944273 0 0.4472134 -0.8944273 0.4472137 0 -0.8944273</float_array>
+          <float_array id="Plane_075-mesh-normals-array" count="27">-1 0 0 1 0 0 0 -1 0 0 0 1 0 0 -1 0 0.4472136 -0.8944272 0.4472136 0 -0.8944273 0 0.4472134 -0.8944273 0.4472137 0 -0.8944273</float_array>
           <technique_common>
             <accessor source="#Plane_075-mesh-normals-array" count="9" stride="3">
               <param name="X" type="float"/>
@@ -11747,9 +11531,9 @@
           </technique_common>
         </source>
         <source id="Plane_075-mesh-map-0">
-          <float_array id="Plane_075-mesh-map-0-array" count="216">0 6.35783e-7 1 0.9999994 0 1 8.686131 3.596329 8.321167 0.6605494 8.686131 0.6605494 8.576642 7.229358 8.211679 4.293578 8.576642 4.293578 18.83211 1.357798 18.46715 2.899082 18.46715 1.357798 13.10219 17.72477 13.32117 19.26605 13.10219 19.26605 14.85401 6.275229 15.29197 6.275229 15.29197 7.816514 19.19708 7.449541 18.83211 4.293578 19.19708 4.293578 2.554746 16.44037 2.189782 13.2844 2.554745 13.2844 12.84672 16.18349 13.21168 17.72477 12.84672 17.72477 0 6.35783e-7 1 0.9999994 0 1 0 1.27157e-6 1 1.999999 0 2 0.9959336 4.436254 3.73659e-4 3.440693 0.9959346 3.440693 3.73659e-4 3.440693 0.9959336 2.062605 0.9959346 3.440693 3.71764e-4 2.062606 0.9959332 0.9959327 0.9959336 2.062605 3.71764e-4 0.9959327 0.9959332 3.72238e-4 0.9959332 0.9959327 0.9959332 3.72238e-4 3.116067 0.9959327 0.9959332 0.9959327 0 6.35783e-7 1 0 1 0.9999994 8.686131 3.596329 8.321168 3.596329 8.321167 0.6605494 8.576642 7.229358 8.211679 7.229358 8.211679 4.293578 18.83211 1.357798 18.83211 2.899082 18.46715 2.899082 13.10219 17.72477 13.32117 17.72477 13.32117 19.26605 15.51095 7.816514 15.29197 7.816514 15.51095 6.275229 15.29197 7.816514 13.32117 7.816514 14.85401 6.275229 15.51095 6.275229 15.29197 7.816514 15.29197 6.275229 13.32117 7.816514 13.32117 4.293578 14.85401 6.275229 13.32117 4.293578 14.85401 4.293579 14.85401 6.275229 19.19708 7.449541 18.83211 7.449541 18.83211 4.293578 2.554746 16.44037 2.189782 16.44037 2.189782 13.2844 12.84672 16.18349 13.21168 16.18349 13.21168 17.72477 0 6.35783e-7 1 0 1 0.9999994 0 1.27157e-6 1 0 1 1.999999 0.9959336 4.436254 3.72712e-4 4.436254 3.73659e-4 3.440693 3.73659e-4 3.440693 3.71764e-4 2.062606 0.9959336 2.062605 3.71764e-4 2.062606 3.71764e-4 0.9959327 0.9959332 0.9959327 3.71764e-4 0.9959327 3.72712e-4 3.72238e-4 0.9959332 3.72238e-4 0.9959332 3.72238e-4 3.116067 3.71764e-4 3.116067 0.9959327</float_array>
+          <float_array id="Plane_075-mesh-map-0-array" count="180">4.39418e-4 1.000433 4.002222 0.5002109 4.002222 1.000433 4.002222 1.000433 4.39418e-4 0.5002109 4.39418e-4 1.000433 2.099033 0.5002947 9.95449e-6 1.000062 2.099033 1.000062 0.9999622 -0.1428843 3.77936e-5 -3.77936e-5 3.77893e-5 -0.1428843 0.553183 0.5665386 0.553183 0.4388995 0.9999201 0.4388997 4.39418e-4 0.5002109 4.302356 -1.22786e-5 4.302356 0.5002109 4.302356 0.5002109 4.39418e-4 -1.22786e-5 4.39418e-4 0.5002109 2.099033 0.5002947 9.95449e-6 5.27263e-4 9.95449e-6 0.5002947 0.9959336 3.373754 3.73659e-4 2.378193 0.9959346 2.378193 3.73659e-4 0.9797556 0.9959336 1.05262e-4 0.9959346 0.9797554 3.71764e-4 -1.06096e-4 0.9959332 1.004067 0.9959336 -1.05143e-4 3.71764e-4 0.9959327 0.9959332 3.72238e-4 0.9959332 0.9959327 0.9959332 3.72238e-4 3.116067 0.9959327 0.9959332 0.9959327 4.39418e-4 1.000433 4.39418e-4 0.5002109 4.002222 0.5002109 4.002222 1.000433 4.002222 0.5002109 4.39418e-4 0.5002109 2.099033 0.5002947 9.95449e-6 0.5002947 9.95449e-6 1.000062 0.9999622 -0.1428843 0.9999622 -3.79086e-5 3.77936e-5 -3.77936e-5 0.9999201 0.37508 0.9999201 0.4388997 0.553183 0.3750799 0.9999201 0.4388997 0.9999201 1.013276 0.553183 0.5665386 0.553183 0.3750799 0.9999201 0.4388997 0.553183 0.4388995 0.9999201 1.013276 7.98808e-5 1.013276 0.553183 0.5665386 7.98808e-5 1.013276 8.02865e-5 0.5665385 0.553183 0.5665386 4.39418e-4 0.5002109 4.39418e-4 -1.22786e-5 4.302356 -1.22786e-5 4.302356 0.5002109 4.302356 -1.22786e-5 4.39418e-4 -1.22786e-5 2.099033 0.5002947 2.099033 5.27263e-4 9.95449e-6 5.27263e-4 0.9959336 3.373754 3.72712e-4 3.373754 3.73659e-4 2.378193 3.73659e-4 0.9797556 3.71764e-4 1.06215e-4 0.9959336 1.05262e-4 3.71764e-4 -1.06096e-4 3.71764e-4 1.004067 0.9959332 1.004067 3.71764e-4 0.9959327 3.72712e-4 3.72238e-4 0.9959332 3.72238e-4 0.9959332 3.72238e-4 3.116067 3.71764e-4 3.116067 0.9959327</float_array>
           <technique_common>
-            <accessor source="#Plane_075-mesh-map-0-array" count="108" stride="2">
+            <accessor source="#Plane_075-mesh-map-0-array" count="90" stride="2">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
             </accessor>
@@ -11758,11 +11542,11 @@
         <vertices id="Plane_075-mesh-vertices">
           <input semantic="POSITION" source="#Plane_075-mesh-positions"/>
         </vertices>
-        <triangles material="subway_floor_1-material" count="36">
+        <triangles material="white_wall-material" count="30">
           <input semantic="VERTEX" source="#Plane_075-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_075-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_075-mesh-map-0" offset="2" set="0"/>
-          <p>2 0 0 1 0 1 0 0 2 6 1 3 12 1 4 4 1 5 5 2 6 15 2 7 7 2 8 12 3 9 5 3 10 4 3 11 12 0 12 17 0 13 13 0 14 10 4 15 8 4 16 9 4 17 22 1 18 24 1 19 20 1 20 21 2 21 26 2 22 23 2 23 20 3 24 25 3 25 21 3 26 30 0 27 29 0 28 28 0 29 34 0 30 33 0 31 32 0 32 18 4 33 37 4 34 19 4 35 37 5 36 38 5 37 19 5 38 39 4 39 40 4 40 38 4 41 41 4 42 42 4 43 40 4 44 42 6 45 44 6 46 40 6 47 2 0 48 3 0 49 1 0 50 6 1 51 14 1 52 12 1 53 5 2 54 13 2 55 15 2 56 12 3 57 13 3 58 5 3 59 12 0 60 16 0 61 17 0 62 5 4 63 9 4 64 4 4 65 9 4 66 11 4 67 10 4 68 4 4 69 9 4 70 8 4 71 11 4 72 18 4 73 10 4 74 18 4 75 19 4 76 10 4 77 22 1 78 27 1 79 24 1 80 21 2 81 25 2 82 26 2 83 20 3 84 24 3 85 25 3 86 30 0 87 31 0 88 29 0 89 34 0 90 35 0 91 33 0 92 18 4 93 36 4 94 37 4 95 37 7 96 39 7 97 38 7 98 39 4 99 41 4 100 40 4 101 41 4 102 43 4 103 42 4 104 42 8 105 45 8 106 44 8 107</p>
+          <p>2 0 0 8 0 1 0 0 2 1 1 3 11 1 4 3 1 5 8 2 6 1 2 7 0 2 8 8 3 9 13 3 10 9 3 11 6 4 12 4 4 13 5 4 14 18 0 15 20 0 16 16 0 17 17 1 18 22 1 19 19 1 20 16 2 21 21 2 22 17 2 23 14 4 24 25 4 25 15 4 26 25 5 27 26 5 28 15 5 29 27 4 30 28 4 31 26 4 32 29 4 33 30 4 34 28 4 35 30 6 36 32 6 37 28 6 38 2 0 39 10 0 40 8 0 41 1 1 42 9 1 43 11 1 44 8 2 45 9 2 46 1 2 47 8 3 48 12 3 49 13 3 50 1 4 51 5 4 52 0 4 53 5 4 54 7 4 55 6 4 56 0 4 57 5 4 58 4 4 59 7 4 60 14 4 61 6 4 62 14 4 63 15 4 64 6 4 65 18 0 66 23 0 67 20 0 68 17 1 69 21 1 70 22 1 71 16 2 72 20 2 73 21 2 74 14 4 75 24 4 76 25 4 77 25 7 78 27 7 79 26 7 80 27 4 81 29 4 82 28 4 83 29 4 84 31 4 85 30 4 86 30 8 87 33 8 88 32 8 89</p>
         </triangles>
       </mesh>
     </geometry>
@@ -11853,9 +11637,9 @@
     <geometry id="Plane_072-mesh" name="Plane.072">
       <mesh>
         <source id="Plane_072-mesh-positions">
-          <float_array id="Plane_072-mesh-positions-array" count="84">20.1 16.1 2.2 20.3 16.1 2.2 20.1 16.3 2.2 20.3 16.3 2.2 20.1 16.3 5.2 20.1 16.1 5.2 20.3 16.1 5.2 20.3 16.3 5.2 25 25 5.2 20 25 5.2 25 15 5.2 20 15 5.2 24.9 16.3 5.2 24.9 16.1 5.2 24.7 16.1 5.2 24.7 16.3 5.2 24.9 16.3 2.2 24.7 16.3 2.2 24.9 16.1 2.2 24.7 16.1 2.2 20.3 24.9 5.2 20.3 24.7 5.2 20.1 24.7 5.2 20.1 24.9 5.2 20.3 24.9 2.2 20.1 24.9 2.2 20.3 24.7 2.2 20.1 24.7 2.2</float_array>
+          <float_array id="Plane_072-mesh-positions-array" count="108">20.1 16.1 2.2 20.3 16.1 2.2 20.1 16.3 2.2 20.3 16.3 2.2 20.1 16.3 5.2 20.1 16.1 5.2 20.3 16.1 5.2 20.3 16.3 5.2 25 25 5.2 20 25 5.2 25 15 5.2 20 15 5.2 24.9 16.3 5.2 24.9 16.1 5.2 24.7 16.1 5.2 24.7 16.3 5.2 24.9 16.3 2.2 24.7 16.3 2.2 24.9 16.1 2.2 24.7 16.1 2.2 20.3 24.9 5.2 20.3 24.7 5.2 20.1 24.7 5.2 20.1 24.9 5.2 20.3 24.9 2.2 20.1 24.9 2.2 20.3 24.7 2.2 20.1 24.7 2.2 24.7 24.7 2.2 24.9 24.7 2.2 24.7 24.9 2.2 24.9 24.9 2.2 24.7 24.9 5.2 24.7 24.7 5.2 24.9 24.7 5.2 24.9 24.9 5.2</float_array>
           <technique_common>
-            <accessor source="#Plane_072-mesh-positions-array" count="28" stride="3">
+            <accessor source="#Plane_072-mesh-positions-array" count="36" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -11873,9 +11657,9 @@
           </technique_common>
         </source>
         <source id="Plane_072-mesh-map-0">
-          <float_array id="Plane_072-mesh-map-0-array" count="156">2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 3.330292 3.944954 3.786496 3.027523 3.330292 3.027523 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 3.330292 3.944954 3.786496 3.944955 3.786496 3.027523 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652</float_array>
+          <float_array id="Plane_072-mesh-map-0-array" count="204">2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 3.330292 3.944954 3.786496 3.027523 3.330292 3.027523 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 4.79927 1.073394 4.835766 0.7981652 4.835766 1.073394 2.381387 4.889908 2.417883 4.614679 2.417883 4.889908 2.527373 4.889908 2.563869 4.614679 2.563869 4.889908 2.417883 4.889908 2.45438 4.614679 2.45438 4.889908 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 3.330292 3.944954 3.786496 3.944955 3.786496 3.027523 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 4.79927 1.073394 4.79927 0.7981652 4.835766 0.7981652 2.381387 4.889908 2.381387 4.614679 2.417883 4.614679 2.527373 4.889908 2.527373 4.614679 2.563869 4.614679 2.417883 4.889908 2.417883 4.614679 2.45438 4.614679</float_array>
           <technique_common>
-            <accessor source="#Plane_072-mesh-map-0-array" count="78" stride="2">
+            <accessor source="#Plane_072-mesh-map-0-array" count="102" stride="2">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
             </accessor>
@@ -11884,11 +11668,11 @@
         <vertices id="Plane_072-mesh-vertices">
           <input semantic="POSITION" source="#Plane_072-mesh-positions"/>
         </vertices>
-        <triangles material="metal_pole-material" count="26">
+        <triangles material="metal_pole-material" count="34">
           <input semantic="VERTEX" source="#Plane_072-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_072-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_072-mesh-map-0" offset="2" set="0"/>
-          <p>0 0 0 4 0 1 2 0 2 1 1 3 5 1 4 0 1 5 3 2 6 6 2 7 1 2 8 2 3 9 7 3 10 3 3 11 10 4 12 9 4 13 8 4 14 19 0 15 15 0 16 17 0 17 16 2 18 13 2 19 18 2 20 17 3 21 12 3 22 16 3 23 18 1 24 14 1 25 19 1 26 27 0 27 23 0 28 25 0 29 24 2 30 21 2 31 26 2 32 25 3 33 20 3 34 24 3 35 26 1 36 22 1 37 27 1 38 0 0 39 5 0 40 4 0 41 1 1 42 6 1 43 5 1 44 3 2 45 7 2 46 6 2 47 2 3 48 4 3 49 7 3 50 10 4 51 11 4 52 9 4 53 19 0 54 14 0 55 15 0 56 16 2 57 12 2 58 13 2 59 17 3 60 15 3 61 12 3 62 18 1 63 13 1 64 14 1 65 27 0 66 22 0 67 23 0 68 24 2 69 20 2 70 21 2 71 25 3 72 23 3 73 20 3 74 26 1 75 21 1 76 22 1 77</p>
+          <p>0 0 0 4 0 1 2 0 2 1 1 3 5 1 4 0 1 5 3 2 6 6 2 7 1 2 8 2 3 9 7 3 10 3 3 11 10 4 12 9 4 13 8 4 14 19 0 15 15 0 16 17 0 17 16 2 18 13 2 19 18 2 20 17 3 21 12 3 22 16 3 23 18 1 24 14 1 25 19 1 26 27 0 27 23 0 28 25 0 29 24 2 30 21 2 31 26 2 32 25 3 33 20 3 34 24 3 35 26 1 36 22 1 37 27 1 38 29 1 39 33 1 40 28 1 41 30 3 42 35 3 43 31 3 44 31 2 45 34 2 46 29 2 47 28 0 48 32 0 49 30 0 50 0 0 51 5 0 52 4 0 53 1 1 54 6 1 55 5 1 56 3 2 57 7 2 58 6 2 59 2 3 60 4 3 61 7 3 62 10 4 63 11 4 64 9 4 65 19 0 66 14 0 67 15 0 68 16 2 69 12 2 70 13 2 71 17 3 72 15 3 73 12 3 74 18 1 75 13 1 76 14 1 77 27 0 78 22 0 79 23 0 80 24 2 81 20 2 82 21 2 83 25 3 84 23 3 85 20 3 86 26 1 87 21 1 88 22 1 89 29 1 90 34 1 91 33 1 92 30 3 93 32 3 94 35 3 95 31 2 96 35 2 97 34 2 98 28 0 99 33 0 100 32 0 101</p>
         </triangles>
       </mesh>
     </geometry>
@@ -12083,7 +11867,7 @@
           </technique_common>
         </source>
         <source id="Plane_042-mesh-map-0">
-          <float_array id="Plane_042-mesh-map-0-array" count="96">5.074725 7.71006e-4 2.23542 0.9975475 2.23542 7.71006e-4 0.6049618 0.001870632 1.8547e-4 0.9997515 1.85765e-4 0.001870632 2.842633 0.001870989 0.6049618 0.9997515 0.6049618 0.001870632 3.447409 0.001871407 2.842633 0.9997519 2.842633 0.001870989 0.6043322 0.9975474 2.23542 7.71006e-4 2.23542 0.9975475 2.24903e-4 0.9975472 0.6043322 7.70855e-4 0.6043322 0.9975474 1.89538e-4 1.89538e-4 1.314105 0.997791 1.89538e-4 0.997791 1.314103 1.89867e-4 3.601286 0.9977907 1.314105 0.997791 5.074725 7.71006e-4 5.074725 0.9975482 2.23542 0.9975475 0.6049618 0.001870632 0.6049618 0.9997515 1.8547e-4 0.9997515 2.842633 0.001870989 2.842633 0.9997519 0.6049618 0.9997515 3.447409 0.001871407 3.44741 0.9997519 2.842633 0.9997519 0.6043322 0.9975474 0.6043322 7.70855e-4 2.23542 7.71006e-4 2.24903e-4 0.9975472 2.24977e-4 7.70552e-4 0.6043322 7.70855e-4 1.89538e-4 1.89538e-4 1.314103 1.89867e-4 1.314105 0.997791 1.314103 1.89867e-4 3.601286 1.89538e-4 3.601286 0.9977907</float_array>
+          <float_array id="Plane_042-mesh-map-0-array" count="96">5.074725 0.999229 2.23542 0.002452492 2.23542 0.999229 0.6049618 0.9981293 1.8547e-4 2.48551e-4 1.85765e-4 0.9981293 2.842633 0.998129 0.6049618 2.48551e-4 0.6049618 0.9981293 3.447409 0.9981286 2.842633 2.48075e-4 2.842633 0.998129 0.6043322 0.002452611 2.23542 0.999229 2.23542 0.002452492 2.24903e-4 0.00245279 0.6043322 0.9992291 0.6043322 0.002452611 1.89538e-4 0.9998105 1.314105 0.002209007 1.89538e-4 0.002209007 1.314103 0.9998102 3.601286 0.002209305 1.314105 0.002209007 5.074725 0.999229 5.074725 0.002451837 2.23542 0.002452492 0.6049618 0.9981293 0.6049618 2.48551e-4 1.8547e-4 2.48551e-4 2.842633 0.998129 2.842633 2.48075e-4 0.6049618 2.48551e-4 3.447409 0.9981286 3.44741 2.48075e-4 2.842633 2.48075e-4 0.6043322 0.002452611 0.6043322 0.9992291 2.23542 0.999229 2.24903e-4 0.00245279 2.24977e-4 0.9992294 0.6043322 0.9992291 1.89538e-4 0.9998105 1.314103 0.9998102 1.314105 0.002209007 1.314103 0.9998102 3.601286 0.9998105 3.601286 0.002209305</float_array>
           <technique_common>
             <accessor source="#Plane_042-mesh-map-0-array" count="48" stride="2">
               <param name="S" type="float"/>
@@ -14137,6 +13921,30 @@
           <bind_material>
             <technique_common>
               <instance_material symbol="metal_pole-material" target="#metal_pole-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="docks_059" name="docks.059" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#Plane_065-mesh" name="docks.059">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="steel_beams-material" target="#steel_beams-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="docks_153" name="docks.153" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#Plane_064-mesh" name="docks.153">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="turqoise_tiles-material" target="#turqoise_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16712,7 +16520,7 @@
         <instance_geometry url="#Plane_101-mesh" name="Plane.025">
           <bind_material>
             <technique_common>
-              <instance_material symbol="subway_wall_2-material" target="#subway_wall_2-material">
+              <instance_material symbol="white_tiles-material" target="#white_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16748,7 +16556,7 @@
         <instance_geometry url="#Plane_098-mesh" name="Plane.022">
           <bind_material>
             <technique_common>
-              <instance_material symbol="subway_floor_tiles-material" target="#subway_floor_tiles-material">
+              <instance_material symbol="white_tiles-material" target="#white_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16803,30 +16611,6 @@
           </bind_material>
         </instance_geometry>
       </node>
-      <node id="docks_061" name="docks.061" type="NODE">
-        <matrix sid="transform">-1 -3.25841e-7 0 20.3 3.25841e-7 -1 0 22.7 0 0 1 0.2 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_093-mesh" name="docks.061">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="grass-material" target="#grass-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="docks_059" name="docks.059" type="NODE">
-        <matrix sid="transform">-1 -3.25841e-7 0 19.3 3.25841e-7 -1 0 22.7 0 0 1 0.2 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_092-mesh" name="docks.059">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="docks_concrete-material" target="#docks_concrete-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
       <node id="Circle_004" name="Circle.004" type="NODE">
         <matrix sid="transform">1 0 0 16.8 0 1 0 -10 0 0 1 -12 0 0 0 1</matrix>
         <instance_geometry url="#Circle_004-mesh" name="Circle.004">
@@ -16844,7 +16628,7 @@
         <instance_geometry url="#Plane_091-mesh" name="Plane.020">
           <bind_material>
             <technique_common>
-              <instance_material symbol="subway_wall_2-material" target="#subway_wall_2-material">
+              <instance_material symbol="white_tiles-material" target="#white_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16887,30 +16671,6 @@
           </bind_material>
         </instance_geometry>
       </node>
-      <node id="docks_064" name="docks.064" type="NODE">
-        <matrix sid="transform">1 0 0 24.7 0 1 0 19 0 0 1 0.2 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_087-mesh" name="docks.064">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="grass-material" target="#grass-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-      <node id="docks_063" name="docks.063" type="NODE">
-        <matrix sid="transform">1 0 0 25.7 0 1 0 19 0 0 1 0.2 0 0 0 1</matrix>
-        <instance_geometry url="#Plane_086-mesh" name="docks.063">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="docks_concrete-material" target="#docks_concrete-material">
-                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
-              </instance_material>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
       <node id="docks_060" name="docks.060" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
         <instance_geometry url="#Plane_083-mesh" name="docks.060">
@@ -16940,7 +16700,7 @@
         <instance_geometry url="#Plane_076-mesh" name="docks.058">
           <bind_material>
             <technique_common>
-              <instance_material symbol="subway_wall_1-material" target="#subway_wall_1-material">
+              <instance_material symbol="turqoise_tiles-material" target="#turqoise_tiles-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -16952,7 +16712,7 @@
         <instance_geometry url="#Plane_075-mesh" name="docks.057">
           <bind_material>
             <technique_common>
-              <instance_material symbol="subway_floor_1-material" target="#subway_floor_1-material">
+              <instance_material symbol="white_wall-material" target="#white_wall-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
