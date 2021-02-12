@@ -10,7 +10,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_input(input),
       m_camera(m_input),
       m_characterSystem(this, m_physicsSystem, m_animationSystem) {
-    SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/docks.prt").c_str(), *this);
+    SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
     initSky();
 }
 
@@ -79,8 +79,7 @@ void Scene::renderScene(Camera & camera) {
     prt::vector<glm::vec4> billboardPositions = { m_moon.position };
     prt::vector<glm::vec4> billboardColors = { m_moon.billboard.color };
 
-    prt::vector<PointLight> pointLights = getPointLights();
-    prt::vector<PackedBoxLight> boxLights = getBoxLights();
+    prt::vector<UBOPointLight> pointLights = getPointLights();
 
     double x,y;
     m_input.getCursorPos(x,y);
@@ -92,7 +91,6 @@ void Scene::renderScene(Camera & camera) {
                                            camera, 
                                            m_lights.sun,
                                            pointLights,
-                                           boxLights,
                                            time,
                                            glm::vec2{x,y});
 }
@@ -101,62 +99,8 @@ void Scene::getSkybox(prt::array<Texture, 6> & cubeMap) const {
     m_assetManager.loadCubeMap("stars", cubeMap);
 }
 
-struct IndexedDistance {
-    unsigned int index;
-    float distance;
-};
-int compLightsToCamera(const void * elem1, const void * elem2) {
-    IndexedDistance f = *((IndexedDistance*)elem1);
-    IndexedDistance s = *((IndexedDistance*)elem2);
-    if (f.distance > s.distance) return  1;
-    if (f.distance < s.distance) return -1;
-    return 0;
-}
-
-prt::vector<PointLight> Scene::getPointLights() {
-    prt::vector<PointLight> ret;
-    
-    prt::vector<IndexedDistance> distances;
-    distances.resize(m_lights.pointLights.size());
-
-    for (size_t i = 0; i < distances.size(); ++i) {
-        distances[i].index = i;
-        distances[i].distance = glm::distance2(m_lights.pointLights[i].pos, m_camera.getPosition());
-    }
-    // sort lights by distance to camera
-    qsort(distances.data(), distances.size(), sizeof(distances[0]), compLightsToCamera);
-
-    size_t size = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), m_lights.pointLights.size());
-    ret.resize(size);
-    for (size_t i = 0; i < size; ++i) {
-        ret[i] = m_lights.pointLights[distances[i].index];
-    }
-    return ret;
-}
-
-prt::vector<PackedBoxLight> Scene::getBoxLights() {
-    prt::vector<PackedBoxLight> ret;
-    
-    prt::vector<IndexedDistance> distances;
-    distances.resize(m_lights.boxLights.size());
-
-    for (size_t i = 0; i < distances.size(); ++i) {
-        distances[i].index = i;
-        distances[i].distance = glm::distance2(m_lights.boxLights[i].position, m_camera.getPosition());
-    }
-    // sort lights by distance to camera
-    qsort(distances.data(), distances.size(), sizeof(distances[0]), compLightsToCamera);
-
-    size_t size = glm::min(size_t(NUMBER_SUPPORTED_BOXLIGHTS), m_lights.boxLights.size());
-    ret.resize(size);
-    for (size_t i = 0; i < size; ++i) {
-        auto const & l = m_lights.boxLights[distances[i].index];
-        ret[i].min = l.min;
-        ret[i].max = l.max;
-        ret[i].color = l.color;
-        ret[i].invtransform = l.inverseTransform();
-    }
-    return ret; 
+prt::vector<UBOPointLight> Scene::getPointLights() {
+    return m_lightingSystem.getNearestPointLights(m_camera, m_entities.transforms);
 }
 
 void Scene::update(float deltaTime) {
@@ -237,6 +181,11 @@ void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & ellipsoid) {
     m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(ellipsoid);
 }
 
+void Scene::addPointLight(EntityID id, PointLight & pointLight) {
+    pointLight.entityID = id;
+    m_entities.lightTags[id] = m_lightingSystem.addPointLight(pointLight);
+}
+
 void Scene::updateModels() {
     if (m_updateModels) {
         bindToRenderer();
@@ -250,7 +199,7 @@ void Scene::updateCamera(float deltaTime) {
     // Make sure player is visible
     glm::vec3 hit;
     glm::vec3 corners[4];
-    float dist = 5.0f;
+    float dist = 8.0f;
     m_camera.getCameraCorners(corners[0], corners[1], corners[2], corners[3]);
 
     EntityID playerID = m_characterSystem.getPlayer();
@@ -266,9 +215,6 @@ void Scene::updateCamera(float deltaTime) {
     }
     m_camera.setTargetDistance(dist);
     m_camera.setTarget(transform.position);
-
-    // move camera light to camera
-    m_lights.pointLights[0].pos = m_camera.getPosition();
 }
 
 void Scene::updateRenderData() {

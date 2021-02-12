@@ -14,6 +14,7 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
         scene.m_entities.modelIDs[i] = -1;
         scene.m_entities.characterIDs[i] = -1;
         scene.m_entities.colliderTags[i].type = ColliderType::COLLIDER_TYPE_NONE;
+        scene.m_entities.lightTags[i].type = LightType::LIGHT_TYPE_NONE;
     }
 
     // load file into buffer
@@ -58,9 +59,6 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
             case POINT_LIGHT :
             parsePointLight(data, scene);
                 break;
-            case BOX_LIGHT :
-            parseBoxLight(data, scene);
-                break;
             case CHARACTER :
                 parseCharacter(data, scene);
                 break;
@@ -94,8 +92,6 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
         type = TokenType::SUN;
     } else if (strcmp(tokenStr, "PointLight") == 0) {
         type = TokenType::POINT_LIGHT;
-    } else if (strcmp(tokenStr, "BoxLight") == 0) {
-        type = TokenType::BOX_LIGHT;
     } else if (strcmp(tokenStr, "Character") == 0) {
         type = TokenType::CHARACTER;
     }
@@ -131,24 +127,16 @@ void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
 }
 
 void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
-    scene.m_lights.pointLights.push_back({});
-    PointLight & light = scene.m_lights.pointLights.back();
-    light.pos = parseVec3(buf);
-    light.color = parseVec3(buf);
-    light.a = parseFloat(buf);
-    light.b = parseFloat(buf);
-    light.c = parseFloat(buf);
-}
+    EntityID id = scene.m_entities.addEntity();
+    scene.m_entities.transforms[id].position = parseVec3(buf);
 
-void SceneSerialization::parseBoxLight(char const *& buf, Scene & scene) {
-    scene.m_lights.boxLights.push_back({});
-    BoxLight & light = scene.m_lights.boxLights.back();
-    light.min = parseVec3(buf);
-    light.max = parseVec3(buf);
+    PointLight light;
     light.color = parseVec3(buf);
-    light.position = parseVec3(buf);
-    light.rotation = parseQuat(buf);
-    light.scale = parseVec3(buf);
+    light.constant = parseFloat(buf);
+    light.linear = parseFloat(buf);
+    light.quadratic = parseFloat(buf);
+
+    scene.addPointLight(id, light);
 }
 
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
@@ -173,8 +161,8 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
     clips.walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
     clips.run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
-    clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
-    clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
+    // clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
+    // clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
 
     CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips);
 

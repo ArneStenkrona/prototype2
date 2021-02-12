@@ -63,10 +63,11 @@ public:
 
     char const * getAssetDirectory() const {  return m_assetManager.getDirectory().c_str(); }
     
+    void addPointLight(EntityID id, PointLight & pointLight);
+    PointLight & getPointLight(EntityID id) { return m_lightingSystem.getPointLight(m_entities.lightTags[id]); }
+    
 private:
     struct Lights {
-        prt::vector<PointLight> pointLights;
-        prt::vector<BoxLight> boxLights;
         SkyLight sun;
     } m_lights;
 
@@ -90,6 +91,7 @@ private:
     Camera m_camera;
     AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
+    LightingSystem m_lightingSystem;
 
     struct RenderData {
         Texture const * textures;
@@ -115,8 +117,7 @@ private:
     
     void initSky();
     
-    prt::vector<PointLight> getPointLights();
-    prt::vector<PackedBoxLight> getBoxLights();
+    prt::vector<UBOPointLight> getPointLights();
     
     void updateSun(float time);
     void updatePhysics(float deltaTime);

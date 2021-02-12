@@ -14,13 +14,6 @@ struct PointLight {
     float c; // constant term
 };
 
-struct BoxLight {
-    vec3 min;
-    vec3 max;
-    vec3 color;
-    mat4 invtransform;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
@@ -33,12 +26,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Lights */
     float ambientLight;
     uint noPointLights;
-    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
     PointLight pointLights[4];
-    BoxLight boxLights[20];
 } ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[64];
@@ -81,8 +72,6 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity);
 
-// vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo);
-
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
 void transparencyDither(float alpha);
@@ -106,19 +95,10 @@ void main() {
     // light
     vec3 res = ubo.ambientLight * albedo;
     // Point lights
-    vec3 worldNormal = fs_in.invtbn * normal;
     for (int i = 0; i < ubo.noPointLights; ++i) {
-        res += CalcPointLight(ubo.pointLights[i], worldNormal, viewDir,
+        res += CalcPointLight(ubo.pointLights[i], normal, viewDir,
                               albedo, specularity);
     }
-    // box lights
-    // for (int i = 0; i < ubo.noPointLights; ++i) {
-    //     res += CalcBoxLight(ubo.boxLights[i].min, 
-    //                         ubo.boxLights[i].max, 
-    //                         ubo.boxLights[i].color, 
-    //                         vec3(ubo.boxLights[i].invtransform * vec4(fs_in.fragPos, 1.0)), 
-    //                         albedo);
-    // }
 
     int cascadeIndex = 0;
     for (int i = 0; i < 5 - 1; ++i) {
@@ -155,16 +135,15 @@ void main() {
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = fs_in.fragPos - light.pos;
-    // vec3 reflectDir = reflect(-lightDir, normal); // phong
-    vec3 halfwayDir = normalize(lightDir + viewDir); // blinn-phong
+    vec3 lightDir = normalize(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
+    vec3 reflectDir = reflect(lightDir, normal); // phong
     // diffuse shading
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
-    float shininess = 32.0;
-    float spec = specularity * pow(max(dot(normal, halfwayDir), 0.0), shininess); 
+    float shininess = 8.0;
+    float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess); 
     // attenuation
-    float distance = length(light.pos - fs_in.fragPos);
+    float distance = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
     float attenuation = 1.0 / (light.c + light.b * distance + light.a * distance * distance);
     // combine result
     vec3 diffuse = light.color * diff * albedo;
@@ -181,22 +160,13 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
     vec3 r = reflect(lightDir, normal);
-    float shininess = 32.0;
+    float shininess = 8.0;
     float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess);
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
     vec3 specular = vec3(1) * spec;
     return diffuse + specular;
 }
-
-// vec3 CalcBoxLight(vec3 min, vec3 max, vec3 lightColor, vec3 position, vec3 albedo) {
-//     if (min.x < position.x && position.x < max.x &&
-//         min.y < position.y && position.y < max.y &&
-//         min.z < position.z && position.z < max.z) {
-//         return lightColor * albedo;
-//     }
-//     return vec3(0.0,0.0,0.0);
-// }
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex) {
     float shadow = 1.0f;

@@ -14,13 +14,6 @@ struct PointLight {
     float c; // constant term
 };
 
-struct BoxLight {
-    vec3 min;
-    vec3 max;
-    vec3 color;
-    mat4 invtransform;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
@@ -33,12 +26,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Lights */
     float ambientLight;
     uint noPointLights;
-    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
     mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
     PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
-    BoxLight boxLights[@NUMBER_SUPPORTED_BOXLIGHTS@];
     /*Bones*/
     mat4 bones[@NUMBER_MAX_BONES@];
 } ubo;

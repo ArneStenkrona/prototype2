@@ -14,13 +14,6 @@ struct PointLight {
     float c; // constant term
 };
 
-struct BoxLight {
-    vec3 min;
-    vec3 max;
-    vec3 color;
-    mat4 invtransform;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
@@ -33,12 +26,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Lights */
     float ambientLight;
     uint noPointLights;
-    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
     PointLight pointLights[4];
-    BoxLight boxLights[20];
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT

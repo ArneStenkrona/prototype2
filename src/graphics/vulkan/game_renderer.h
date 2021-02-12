@@ -58,8 +58,7 @@ public:
                         prt::vector<glm::vec4> const & billboardColors,
                         Camera & camera,
                         SkyLight const & sun,
-                        prt::vector<PointLight> const & pointLights,
-                        prt::vector<PackedBoxLight> const & boxLights,
+                        prt::vector<UBOPointLight> const & pointLights,
                         float t,
                         glm::vec2 mousePosition);
 
@@ -223,8 +222,7 @@ private:
                     prt::vector<glm::vec4> const & billboardColors,
                     Camera & camera,
                     SkyLight const & sun,
-                    prt::vector<PointLight> const & pointLights,
-                    prt::vector<PackedBoxLight> const & boxLights,
+                    prt::vector<UBOPointLight> const & pointLights,
                     float t);
                     
     void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);

@@ -16,7 +16,6 @@ private:
         STATIC_SOLID_ENTITY,
         SUN,
         POINT_LIGHT,
-        BOX_LIGHT,
         CHARACTER,
         ERROR
     };
@@ -25,7 +24,6 @@ private:
     static void parseStaticSolidEntity(char const *& buf, Scene & scene);
     static void parseSun(char const *& buf, Scene & scene);
     static void parsePointLight(char const *& buf, Scene & scene);
-    static void parseBoxLight(char const *& buf, Scene & scene);
     static void parseCharacter(char const *& buf, Scene & scene);
 
     static void parseString(char const *& buf, char * dest);
