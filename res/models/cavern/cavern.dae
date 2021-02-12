@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.90.1 commit date:2020-09-23, commit time:06:43, hash:3e85bb34d0d7</authoring_tool>
     </contributor>
-    <created>2021-02-12T14:48:33</created>
-    <modified>2021-02-12T14:48:33</modified>
+    <created>2021-02-12T14:54:49</created>
+    <modified>2021-02-12T14:54:49</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -373,7 +373,7 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="vines-effect">
+    <effect id="vines_transparent_-effect">
       <profile_COMMON>
         <newparam sid="vines_png-surface">
           <surface type="2D">
@@ -467,8 +467,8 @@
     <material id="glass-material" name="glass">
       <instance_effect url="#glass-effect"/>
     </material>
-    <material id="vines-material" name="vines">
-      <instance_effect url="#vines-effect"/>
+    <material id="vines_transparent_-material" name="vines[transparent]">
+      <instance_effect url="#vines_transparent_-effect"/>
     </material>
   </library_materials>
   <library_geometries>
@@ -1315,9 +1315,9 @@
     <geometry id="Plane_025-mesh" name="Plane.025">
       <mesh>
         <source id="Plane_025-mesh-positions">
-          <float_array id="Plane_025-mesh-positions-array" count="48">0 -3 -2 9.53674e-7 3 -2 0 -3 2 0 3 2 1 -2 1 1 -2 -1 1 2 -1 1 2 1 1 -2.5 1.5 1 -2.5 -1.5 1 2.5 -1.5 1 2.5 1.5 0.5 -2 1 0.5 -2 -1 0.500001 2 -1 0.500001 2 1</float_array>
+          <float_array id="Plane_025-mesh-positions-array" count="60">0.1 -3 -2 0.1000009 3 -2 0.1 -3 2 0.1 3 2 1 -2 1 1 -2 -1 1 2 -1 1 2 1 1 -2.5 1.5 1 -2.5 -1.5 1 2.5 -1.5 1 2.5 1.5 0.5 -2 1 0.5 -2 -1 0.500001 2 -1 0.500001 2 1 0 -3 -2 9.53674e-7 3 -2 0 -3 2 0 3 2</float_array>
           <technique_common>
-            <accessor source="#Plane_025-mesh-positions-array" count="16" stride="3">
+            <accessor source="#Plane_025-mesh-positions-array" count="20" stride="3">
               <param name="X" type="float"/>
               <param name="Y" type="float"/>
               <param name="Z" type="float"/>
@@ -1325,7 +1325,7 @@
           </technique_common>
         </source>
         <source id="Plane_025-mesh-normals">
-          <float_array id="Plane_025-mesh-normals-array" count="66">0 0 1 0.4472136 -0.8944272 0 0.4472138 0 -0.8944271 0.4472137 0.8944272 0 0.4472135 0 0.8944273 1 -1.19209e-7 0 1 0 0 1 1.19209e-7 0 0 -1 0 0 1 0 0 0 -1 -0.8944274 2.06584e-7 0.4472135 -0.8944273 -0.4472136 0 -0.8944268 2.06584e-7 -0.4472145 -0.8944272 0.4472137 0 0.4472137 0 -0.8944272 0.447214 0.8944271 0 0.4472137 0 0.8944273 -0.8944271 1.42165e-7 0.4472137 -0.894427 -0.4472141 -2.13248e-7 -0.8944273 0 -0.4472137 -0.8944272 0.4472136 0</float_array>
+          <float_array id="Plane_025-mesh-normals-array" count="66">0 0 1 0.485643 -0.8741573 0 0.4856432 0 -0.8741571 0.4856429 0.8741573 0 0.4856429 0 0.8741574 1 -1.19209e-7 0 1 0 0 1 1.19209e-7 0 0 -1 0 0 1 0 0 0 -1 -0.9284768 2.21366e-7 0.3713905 -0.9284768 -0.3713907 0 -0.9284763 2.21366e-7 -0.3713917 -0.9284767 0.3713907 0 0.4856429 -0.8741574 0 0.485643 0 -0.8741573 0.4856433 0.8741571 0 0.485643 0 0.8741573 -0.9284767 1.47577e-7 0.3713908 -0.9284765 -0.3713912 -2.21366e-7 -0.9284767 0 -0.3713907</float_array>
           <technique_common>
             <accessor source="#Plane_025-mesh-normals-array" count="22" stride="3">
               <param name="X" type="float"/>
@@ -1335,9 +1335,9 @@
           </technique_common>
         </source>
         <source id="Plane_025-mesh-map-0">
-          <float_array id="Plane_025-mesh-map-0-array" count="192">0.8333333 0.25 0.1666666 0.25 0.1666666 0.25 0.08333331 0.8750001 0 0 0.08333331 0.125 0.08333331 0.125 1 0 0.9166667 0.125 0.9166666 0.875 1 0 1 1 0.9166666 0.875 0 1 0.08333331 0.8750001 0.1666666 0.7500001 0.08333331 0.125 0.1666666 0.25 0.1666666 0.25 0.9166667 0.125 0.8333333 0.25 0.8333333 0.25 0.9166666 0.875 0.8333333 0.75 0.8333333 0.75 0.08333331 0.8750001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.25 0.8333333 0.25 0.1666666 0.25 0.1666666 0.7500001 0.1666666 0.7500001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.75 0.8333333 0.25 0 0 0.1666666 0.25 0.8333333 0.75 1 0 0.8333333 0.25 0.1666666 0.7500001 1 1 0.8333333 0.75 0.1666666 0.25 0 1 0.1666666 0.7500001 0.8333333 0.25 0.8333333 0.25 0.1666666 0.25 0.08333331 0.8750001 0 1 0 0 0.08333331 0.125 0 0 1 0 0.9166666 0.875 0.9166667 0.125 1 0 0.9166666 0.875 1 1 0 1 0.1666666 0.7500001 0.08333331 0.8750001 0.08333331 0.125 0.1666666 0.25 0.08333331 0.125 0.9166667 0.125 0.8333333 0.25 0.9166667 0.125 0.9166666 0.875 0.8333333 0.75 0.9166666 0.875 0.08333331 0.8750001 0.8333333 0.75 0.8333333 0.75 0.8333333 0.25 0.1666666 0.25 0.1666666 0.25 0.1666666 0.7500001 0.1666666 0.7500001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.25 1 0 0 0 0.8333333 0.75 1 1 1 0 0.1666666 0.7500001 0 1 1 1 0.1666666 0.25 0 0 0 1</float_array>
+          <float_array id="Plane_025-mesh-map-0-array" count="240">0.8333333 0.25 0.1666666 0.25 0.1666666 0.25 0.08333331 0.8750001 0 0 0.08333331 0.125 0.08333331 0.125 1 0 0.9166667 0.125 0.9166666 0.875 1 0 1 1 0.9166666 0.875 0 1 0.08333331 0.8750001 0.1666666 0.7500001 0.08333331 0.125 0.1666666 0.25 0.1666666 0.25 0.9166667 0.125 0.8333333 0.25 0.8333333 0.25 0.9166666 0.875 0.8333333 0.75 0.8333333 0.75 0.08333331 0.8750001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.25 0.8333333 0.25 0.1666666 0.25 0.1666666 0.7500001 0.1666666 0.7500001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.75 0.8333333 0.25 0 0 0.1666666 0.25 0.8333333 0.75 1 0 0.8333333 0.25 0.1666666 0.7500001 1 1 0.8333333 0.75 0.1666666 0.25 0 1 0.1666666 0.7500001 1 1 1 0 1 0 0 0 0 1 0 1 0 1 1 1 1 1 1 0 0 0 0 0 0.8333333 0.25 0.8333333 0.25 0.1666666 0.25 0.08333331 0.8750001 0 1 0 0 0.08333331 0.125 0 0 1 0 0.9166666 0.875 0.9166667 0.125 1 0 0.9166666 0.875 1 1 0 1 0.1666666 0.7500001 0.08333331 0.8750001 0.08333331 0.125 0.1666666 0.25 0.08333331 0.125 0.9166667 0.125 0.8333333 0.25 0.9166667 0.125 0.9166666 0.875 0.8333333 0.75 0.9166666 0.875 0.08333331 0.8750001 0.8333333 0.75 0.8333333 0.75 0.8333333 0.25 0.1666666 0.25 0.1666666 0.25 0.1666666 0.7500001 0.1666666 0.7500001 0.1666666 0.7500001 0.8333333 0.75 0.8333333 0.25 1 0 0 0 0.8333333 0.75 1 1 1 0 0.1666666 0.7500001 0 1 1 1 0.1666666 0.25 0 0 0 1 1 1 1 1 1 0 0 0 0 0 0 1 0 1 0 1 1 1 1 0 1 0 0 0</float_array>
           <technique_common>
-            <accessor source="#Plane_025-mesh-map-0-array" count="96" stride="2">
+            <accessor source="#Plane_025-mesh-map-0-array" count="120" stride="2">
               <param name="S" type="float"/>
               <param name="T" type="float"/>
             </accessor>
@@ -1346,11 +1346,11 @@
         <vertices id="Plane_025-mesh-vertices">
           <input semantic="POSITION" source="#Plane_025-mesh-positions"/>
         </vertices>
-        <triangles material="platform-material" count="32">
+        <triangles material="platform-material" count="40">
           <input semantic="VERTEX" source="#Plane_025-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_025-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_025-mesh-map-0" offset="2" set="0"/>
-          <p>6 0 0 13 0 1 5 0 2 8 1 3 0 1 4 9 1 5 9 2 6 1 2 7 10 2 8 11 3 9 1 3 10 3 3 11 11 4 12 2 4 13 8 4 14 4 5 15 9 5 16 5 5 17 5 6 18 10 6 19 6 6 20 6 7 21 11 7 22 7 7 23 7 6 24 8 6 25 4 6 26 7 8 27 14 8 28 6 8 29 5 9 30 12 9 31 4 9 32 4 10 33 15 10 34 7 10 35 14 11 36 0 11 37 13 11 38 15 12 39 1 12 40 14 12 41 12 13 42 3 13 43 15 13 44 13 14 45 2 14 46 12 14 47 6 0 48 14 0 49 13 0 50 8 1 51 2 1 52 0 1 53 9 15 54 0 15 55 1 15 56 11 16 57 10 16 58 1 16 59 11 17 60 3 17 61 2 17 62 4 6 63 8 6 64 9 6 65 5 6 66 9 6 67 10 6 68 6 6 69 10 6 70 11 6 71 7 6 72 11 6 73 8 6 74 7 8 75 15 8 76 14 8 77 5 9 78 13 9 79 12 9 80 4 10 81 12 10 82 15 10 83 14 18 84 1 18 85 0 18 86 15 19 87 3 19 88 1 19 89 12 20 90 2 20 91 3 20 92 13 21 93 0 21 94 2 21 95</p>
+          <p>6 0 0 13 0 1 5 0 2 8 1 3 0 1 4 9 1 5 9 2 6 1 2 7 10 2 8 11 3 9 1 3 10 3 3 11 11 4 12 2 4 13 8 4 14 4 5 15 9 5 16 5 5 17 5 6 18 10 6 19 6 6 20 6 7 21 11 7 22 7 7 23 7 6 24 8 6 25 4 6 26 7 8 27 14 8 28 6 8 29 5 9 30 12 9 31 4 9 32 4 10 33 15 10 34 7 10 35 14 11 36 0 11 37 13 11 38 15 12 39 1 12 40 14 12 41 12 13 42 3 13 43 15 13 44 13 14 45 2 14 46 12 14 47 3 8 48 17 8 49 1 8 50 0 9 51 18 9 52 2 9 53 2 10 54 19 10 55 3 10 56 1 0 57 16 0 58 0 0 59 6 0 60 14 0 61 13 0 62 8 15 63 2 15 64 0 15 65 9 16 66 0 16 67 1 16 68 11 17 69 10 17 70 1 17 71 11 18 72 3 18 73 2 18 74 4 6 75 8 6 76 9 6 77 5 6 78 9 6 79 10 6 80 6 6 81 10 6 82 11 6 83 7 6 84 11 6 85 8 6 86 7 8 87 15 8 88 14 8 89 5 9 90 13 9 91 12 9 92 4 10 93 12 10 94 15 10 95 14 19 96 1 19 97 0 19 98 15 20 99 3 20 100 1 20 101 12 21 102 2 21 103 3 21 104 13 14 105 0 14 106 2 14 107 3 8 108 19 8 109 17 8 110 0 9 111 16 9 112 18 9 113 2 10 114 18 10 115 19 10 116 1 0 117 17 0 118 16 0 119</p>
         </triangles>
       </mesh>
     </geometry>
@@ -1388,7 +1388,7 @@
         <vertices id="Plane_024-mesh-vertices">
           <input semantic="POSITION" source="#Plane_024-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_024-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_024-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_024-mesh-map-0" offset="2" set="0"/>
@@ -1430,7 +1430,7 @@
         <vertices id="Plane_023-mesh-vertices">
           <input semantic="POSITION" source="#Plane_023-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_023-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_023-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_023-mesh-map-0" offset="2" set="0"/>
@@ -1472,7 +1472,7 @@
         <vertices id="Plane_022-mesh-vertices">
           <input semantic="POSITION" source="#Plane_022-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_022-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_022-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_022-mesh-map-0" offset="2" set="0"/>
@@ -1514,7 +1514,7 @@
         <vertices id="Plane_021-mesh-vertices">
           <input semantic="POSITION" source="#Plane_021-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_021-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_021-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_021-mesh-map-0" offset="2" set="0"/>
@@ -1556,7 +1556,7 @@
         <vertices id="Plane_020-mesh-vertices">
           <input semantic="POSITION" source="#Plane_020-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_020-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_020-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_020-mesh-map-0" offset="2" set="0"/>
@@ -1598,7 +1598,7 @@
         <vertices id="Plane_019-mesh-vertices">
           <input semantic="POSITION" source="#Plane_019-mesh-positions"/>
         </vertices>
-        <triangles material="vines-material" count="4">
+        <triangles material="vines_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_019-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_019-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_019-mesh-map-0" offset="2" set="0"/>
@@ -2882,7 +2882,7 @@
         <instance_geometry url="#Plane_024-mesh" name="Plane.022">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2894,7 +2894,7 @@
         <instance_geometry url="#Plane_023-mesh" name="Plane.021">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2906,7 +2906,7 @@
         <instance_geometry url="#Plane_022-mesh" name="Plane.020">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2918,7 +2918,7 @@
         <instance_geometry url="#Plane_021-mesh" name="Plane.019">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2930,7 +2930,7 @@
         <instance_geometry url="#Plane_020-mesh" name="Plane.018">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2942,7 +2942,7 @@
         <instance_geometry url="#Plane_019-mesh" name="Plane.017">
           <bind_material>
             <technique_common>
-              <instance_material symbol="vines-material" target="#vines-material">
+              <instance_material symbol="vines_transparent_-material" target="#vines_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
