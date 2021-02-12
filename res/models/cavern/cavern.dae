@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.90.1 commit date:2020-09-23, commit time:06:43, hash:3e85bb34d0d7</authoring_tool>
     </contributor>
-    <created>2021-02-12T14:54:49</created>
-    <modified>2021-02-12T14:54:49</modified>
+    <created>2021-02-12T14:56:46</created>
+    <modified>2021-02-12T14:56:46</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -124,7 +124,7 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="bars-effect">
+    <effect id="bars_transparent_-effect">
       <profile_COMMON>
         <newparam sid="bars_png-surface">
           <surface type="2D">
@@ -262,7 +262,7 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="broken_glass-effect">
+    <effect id="broken_glass_transparent_-effect">
       <profile_COMMON>
         <newparam sid="broken_glass_png-surface">
           <surface type="2D">
@@ -346,7 +346,7 @@
         </technique>
       </profile_COMMON>
     </effect>
-    <effect id="glass-effect">
+    <effect id="glass_transparent_-effect">
       <profile_COMMON>
         <newparam sid="glass_png-surface">
           <surface type="2D">
@@ -440,8 +440,8 @@
     <material id="floor-material" name="floor">
       <instance_effect url="#floor-effect"/>
     </material>
-    <material id="bars-material" name="bars">
-      <instance_effect url="#bars-effect"/>
+    <material id="bars_transparent_-material" name="bars[transparent]">
+      <instance_effect url="#bars_transparent_-effect"/>
     </material>
     <material id="rock-material" name="rock">
       <instance_effect url="#rock-effect"/>
@@ -455,8 +455,8 @@
     <material id="wire-material" name="wire">
       <instance_effect url="#wire-effect"/>
     </material>
-    <material id="broken_glass-material" name="broken_glass">
-      <instance_effect url="#broken_glass-effect"/>
+    <material id="broken_glass_transparent_-material" name="broken_glass[transparent]">
+      <instance_effect url="#broken_glass_transparent_-effect"/>
     </material>
     <material id="blue_light-material" name="blue_light">
       <instance_effect url="#blue_light-effect"/>
@@ -464,8 +464,8 @@
     <material id="rock_cracked-material" name="rock_cracked">
       <instance_effect url="#rock_cracked-effect"/>
     </material>
-    <material id="glass-material" name="glass">
-      <instance_effect url="#glass-effect"/>
+    <material id="glass_transparent_-material" name="glass[transparent]">
+      <instance_effect url="#glass_transparent_-effect"/>
     </material>
     <material id="vines_transparent_-material" name="vines[transparent]">
       <instance_effect url="#vines_transparent_-effect"/>
@@ -548,7 +548,7 @@
         <vertices id="Plane_035-mesh-vertices">
           <input semantic="POSITION" source="#Plane_035-mesh-positions"/>
         </vertices>
-        <triangles material="bars-material" count="4">
+        <triangles material="bars_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_035-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_035-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_035-mesh-map-0" offset="2" set="0"/>
@@ -842,7 +842,7 @@
         <vertices id="Circle_014-mesh-vertices">
           <input semantic="POSITION" source="#Circle_014-mesh-positions"/>
         </vertices>
-        <triangles material="broken_glass-material" count="24">
+        <triangles material="broken_glass_transparent_-material" count="24">
           <input semantic="VERTEX" source="#Circle_014-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Circle_014-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Circle_014-mesh-map-0" offset="2" set="0"/>
@@ -968,7 +968,7 @@
         <vertices id="Circle_012-mesh-vertices">
           <input semantic="POSITION" source="#Circle_012-mesh-positions"/>
         </vertices>
-        <triangles material="broken_glass-material" count="24">
+        <triangles material="broken_glass_transparent_-material" count="24">
           <input semantic="VERTEX" source="#Circle_012-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Circle_012-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Circle_012-mesh-map-0" offset="2" set="0"/>
@@ -1304,7 +1304,7 @@
         <vertices id="Plane_026-mesh-vertices">
           <input semantic="POSITION" source="#Plane_026-mesh-positions"/>
         </vertices>
-        <triangles material="glass-material" count="4">
+        <triangles material="glass_transparent_-material" count="4">
           <input semantic="VERTEX" source="#Plane_026-mesh-vertices" offset="0"/>
           <input semantic="NORMAL" source="#Plane_026-mesh-normals" offset="1"/>
           <input semantic="TEXCOORD" source="#Plane_026-mesh-map-0" offset="2" set="0"/>
@@ -2642,7 +2642,7 @@
         <instance_geometry url="#Plane_035-mesh" name="Plane.033">
           <bind_material>
             <technique_common>
-              <instance_material symbol="bars-material" target="#bars-material">
+              <instance_material symbol="bars_transparent_-material" target="#bars_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2726,7 +2726,7 @@
         <instance_geometry url="#Circle_014-mesh" name="Circle.010">
           <bind_material>
             <technique_common>
-              <instance_material symbol="broken_glass-material" target="#broken_glass-material">
+              <instance_material symbol="broken_glass_transparent_-material" target="#broken_glass_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2762,7 +2762,7 @@
         <instance_geometry url="#Circle_012-mesh" name="Circle.008">
           <bind_material>
             <technique_common>
-              <instance_material symbol="broken_glass-material" target="#broken_glass-material">
+              <instance_material symbol="broken_glass_transparent_-material" target="#broken_glass_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
@@ -2858,7 +2858,7 @@
         <instance_geometry url="#Plane_026-mesh" name="Plane.024">
           <bind_material>
             <technique_common>
-              <instance_material symbol="glass-material" target="#glass-material">
+              <instance_material symbol="glass_transparent_-material" target="#glass_transparent_-material">
                 <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
               </instance_material>
             </technique_common>
