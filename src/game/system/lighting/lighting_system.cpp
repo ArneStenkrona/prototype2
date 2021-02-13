@@ -50,9 +50,9 @@ prt::vector<UBOPointLight> LightingSystem::getNearestPointLights(Camera const & 
     ret.resize(size);
     for (size_t i = 0; i < size; ++i) {
         ret[i].color = m_pointLights[distances[i].index].color;
-        ret[i].a = m_pointLights[distances[i].index].constant;
+        ret[i].c = m_pointLights[distances[i].index].constant;
         ret[i].b = m_pointLights[distances[i].index].linear;
-        ret[i].c = m_pointLights[distances[i].index].quadratic;
+        ret[i].a = m_pointLights[distances[i].index].quadratic;
 
         EntityID eID = m_pointLights[distances[i].index].entityID;
         ret[i].pos = transforms[eID].position;

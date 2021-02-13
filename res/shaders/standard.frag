@@ -141,10 +141,10 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
     float shininess = 8.0;
-    float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess); 
+    float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
     // attenuation
-    float distance = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
-    float attenuation = 1.0 / (light.c + light.b * distance + light.a * distance * distance);
+    float dist = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
+    float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
     // combine result
     vec3 diffuse = light.color * diff * albedo;
     vec3 specular = light.color * spec * specularity;

@@ -16,8 +16,8 @@ struct PointLight {
 
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
-    mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
-    mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 model[200];
+    mat4 invTransposeModel[200];
     mat4 viewProjection;
     mat4 view;
     // mat4 proj;
@@ -27,12 +27,12 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     float ambientLight;
     uint noPointLights;
     DirLight sun;
-    vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
-    mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
-    PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
+    vec4 splitDepths[(5 + 4) / 4];
+    mat4 cascadeSpace[5];
+    PointLight pointLights[4];
 } ubo;
 
-layout(set = 0, binding = 1) uniform texture2D textures[@NUMBER_SUPPORTED_TEXTURES@];
+layout(set = 0, binding = 1) uniform texture2D textures[64];
 layout(set = 0, binding = 2) uniform sampler samp;
 
 layout(set = 0, binding = 3) uniform sampler2DArray shadowMap;
@@ -74,7 +74,8 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
-void transparencyDither(float alpha);
+// void transparencyDither(float alpha);
+float discretize(float value, float steps);
 
 void main() {
     // get albedo
@@ -84,13 +85,14 @@ void main() {
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
     // get normal
-    vec3 normal = material.normalIndex < 0 ? vec3(0,0,1) :
-                                         2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
-    normal = normalize(normal);
+    // vec3 normal = material.normalIndex < 0 ? vec3(0,0,1) :
+                                        //  2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
+    // normal = normalize(transpose(fs_in.invtbn) * normal);
+    vec3 normal = fs_in.fragNormal;
 
 
     // get view direction
-    vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
+    vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
 
     // light
     vec3 res = ubo.ambientLight * albedo;
@@ -100,22 +102,31 @@ void main() {
                               albedo, specularity);
     }
 
-    int cascadeIndex = 0;
-    for (int i = 0; i < @NUMBER_SHADOWMAP_CASCADES@ - 1; ++i) {
-        if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
-            cascadeIndex = i + 1;
-        }
-    }
+    // int cascadeIndex = 0;
+    // for (int i = 0; i < 5 - 1; ++i) {
+    //     if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
+    //         cascadeIndex = i + 1;
+    //     }
+    // }
 
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
-    sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
+    // vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
+    // sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
 
-    // Directional lighting
-    res += filterPCF(sunShadowCoord, cascadeIndex).r  *
-           CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
-                         albedo, specularity);
+    // // Directional lighting
+    // res += filterPCF(sunShadowCoord, cascadeIndex).r  *
+    //        CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
+    //                      albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    outColor = vec4(res, 1.0);
+    float d = distance(fs_in.fragPos, ubo.viewPos);
+    float fog_start = 10.0;
+    float fog_end = 40.0;
+
+    //linear interpolation
+    float fog_factor = (d-fog_start)/(fog_end-fog_start);
+    fog_factor = 1.0 - clamp(fog_factor, 0.0, 1.0);
+    fog_factor = discretize(fog_factor, 8);
+
+    outColor = vec4(res * fog_factor, 1.0);
 
     outEntity = material.entityID;
 }
@@ -133,25 +144,60 @@ void main() {
 //     if (alpha - thresholdMatrix[x % 4][y % 4] < 0) discard;
 // }
 
+float discretize(float value, float steps) {
+    return floor(value * steps + 0.5) / steps;
+}
+
+float[2] closestLevels(float value, float steps) {
+    float ret[2];
+    float v = value * steps;
+    float f = fract(v);
+    if (f < 0.5) {
+        ret[0] = floor(v + 0.5) / steps;
+        ret[1] = ceil(v + 0.5) / steps;
+    } else {
+        ret[0] = ceil(v + 0.5) / steps;
+        ret[1] = floor(v + 0.5) / steps;
+    }
+
+    return ret;
+}
+
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = normalize(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
-    vec3 reflectDir = reflect(lightDir, normal); // phong
-    // diffuse shading
-    float diff = max(dot(normal, -lightDir), 0.0);
-    // specular shading
-    float shininess = 8.0;
-    float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    // attenuation
-    float dist = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
-    float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
-    // combine result
-    vec3 diffuse = light.color * diff * albedo;
-    vec3 specular = light.color * spec * specularity;
+    float stepWidth = 1.0;
+    float stepAmount = 2.0;
+    float specularSize = 0.1;
+    float specularFalloff = 0.5;
 
-    diffuse *= attenuation;
-    specular *= attenuation;
-    return diffuse + specular;
+    vec3 lightDir = normalize(light.pos - fs_in.fragPos);
+    
+    float ndl = dot(normal, lightDir);
+    ndl = ndl / stepWidth;
+
+    float intensity  = floor(ndl);
+
+    float change = fwidth(ndl);
+    float smoothing = smoothstep(0, change,  fract(ndl));
+
+    intensity = intensity + smoothing;
+
+    intensity = intensity / stepAmount;
+    intensity = clamp(intensity, 0.0, 1.0);
+
+    vec3 r = reflect(lightDir, normal);
+    float vdr = dot(viewDir, -r);
+    float specFalloff = dot(viewDir, normal);
+    specFalloff = pow(specFalloff, specularFalloff);
+    vdr = vdr * specFalloff;
+    float specChange = fwidth(vdr);
+    float spec = smoothstep(1 - specularSize, 1 - specularSize + specChange, vdr);
+
+    float dist = distance(light.pos, fs_in.fragPos);
+    float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
+
+    return min(intensity /*+ spec*/, 1.0) * light.color * attenuation * albedo;
+
 }
 
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,

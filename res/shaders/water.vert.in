@@ -45,6 +45,7 @@ layout(location = 4) in vec3 inBinormal;
 
 layout(location = 0) out VS_OUT {
     vec3 fragPos;
+    vec3 viewPos;
     vec2 fragTexCoord;
     vec3 fragNormal;
     vec3 shadowPos;

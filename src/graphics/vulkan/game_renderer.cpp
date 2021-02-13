@@ -120,8 +120,8 @@ void GameRenderer::initPipelines() {
 
     /* non-animated */
     createStandardAndShadowPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
-                                     "shaders/standard.vert.spv", "shaders/standard.frag.spv",
-                                     "shaders/standard_transparent.frag.spv",
+                                     "shaders/standard.vert.spv", "shaders/stylized.frag.spv",
+                                     "shaders/stylized_transparent.frag.spv",
                                      "shaders/shadow_map.vert.spv",
                                      Model::Vertex::getBindingDescription(),
                                      Model::Vertex::getAttributeDescriptions(),
@@ -131,8 +131,8 @@ void GameRenderer::initPipelines() {
 
     /* animated */
     createStandardAndShadowPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
-                                     "shaders/standard_animated.vert.spv", "shaders/standard.frag.spv",
-                                     "shaders/standard_transparent.frag.spv",
+                                     "shaders/standard_animated.vert.spv", "shaders/stylized.frag.spv",
+                                     "shaders/stylized_transparent.frag.spv",
                                      "shaders/shadow_map_animated.vert.spv",
                                      Model::BonedVertex::getBindingDescription(),
                                      Model::BonedVertex::getAttributeDescriptions(),
