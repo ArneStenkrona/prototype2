@@ -144,7 +144,7 @@ void GameRenderer::initPipelines() {
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
     strcat(vert, "shaders/standard.vert.spv");
-    strcat(frag, "shaders/water.frag.spv");
+    strcat(frag, "shaders/stylized_water.frag.spv");
     pipelineIndices.water = createStandardPipeline(standardAssetIndex, standardUboIndex, vert, frag,
                                                    Model::Vertex::getBindingDescription(),
                                                    Model::Vertex::getAttributeDescriptions(), true);

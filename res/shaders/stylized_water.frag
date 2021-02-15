@@ -44,6 +44,7 @@ layout(push_constant) uniform MATERIAL {
 	layout(offset = 12) int specularIndex;
     layout(offset = 16) vec4 baseColor;
     layout(offset = 32) float baseSpecularity;
+    layout(offset = 36) int entityID;
 } material;
 
 layout(location = 0) in VS_OUT {
@@ -57,14 +58,11 @@ layout(location = 0) in VS_OUT {
     mat3 invtbn;
 } fs_in;
 
-float linearizeDepth(float d,float zNear,float zFar) {
-    return zNear * zFar / (zFar + d * (zNear - zFar));      
-}
-
 const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
                           0.0, 0.5, 0.0, 0.0,
                           0.0, 0.0, 1.0, 0.0,
                           0.5, 0.5, 0.0, 1.0);
+
 
 layout(location = 0) out vec4 accumColor;
 layout(location = 1) out float revealColor;
@@ -76,7 +74,8 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
 
 float textureProj(vec4 shadowCoord, vec2 off, int cascadeIndex);
 float filterPCF(vec4 shadowCoord, int cascadeIndex);
-void transparencyDither(float alpha);   
+// void transparencyDither(float alpha);
+float discretize(float value, float steps);
 
 void main() {
     // get albedo
@@ -93,7 +92,6 @@ void main() {
     vec4 waterColor = vec4(0.4, 0.8, 1, 0.3);
     vec4 albedo = mix(waterColor, vec4(1), col);
 
-
     // get specularity
     float specularity = material.specularIndex < 0 ? material.baseSpecularity :
                                     material.baseSpecularity * 2 * texture(sampler2D(textures[material.specularIndex], samp), fs_in.fragTexCoord).r - 1.0;;
@@ -102,13 +100,13 @@ void main() {
                                          2.0 * texture(sampler2D(textures[material.albedoIndex], samp), tex1).rgb - 1.0;
     vec3 n2 = material.albedoIndex < 0 ? vec3(0,0,1) :
                                          2.0 * texture(sampler2D(textures[material.albedoIndex], samp), tex2).rgb - 1.0;
+    n1 = transpose(fs_in.invtbn) * n1;
+    n2 = transpose(fs_in.invtbn) * n2;
     vec3 normal = normalize(mix(vec3(0,0,1), mix(n1,n2,0.5) , 0.2));
-
     // get view direction
-    vec3 viewDir = normalize(fs_in.tangentViewPos - fs_in.tangentFragPos);
-    float r = dot(viewDir, normal);
-    albedo.a += pow(1.0-r,10.0);
-
+    vec3 viewDir = normalize(ubo.viewPos - fs_in.fragPos);
+    float r = clamp(dot(-viewDir, normal), 0.0, 1.0);
+    albedo.a += pow(r, 10.0);
 
     // light
     vec3 res = ubo.ambientLight * albedo.rgb;
@@ -118,22 +116,33 @@ void main() {
                               albedo.rgb, specularity);
     }
 
-    int cascadeIndex = 0;
-    for (int i = 0; i < 5 - 1; ++i) {
-        if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
-            cascadeIndex = i + 1;
-        }
-    }
-    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01 * fs_in.fragNormal, 1.0));
-    sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
-    // Directional lighting
-    res += filterPCF(sunShadowCoord, cascadeIndex).r *
-           CalcDirLight(fs_in.tangentSunDir, ubo.sun.color, normal, viewDir,
-                         albedo.rgb, specularity);
-    // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    vec4 color = vec4(res, albedo.a);
+    // int cascadeIndex = 0;
+    // for (int i = 0; i < 5 - 1; ++i) {
+    //     if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
+    //         cascadeIndex = i + 1;
+    //     }
+    // }
 
-    // Insert your favorite weighting function here. The color-based factor
+    // vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
+    // sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
+
+    // // Directional lighting
+    // res += filterPCF(sunShadowCoord, cascadeIndex).r  *
+    //        CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
+    //                      albedo, specularity);
+    // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
+    float d = distance(fs_in.fragPos, ubo.viewPos);
+    float fog_start = 10.0;
+    float fog_end = 40.0;
+
+    //linear interpolation
+    float fog_factor = (d-fog_start)/(fog_end-fog_start);
+    fog_factor = 1.0 - clamp(fog_factor, 0.0, 1.0);
+    fog_factor = discretize(fog_factor, 8);
+
+    vec4 color = vec4(res * fog_factor, albedo.a);
+
+        // Insert your favorite weighting function here. The color-based factor
     // avoids color pollution from the edges of wispy clouds. The z-based
     // factor gives precedence to nearer surfaces.
     
@@ -143,7 +152,6 @@ void main() {
 
     // Blend Func: GL_ONE, GL_ONE
     // Switch to premultiplied alpha and weight
-    
     accumColor = vec4(color.rgb * color.a, color.a) * weight;
 
     // Blend Func: GL_ZERO, GL_ONE_MINUS_SRC_ALPHA
@@ -152,10 +160,10 @@ void main() {
 
 // Screen-door transparency: Discard pixel if below threshold.
 // (Note: pos is pixel position.)
-const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
-                                  13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
-                                  4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
-                                  16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
+// const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0,
+//                                   13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0,
+//                                   4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0,
+//                                   16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0);
 
 // void transparencyDither(float alpha) {
 //     int x = int(gl_FragCoord.x) / 4;
@@ -163,25 +171,60 @@ const mat4 thresholdMatrix = mat4(1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 1
 //     if (alpha - thresholdMatrix[x % 4][y % 4] < 0) discard;
 // }
 
+float discretize(float value, float steps) {
+    return floor(value * steps + 0.5) / steps;
+}
+
+float[2] closestLevels(float value, float steps) {
+    float ret[2];
+    float v = value * steps;
+    float f = fract(v);
+    if (f < 0.5) {
+        ret[0] = floor(v + 0.5) / steps;
+        ret[1] = ceil(v + 0.5) / steps;
+    } else {
+        ret[0] = ceil(v + 0.5) / steps;
+        ret[1] = floor(v + 0.5) / steps;
+    }
+
+    return ret;
+}
+
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = normalize(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
-    vec3 reflectDir = reflect(lightDir, normal); // phong
-    // diffuse shading
-    float diff = max(dot(normal, -lightDir), 0.0);
-    // specular shading
-    float shininess = 8.0;
-    float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess); 
-    // attenuation
-    float distance = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
-    float attenuation = 1.0 / (light.c + light.b * distance + light.a * distance * distance);
-    // combine result
-    vec3 diffuse = light.color * diff * albedo;
-    vec3 specular = light.color * spec * specularity;
+    float stepWidth = 1.0;
+    float stepAmount = 2.0;
+    float specularSize = 0.1;
+    float specularFalloff = 0.5;
 
-    diffuse *= attenuation;
-    specular *= attenuation;
-    return diffuse + specular;
+    vec3 lightDir = normalize(light.pos - fs_in.fragPos);
+    
+    float ndl = dot(normal, lightDir);
+    ndl = ndl / stepWidth;
+
+    float intensity  = floor(ndl);
+
+    float change = fwidth(ndl);
+    float smoothing = smoothstep(0, change,  fract(ndl));
+
+    intensity = intensity + smoothing;
+
+    intensity = intensity / stepAmount;
+    intensity = clamp(intensity, 0.0, 1.0);
+
+    vec3 r = reflect(lightDir, normal);
+    float vdr = dot(viewDir, -r);
+    float specFalloff = dot(viewDir, normal);
+    specFalloff = pow(specFalloff, specularFalloff);
+    vdr = vdr * specFalloff;
+    float specChange = fwidth(vdr);
+    float spec = smoothstep(1 - specularSize, 1 - specularSize + specChange, vdr);
+
+    float dist = distance(light.pos, fs_in.fragPos);
+    float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
+
+    return min(intensity /*+ spec*/, 1.0) * light.color * attenuation * albedo;
+
 }
 
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
@@ -189,14 +232,12 @@ vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
     // diffuse shading
     float diff = max(dot(normal, -lightDir), 0.0);
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal); // phong
-    vec3 halfwayDir = normalize(-lightDir + viewDir); // blinn-phong
-
-    float shininess = 128.0;
-    float spec = 1.0 * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 r = reflect(lightDir, normal);
+    float shininess = 8.0;
+    float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess);
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
-    vec3 specular = lightColor * spec;
+    vec3 specular = vec3(1) * spec;
     return diffuse + specular;
 }
 
@@ -227,5 +268,7 @@ float filterPCF(vec4 shadowCoord, int cascadeIndex) {
             ++count;
         }
     }
+
+
     return shadowFactor / count;
 }
