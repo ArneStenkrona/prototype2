@@ -5,8 +5,8 @@
 		<author>Anonymous</author>
 		<authoring_tool>Collada Exporter for Blender 2.6+, by Juan Linietsky (juan@codenix.com)</authoring_tool>
 	</contributor>
-	<created>2021-02-17T17:03:02Z</created>
-	<modified>2021-02-17T17:03:02Z</modified>
+	<created>2021-02-19T18:01:08Z</created>
+	<modified>2021-02-19T18:01:08Z</modified>
 	<unit meter="1.0" name="meter"/>
 	<up_axis>Z_UP</up_axis>
 </asset>
@@ -496,7 +496,7 @@
 					<matrix sid="transform"> 1.0 0.0 0.0 1.8000000715255737 0.0 0.0 1.0 2.5 0.0 -1.0 0.0 0.19999977946281433 0.0 0.0 0.0 1.0  </matrix>
 				</node>
 			</node>
-			<node id="Circle" name="Circle" type="NODE">
+			<node id="bird" name="bird" type="NODE">
 				<matrix sid="transform"> 1.0 0.0 0.0 0.0 0.0 1.0 0.0 -1.0931068658828735 0.0 0.0 1.0 3.3948874473571777 0.0 0.0 0.0 1.0  </matrix>
 				<instance_controller url="#id-controller-33">
 					<skeleton>#id-bone-3</skeleton>
@@ -507,7 +507,7 @@
 					</bind_material>
 				</instance_controller>
 			</node>
-			<node id="Plane" name="Plane" type="NODE">
+			<node id="mask" name="mask" type="NODE">
 				<matrix sid="transform"> 1.173427939414978 0.0 0.0 0.0 0.0 1.1334443092346191 0.3037055432796478 -2.2856550216674805 6.74361641361816e-17 -0.3037055432796478 1.1334443092346191 3.0123867988586426 0.0 0.0 0.0 1.0  </matrix>
 				<instance_controller url="#id-controller-41">
 					<skeleton>#id-bone-3</skeleton>
