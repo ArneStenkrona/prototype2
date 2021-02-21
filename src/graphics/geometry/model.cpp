@@ -19,8 +19,6 @@ Model::Model(char const * path)
 }
 
 bool Model::load(bool loadAnimation, TextureManager & textureManager) {
-    std::cout << "\n\n\n" << std::endl;
-
     assert(!mLoaded && "Model is already loaded!");
 
     mAnimated = loadAnimation;
