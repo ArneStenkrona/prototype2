@@ -35,12 +35,13 @@ void CharacterSystem::updateCharacters(float deltaTime) {
     }
 }
 
-CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips) { 
+CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips, float animationSpeed) { 
     assert(m_characters.size < m_characters.maxSize && "Character amount exceeded!");
 
     m_characters.entityIDs[m_characters.size] = entityID;
     m_characters.physics[m_characters.size].colliderTag = tag;
     m_characters.animationClips[m_characters.size] = clips;
+    m_characters.animationSpeeds[m_characters.size] = animationSpeed;
 
     ++m_characters.size; 
     return m_characters.size - 1; 
@@ -71,6 +72,7 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
     auto & physics = m_characters.physics[characterID];
     auto & animation = m_animationSystem.getAnimationBlend(m_characters.entityIDs[characterID]);
     auto const & clips = m_characters.animationClips[characterID];
+    float animationSpeed = m_characters.animationSpeeds[characterID];
     
     glm::vec3 targetMovement{0.0f};
 
@@ -134,12 +136,12 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
         animation.clipB = clips.run;
         animation.blendFactor = (vmag - 0.025f) / 0.055f;
 
-        animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor) * deltaTime;
+        animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor) * deltaTime * animationSpeed;
     } else {
         animation.clipA = clips.idle;
         animation.clipB = clips.walk;
         animation.blendFactor = vmag / 0.025f;
-        animationDelta = math_util::lerp(0.6f, 0.75f, animation.blendFactor) * deltaTime;
+        animationDelta = math_util::lerp(0.6f, 0.75f, animation.blendFactor) * deltaTime * animationSpeed;
     }
 
     animation.blendFactor = glm::clamp(animation.blendFactor, 0.0f, 1.0f);

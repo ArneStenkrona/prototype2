@@ -12,6 +12,15 @@
 
 #include <glm/glm.hpp>
 
+struct EllipsoidCollider {
+    glm::vec3 radii;
+    glm::vec3 offset;
+
+    AABB getAABB(glm::vec3 const & position) const { 
+        return { position + offset - radii, 
+                 position + offset - radii }; }
+};
+
 struct MeshCollider {
     Transform transform;
 

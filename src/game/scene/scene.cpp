@@ -33,7 +33,7 @@ void Scene::bindToRenderer() {
 }
 
 void Scene::bindRenderData() {
-    // clear previouus render data
+    // clear previous render data
     m_renderData.staticTransforms.resize(0);
     m_renderData.staticEntityIDs.resize(0);
     m_renderData.staticModelIDs.resize(0);
@@ -177,8 +177,8 @@ void Scene::addModelCollider(EntityID id) {
     m_entities.colliderTags[id] = m_physicsSystem.addModelCollider(getModel(id), m_entities.transforms[id]);
 }
 
-void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & ellipsoid) {
-    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(ellipsoid);
+void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) {
+    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(radii, offset);
 }
 
 void Scene::addPointLight(EntityID id, PointLight & pointLight) {
@@ -199,22 +199,24 @@ void Scene::updateCamera(float deltaTime) {
     // Make sure player is visible
     glm::vec3 hit;
     glm::vec3 corners[4];
-    float dist = 8.0f;
+    float maxDist = 8.0f;
+    float dist = maxDist;
     m_camera.getCameraCorners(corners[0], corners[1], corners[2], corners[3]);
 
     EntityID playerID = m_characterSystem.getPlayer();
 
     auto const & transform = m_entities.transforms[playerID];
+    glm::vec3 offset{0.0f, 1.0f, 0.0f};
     for (size_t i = 0; i < 4; ++i) {
-        glm::vec3 dir = glm::normalize(corners[i] - transform.position);
-        if (m_physicsSystem.raycast(transform.position, dir, 
-                                    5.0f, hit)) {
-            dist = std::min(dist, glm::distance(transform.position, hit));
+        glm::vec3 dir = glm::normalize(corners[i] - (transform.position + offset));
+        if (m_physicsSystem.raycast(transform.position + offset, dir, 
+                                    maxDist, hit)) {
+            dist = std::min(dist, glm::distance(transform.position + offset, hit));
 
         }
     }
     m_camera.setTargetDistance(dist);
-    m_camera.setTarget(transform.position);
+    m_camera.setTarget(transform.position + offset);
 }
 
 void Scene::updateRenderData() {

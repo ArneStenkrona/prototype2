@@ -60,6 +60,7 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         
         scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].baseColor.a);
         scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
+
         
         if (materials[i].baseColor.a < 1.0f) {
             materials[i].type = Material::Type::transparent;
@@ -70,6 +71,10 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         if (strstr(materials[i].name, "[transparent]") != NULL) {
             materials[i].type = Material::Type::transparent;
         }
+        if (strstr(materials[i].name, "[gloss]") != NULL) {
+            materials[i].baseSpecularity = 1.0f;
+        }
+
 
         materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, mPath, textureManager);
         materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, mPath, textureManager);
@@ -89,6 +94,8 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     prt::hash_map<aiString, size_t> nodeToIndex;
     prt::vector<aiString> boneToName;
 
+    prt::hash_map<aiString, int> boneMapping;
+
     prt::vector<TFormNode> nodes;
     nodes.push_back({scene->mRootNode, scene->mRootNode->mTransformation, -1});
     while(!nodes.empty()) {
@@ -103,6 +110,7 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         int32_t nodeIndex = mNodes.size();
         mNodes.push_back({});
         Node & n = mNodes.back();
+        n.name = node->mName;
         memcpy(&n.transform, &tform, sizeof(glm::mat4));
         // assimp row-major, glm col-major
         n.transform = glm::transpose(n.transform);
@@ -162,10 +170,14 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                 vertexBoneBuffer.resize(vertexBuffer.size());
                 size_t prevBoneSize = bones.size();
                 bones.resize(prevBoneSize + aiMesh->mNumBones);
+                boneToName.resize(prevBoneSize + aiMesh->mNumBones);
+
                 for (size_t j = 0; j < aiMesh->mNumBones; ++j) {
                     size_t bi = prevBoneSize + j;
                     aiBone const * bone = aiMesh->mBones[j];
-                    boneToName.push_back(bone->mName);
+
+                    boneToName[bi] = bone->mName;
+
                     memcpy(&bones[bi].offsetMatrix, &bone->mOffsetMatrix, sizeof(glm::mat4));
 
                     memcpy(&bones[bi].meshTransform, &tform, sizeof(glm::mat4));
@@ -197,6 +209,7 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                             bd.boneWeights = bd.boneWeights / boneSum;                            
                         }
                     } 
+
                 }
             }
         }
@@ -211,8 +224,18 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         animations.resize(scene->mNumAnimations);
         for (size_t i = 0; i < scene->mNumAnimations; ++i) {
             aiAnimation const * aiAnim = scene->mAnimations[i];
+            
+            // trim names such as "armature|<animationName>"
+            const char * toCopy = strchr(aiAnim->mName.C_Str(), '|');
+            if (toCopy != nullptr) {
+                char nameBuf[256];
+                ++toCopy;
+                strcpy(nameBuf, toCopy);
+                nameToAnimation.insert(aiString(nameBuf), i);
+            } else {
+                nameToAnimation.insert(aiAnim->mName, i);
+            }
 
-            nameToAnimation.insert(aiAnim->mName, i);
 
             Animation & anim = animations[i];
             anim.duration = aiAnim->mDuration;
@@ -241,12 +264,13 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                 }
             }
         }
-
         // set node Indices
         for (size_t i = 0; i < bones.size(); ++i) {
-            assert(nodeToIndex.find(boneToName[i]) != nodeToIndex.end() && "No corresponding node for bone");
-            size_t nodeIndex = nodeToIndex.find(boneToName[i])->value();
-            mNodes[nodeIndex].boneIndex = i;
+            aiString & boneName = boneToName[i];
+
+            assert(nodeToIndex.find(boneName) != nodeToIndex.end() && "No corresponding node for bone");
+            size_t nodeIndex = nodeToIndex.find(boneName)->value();
+            mNodes[nodeIndex].boneIndices.push_back(i);
         }
     }
 
@@ -288,8 +312,8 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
         nodeIndices.pop_back();
 
         glm::mat4 tform = mNodes[index].transform;
-        int32_t boneIndex = mNodes[index].boneIndex;
         int32_t channelIndex = mNodes[index].channelIndex;
+
         if (channelIndex != -1) {
             auto & channel = animation.channels[channelIndex];
 
@@ -310,7 +334,7 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
         // pose matrix
         glm::mat4 poseMatrix = parentTForm * tform;
 
-        if (boneIndex != -1) {
+        for (auto & boneIndex : mNodes[index].boneIndices) {
             transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
         }
 
@@ -337,7 +361,7 @@ void Model::blendAnimation(float clipTime,
     prevFrameA = prevFrameA % numFramesA;
     uint32_t nextFrameA = (prevFrameA + 1) % numFramesA;
 
-        // calculate prev and next frame for clip B
+    // calculate prev and next frame for clip B
     size_t numFramesB = animationB.channels[0].keys.size();
     float fracFrameB = clipTime * numFramesB;
     uint32_t prevFrameB = static_cast<uint32_t>(fracFrameB);
@@ -349,7 +373,6 @@ void Model::blendAnimation(float clipTime,
         int32_t index;
         glm::mat4 tform;
     };
-
     prt::vector<IndexedTForm> nodeIndices;
     nodeIndices.push_back({0, glm::mat4(1.0f)});
     while (!nodeIndices.empty()) {
@@ -358,8 +381,8 @@ void Model::blendAnimation(float clipTime,
         nodeIndices.pop_back();
 
         glm::mat4 tform = mNodes[index].transform;
-        int32_t boneIndex = mNodes[index].boneIndex;
         int32_t channelIndex = mNodes[index].channelIndex;
+
         if (channelIndex != -1) {
             auto & channelA = animationA.channels[channelIndex];
             auto & channelB = animationB.channels[channelIndex];
@@ -394,14 +417,14 @@ void Model::blendAnimation(float clipTime,
             // blend
             glm::vec3 pos = glm::lerp(posA, posB, blendFactor);
             glm::quat rot = glm::slerp(rotA, rotB, blendFactor);
-            glm::vec3 scale = glm::lerp(scaleA, scaleB, blendFactor); // TODO: better scaling interpolation
+            glm::vec3 scale = glm::lerp(scaleA, scaleB, blendFactor);
 
             tform = glm::translate(pos) * glm::toMat4(rot) * glm::scale(scale);
         }
         // pose matrix
         glm::mat4 poseMatrix = parentTForm * tform;
 
-        if (boneIndex != -1) {
+        for (auto & boneIndex : mNodes[index].boneIndices) {
             transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
         }
 

@@ -21,7 +21,7 @@ class PhysicsSystem {
 public:
     PhysicsSystem();
     
-    void updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & dimensions);
+    void updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & radii, glm::vec3 const & offset);
     void updateModelColliders(ColliderTag const * tags,
                               Transform const * transforms,
                               size_t count);
@@ -51,17 +51,18 @@ public:
                                 Transform * transforms,
                                 size_t n);
 
-    ColliderTag addEllipsoidCollider(glm::vec3 const & ellipsoid);
+    ColliderTag addEllipsoidCollider(glm::vec3 const & radii,
+                                     glm::vec3 const & offset);
     ColliderTag addModelCollider(Model const & model, Transform const & transform);
 
     void removeCollider(ColliderTag const & tag);
 
-    glm::vec3 getEllipsoidCollider(ColliderTag tag) const { assert(tag.type == COLLIDER_TYPE_ELLIPSOID); return m_ellipsoids[tag.index]; }
+    EllipsoidCollider & getEllipsoidCollider(ColliderTag tag) { assert(tag.type == COLLIDER_TYPE_ELLIPSOID); return m_ellipsoids[tag.index]; }
 
     float getGravity() const { return m_gravity; }
         
 private:
-    prt::vector<glm::vec3> m_ellipsoids;
+    prt::vector<EllipsoidCollider> m_ellipsoids;
 
     // geometric data for model colliders
     struct Geometry {
