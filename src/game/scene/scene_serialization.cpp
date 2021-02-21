@@ -160,6 +160,8 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
 
     scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
 
+    float animationSpeed = parseFloat(buf);
+
     CharacterAnimationClips clips;
     clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
     clips.walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
@@ -167,7 +169,7 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     // clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
     // clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
 
-    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips);
+    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips, animationSpeed);
 
     scene.m_entities.characterIDs[id] = characterID;
 }
