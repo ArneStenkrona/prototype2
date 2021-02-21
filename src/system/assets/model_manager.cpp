@@ -70,6 +70,8 @@ void ModelManager::getSampledBlendedAnimation(ModelID const * modelIDs,
     }
 }
 
+// TODO: Fix so that no conflict arises if model
+// has been loaded as both animated and non-animated 
 ModelID ModelManager::loadModel(char const * path,
                                 bool animated, bool & alreadyLoaded) {
     ModelID id;

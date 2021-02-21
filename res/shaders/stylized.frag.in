@@ -190,13 +190,14 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
     float specFalloff = dot(viewDir, normal);
     specFalloff = pow(specFalloff, specularFalloff);
     vdr = vdr * specFalloff;
-    float specChange = fwidth(vdr);
-    float spec = smoothstep(1 - specularSize, 1 - specularSize + specChange, vdr);
+    // float specChange = fwidth(vdr);
+    // float spec = smoothstep(1 - specularSize, 1 - specularSize + specChange, vdr);
 
     float dist = distance(light.pos, fs_in.fragPos);
     float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
 
-    return min(intensity /*+ spec*/, 1.0) * light.color * attenuation * albedo;
+    float spec = min(pow(specularity * 5.0 * vdr, 16), 1.0);
+    return min(intensity + spec, 1.0) * light.color * attenuation * albedo;
 
 }
 

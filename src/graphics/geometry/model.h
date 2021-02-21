@@ -113,9 +113,10 @@ private:
 struct Model::Node {
     int32_t parentIndex = -1;
     prt::vector<int32_t> childIndices;
-    int32_t boneIndex = -1;
+    prt::vector<int32_t> boneIndices;
     int32_t channelIndex = -1;
     glm::mat4 transform;
+    aiString name;
 };
 
 struct Model::Material {
@@ -126,7 +127,7 @@ struct Model::Material {
     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
     // bool transparent = false;
     bool twosided = false;
-    float baseSpecularity = 0.5f;
+    float baseSpecularity = 0.0f;
     enum Type {
         standard,
         transparent,

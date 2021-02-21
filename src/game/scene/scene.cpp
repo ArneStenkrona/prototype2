@@ -33,7 +33,7 @@ void Scene::bindToRenderer() {
 }
 
 void Scene::bindRenderData() {
-    // clear previouus render data
+    // clear previous render data
     m_renderData.staticTransforms.resize(0);
     m_renderData.staticEntityIDs.resize(0);
     m_renderData.staticModelIDs.resize(0);
