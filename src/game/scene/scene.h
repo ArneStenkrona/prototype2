@@ -52,9 +52,9 @@ public:
 
     bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
     void addModelCollider(EntityID id);
-    void addEllipsoidCollider(EntityID id, glm::vec3 const & ellipsoid);
-    void updateEllipsoidCollider(EntityID id, glm::vec3 const & dimensions) { return m_physicsSystem.updateEllipsoidCollider(m_entities.colliderTags[id], dimensions); }
-    glm::vec3 getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
+    void addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset);
+    void updateEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) { return m_physicsSystem.updateEllipsoidCollider(m_entities.colliderTags[id], radii, offset); }
+    EllipsoidCollider & getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
     CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }

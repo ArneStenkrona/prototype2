@@ -286,10 +286,16 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
     ImGui::Combo("Type##Collider", &typeInd, types, IM_ARRAYSIZE(types));
 
     if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
-        glm::vec3 size = scene.getEllipsoidCollider(selectedEntity);
-        float* sizep = reinterpret_cast<float*>(&size);
-        if (ImGui::InputFloat3("size", sizep, "%.3f")) {
-            scene.updateEllipsoidCollider(selectedEntity, size);
+        EllipsoidCollider & col = scene.getEllipsoidCollider(selectedEntity);
+        glm::vec3 radii = col.radii;
+        glm::vec3 offset = col.offset;
+        float* radiip = reinterpret_cast<float*>(&radii);
+        if (ImGui::InputFloat3("radii", radiip, "%.3f")) {
+            scene.updateEllipsoidCollider(selectedEntity, radii, offset);
+        }
+        float* offsetp = reinterpret_cast<float*>(&offset);
+        if (ImGui::InputFloat3("offset", offsetp, "%.3f")) {
+            scene.updateEllipsoidCollider(selectedEntity, radii, offset);
         }
     }
 
@@ -436,7 +442,7 @@ bool EditorGui::addCollider(Scene & scene) {
         }
         ImGui::SameLine();
         if (ImGui::Button("Select")) {
-            if (current == 0) scene.addEllipsoidCollider(selectedEntity, glm::vec3{1.0f});
+            if (current == 0) scene.addEllipsoidCollider(selectedEntity, glm::vec3{1.0f}, glm::vec3{0.0f});
             if (current == 1) scene.addModelCollider(selectedEntity);
             open = false;
         } 

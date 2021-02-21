@@ -155,7 +155,10 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     scene.m_entities.transforms[id].rotation = parseQuat(buf);
     scene.m_entities.transforms[id].scale = parseVec3(buf);
 
-    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(parseVec3(buf));
+    glm::vec3 radii = parseVec3(buf);
+    glm::vec3 offset = parseVec3(buf);
+
+    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
 
     CharacterAnimationClips clips;
     clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");

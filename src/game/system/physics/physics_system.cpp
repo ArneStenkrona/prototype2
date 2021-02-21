@@ -14,13 +14,19 @@
 
 PhysicsSystem::PhysicsSystem() {}
 
-ColliderTag PhysicsSystem::addEllipsoidCollider(glm::vec3 const & ellipsoid) {
+ColliderTag PhysicsSystem::addEllipsoidCollider(glm::vec3 const & radii,
+                                                glm::vec3 const & offset) {
     assert(m_ellipsoids.size() < std::numeric_limits<uint16_t>::max() && "Too many ellipsoid colliders!");
     uint16_t id = m_ellipsoids.size();
-    m_ellipsoids.push_back(ellipsoid);
+
+    m_ellipsoids.push_back({});
+    EllipsoidCollider & ellipsoid = m_ellipsoids.back();
+    ellipsoid.radii = radii;
+    ellipsoid.offset = offset;
+
     m_aabbData.ellipsoidIndices.push_back({});
 
-    m_aabbData.ellipsoidAABBs.push_back({glm::vec3{0.0f}, ellipsoid});
+    m_aabbData.ellipsoidAABBs.push_back(ellipsoid.getAABB(glm::vec3{0.0f}));
 
     ColliderTag tag = { uint16_t(id), ColliderType::COLLIDER_TYPE_ELLIPSOID };
     m_aabbData.tree.insert(&tag, &m_aabbData.ellipsoidAABBs[id], 1, &m_aabbData.ellipsoidIndices[id]);
@@ -135,9 +141,12 @@ void PhysicsSystem::removeModelCollider(ColliderIndex colliderIndex) {
     m_models.geometries[index] = Geometry{};
 }
 
-void PhysicsSystem::updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & dimensions) {
+void PhysicsSystem::updateEllipsoidCollider(ColliderTag const & tag, 
+                                            glm::vec3 const & radii,
+                                            glm::vec3 const & offset) {
     assert(tag.type == COLLIDER_TYPE_ELLIPSOID);
-    m_ellipsoids[tag.index] = dimensions;
+    m_ellipsoids[tag.index].radii = radii;
+    m_ellipsoids[tag.index].offset = offset;
 }
 
 void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
@@ -226,18 +235,20 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
                                            Transform * transforms,
                                            size_t n) {
     
-    // update character aabb's
+    // update character AABBs
     prt::hash_map<uint16_t, size_t> tagToCharacter;
 
     size_t i = 0;    
     while (i < n) {
+        EllipsoidCollider const & ellipsoid = m_ellipsoids[physics[i].colliderTag.index];
         AABB & eAABB = m_aabbData.ellipsoidAABBs[physics[i].colliderTag.index];
-        // bounds = radii extents
-        eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderTag.index], 
-                  transforms[i].position + m_ellipsoids[physics[i].colliderTag.index] };
+        // bounds = offset + radii extents
+        eAABB = ellipsoid.getAABB(transforms[i].position);
+        // eAABB = { transforms[i].position - m_ellipsoids[physics[i].colliderTag.index], 
+        //           transforms[i].position + m_ellipsoids[physics[i].colliderTag.index] };
         // bounds += velocity extents
-        eAABB += { transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - m_ellipsoids[physics[i].colliderTag.index], 
-                   transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + m_ellipsoids[physics[i].colliderTag.index] };
+        eAABB += { transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - ellipsoid.radii, 
+                   transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + ellipsoid.radii };
 
         tagToCharacter.insert(physics[i].colliderTag.index, i);
         ++i;
@@ -267,9 +278,10 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                                               prt::hash_map<uint16_t, size_t> const & tagToCharacter,
                                               bool & grounded) {
     // unpack variables
-    glm::vec3 & position = transforms[characterIndex].position;
+    glm::vec3 const & radii = m_ellipsoids[physics[characterIndex].colliderTag.index].radii;
+    glm::vec3 const & offset = m_ellipsoids[physics[characterIndex].colliderTag.index].offset;
+    glm::vec3 position = transforms[characterIndex].position + offset;
     glm::vec3 & velocity = physics[characterIndex].velocity;
-    glm::vec3 const & radii = m_ellipsoids[physics[characterIndex].colliderTag.index];
     glm::vec3 & groundNormal = physics[characterIndex].groundNormal;
     ColliderTag const tag = { physics[characterIndex].colliderTag.index, ColliderType::COLLIDER_TYPE_ELLIPSOID };
 
@@ -289,6 +301,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             AABB eAABB = { position - radii, position + radii };
             eAABB += { position + velocity - radii, 
                     position + velocity + radii };
+
             prt::vector<uint16_t> meshColIDs; 
             prt::vector<uint16_t> ellipsoidColIDs; 
             m_aabbData.tree.query(tag, eAABB, meshColIDs, ellipsoidColIDs);
@@ -299,7 +312,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                 float t;
                 glm::vec3 cn;
                 if (collideCharacterWithMeshes(position, velocity, radii, meshColIDs, 
-                                            ip, t, cn)) {
+                                               ip, t, cn)) {
                     collision = true;
                     intersectionPoint = ip * radii;
                     intersectionTime = t;
@@ -540,11 +553,14 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
         glm::vec3 const & velocity = physics[characterIndex].velocity;
         glm::vec3 const & otherVelocity = physics[i].velocity;
 
-        if (collideEllipsoids(m_ellipsoids[physics[characterIndex].colliderTag.index],
-                              transforms[characterIndex].position,
+        EllipsoidCollider const & characterEllipsoid = m_ellipsoids[physics[characterIndex].colliderTag.index];
+        EllipsoidCollider const & otherEllipsoid = m_ellipsoids[physics[i].colliderTag.index];
+
+        if (collideEllipsoids(characterEllipsoid.radii,
+                              transforms[characterIndex].position + characterEllipsoid.offset,
                               velocity,
-                              m_ellipsoids[physics[i].colliderTag.index],
-                              transforms[i].position,
+                              otherEllipsoid.radii,
+                              transforms[i].position + otherEllipsoid.offset,
                               otherVelocity,
                               t,
                               ip,
