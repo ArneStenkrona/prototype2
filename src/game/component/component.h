@@ -26,6 +26,7 @@ struct Transform {
 
 struct CharacterPhysics {
     glm::vec3 velocity = {0.0f, 0.0f, 0.0f};
+    float mass = 1.0f;
     glm::vec3 movementVector = {0.0f, 0.0f, 0.0f};
     glm::vec3 groundNormal;
     ColliderTag colliderTag;

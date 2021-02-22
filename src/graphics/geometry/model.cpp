@@ -202,14 +202,6 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                             bd.boneWeights[leastInd] = weight;
                         }
                     }
-                    // make sure bone weights add up to 1 for each boned vertex
-                    for (auto & bd : vertexBoneBuffer) {
-                        if (glm::length2(bd.boneWeights) > 0) {
-                            float boneSum = bd.boneWeights[0] + bd.boneWeights[1] + bd.boneWeights[2] + bd.boneWeights[3];
-                            bd.boneWeights = bd.boneWeights / boneSum;                            
-                        }
-                    } 
-
                 }
             }
         }

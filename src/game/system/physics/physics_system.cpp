@@ -748,12 +748,13 @@ void PhysicsSystem::collisionResponse(bool collision,
     CharacterPhysics & cPhysics = physics[characterIndex];
     glm::vec3 & position = transforms[characterIndex].position;
     
-    static constexpr float verySmallDistance = 0.005f;
+    static constexpr float verySmallDistance = 0.001f;
     if (collision) {
         position += intersectionTime * cPhysics.velocity;
         glm::vec3 slideNormal = collisionNormal;
         // remaining project velocity onto slide normal
-        cPhysics.velocity = cPhysics.velocity - ((glm::dot(cPhysics.velocity, slideNormal)) * slideNormal);
+        glm::vec3 remainingVelocity = glm::clamp(1.0f - intersectionTime, 0.0f, 1.0f) * cPhysics.velocity;
+        cPhysics.velocity = cPhysics.velocity - ((glm::dot(cPhysics.velocity , slideNormal)) * slideNormal);
 
         // by pushing out the character along the slide normal we gain
         // tolerance against small numerical errors
@@ -766,7 +767,8 @@ void PhysicsSystem::collisionResponse(bool collision,
             otherPosition += intersectionTime * otherPhysics.velocity;
             slideNormal = -collisionNormal;
             // project remaining velocity onto slide normal
-            otherPhysics.velocity = otherPhysics.velocity - ((glm::dot( otherPhysics.velocity, slideNormal)) * slideNormal);
+            remainingVelocity = glm::clamp(1.0f - intersectionTime, 0.0f, 1.0f) * otherPhysics.velocity;
+            otherPhysics.velocity = otherPhysics.velocity - ((glm::dot(otherPhysics.velocity, slideNormal)) * slideNormal);
 
             // by pushing out the character along the slide normal we gain
             // tolerance against small numerical errors
