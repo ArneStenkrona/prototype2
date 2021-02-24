@@ -103,7 +103,7 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
         physics.airTime = 0.0f;
         // jump
         if (input.jump) {
-            physics.velocity += 0.25f * glm::vec3{0.0f, 1.0f, 0.0f};
+            physics.velocity = 0.35f * glm::vec3{0.0f, 1.0f, 0.0f};
             physics.isJumping = true;
 
             animation.clipA = clips.jump;
@@ -114,7 +114,8 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
     } else {
         physics.airTime += deltaTime;
     }
-    physics.velocity = physics.movementVector + glm::vec3{ 0.0f, physics.velocity.y, 0.0f };
+    physics.velocity.x = 2.0f * physics.movementVector.x;// + glm::vec3{ 0.0f, physics.velocity.y, 0.0f };
+    physics.velocity.z = 2.0f * physics.movementVector.z;
     
     // animation
     float const vmag = glm::length(physics.movementVector);

@@ -99,8 +99,7 @@ private:
                                    Transform * transforms,
                                    size_t n,
                                    uint32_t characterIndex,
-                                   prt::hash_map<uint16_t, size_t> const & tagToCharacter,
-                                   bool & grounded);
+                                   prt::hash_map<uint16_t, size_t> const & tagToCharacter);
 
     bool collideCharacterWithMeshes(glm::vec3 const & position, 
                                     glm::vec3 const & velocity, 
@@ -119,6 +118,7 @@ private:
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,
+                                        glm::vec3 & otherCollisionNormal,
                                         uint32_t & otherCharacterIndex);
                    
     bool collideEllipsoids(glm::vec3 const & ellipsoid0,
@@ -129,7 +129,8 @@ private:
                            glm::vec3 const & velocity1,
                            float & intersectionTime, 
                            glm::vec3 & intersectionPoint,
-                           glm::vec3 & collisionNormal);
+                           glm::vec3 & collisionNormal,
+                           glm::vec3 & otherCollisionNormal);
 
     bool computeContactEllipsoids(glm::mat3 const & D, 
                                   glm::vec3 const & K, 
@@ -141,14 +142,12 @@ private:
                                         glm::vec3 const & K, 
                                         glm::vec3 & closestPoint);
 
-    void collisionResponse(bool collision,
-                           glm::vec3 const & intersectionPoint,
+    void collisionResponse(glm::vec3 const & intersectionPoint,
                            glm::vec3 const & collisionNormal,
                            float const intersectionTime,
                            CharacterPhysics * physics,
                            Transform * transforms,
-                           uint32_t characterIndex,
-                           uint32_t otherCharacterIndex);
+                           uint32_t characterIndex);
 };
 
 #endif
