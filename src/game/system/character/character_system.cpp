@@ -24,10 +24,10 @@ void CharacterSystem::updateCharacters(float deltaTime) {
     m_playerController.updateInput(m_characters.input[PLAYER_ID]);
 
     // JUST FOR FUN, WILL REMOVE LATER
-    if (m_characters.size > 1) {
-        glm::vec3 dir = m_scene->getTransform(m_characters.entityIDs[0]).position - m_scene->getTransform(m_characters.entityIDs[1]).position;
-        m_characters.input[1].move = glm::vec2(dir.x,dir.z);
-        if (glm::length2(m_characters.input[1].move) > 0.0f) m_characters.input[1].move = glm::normalize(m_characters.input[1].move);
+    for (int i = 1; i < m_characters.size; ++i) {
+        glm::vec3 dir = m_scene->getTransform(m_characters.entityIDs[0]).position - m_scene->getTransform(m_characters.entityIDs[i]).position;
+        m_characters.input[i].move = glm::vec2(dir.x,dir.z);
+        if (glm::length2(m_characters.input[i].move) > 0.0f) m_characters.input[i].move = glm::normalize(m_characters.input[i].move);
     }
 
     for (CharacterID index = 0; index < m_characters.size; ++index) {

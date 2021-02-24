@@ -118,7 +118,6 @@ private:
                                         glm::vec3 & intersectionPoint,
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,
-                                        glm::vec3 & otherCollisionNormal,
                                         uint32_t & otherCharacterIndex);
                    
     bool collideEllipsoids(glm::vec3 const & ellipsoid0,
@@ -129,8 +128,7 @@ private:
                            glm::vec3 const & velocity1,
                            float & intersectionTime, 
                            glm::vec3 & intersectionPoint,
-                           glm::vec3 & collisionNormal,
-                           glm::vec3 & otherCollisionNormal);
+                           glm::vec3 & collisionNormal);
 
     bool computeContactEllipsoids(glm::mat3 const & D, 
                                   glm::vec3 const & K, 

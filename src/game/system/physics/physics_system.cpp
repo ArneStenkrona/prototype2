@@ -252,9 +252,13 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
 
         tagToCharacter.insert(physics[i].colliderTag.index, i);
 
-        physics[i].isGrounded = false;
-
         prevVelocities[i] = physics[i].velocity;
+
+        if (physics[i].isGrounded) {
+            physics[i].velocity += (-0.05f * m_gravity * deltaTime) * physics[i].groundNormal;
+        } 
+
+        physics[i].isGrounded = false;
 
         ++i;
     }
@@ -271,7 +275,8 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     while (i < n) {
         physics[i].velocity = prevVelocities[i];
         if (physics[i].isGrounded) {
-            physics[i].velocity.y = glm::max(-0.05f * m_gravity * deltaTime, physics[i].velocity.y);
+            // physics[i].velocity.y = glm::max(-0.05f * m_gravity * deltaTime, physics[i].velocity.y);
+            physics[i].velocity.y = glm::max(0.0f * m_gravity * deltaTime, physics[i].velocity.y);
         } else {
             physics[i].velocity.y += -1.0f * m_gravity * deltaTime;
         }
@@ -298,7 +303,6 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
         glm::vec3 intersectionPoint;
         float intersectionTime = std::numeric_limits<float>::max();
         glm::vec3 collisionNormal;
-        glm::vec3 otherCollisionNormal;
         bool collision = false;
         uint32_t otherCharacterIndex = -1; // = 2,147,483,647
 
@@ -324,7 +328,6 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                     intersectionPoint = ip * radii;
                     intersectionTime = t;
                     collisionNormal = cn;
-                    otherCollisionNormal = cn;
                 }
             }
 
@@ -332,11 +335,10 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             float t;
             glm::vec3 ip;
             glm::vec3 cn;
-            glm::vec3 ocn;
             uint32_t oci;
             // collide with other characters
             if (collideCharacterWithCharacters(physics, transforms, n, characterIndex, ellipsoidColIDs, tagToCharacter,
-                                               ip, t, cn, ocn, oci) &&
+                                               ip, t, cn, oci) &&
                 t < intersectionTime) {
                 collision = true;
                 intersectionTime = t;
@@ -546,7 +548,6 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
                                                    glm::vec3 & intersectionPoint,
                                                    float & intersectionTime,
                                                    glm::vec3 & collisionNormal,
-                                                   glm::vec3 & otherCollisionNormal,
                                                    uint32_t & otherCharacterIndex) {
     bool collision = false;
     // TODO: implement a breadth first so that we can avoid
@@ -558,7 +559,6 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
         float t;
         glm::vec3 ip;
         glm::vec3 cn;
-        glm::vec3 ocn;
 
         glm::vec3 const & velocity = physics[characterIndex].velocity;
         glm::vec3 const & otherVelocity = physics[i].velocity;
@@ -574,12 +574,10 @@ bool PhysicsSystem::collideCharacterWithCharacters(CharacterPhysics * physics,
                               otherVelocity,
                               t,
                               ip,
-                              cn,
-                              ocn) && t < intersectionTime) {            
+                              cn) && t < intersectionTime) {            
             intersectionTime = t;
             intersectionPoint = ip;
             collisionNormal = cn;
-            otherCollisionNormal = ocn;
             otherCharacterIndex = i;
             collision = true;
         }
@@ -596,8 +594,7 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
                                       glm::vec3 const & velocity1,
                                       float & intersectionTime, 
                                       glm::vec3 & intersectionPoint,
-                                      glm::vec3 & collisionNormal,
-                                      glm::vec3 & otherCollisionNormal) {
+                                      glm::vec3 & collisionNormal) {
     // Get the parameters of ellipsoid0. 
     glm::vec3 K0 = sourcePoint0; 
     glm::mat3 R0(1.0f); // axis aligned => axis is identity matrix
@@ -608,7 +605,6 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
     // Get the parameters of ellipsoid1. 
     glm::vec3 K1 = sourcePoint1; 
     glm::mat3 R1(1.0f); // axis aligned => axis is identity matrix
-    glm::mat3 D0 = glm::diagonal3x3(1.0f / (ellipsoid0 * ellipsoid0));
     glm::mat3 D1 = glm::diagonal3x3(1.0f / (ellipsoid1 * ellipsoid1));
 
     // Compute K2.
@@ -655,8 +651,7 @@ bool PhysicsSystem::collideEllipsoids(glm::vec3 const & ellipsoid0,
     intersectionPoint = K0 + R0 * D0NegHalf * R * zContact;
     // collision normal is the gradient 2D(P - K)
     collisionNormal = glm::normalize(D1 * (intersectionPoint - K1));
-    otherCollisionNormal = glm::normalize(D0 * (intersectionPoint - K0));
-    return intersectionTime <= 1.0f;//true;
+    return -1.0f <= intersectionTime && intersectionTime <= 1.0f;//true;
 }
 
 // thank you David Eberly: https://www.geometrictools.com/Documentation/IntersectionSweptEllipsesEllipsoids.pdf
