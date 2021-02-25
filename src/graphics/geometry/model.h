@@ -69,7 +69,7 @@ public:
                         size_t animationIndexB,
                         glm::mat4 * transforms) const;
 
-    uint32_t getAnimationIndex(char const * name) const;
+    int getAnimationIndex(char const * name) const;
 
     inline bool isloaded() const { return mLoaded; }
     inline bool isAnimated() const { return mAnimated; }

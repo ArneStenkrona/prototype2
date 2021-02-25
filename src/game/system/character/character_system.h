@@ -25,7 +25,7 @@ public:
                     PhysicsSystem & physicsSystem,
                     AnimationSystem & animationSystem);
 
-    CharacterID addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips, float animationSpeed);
+    CharacterID addCharacter(EntityID entityID, ColliderTag tag, float animationSpeed);
              
     void updateCharacters(float deltaTime);
 
@@ -44,11 +44,12 @@ private:
         enum { maxSize = N };
         CharacterID size = 0;
 
-        EntityID entityIDs[N];
-        CharacterPhysics physics[N];
-        CharacterInput input[N];
+        EntityID                entityIDs[N];
+        CharacterStateInfo      stateInfos[N];
+        CharacterPhysics        physics[N];
+        CharacterInput          input[N];
         CharacterAnimationClips animationClips[N];
-        float animationSpeeds[N];
+        float                   animationSpeeds[N];
     };
     Characters<10> m_characters;
     static constexpr size_t PLAYER_ID = 0;
@@ -60,6 +61,7 @@ private:
     PlayerController m_playerController;
 
     void updateCharacter(CharacterID characterID, float deltaTime);
+    void updateCharacterInput(CharacterID characterID, float deltaTime);
 
     friend class SceneSerialization;
 };

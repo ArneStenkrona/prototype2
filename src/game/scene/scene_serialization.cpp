@@ -162,14 +162,7 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
 
     float animationSpeed = parseFloat(buf);
 
-    CharacterAnimationClips clips;
-    clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
-    clips.walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
-    clips.run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
-    // clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
-    // clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
-
-    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips, animationSpeed);
+    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], animationSpeed);
 
     scene.m_entities.characterIDs[id] = characterID;
 }
