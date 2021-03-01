@@ -168,28 +168,27 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
             break;
         }
         case CHARACTER_STATE_LANDING: {
-            // animation.clipA = clips.land;
-            // animation.clipB = clips.idle;
+            animation.clipA = clips.land;
+            animation.clipB = clips.idle;
             animation.blendFactor= math_util::lerp(0.0f, 1.0f, (animation.time - 0.5f) / 0.5f);
             
             stateInfo.animationDelta = 1.0f;
 
             float const vmag = glm::length(physics.movementVector);
+
+            if (stateChange &&
+                vmag < 0.025) {
+                physics.movementVector *= 0.1f;
+            }
     
             if (vmag > 0.025f) {
                 animation.clipA = clips.land;
                 animation.clipB = clips.run;
-                // animation.blendFactor = (vmag - 0.025f) / 0.055f;
-
-                // stateInfo.animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor);
-            } else {
-                animation.clipA = clips.land;
-                animation.clipB = clips.walk;
-                // animation.blendFactor = vmag / 0.025f;
-                // stateInfo.animationDelta = math_util::lerp(0.6f, 0.75f, animation.blendFactor);
+                animation.blendFactor= math_util::lerp(0.0f, 1.0f, (animation.time / 0.2f));
             }
 
-            if (animation.time >= 0.9f) {
+            if (animation.time >= 0.9f ||
+                (animation.time >= 0.2f && vmag > 0.025f)) {
                 stateInfo.state = CHARACTER_STATE_GROUNDED;
             } else if (stateInfo.groundedTimer >= 0.0f && input.jump) {
                 stateInfo.state = CHARACTER_STATE_JUMPING;
@@ -208,11 +207,23 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float deltaT
     auto const & input = m_characters.input[characterID];
     auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
     auto & physics = m_characters.physics[characterID];
+    auto & stateInfo = m_characters.stateInfos[characterID];
     
     glm::vec3 targetMovement{0.0f};
+    float influence;
 
-    // if player performed any movement input
+    if (stateInfo.state == CHARACTER_STATE_JUMPING ||
+        stateInfo.state == CHARACTER_STATE_FALLING) {
+        // if character is airborne
+        influence = 2.0f;
+    } else if (stateInfo.state == CHARACTER_STATE_LANDING) {
+        influence = 0.5f;
+    } else {
+        influence = 10.0f;
+    }
+
     if (glm::length2(input.move) > 0.0f) {
+        // if player performed any movement input
         glm::vec3 const origin{0.0f, 0.0f, 0.0f}; 
         glm::vec3 const lookDir{input.move.x, 0.0f, input.move.y}; 
         glm::vec3 const up{0.0f, 1.0f, 0.0f}; 
@@ -231,7 +242,7 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float deltaT
         }
     }
     
-    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, 10.0f * deltaTime);
+    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, influence * deltaTime);
 
     physics.velocity.x = 2.0f * physics.movementVector.x;
     physics.velocity.z = 2.0f * physics.movementVector.z;
