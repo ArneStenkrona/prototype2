@@ -12,6 +12,9 @@
 
 #include <fstream>
 
+bool ModelManager::defAlreadyLoaded = false;
+
+
 ModelManager::ModelManager(const char* modelDirectory, TextureManager & textureManager) 
     : m_textureManager(textureManager) {
     strcpy(m_modelDirectory, modelDirectory);
@@ -67,8 +70,10 @@ void ModelManager::getSampledBlendedAnimation(ModelID const * modelIDs,
     }
 }
 
-ModelID ModelManager::loadModel(char * path,
-                                bool animated) {
+// TODO: Fix so that no conflict arises if model
+// has been loaded as both animated and non-animated 
+ModelID ModelManager::loadModel(char const * path,
+                                bool animated, bool & alreadyLoaded) {
     ModelID id;
     
     char fullPath[256];
@@ -76,40 +81,50 @@ ModelID ModelManager::loadModel(char * path,
     strcpy(fullPath, m_modelDirectory);
     char * subpath = fullPath + dirLen;
 
-    if (m_pathToModelID.find(path) == m_pathToModelID.end()) {
+    alreadyLoaded = m_pathToModelID.find(path) != m_pathToModelID.end();
+
+    if (!alreadyLoaded) {
         strcpy(subpath, path);
         id = m_loadedModels.size();
-        m_pathToModelID.insert(path, id);
 
         m_loadedModels.push_back(Model{fullPath});
-        m_loadedModels.back().load(animated, m_textureManager);
+        Model & model = m_loadedModels.back();
+
+        if (!model.load(animated, m_textureManager)) {
+            m_loadedModels.pop_back();
+            id = -1;
+        } else {
+            m_pathToModelID.insert(path, id);
+        }
+        
     } else {
+        // TODO: handle animation loading
         id = m_pathToModelID.find(path)->value();
     }
 
     return id;
 }
 
-void ModelManager::loadModels(char const * paths[], size_t count,
-                              ModelID * ids, bool animated) {    
-    char path[256];
-    size_t dirLen = strlen(m_modelDirectory);
-    strcpy(path, m_modelDirectory);
-    char * subpath = path + dirLen;
-    for (size_t i = 0; i < count; ++i) {
-        if (m_pathToModelID.find(paths[i]) == m_pathToModelID.end()) {
-            strcpy(subpath, paths[i]);
-            size_t id = m_loadedModels.size();
-            m_pathToModelID.insert(paths[i], id);
-            ids[i] = id;
+// void ModelManager::loadModels(char const * paths[], size_t count,
+//                               ModelID * ids, bool animated) {    
+//     char path[256];
+//     size_t dirLen = strlen(m_modelDirectory);
+//     strcpy(path, m_modelDirectory);
+//     char * subpath = path + dirLen;
+//     for (size_t i = 0; i < count; ++i) {
+//         if (m_pathToModelID.find(paths[i]) == m_pathToModelID.end()) {
+//             strcpy(subpath, paths[i]);
+//             size_t id = m_loadedModels.size();
+//             m_pathToModelID.insert(paths[i], id);
+//             ids[i] = id;
 
-            m_loadedModels.push_back(Model{path});
-            m_loadedModels.back().load(animated, m_textureManager);
-        } else {
-            ids[i] = m_pathToModelID.find(paths[i])->value();
-        }
-    }
-}
+//             m_loadedModels.push_back(Model{path});
+//             m_loadedModels.back().load(animated, m_textureManager);
+//         } else {
+//             ids[i] = m_pathToModelID.find(paths[i])->value();
+//         }
+//     }
+// }
 
 uint32_t ModelManager::getAnimationIndex(ModelID modelID, char const * name) {
     return m_loadedModels[modelID].getAnimationIndex(name);

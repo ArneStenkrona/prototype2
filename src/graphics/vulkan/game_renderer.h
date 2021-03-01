@@ -8,11 +8,14 @@
 #include "src/graphics/camera/camera.h"
 #include "src/graphics/geometry/billboard.h"
 
+#include "src/graphics/vulkan/imgui_renderer.h"
+
 #include "src/game/scene/entity.h"
 
 #include "src/container/hash_map.h"
 
 struct RenderResult {
+    float mouseDepth;
     glm::vec3 mouseWorldPosition;
     int16_t entityID;
 };
@@ -26,6 +29,7 @@ public:
     GameRenderer(unsigned int width, unsigned int height);
 
     ~GameRenderer();
+    
     /**
      * binds a scene to the graphics pipeline
      */
@@ -54,10 +58,11 @@ public:
                         prt::vector<glm::vec4> const & billboardColors,
                         Camera & camera,
                         SkyLight const & sun,
-                        prt::vector<PointLight> const & pointLights,
-                        prt::vector<PackedBoxLight> const & boxLights,
+                        prt::vector<UBOPointLight> const & pointLights,
                         float t,
                         glm::vec2 mousePosition);
+
+    void render(float deltaTime, uint16_t renderGroupMask);
 
     static constexpr unsigned int COMMON_RENDER_GROUP = 0;
     static constexpr unsigned int GAME_RENDER_GROUP = 1;
@@ -66,37 +71,61 @@ public:
     static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
+    ImGuiRenderer m_imguiRenderer;
+
     static constexpr float depthBiasConstant = 0.0f;//0.01f;//1.25f;
     static constexpr float depthBiasSlope = 0.0f;//0.01f;//1.75f;
     float nearPlane = 0.03f;
     float farPlane = 500.0f;
+    float maxShadowDistance = 100.0f;
     float cascadeSplitLambda = 0.85f;
 
-    // size_t colorFBAIndex;
-    size_t depthFBAIndex;
-    prt::vector<size_t> accumulationFBAIndices;
-    prt::vector<size_t> revealageFBAIndices;
-    prt::vector<size_t> shadowmapFBAIndices;
-    prt::vector<size_t> objectFBAIndices;
+    struct RenderPassIndices {
+        unsigned int scene;
+        unsigned int shadow;
+    } renderPassIndices;
 
-    size_t objectCopyIndex;
-    size_t depthCopyIndex;
 
-    size_t shadowMapIndex;
+    struct FBAIndices {
+        unsigned int depth;
+        unsigned int guiDepth;
+        prt::vector<unsigned int> accumulation;
+        prt::vector<unsigned int> revealage;
+        prt::vector<unsigned int> shadow;
+        prt::vector<unsigned int> object;
 
-    int32_t gridPipelineIndex = -1;
-    int32_t skyboxPipelineIndex = -1;
-    int32_t standardPipelineIndex = -1;
-    int32_t animatedStandardPipelineIndex = -1;
-    int32_t shadowmapPipelineIndex = -1;
-    int32_t animatedShadowmapPipelineIndex = -1;
-    int32_t transparentPipelineIndex = -1;
-    int32_t animatedTransparentPipelineIndex = -1;
-    int32_t waterPipelineIndex = -1;
-    int32_t billboardPipelineIndex = -1; // transparent
-    int32_t compositionPipelineIndex = -1;
+        unsigned int objectCopy;
+        unsigned int depthCopy;
+    } fbaIndices;
+
+    unsigned int shadowMapIndex;
+    
+    struct PipelineIndices {
+        int grid = -1;
+        int skybox = -1;
+        int opaque = -1;
+        int opaqueAnimated = -1;
+        int shadow = -1;
+        int shadowAnimated = -1;
+        int transparent = -1;
+        int transparentAnimated = -1;
+        int water = -1;
+        int billboard = -1; // transparent
+        int composition = -1;
+        int gui = -1;
+    } pipelineIndices;
 
     VkDescriptorImageInfo samplerInfo;
+
+    void init();
+    void initFBAs();
+    void initPipelines();
+    void initBuffersAndTextures(size_t standardAssetIndex, 
+                                size_t animatedStandardAssetIndex,
+                                size_t gridAssetIndex, 
+                                size_t skyboxAssetIndex);
+    void initTextures(size_t standardAssetIndex,
+                      size_t animatedStandardAssetIndex);
 
     void createStandardAndShadowPipelines(size_t standardAssetIndex, size_t standardUboIndex,
                                           size_t shadowmapUboIndex, 
@@ -105,9 +134,9 @@ private:
                                           const char * relativeShadowVert,
                                           VkVertexInputBindingDescription bindingDescription,
                                           prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                          int32_t & standardPipeline, 
-                                          int32_t & transparentPipeline,
-                                          int32_t & shadowPipeline);
+                                          int & standardPipeline, 
+                                          int & transparentPipeline,
+                                          int & shadowPipeline);
 
     void createCompositionPipeline();
 
@@ -117,13 +146,13 @@ private:
 
     void createBillboardPipeline(size_t assetIndex, size_t uboIndex);
 
-    int32_t createStandardPipeline(size_t assetIndex, size_t uboIndex, 
-                                   char const * vertexShader, char const * fragmentShader,
-                                   VkVertexInputBindingDescription bindingDescription,
-                                   prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
-                                   bool transparent);
+    int createStandardPipeline(size_t assetIndex, size_t uboIndex, 
+                               char const * vertexShader, char const * fragmentShader,
+                               VkVertexInputBindingDescription bindingDescription,
+                               prt::vector<VkVertexInputAttributeDescription> const & attributeDescription,
+                               bool transparent);
                                           
-    int32_t createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
+    int createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
                                     char const * vertexShader,
                                     VkVertexInputBindingDescription bindingDescription,
                                     prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
@@ -145,13 +174,20 @@ private:
                     Texture const * textures, size_t nTextures,
                     size_t staticAssetIndex,
                     size_t animatedAssetIndex,
-                    prt::hash_map<int32_t, int32_t> & staticTextureIndices,
-                    prt::hash_map<int32_t, int32_t> & animatedTextureIndices);
+                    prt::hash_map<int, int> & staticTextureIndices,
+                    prt::hash_map<int, int> & animatedTextureIndices);
+
+    void loadTextures(size_t staticAssetIndex,
+                      size_t animatedAssetIndex,
+                      Model const * models, size_t nModels,
+                      Texture const * textures,
+                      prt::hash_map<int, int> & staticTextureIndices,
+                      prt::hash_map<int, int> & animatedTextureIndices);
 
     void loadBillboards(Billboard const * billboards, size_t nBillboards, 
                         Texture const * textures, size_t nTextures,
                         size_t assetIndex,
-                        prt::hash_map<int32_t, int32_t> & textureIndices);
+                        prt::hash_map<int, int> & textureIndices);
 
     void loadCubeMap(prt::array<Texture, 6> const & skybox, size_t assetIndex);
 
@@ -163,8 +199,8 @@ private:
                               ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                               size_t nAnimatedModelIDs,
                               uint32_t const * boneOffsets,
-                              prt::hash_map<int32_t, int32_t> const & staticTextureIndices,
-                              prt::hash_map<int32_t, int32_t> const & animatedTextureIndices,
+                              prt::hash_map<int, int> const & staticTextureIndices,
+                              prt::hash_map<int, int> const & animatedTextureIndices,
                               prt::vector<DrawCall> & standard,
                               prt::vector<DrawCall> & transparent,
                               prt::vector<DrawCall> & animated,
@@ -173,7 +209,7 @@ private:
                               prt::vector<DrawCall> & shadow,
                               prt::vector<DrawCall> & shadowAnimated);
 
-    void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int32_t, int32_t> const & textureIndices);
+    void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int, int> const & textureIndices);
 
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
 
@@ -186,8 +222,7 @@ private:
                     prt::vector<glm::vec4> const & billboardColors,
                     Camera & camera,
                     SkyLight const & sun,
-                    prt::vector<PointLight> const & pointLights,
-                    prt::vector<PackedBoxLight> const & boxLights,
+                    prt::vector<UBOPointLight> const & pointLights,
                     float t);
                     
     void updateSkyboxUBO(Camera const & camera, SkyLight const & sky);
@@ -203,7 +238,7 @@ private:
                         prt::array<float, NUMBER_SHADOWMAP_CASCADES> & splitDepths);
 
     void pushBackObjectFBA();
-    void pushBackDepthFBA();
+    size_t pushBackDepthFBA();
     void pushBackAccumulationFBA();
     void pushBackRevealageFBA();
     void pushBackShadowFBA();

@@ -12,27 +12,36 @@
 
 #include <glm/glm.hpp>
 
+struct EllipsoidCollider {
+    glm::vec3 radii;
+    glm::vec3 offset;
+
+    AABB getAABB(glm::vec3 const & position) const { 
+        return { position + offset - radii, 
+                 position + offset - radii }; }
+};
+
 struct MeshCollider {
     Transform transform;
 
     BoundingBox boundingBox;
     // AABB aabb;
+    
+    unsigned int startIndex;
+    unsigned int numIndices;
 
-    size_t startIndex;
-    size_t numIndices;
+    unsigned int modelIndex;
 
     bool hasMoved;
 };
 
 struct ModelCollider {
-    // transform applied to mesh colliders
-    // Transform transform;
     // index of the first mesh collider
-    size_t startIndex;
-    // number of mesh colliders
-    size_t numIndices;
-    // has the model moved since last computation?
-    // bool hasMoved;
+    unsigned int startIndex;
+    // // number of mesh colliders
+    unsigned int numIndices;
+    // geometry index
+    // unsigned int geometryIndex;
 };
 
 #endif

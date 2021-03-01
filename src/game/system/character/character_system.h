@@ -13,13 +13,19 @@
 
 class Scene;
 
+enum CharacterType {
+    CHARACTER_TYPE_NONE,
+    CHARACTER_TYPE_PLAYER,
+    CHARACTER_TYPE_NPC
+};
+
 class CharacterSystem {
 public:
     CharacterSystem(Scene * scene, 
                     PhysicsSystem & physicsSystem,
                     AnimationSystem & animationSystem);
 
-    CharacterID addCharacter(EntityID entityID, ColliderTag tag, CharacterAnimationClips clips);
+    CharacterID addCharacter(EntityID entityID, ColliderTag tag, float animationSpeed);
              
     void updateCharacters(float deltaTime);
 
@@ -27,16 +33,23 @@ public:
 
     EntityID getPlayer() const { return m_characters.entityIDs[PLAYER_ID]; }
 
+    // TODO: better way to set and denote
+    // character types
+    CharacterType getType(CharacterID id) const { if (id == -1) return CHARACTER_TYPE_NONE; 
+                                                  return id == PLAYER_ID ? CHARACTER_TYPE_PLAYER : CHARACTER_TYPE_NPC; }
+
 private:
     template<size_t N>
     struct Characters {
         enum { maxSize = N };
         CharacterID size = 0;
 
-        EntityID entityIDs[N];
-        CharacterPhysics physics[N];
-        CharacterInput input[N];
+        EntityID                entityIDs[N];
+        CharacterStateInfo      stateInfos[N];
+        CharacterPhysics        physics[N];
+        CharacterInput          input[N];
         CharacterAnimationClips animationClips[N];
+        float                   animationSpeeds[N];
     };
     Characters<10> m_characters;
     static constexpr size_t PLAYER_ID = 0;
@@ -48,6 +61,7 @@ private:
     PlayerController m_playerController;
 
     void updateCharacter(CharacterID characterID, float deltaTime);
+    void updateCharacterInput(CharacterID characterID, float deltaTime);
 
     friend class SceneSerialization;
 };

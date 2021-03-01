@@ -59,7 +59,7 @@ public:
 
     Model(char const * path);
 
-    void load(bool loadAnimation, TextureManager & textureManager);
+    bool load(bool loadAnimation, TextureManager & textureManager);
     // TODO: add unload method
 
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
@@ -69,10 +69,13 @@ public:
                         size_t animationIndexB,
                         glm::mat4 * transforms) const;
 
-    uint32_t getAnimationIndex(char const * name) const;
+    int getAnimationIndex(char const * name) const;
 
     inline bool isloaded() const { return mLoaded; }
     inline bool isAnimated() const { return mAnimated; }
+
+    char const * getPath() const { return mPath; };
+    char const * getName() const { return name; };
 
 private:
     void calcTangentSpace();
@@ -110,9 +113,10 @@ private:
 struct Model::Node {
     int32_t parentIndex = -1;
     prt::vector<int32_t> childIndices;
-    int32_t boneIndex = -1;
+    prt::vector<int32_t> boneIndices;
     int32_t channelIndex = -1;
     glm::mat4 transform;
+    aiString name;
 };
 
 struct Model::Material {
@@ -123,7 +127,7 @@ struct Model::Material {
     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
     // bool transparent = false;
     bool twosided = false;
-    float baseSpecularity = 0.5f;
+    float baseSpecularity = 0.0f;
     enum Type {
         standard,
         transparent,

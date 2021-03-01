@@ -14,30 +14,22 @@ struct PointLight {
     float c; // constant term
 };
 
-struct BoxLight {
-    vec3 min;
-    vec3 max;
-    vec3 color;
-    mat4 invtransform;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[200];
     mat4 invTransposeModel[200];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
     float ambientLight;
     uint noPointLights;
-    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
     PointLight pointLights[4];
-    BoxLight boxLights[20];
     /*Bones*/
     mat4 bones[500];
 } ubo;
@@ -100,5 +92,5 @@ void main() {
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
     
-    gl_Position = ubo.proj * ubo.view * ubo.model[pc.modelMatrixIdx] * bonedPos;
+    gl_Position = ubo.viewProjection * ubo.model[pc.modelMatrixIdx] * bonedPos;
 }

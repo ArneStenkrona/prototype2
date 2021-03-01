@@ -13,8 +13,9 @@
 struct ModelUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 invTransposeModel[NUMBER_SUPPORTED_MODEL_MATRICES];
+    alignas(16) glm::mat4 viewProjection;
     alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    // alignas(16) glm::mat4 proj;
     alignas(16) glm::vec3 viewPosition;
     alignas(4)  float t = 0;
     // unsigned char pad12[12];
@@ -23,12 +24,10 @@ struct ModelUBO {
 struct LightUBO {
     alignas(4)  float ambientLight;
     alignas(4)  uint32_t noPointLights;
-    alignas(4)  uint32_t noBoxLights;
     alignas(16) DirLight sun;
     alignas(16) glm::vec4 splitDepths[(NUMBER_SHADOWMAP_CASCADES + 4)/ 4];
     alignas(16) glm::mat4 cascadeSpace[NUMBER_SHADOWMAP_CASCADES];
-    alignas(16) PointLight pointLights[NUMBER_SUPPORTED_POINTLIGHTS];
-    alignas(16) PackedBoxLight boxLights[NUMBER_SUPPORTED_BOXLIGHTS];
+    alignas(16) UBOPointLight pointLights[NUMBER_SUPPORTED_POINTLIGHTS];
 
 };
 

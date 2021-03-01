@@ -95,3 +95,48 @@ TEST_CASE( "vector: Test vector emplace", "[vector]") {
     }
     REQUIRE(vec1.size() == 100);
 }
+
+TEST_CASE( "vector: Test vector remove", "[vector]") {
+    prt::vector<uint32_t> vec1 = {0,1,2,3,4,5,6,7,8,9};
+
+    vec1.remove(4);   
+    prt::vector<uint32_t> vec2 = {0,1,2,3,5,6,7,8,9};
+
+    REQUIRE(vec1.size() == vec2.size());
+
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        REQUIRE(vec1[i] == vec2[i]);
+    }
+
+    vec1.remove(2);   
+    vec2 = {0,1,3,5,6,7,8,9};
+
+    REQUIRE(vec1.size() == vec2.size());
+    
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        REQUIRE(vec1[i] == vec2[i]);
+    }
+
+    vec1.remove(5);   
+    vec2 = {0,1,3,5,6,8,9};
+
+    REQUIRE(vec1.size() == vec2.size());
+    
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        REQUIRE(vec1[i] == vec2[i]);
+    }
+}
+
+TEST_CASE( "vector: Test vector remove many", "[vector]") {
+    prt::vector<uint32_t> vec1 = {0,1,2,3,4,5,6,7,8,9};
+
+    vec1.remove(4, 3);   
+    prt::vector<uint32_t> vec2 = {0,1,2,3,7,8,9};
+
+    REQUIRE(vec1.size() == vec2.size());
+
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        REQUIRE(vec1[i] == vec2[i]);
+    }
+}
+

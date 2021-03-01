@@ -38,7 +38,6 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb,
         return;
     }
 
-    
     prt::vector<int32_t> nodeStack;
     nodeStack.push_back(rootIndex);
     while (!nodeStack.empty()) {
@@ -110,6 +109,19 @@ void DynamicAABBTree::update(int32_t * treeIndices, AABB const * aabbs, size_t n
     }
 }
 
+void DynamicAABBTree::updateTags(int32_t * treeIndices, ColliderTag const * colliderTags, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        Node & node = m_nodes[treeIndices[i]];
+        node.colliderTag = colliderTags[i];
+    }
+}
+
+void DynamicAABBTree::remove(int32_t * treeIndices, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        remove(treeIndices[i]);
+    }
+}
+
 float DynamicAABBTree::cost() const {
     float cost = 0.0f;
     for (auto const & node : m_nodes) {
@@ -121,24 +133,19 @@ float DynamicAABBTree::cost() const {
 int32_t DynamicAABBTree::insertLeaf(ColliderTag tag, AABB const & aabb) {
     // insert new node into vector
     int32_t leafIndex = allocateNode();
-    ++m_size;
 
-    // Node & leaf = m_nodes[leafIndex];
-    // add objectIndex to user data
-    // *reinterpret_cast<int32_t*>(leaf.userData) = objectIndex;
     m_nodes[leafIndex].colliderTag = tag;
     // add buffer to aabb 
     m_nodes[leafIndex].aabb.lowerBound = aabb.lowerBound - buffer;
     m_nodes[leafIndex].aabb.upperBound = aabb.upperBound + buffer;
     
-    if (m_size == 1) {
+    if (rootIndex == Node::NULL_INDEX) {
         rootIndex = leafIndex;
         return leafIndex;
     }
     // traverse tree to find suitable place of insertion
     // stage 1: find the best sibling for the new leaf
     int32_t siblingIndex = findBestSibling(leafIndex);
-    // Node & sibling = m_nodes[siblingIndex];
 
     // stage 2: create a new parent
     int32_t oldParentIndex = m_nodes[siblingIndex].parent;
@@ -146,8 +153,9 @@ int32_t DynamicAABBTree::insertLeaf(ColliderTag tag, AABB const & aabb) {
     Node & newParent = m_nodes[newParentIndex];
     newParent.parent = oldParentIndex;
     newParent.aabb = m_nodes[leafIndex].aabb + m_nodes[siblingIndex].aabb;
+    newParent.height = 1 + m_nodes[siblingIndex].height;
 
-    if (oldParentIndex != Node::nullIndex) {
+    if (oldParentIndex != Node::NULL_INDEX) {
         Node & oldParent = m_nodes[oldParentIndex];
         // The sibling was not the root
         if (oldParent.left == siblingIndex) {
@@ -173,34 +181,51 @@ int32_t DynamicAABBTree::insertLeaf(ColliderTag tag, AABB const & aabb) {
 void DynamicAABBTree::remove(int32_t index) {
     Node & n = m_nodes[index];
     assert(n.isLeaf());
-    Node & parent = m_nodes[n.parent];
+
+    if (index == rootIndex) {
+        rootIndex = Node::NULL_INDEX;
+    }
+
+    int32_t parent = n.parent;
+
     int32_t siblingIndex;
-    if (parent.left == index) {
-        siblingIndex = parent.right;
+    if (m_nodes[parent].left == index) {
+        siblingIndex = m_nodes[parent].right;
     } else {
-        siblingIndex = parent.left;
+        siblingIndex = m_nodes[parent].left;
     }
-    Node & grandParent = m_nodes[parent.parent];
-    if (grandParent.left == n.parent) {
-        grandParent.left = siblingIndex;
-    } else {
-        grandParent.right = siblingIndex;
-    }
-    m_nodes[siblingIndex].parent = parent.parent;
 
-    n.height = -1;
-    parent.height = -1;
-    
-    parent.next = freeHead;
-    n.next = n.parent;
+    if (m_nodes[parent].parent != Node::NULL_INDEX)  {
+        int32_t grandParent = m_nodes[parent].parent;
+        if (m_nodes[grandParent].left == n.parent) {
+            m_nodes[grandParent].left = siblingIndex;
+        } else {
+            m_nodes[grandParent].right = siblingIndex;
+        }
+
+        m_nodes[siblingIndex].parent = grandParent;
+        freeNode(n.parent);
+
+        synchHierarchy(grandParent);
+    } else {
+        rootIndex = siblingIndex;
+        m_nodes[siblingIndex].parent = Node::NULL_INDEX;
+        freeNode(n.parent);
+    }
+
+    freeNode(index);
+}
+
+void DynamicAABBTree::freeNode(int32_t index) {
+    m_nodes[index].next = freeHead;
+    m_nodes[index].height = -1;
     freeHead = index;
-
     --m_size;
 }
 
 int32_t DynamicAABBTree::allocateNode() {
     int32_t index;
-    if (freeHead == Node::nullIndex) {
+    if (freeHead == Node::NULL_INDEX) {
         index = m_nodes.size();
         m_nodes.push_back({});
     } else {
@@ -208,21 +233,21 @@ int32_t DynamicAABBTree::allocateNode() {
         freeHead = m_nodes[freeHead].next;
         m_nodes[index] = {};
     }
-    // m_nodes[index].height = 0;
+    ++m_size;
     return index;
 }
 
 void DynamicAABBTree::synchHierarchy(int32_t index) {
-    while (index != Node::nullIndex) {
+    while (index != Node::NULL_INDEX) {
+        balance(index);
+        
         int32_t left = m_nodes[index].left;
         int32_t right = m_nodes[index].right;
         
         m_nodes[index].height = 1 + std::max(m_nodes[left].height, m_nodes[right].height);
         m_nodes[index].aabb = m_nodes[left].aabb + m_nodes[right].aabb;
 
-        balance(index);
-        // rotate(index);
-
+        // balance(index);
         index = m_nodes[index].parent;
     }
 }

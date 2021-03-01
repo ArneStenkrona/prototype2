@@ -10,9 +10,11 @@
 void SceneSerialization::loadScene(char const * file, Scene & scene) {
     // set components to undefined
     for (size_t i = 0; i < scene.m_entities.maxSize; ++i) {
+        sprintf(scene.m_entities.names[i], "entity_%lu", i);
         scene.m_entities.modelIDs[i] = -1;
         scene.m_entities.characterIDs[i] = -1;
         scene.m_entities.colliderTags[i].type = ColliderType::COLLIDER_TYPE_NONE;
+        scene.m_entities.lightTags[i].type = LightType::LIGHT_TYPE_NONE;
     }
 
     // load file into buffer
@@ -57,9 +59,6 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
             case POINT_LIGHT :
             parsePointLight(data, scene);
                 break;
-            case BOX_LIGHT :
-            parseBoxLight(data, scene);
-                break;
             case CHARACTER :
                 parseCharacter(data, scene);
                 break;
@@ -93,8 +92,6 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
         type = TokenType::SUN;
     } else if (strcmp(tokenStr, "PointLight") == 0) {
         type = TokenType::POINT_LIGHT;
-    } else if (strcmp(tokenStr, "BoxLight") == 0) {
-        type = TokenType::BOX_LIGHT;
     } else if (strcmp(tokenStr, "Character") == 0) {
         type = TokenType::CHARACTER;
     }
@@ -105,11 +102,10 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
 void SceneSerialization::parseStaticSolidEntity(char const *& buf, Scene & scene) {
     EntityID id = scene.m_entities.addEntity();
 
-    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
-    scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, false);
+    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, false);
 
     scene.m_entities.modelIDs[id] = modelID;
     scene.m_entities.transforms[id].position = parseVec3(buf);
@@ -131,34 +127,25 @@ void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
 }
 
 void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
-    scene.m_lights.pointLights.push_back({});
-    PointLight & light = scene.m_lights.pointLights.back();
-    light.pos = parseVec3(buf);
-    light.color = parseVec3(buf);
-    light.a = parseFloat(buf);
-    light.b = parseFloat(buf);
-    light.c = parseFloat(buf);
-}
+    EntityID id = scene.m_entities.addEntity();
+    scene.m_entities.transforms[id].position = parseVec3(buf);
 
-void SceneSerialization::parseBoxLight(char const *& buf, Scene & scene) {
-    scene.m_lights.boxLights.push_back({});
-    BoxLight & light = scene.m_lights.boxLights.back();
-    light.min = parseVec3(buf);
-    light.max = parseVec3(buf);
+    PointLight light;
     light.color = parseVec3(buf);
-    light.position = parseVec3(buf);
-    light.rotation = parseQuat(buf);
-    light.scale = parseVec3(buf);
+    light.constant = parseFloat(buf);
+    light.linear = parseFloat(buf);
+    light.quadratic = parseFloat(buf);
+
+    scene.addPointLight(id, light);
 }
 
 void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     EntityID id = scene.m_entities.addEntity();
 
-    ModelID modelID; 
     char modelPath[128] = {0};
     parseString(buf, modelPath);
     char const * modelPathBuf = modelPath;
-    scene.m_assetManager.loadModels(&modelPathBuf, 1, &modelID, true);
+    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, true);
 
     scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
 
@@ -168,16 +155,14 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
     scene.m_entities.transforms[id].rotation = parseQuat(buf);
     scene.m_entities.transforms[id].scale = parseVec3(buf);
 
-    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(parseVec3(buf));
+    glm::vec3 radii = parseVec3(buf);
+    glm::vec3 offset = parseVec3(buf);
 
-    CharacterAnimationClips clips;
-    clips.idle = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "idle");
-    clips.walk = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "walk");
-    clips.run = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "run");
-    clips.jump = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "jump");
-    clips.fall = scene.m_assetManager.getModelManager().getAnimationIndex(modelID, "fall");
+    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
 
-    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], clips);
+    float animationSpeed = parseFloat(buf);
+
+    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], animationSpeed);
 
     scene.m_entities.characterIDs[id] = characterID;
 }

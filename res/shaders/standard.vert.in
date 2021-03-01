@@ -14,30 +14,22 @@ struct PointLight {
     float c; // constant term
 };
 
-struct BoxLight {
-    vec3 min;
-    vec3 max;
-    vec3 color;
-    mat4 invtransform;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     /* Model */
     mat4 model[@NUMBER_SUPPORTED_MODEL_MATRICES@];
     mat4 invTransposeModel[@NUMBER_SUPPORTED_MODEL_MATRICES@];
+    mat4 viewProjection;
     mat4 view;
-    mat4 proj;
+    // mat4 proj;
     vec3 viewPos;
     float t;
     /* Lights */
     float ambientLight;
     uint noPointLights;
-    uint noBoxLights;
     DirLight sun;
     vec4 splitDepths[(@NUMBER_SHADOWMAP_CASCADES@ + 4) / 4];
     mat4 cascadeSpace[@NUMBER_SHADOWMAP_CASCADES@];
     PointLight pointLights[@NUMBER_SUPPORTED_POINTLIGHTS@];
-    BoxLight boxLights[@NUMBER_SUPPORTED_BOXLIGHTS@];
 } ubo;
 
 layout(push_constant) uniform PER_OBJECT
@@ -83,5 +75,5 @@ void main() {
     vs_out.tangentViewPos = tbn * ubo.viewPos;
     vs_out.tangentFragPos = tbn * vs_out.fragPos;
 
-    gl_Position = ubo.proj * ubo.view * worldPos;
+    gl_Position = ubo.viewProjection * worldPos;
 }
