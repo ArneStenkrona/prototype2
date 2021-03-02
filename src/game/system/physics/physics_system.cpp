@@ -275,7 +275,6 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     while (i < n) {
         physics[i].velocity = prevVelocities[i];
         if (physics[i].isGrounded) {
-            // physics[i].velocity.y = glm::max(-0.05f * m_gravity * deltaTime, physics[i].velocity.y);
             physics[i].velocity.y = glm::max(0.0f * m_gravity * deltaTime, physics[i].velocity.y);
         } else {
             physics[i].velocity.y += -1.0f * m_gravity * deltaTime;

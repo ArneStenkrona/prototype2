@@ -272,8 +272,10 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     return true;
 }
 
-uint32_t Model::getAnimationIndex(char const * name) const {
-    assert(nameToAnimation.find(aiString(name)) != nameToAnimation.end() && "animation does not exist");
+int Model::getAnimationIndex(char const * name) const {
+    if (nameToAnimation.find(aiString(name)) == nameToAnimation.end()) {
+        return -1;
+    }
     return nameToAnimation.find(aiString(name))->value();
 }
 
