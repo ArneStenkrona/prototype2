@@ -247,15 +247,17 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
 
         eAABB = ellipsoid.getAABB(transforms[i].position);
 
-        eAABB += { transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime - ellipsoid.radii, 
-                   transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * m_gravity * deltaTime + ellipsoid.radii };
+        float gravityFactor = physics[i].isGliding ? m_gravity * 0.5f : m_gravity;
+
+        eAABB += { transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime - ellipsoid.radii, 
+                   transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime + ellipsoid.radii };
 
         tagToCharacter.insert(physics[i].colliderTag.index, i);
 
         prevVelocities[i] = physics[i].velocity;
 
         if (physics[i].isGrounded) {
-            physics[i].velocity += (-0.05f * m_gravity * deltaTime) * physics[i].groundNormal;
+            physics[i].velocity += (-0.05f * gravityFactor * deltaTime) * physics[i].groundNormal;
         } 
 
         physics[i].isGrounded = false;
@@ -273,11 +275,13 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     }
     i = 0;
     while (i < n) {
+        float gravityFactor = physics[i].isGliding ? m_gravity * 0.5f : m_gravity;
+
         physics[i].velocity = prevVelocities[i];
         if (physics[i].isGrounded) {
-            physics[i].velocity.y = glm::max(0.0f * m_gravity * deltaTime, physics[i].velocity.y);
+            physics[i].velocity.y = glm::max(0.0f * gravityFactor * deltaTime, physics[i].velocity.y);
         } else {
-            physics[i].velocity.y += -1.0f * m_gravity * deltaTime;
+            physics[i].velocity.y += -1.0f * gravityFactor * deltaTime;
         }
         ++i;
     }
