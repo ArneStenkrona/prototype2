@@ -44,6 +44,7 @@ CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, fl
     clips.run  = m_scene->getModel(entityID).getAnimationIndex("run");
     clips.jump = m_scene->getModel(entityID).getAnimationIndex("jump");
     clips.fall = m_scene->getModel(entityID).getAnimationIndex("fall");
+    clips.glide = m_scene->getModel(entityID).getAnimationIndex("glide");
     clips.land = m_scene->getModel(entityID).getAnimationIndex("land");
 
     clips.idle = clips.idle == -1 ? 0 : clips.idle;
@@ -51,6 +52,7 @@ CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, fl
     clips.run  = clips.run == -1 ? 0 : clips.run;
     clips.jump = clips.jump == -1 ? 0 : clips.jump;
     clips.fall = clips.fall == -1 ? 0 : clips.fall;
+    clips.glide = clips.glide == -1 ? 0 : clips.glide;
     clips.land = clips.land == -1 ? 0 : clips.land;
 
     m_characters.entityIDs[m_characters.size] = entityID;
@@ -165,6 +167,26 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
             if (physics.isGrounded) {
                 stateInfo.state = CHARACTER_STATE_LANDING;
             }
+
+            if (input.holdjump) {
+                stateInfo.state = CHARACTER_STATE_GLIDING;
+            }
+            break;
+        }
+        case CHARACTER_STATE_GLIDING: {
+            animation.clipA = clips.fall;
+            animation.clipB = clips.glide;
+            animation.blendFactor = math_util::lerp(0.0f, 1.0f, glm::clamp((stateInfo.stateTimer) / 0.2f, 0.0f, 1.0f));
+
+            stateInfo.animationDelta = 1.0f;
+
+            if (physics.isGrounded) {
+                stateInfo.state = CHARACTER_STATE_LANDING;
+            }
+            if (!input.holdjump &&
+                stateInfo.stateTimer > 0.2f) {
+                stateInfo.state = CHARACTER_STATE_FALLING;
+            }
             break;
         }
         case CHARACTER_STATE_LANDING: {
@@ -212,15 +234,31 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float deltaT
     glm::vec3 targetMovement{0.0f};
     float influence;
 
-    if (stateInfo.state == CHARACTER_STATE_JUMPING ||
-        stateInfo.state == CHARACTER_STATE_FALLING) {
-        // if character is airborne
-        influence = 2.0f;
-    } else if (stateInfo.state == CHARACTER_STATE_LANDING) {
-        influence = 0.5f;
-    } else {
-        influence = 10.0f;
+    switch (stateInfo.state) {
+        case CHARACTER_STATE_JUMPING:
+        case CHARACTER_STATE_FALLING:
+            influence = 2.0f;
+            break;
+        case CHARACTER_STATE_GLIDING:
+            influence = 1.0f;
+        case CHARACTER_STATE_LANDING:
+            influence = 0.5f;
+        default:
+            influence = 10.0f;
+        
     }
+
+    physics.isGliding = stateInfo.state == CHARACTER_STATE_GLIDING;
+
+    // if (stateInfo.state == CHARACTER_STATE_JUMPING ||
+    //     stateInfo.state == CHARACTER_STATE_FALLING) {
+    //     // if character is airborne
+    //     influence = 2.0f;
+    // } else if (stateInfo.state == CHARACTER_STATE_LANDING) {
+    //     influence = 0.5f;
+    // } else {
+    //     influence = 10.0f;
+    // }
 
     if (glm::length2(input.move) > 0.0f) {
         // if player performed any movement input
@@ -240,6 +278,10 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float deltaT
         } else {
             targetMovement = 0.025f * moveDir;
         }
+    }
+
+    if (physics.isGliding) {
+        targetMovement *= 2.0f;
     }
     
     physics.movementVector = glm::lerp(physics.movementVector, targetMovement, influence * deltaTime);

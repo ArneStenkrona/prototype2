@@ -32,6 +32,7 @@ struct CharacterPhysics {
     ColliderTag colliderTag;
     bool        isGrounded = false;
     bool        isJumping = false;
+    bool        isGliding = false;
     // float       airTime = 0.0f;
 };
 
@@ -39,6 +40,7 @@ struct CharacterInput {
     glm::vec2 move = {0.0f, 0.0f};
     bool      run = false;
     bool      jump = false;
+    bool      holdjump = false;
 };
 
 struct CharacterAnimationClips {
@@ -47,6 +49,7 @@ struct CharacterAnimationClips {
     int run;
     int jump;
     int fall;
+    int glide;
     int land;
 };
 
@@ -54,6 +57,7 @@ enum CharacterState {
     CHARACTER_STATE_GROUNDED,
     CHARACTER_STATE_JUMPING,
     CHARACTER_STATE_FALLING,
+    CHARACTER_STATE_GLIDING,
     CHARACTER_STATE_LANDING,
     TOTAL_NUM_CHARACTER_STATE
 };

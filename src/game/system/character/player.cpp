@@ -33,6 +33,7 @@ void PlayerController::updateInput(CharacterInput & input) {
     }
 
     input.jump = m_input.getKeyDown(INPUT_KEY::KEY_SPACE);
+    input.holdjump = m_input.getKeyPress(INPUT_KEY::KEY_SPACE);
 
 
     input.run = !m_input.getKeyPress(INPUT_KEY::KEY_LEFT_SHIFT);
