@@ -20,8 +20,6 @@ struct CharacterPhysics {
     ColliderTag colliderTag;
     bool        isGrounded = false;
     bool        isJumping = false;
-    bool        isGliding = false;
-    // float       airTime = 0.0f;
 };
 
 struct CharacterInput {

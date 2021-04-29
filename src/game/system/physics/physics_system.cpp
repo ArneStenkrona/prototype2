@@ -247,7 +247,7 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
 
         eAABB = ellipsoid.getAABB(transforms[i].position);
 
-        float gravityFactor = physics[i].isGliding ? m_gravity * 0.5f : m_gravity;
+        float gravityFactor = m_gravity;
 
         eAABB += { transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime - ellipsoid.radii, 
                    transforms[i].position + ellipsoid.offset + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime + ellipsoid.radii };
@@ -275,7 +275,7 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     }
     i = 0;
     while (i < n) {
-        float gravityFactor = physics[i].isGliding ? m_gravity * 0.25f : m_gravity;
+        float gravityFactor = m_gravity;
 
         physics[i].velocity = prevVelocities[i];
         if (physics[i].isGrounded) {

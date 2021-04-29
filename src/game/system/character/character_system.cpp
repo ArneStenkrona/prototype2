@@ -107,7 +107,6 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
     auto const & input = m_characters.input[characterID];
     auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
     auto & physics = m_characters.physics[characterID];
-    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
     
     glm::vec3 targetMovement{0.0f};
 
@@ -131,14 +130,6 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
         }
     }
 
-    if (glm::length2(input.move) > 0.0f) {
-
-    }
-
-    if (physics.isGliding) {
-        targetMovement *= 2.0f;
-    }
-    
     physics.movementVector = targetMovement;
 
     physics.velocity.x = 2.0f * physics.movementVector.x;
