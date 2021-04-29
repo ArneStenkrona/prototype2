@@ -10,6 +10,7 @@
 #include "src/game/system/animation/animation_system.h"
 #include "src/game/system/physics/physics_system.h"
 #include "src/game/system/character/character_system.h"
+#include "src/game/system/character/character.h"
 #include "src/graphics/vulkan/game_renderer.h"
 #include "src/game/scene/entity.h"
 

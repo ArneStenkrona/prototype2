@@ -963,7 +963,7 @@ int GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
     pipeline.depthBiasClamp = 0.0f;
     pipeline.depthBiasSlope = depthBiasSlope;
 
-    pipeline.cullModeFlags = VK_CULL_MODE_BACK_BIT;
+    pipeline.cullModeFlags = VK_CULL_MODE_NONE;// VK_CULL_MODE_BACK_BIT;
 
     pipeline.colorBlendAttachments = getShadowBlendAttachmentState();
 

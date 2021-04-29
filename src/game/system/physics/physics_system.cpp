@@ -275,7 +275,7 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     }
     i = 0;
     while (i < n) {
-        float gravityFactor = physics[i].isGliding ? m_gravity * 0.5f : m_gravity;
+        float gravityFactor = physics[i].isGliding ? m_gravity * 0.25f : m_gravity;
 
         physics[i].velocity = prevVelocities[i];
         if (physics[i].isGrounded) {

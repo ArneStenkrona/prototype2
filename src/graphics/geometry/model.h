@@ -63,7 +63,7 @@ public:
     // TODO: add unload method
 
     void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
-    void blendAnimation(float clipTime, 
+    void blendAnimation(float t, 
                         float blendFactor,
                         size_t animationIndexA, 
                         size_t animationIndexB,

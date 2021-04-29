@@ -7,6 +7,7 @@
 #include "src/game/system/physics/colliders.h"
 #include "src/graphics/geometry/model.h"
 #include "src/system/assets/model_manager.h"
+#include "src/game/system/character/character.h"
 
 #include "src/container/vector.h"
 #include "src/container/hash_map.h"

@@ -128,7 +128,7 @@ void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {
 void Scene::updateSun(float time) {
     float ph = 0.2f*time;
     m_lights.sun.phase = ph;
-    m_lights.sun.direction = glm::normalize(glm::vec3(0, glm::cos(ph), glm::sin(ph)));
+    m_lights.sun.direction = glm::normalize(glm::vec3(0.2f, glm::cos(ph), glm::sin(ph)));
     float distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0,1,0))) / glm::pi<float>();
     m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
 
@@ -206,7 +206,7 @@ void Scene::updateCamera(float deltaTime) {
     EntityID playerID = m_characterSystem.getPlayer();
 
     auto const & transform = m_entities.transforms[playerID];
-    glm::vec3 offset{0.0f, 1.0f, 0.0f};
+    glm::vec3 offset = glm::vec3{0.0f, 2.0f, 0.0f};
     for (size_t i = 0; i < 4; ++i) {
         glm::vec3 dir = glm::normalize(corners[i] - (transform.position + offset));
         if (m_physicsSystem.raycast(transform.position + offset, dir, 

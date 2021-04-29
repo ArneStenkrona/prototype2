@@ -102,31 +102,32 @@ void main() {
                               albedo, specularity);
     }
 
-    // int cascadeIndex = 0;
-    // for (int i = 0; i < 5 - 1; ++i) {
-    //     if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
-    //         cascadeIndex = i + 1;
-    //     }
-    // }
+    int cascadeIndex = 0;
+    for (int i = 0; i < 5 - 1; ++i) {
+        if (fs_in.shadowPos.z < ubo.splitDepths[i/4][i%4]) {
+            cascadeIndex = i + 1;
+        }
+    }
 
-    // vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
-    // sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
+    vec4 sunShadowCoord = (biasMat * ubo.cascadeSpace[cascadeIndex] * vec4(fs_in.fragPos + 0.01f * fs_in.fragNormal, 1.0));
+    sunShadowCoord = sunShadowCoord / sunShadowCoord.w;
 
     // // Directional lighting
-    // res += filterPCF(sunShadowCoord, cascadeIndex).r  *
-    //        CalcDirLight(normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
-    //                      albedo, specularity);
+    res += filterPCF(sunShadowCoord, cascadeIndex).r  *
+           CalcDirLight(-normalize(fs_in.tangentSunDir), ubo.sun.color, normal, viewDir,
+                         albedo, specularity);
     // transparencyDither(gl_FragCoord.z / gl_FragCoord.w);
-    float d = distance(fs_in.fragPos, ubo.viewPos);
-    float fog_start = 10.0;
-    float fog_end = 40.0;
+    // float d = distance(fs_in.fragPos, ubo.viewPos);
+    // float fog_start = 10.0;
+    // float fog_end = 40.0;
 
-    //linear interpolation
-    float fog_factor = (d-fog_start)/(fog_end-fog_start);
-    fog_factor = 1.0 - clamp(fog_factor, 0.0, 1.0);
-    fog_factor = discretize(fog_factor, 8);
+    // //linear interpolation
+    // float fog_factor = (d-fog_start)/(fog_end-fog_start);
+    // fog_factor = 1.0 - clamp(fog_factor, 0.0, 1.0);
+    // fog_factor = discretize(fog_factor, 8);
 
-    outColor = vec4(res * fog_factor, 1.0);
+    // outColor = vec4(res * fog_factor, 1.0);
+    outColor = vec4(res, 1.0);
 
     outEntity = material.entityID;
 }
@@ -198,17 +199,17 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
 
     float spec = min(pow(specularity * 5.0 * vdr, 16), 1.0);
     return min(intensity + spec, 1.0) * light.color * attenuation * albedo;
-
 }
 
 vec3 CalcDirLight(vec3 lightDir, vec3 lightColor, vec3 normal, vec3 viewDir,
                   vec3 albedo, float specularity) {
+    
     // diffuse shading
-    float diff = max(dot(normal, -lightDir), 0.0);
+    float diff = max(dot(normal, -lightDir), 0.0) < 0.5 ? 0.0 : 1.0;
     // specular shading
     vec3 r = reflect(lightDir, normal);
     float shininess = 8.0;
-    float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess);
+    float spec = specularity * pow(max(dot(r, viewDir), 0.0), shininess) < 0.5 ? 0.0 : 1.0;
     // combine results
     vec3 diffuse  = lightColor * diff * albedo;
     vec3 specular = vec3(1) * spec;

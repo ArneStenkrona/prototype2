@@ -1,10 +1,11 @@
-#ifndef CHARACTER_H
-#define CHARACTER_H
+#ifndef PRT_CHARACTER_SYSTEM_H
+#define PRT_CHARACTER_SYSTEM_H
 
 #include "src/game/scene/scene_serialization.h"
-#include "player.h"
+#include "src/game/system/character/player.h"
 #include "src/system/assets/asset_manager.h"
 #include "src/game/system/physics/physics_system.h"
+#include "src/game/system/character/character.h"
 #include "src/game/component/component.h"
 #include "src/game/scene/entity.h"
 #include "src/container/vector.h"
@@ -12,12 +13,6 @@
 #include <cstdint>
 
 class Scene;
-
-enum CharacterType {
-    CHARACTER_TYPE_NONE,
-    CHARACTER_TYPE_PLAYER,
-    CHARACTER_TYPE_NPC
-};
 
 class CharacterSystem {
 public:
@@ -32,27 +27,18 @@ public:
     void updatePhysics(float deltaTime);
 
     EntityID getPlayer() const { return m_characters.entityIDs[PLAYER_ID]; }
+    CharacterID getPlayerCharacterID() const { return PLAYER_ID; }
+
+    CharacterPhysics const & getCharacterPhysics(CharacterID id) const { return m_characters.physics[id]; }
+    CharacterInput const & getCharacterInput(CharacterID id) const { return m_characters.input[id]; }
 
     // TODO: better way to set and denote
     // character types
-    CharacterType getType(CharacterID id) const { if (id == -1) return CHARACTER_TYPE_NONE; 
-                                                  return id == PLAYER_ID ? CHARACTER_TYPE_PLAYER : CHARACTER_TYPE_NPC; }
+    CharacterType getType(CharacterID id) const { return m_characters.attributeInfos[id].type; }
 
 private:
-    template<size_t N>
-    struct Characters {
-        enum { maxSize = N };
-        CharacterID size = 0;
-
-        EntityID                entityIDs[N];
-        CharacterStateInfo      stateInfos[N];
-        CharacterPhysics        physics[N];
-        CharacterInput          input[N];
-        CharacterAnimationClips animationClips[N];
-        float                   animationSpeeds[N];
-    };
     Characters<10> m_characters;
-    static constexpr size_t PLAYER_ID = 0;
+    static constexpr CharacterID PLAYER_ID = 0;
 
     Scene * m_scene;
     PhysicsSystem & m_physicsSystem;
@@ -61,7 +47,11 @@ private:
     PlayerController m_playerController;
 
     void updateCharacter(CharacterID characterID, float deltaTime);
+    void updateEquipment(CharacterID characterID);
     void updateCharacterInput(CharacterID characterID, float deltaTime);
+
+    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state,
+                                                             CharacterAnimationClips const & clips);
 
     friend class SceneSerialization;
 };
