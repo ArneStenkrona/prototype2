@@ -56,7 +56,6 @@ struct CharacterStateAttributeInfo {
     float    animationSpeed = 1.0f;
     bool     resetAnimationTime = true;
     bool     loopAnimation = true;
-    float    inputInfluence = 1.0f;
 };
 
 class CharacterAttributeInfo;

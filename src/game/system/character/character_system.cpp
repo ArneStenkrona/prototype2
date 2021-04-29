@@ -110,33 +110,6 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
     auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
     
     glm::vec3 targetMovement{0.0f};
-    float influence;
-
-    switch (stateInfo.getState()) {
-        case CHARACTER_STATE_JUMPING:
-        case CHARACTER_STATE_FALLING:
-            influence = 2.0f;
-            break;
-        // case CHARACTER_STATE_GLIDING:
-        //     influence = 1.0f;
-        case CHARACTER_STATE_LANDING:
-            influence = 0.5f;
-        default:
-            influence = 10.0f;
-        
-    }
-
-    // physics.isGliding = stateInfo.state == CHARACTER_STATE_GLIDING;
-
-    if (stateInfo.getState() == CHARACTER_STATE_JUMPING ||
-        stateInfo.getState() == CHARACTER_STATE_FALLING) {
-        // if character is airborne
-        influence = 2.0f;
-    } else if (stateInfo.getState() == CHARACTER_STATE_LANDING) {
-        influence = 0.5f;
-    } else {
-        influence = 10.0f;
-    }
 
     if (glm::length2(input.move) > 0.0f) {
         // if player performed any movement input
