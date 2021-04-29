@@ -160,9 +160,7 @@ void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
 
     scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
 
-    float animationSpeed = parseFloat(buf);
-
-    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], animationSpeed);
+    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id]);
 
     scene.m_entities.characterIDs[id] = characterID;
 }

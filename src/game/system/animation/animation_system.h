@@ -14,6 +14,7 @@ struct BlendedAnimation {
     uint32_t clipB;
     float blendFactor = 0.0f;
     float time = 0.0f;
+    bool paused = false;
 };
 
 class AnimationSystem {

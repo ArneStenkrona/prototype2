@@ -2,4 +2,4 @@ StaticSolidEntity[model<"pb_lobby/pb_lobby.dae">position<0.0,0.0,0.0>rotation<0.
 Sun[direction<0.0,-1.0,-2.0>color<1.0,1.0,1.0>]
 PointLight[position<7.5, 10.0, 9.0>color<0.473,1.0,0.0>a<0.0>b<0.0>c<0.01>]
 PointLight[position<-12.5, 2.5, -12.5>color<1.0,1.0,1.0>a<0.0>b<0.0>c<0.01>]
-Character[model<"gy/gy.fbx">position<5.6,8.0,5.0>rotation<1.0,0.0,0.0,0.0>scale<0.5,0.5,0.5>colliderRadii<0.5,1.0,0.5>colliderOffset<0.0,1.0,0.0>animationSpeed<2.0f>]
+Character[model<"gy/gy.fbx">position<5.6,8.0,5.0>rotation<1.0,0.0,0.0,0.0>scale<0.5,0.5,0.5>colliderRadii<0.5,1.0,0.5>colliderOffset<0.0,1.0,0.0>]

@@ -1,6 +1,8 @@
 #ifndef PRT_COLLIDER_TAG_H
 #define PRT_COLLIDER_TAG_H
 
+#include <cstdint>
+
 enum ColliderType : uint16_t {
     COLLIDER_TYPE_NONE,
     COLLIDER_TYPE_MESH,

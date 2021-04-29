@@ -20,7 +20,7 @@ public:
                     PhysicsSystem & physicsSystem,
                     AnimationSystem & animationSystem);
 
-    CharacterID addCharacter(EntityID entityID, ColliderTag tag, float animationSpeed);
+    CharacterID addCharacter(EntityID entityID, ColliderTag tag);
              
     void updateCharacters(float deltaTime);
 
@@ -50,8 +50,7 @@ private:
     void updateEquipment(CharacterID characterID);
     void updateCharacterInput(CharacterID characterID, float deltaTime);
 
-    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state,
-                                                             CharacterAnimationClips const & clips);
+    void setStateTransitions(CharacterID characterID);
 
     friend class SceneSerialization;
 };

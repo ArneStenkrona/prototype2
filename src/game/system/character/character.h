@@ -2,27 +2,15 @@
 #define PRT_CHARACTER_H
 
 #include "src/game/system/physics/collider_tag.h"
+#include "src/game/system/animation/animation_system.h"
 
 #include <glm/glm.hpp>
 
-enum CharacterType : uint16_t {
+enum CharacterType : int {
     CHARACTER_TYPE_NONE,
     CHARACTER_TYPE_PLAYER,
     CHARACTER_TYPE_NPC
 };
-
-// typedef uint16_t CharacterIndex;
-// struct CharacterTag {
-//     CharacterIndex index;
-//     CharacterType type = CharacterType::CHARACTER_TYPE_NONE;
-//     friend bool operator== (CharacterTag const & c1, CharacterTag const & c2) {
-//         return (c1.index == c2.index &&
-//                 c1.type == c2.type);
-//     }
-//     friend bool operator!= (CharacterTag const & c1, CharacterTag const & c2)  {
-//         return !(c1 == c2);
-//     }
-// };
 
 struct CharacterPhysics {
     glm::vec3   velocity = {0.0f, 0.0f, 0.0f};
@@ -64,37 +52,63 @@ enum CharacterState {
 };
 
 struct CharacterStateAttributeInfo {
-    uint32_t animationClip;
-    float animationDelta;
-    bool resetAnimationTime;
-    bool loopAnimation;
+    uint32_t animationClip = 0;
+    float    animationSpeed = 1.0f;
+    bool     resetAnimationTime = true;
+    bool     loopAnimation = true;
+    float    inputInfluence = 1.0f;
 };
 
-struct CharacterStateInfo {
-    CharacterState state;
-    CharacterState previousState;
-    float          groundedTimer = 0.0f;
-    float          stateTimer = -1.0f;
-    float          transitionTimer = 0.0f;
-    float          transitionLength = 0.0f;
-    float          animationDelta = 0.0f;
-    bool           hasJumped;
-    bool           stateChange = false;
+class CharacterAttributeInfo;
 
-    void transitionState(CharacterState newState, float transitionTime) {
-        stateChange = newState != state;
+class CharacterStateInfo {
+public:
+    void transitionState(CharacterState newState, float transitionTime);
 
-        previousState = state;
-        state = newState;
+    void resetStateChange() { m_stateChange = false; }
 
-        transitionTimer = 0.0f;
-        transitionLength = transitionTime;
-    }
+    CharacterState const & getState() const { return m_state; };
+    CharacterState const & getPreviousState() const { return m_previousState; }
+    float          const & getGroundedTimer() const { return m_groundedTimer; }
+    float          const & getStateTimer() const { return m_stateTimer; }
+    float          const & getTransitionTimer() const { return m_transitionTimer; }
+    float          const & getTransitionLength() const { return m_transitionLength; }
+    float          const & getAnimationSpeed() const { return m_animationSpeed; }
+    bool           const &  getHasJumped() const { return m_hasJumped; }
+    bool           const &  getStateChange() const { return m_stateChange; }
+private:
+    CharacterState m_state;
+    CharacterState m_previousState;
+    float          m_groundedTimer = 0.0f;
+    float          m_stateTimer = -1.0f;
+    float          m_transitionTimer = 0.0f;
+    float          m_transitionLength = 0.0f;
+    float          m_animationSpeed = 0.0f;
+    bool           m_hasJumped;
+    bool           m_stateChange = false;
+
+    void update(float deltaTime, 
+                BlendedAnimation & animation,
+                CharacterPhysics & physics,
+                CharacterAnimationClips const & clips);
+
+    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state,
+                                                             CharacterAnimationClips const & clips);
+
+    friend class CharacterAttributeInfo;
 };
 
-struct CharacterAttributeInfo {
+class CharacterAttributeInfo {
+public:
     CharacterType type = CHARACTER_TYPE_NONE;
     CharacterStateInfo stateInfo;
+    CharacterAnimationClips clips;
+    void update(float deltaTime, 
+                BlendedAnimation & animation,
+                CharacterPhysics & physics) {
+        stateInfo.update(deltaTime, animation, physics, clips);
+    }
+private:
 };
 
 template<size_t N>
@@ -106,8 +120,6 @@ struct Characters {
     CharacterAttributeInfo  attributeInfos[N];
     CharacterPhysics        physics[N];
     CharacterInput          input[N];
-    CharacterAnimationClips animationClips[N];
-    float                   animationSpeeds[N];
 };
 
 #endif
