@@ -190,69 +190,12 @@ void SceneSerialization::parseEntity(char const *& buf, Scene & scene) {
         }
         ++buf;
     }
-
-
-    // char modelPath[128] = {0};
-    // parseString(buf, modelPath);
-    // char const * modelPathBuf = modelPath;
-    // ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, false);
-
-    // scene.m_entities.modelIDs[id] = modelID;
-    // scene.m_entities.transforms[id].position = parseVec3(buf);
-    // scene.m_entities.transforms[id].rotation = parseQuat(buf);
-    // scene.m_entities.transforms[id].scale = parseVec3(buf);
-
-    // Model const * models;
-    // size_t nModels;
-    // scene.m_assetManager.getModelManager().getModels(models, nModels);
-
-    // scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addModelCollider(models[modelID], 
-    //                                                                            scene.m_entities.transforms[id]);
 }
 
 void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
     scene.m_lights.sun.direction = glm::normalize(parseVec3(buf));
     scene.m_lights.sun.color = parseVec3(buf);
 }
-
-// void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
-//     EntityID id = scene.m_entities.addEntity();
-//     scene.m_entities.transforms[id].position = parseVec3(buf);
-
-//     PointLight light;
-//     light.color = parseVec3(buf);
-//     light.constant = parseFloat(buf);
-//     light.linear = parseFloat(buf);
-//     light.quadratic = parseFloat(buf);
-
-//     scene.addPointLight(id, light);
-// }
-
-// void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
-//     EntityID id = scene.m_entities.addEntity();
-
-//     char modelPath[128] = {0};
-//     parseString(buf, modelPath);
-//     char const * modelPathBuf = modelPath;
-//     ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, true);
-
-//     scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
-
-//     scene.m_entities.modelIDs[id] = modelID;
-
-//     scene.m_entities.transforms[id].position = parseVec3(buf);
-//     scene.m_entities.transforms[id].rotation = parseQuat(buf);
-//     scene.m_entities.transforms[id].scale = parseVec3(buf);
-
-//     glm::vec3 radii = parseVec3(buf);
-//     glm::vec3 offset = parseVec3(buf);
-
-//     scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
-
-//     CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id]);
-
-//     scene.m_entities.characterIDs[id] = characterID;
-// }
 
 void SceneSerialization::parseString(char const *& buf, char * dest) {
     while (*buf != '"' && *buf != '\0') {

@@ -12,8 +12,6 @@ public:
     static void loadScene(char const * file, Scene & scene);
     static void saveScene(char const * file, Scene & scene);
 private:
-
-
     enum TokenType {
         ENTITY,
         SUN,
@@ -34,10 +32,8 @@ private:
     static TokenType readToken(char const *& buf);
     static ComponentType readComponentType(char const *& buf);
 
-    // static void parseStaticSolidEntity(char const *& buf, Scene & scene);
     static void parseSun(char const *& buf, Scene & scene);
     static void parsePointLight(char const *& buf, Scene & scene);
-    // static void parseCharacter(char const *& buf, Scene & scene);
     static void parseEntity(char const *& buf, Scene & scene);
 
     static void parseString(char const *& buf, char * dest);
