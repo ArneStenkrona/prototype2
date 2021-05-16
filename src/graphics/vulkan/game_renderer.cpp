@@ -14,6 +14,7 @@ GameRenderer::~GameRenderer() {
 }
 
 void GameRenderer::init() {
+    samplerInfo.sampler = textureSampler;
     initFBAs();
     pushBackShadowRenderPass();
     pushBackSceneRenderPass();
@@ -21,7 +22,7 @@ void GameRenderer::init() {
     recreateSwapchain();
 }
 
-void GameRenderer::render(float deltaTime, uint16_t renderGroupMask) {
+void GameRenderer::render(float deltaTime, RenderGroupMask renderGroupMask) {
     updateRenderGroupMask(renderGroupMask);
     uint32_t imageIndex = waitForNextImageIndex();
     
@@ -652,7 +653,6 @@ void GameRenderer::createBillboardPipeline(size_t assetIndex, size_t uboIndex) {
         pipeline.descriptorWrites[i][1].pImageInfo = asset.textureImages.descriptorImageInfos.data();
 
         // VkDescriptorImageInfo samplerInfo = {};
-        samplerInfo.sampler = textureSampler;
 
         pipeline.descriptorWrites[i][2] = {};
         pipeline.descriptorWrites[i][2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -885,9 +885,9 @@ int GameRenderer::createStandardPipeline(size_t assetIndex, size_t uboIndex,
 }
 
 int GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
-                                              char const * vertexShader,
-                                              VkVertexInputBindingDescription bindingDescription,
-                                              prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
+                                          char const * vertexShader,
+                                          VkVertexInputBindingDescription bindingDescription,
+                                          prt::vector<VkVertexInputAttributeDescription> const & attributeDescription) {
     int pipelineIndex = pushBackPipeline();
     GraphicsPipeline& pipeline = getPipeline(pipelineIndex);
 
@@ -977,7 +977,7 @@ int GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
     return pipelineIndex;
 }
 
-// TODO: On rebind only add new assets instad
+// TODO: On rebind only add new assets instead
 // of recreating everything
 void GameRenderer::bindAssets(Model const * models, size_t nModels,
                               ModelID const * staticModelIDs, EntityID const * staticEntityIDs,
@@ -1164,7 +1164,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         auto shadowUboData = getUniformBufferData(getPipeline(pipelineIndices.shadow).uboIndex).uboData.data();
         ShadowMapUBO & shadowUBO = *reinterpret_cast<ShadowMapUBO*>(shadowUboData);
         // shadow model
-        memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * animatedModelMatrices.size());
+        memcpy(shadowUBO.model, standardUBO.model.model, sizeof(standardUBO.model.model[0]) * modelMatrices.size());
         // depth view and projection;
         for (unsigned int i = 0; i < cascadeSpace.size(); ++i) {
             shadowUBO.depthVP[i] = cascadeSpace[i];
@@ -1686,17 +1686,21 @@ void GameRenderer::createVertexBuffers(Model const * models, size_t nModels,
         }
     }    
 
-    VertexData & staticData = staticAssets.vertexData;
-    createAndMapBuffer(staticVertexData.data(), staticVertexData.size(),
-                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                       staticData.vertexBuffer, 
-                       staticData.vertexBufferMemory);
+    if (staticVertexData.size() != 0) {
+        VertexData & staticData = staticAssets.vertexData;
+        createAndMapBuffer(staticVertexData.data(), staticVertexData.size(),
+                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                        staticData.vertexBuffer, 
+                        staticData.vertexBufferMemory);
+    }
 
-    VertexData & animatedData = animatedAssets.vertexData;
-    createAndMapBuffer(animatedVertexData.data(), animatedVertexData.size(),
-                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                       animatedData.vertexBuffer, 
-                       animatedData.vertexBufferMemory);  
+    if (animatedVertexData.size() != 0) {
+        VertexData & animatedData = animatedAssets.vertexData;
+        createAndMapBuffer(animatedVertexData.data(), animatedVertexData.size(),
+                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                        animatedData.vertexBuffer, 
+                        animatedData.vertexBufferMemory);  
+    }
 }
 
 void GameRenderer::createIndexBuffers(Model const * models, size_t nModels, 
@@ -1733,17 +1737,21 @@ void GameRenderer::createIndexBuffers(Model const * models, size_t nModels,
         vertexOffset += models[i].vertexBuffer.size();
     }
 
-    VertexData& staticData = getAssets(staticAssetIndex).vertexData;
-    createAndMapBuffer(allStaticIndices.data(), sizeof(uint32_t) * allStaticIndices.size(),
-                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                       staticData.indexBuffer, 
-                       staticData.indexBufferMemory);
+    if (allStaticIndices.size() != 0) {
+        VertexData& staticData = getAssets(staticAssetIndex).vertexData;
+        createAndMapBuffer(allStaticIndices.data(), sizeof(uint32_t) * allStaticIndices.size(),
+                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                        staticData.indexBuffer, 
+                        staticData.indexBufferMemory);
+    }
 
-    VertexData& animatedData = getAssets(animatedAssetIndex).vertexData;
-    createAndMapBuffer(allAnimatedIndices.data(), sizeof(uint32_t) * allAnimatedIndices.size(),
-                       VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                       animatedData.indexBuffer, 
-                       animatedData.indexBufferMemory);
+    if (allAnimatedIndices.size() != 0) {
+        VertexData& animatedData = getAssets(animatedAssetIndex).vertexData;
+        createAndMapBuffer(allAnimatedIndices.data(), sizeof(uint32_t) * allAnimatedIndices.size(),
+                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                        animatedData.indexBuffer, 
+                        animatedData.indexBufferMemory);
+    }
 }
 
 void GameRenderer::createCubeMapBuffers(size_t assetIndex) {

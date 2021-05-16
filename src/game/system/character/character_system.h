@@ -21,6 +21,8 @@ public:
                     AnimationSystem & animationSystem);
 
     CharacterID addCharacter(EntityID entityID, ColliderTag tag);
+
+    void setEquipment(CharacterID characterID, EntityID equipment);
              
     void updateCharacters(float deltaTime);
 

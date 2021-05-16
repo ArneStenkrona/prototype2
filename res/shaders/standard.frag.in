@@ -135,7 +135,7 @@ void main() {
 
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
                     vec3 albedo, float specularity) {
-    vec3 lightDir = normalize(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
+    vec3 lightDir = transpose(fs_in.invtbn) * normalize(fs_in.fragPos - light.pos);
     vec3 reflectDir = reflect(lightDir, normal); // phong
     // diffuse shading
     float diff = max(dot(normal, -lightDir), 0.0);
@@ -143,7 +143,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 viewDir,
     float shininess = 8.0;
     float spec = specularity * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
     // attenuation
-    float dist = length(fs_in.tangentFragPos - transpose(fs_in.invtbn) * light.pos);
+    float dist = length(fs_in.tangentFragPos - light.pos);
     float attenuation = min(1.0 / (light.c + light.b * dist + light.a * dist * dist), 1.0);
     // combine result
     vec3 diffuse = light.color * diff * albedo;

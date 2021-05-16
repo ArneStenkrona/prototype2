@@ -9,7 +9,7 @@ AssetManager::AssetManager(char const * assetDirectory)
       strcpy(m_assetDirectory, assetDirectory);
 }
 
-void AssetManager::loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap) {
+void AssetManager::loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap) const {
     char path[256];
     strcpy(path, m_assetDirectory);
     strcat(path, "textures/skybox/");

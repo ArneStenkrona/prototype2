@@ -1,5 +1,7 @@
 #include "character.h"
 
+#include "src/game/scene/scene.h"
+
 #include <glm/glm.hpp>
 
 void CharacterStateInfo::update(float deltaTime, 
@@ -29,14 +31,22 @@ void CharacterStateInfo::update(float deltaTime,
     animation.blendFactor = 0.0f;
     m_animationSpeed = attributeInfo.animationSpeed;
 
+    m_canTurn = attributeInfo.canTurn;
+    m_movementSpeed = attributeInfo.movementSpeed;
+
     if (m_transitionTimer < m_transitionLength) {
         CharacterStateAttributeInfo prevAttributeInfo = getStateAttributeInfo(m_previousState, clips);
         animation.clipB = prevAttributeInfo.animationClip;
         float normTime = m_transitionTimer / m_transitionLength;
         animation.blendFactor = glm::clamp(1.0f - normTime, 0.0f, 1.0f);
         m_animationSpeed = glm::mix(prevAttributeInfo.animationSpeed, 
-                                            attributeInfo.animationSpeed,
-                                            normTime);
+                                    attributeInfo.animationSpeed,
+                                    normTime);
+
+        m_movementSpeed = glm::mix(prevAttributeInfo.movementSpeed, 
+                                   attributeInfo.movementSpeed,
+                                   normTime);
+            
     }
 }
 
@@ -59,6 +69,8 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = false;
             attributeInfo.loopAnimation = true;
+            attributeInfo.movementSpeed = 0.0f;
+            attributeInfo.canTurn = true;
             break;
         }
         case CHARACTER_STATE_WALKING: {
@@ -66,6 +78,8 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = false;
             attributeInfo.loopAnimation = true;
+            attributeInfo.movementSpeed = 0.03f;
+            attributeInfo.canTurn = true;
             break;
         }
         case CHARACTER_STATE_RUNNING: {
@@ -73,6 +87,8 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = false;
             attributeInfo.loopAnimation = true;
+            attributeInfo.movementSpeed = 0.14f;
+            attributeInfo.canTurn = true;
             break;
         }
         case CHARACTER_STATE_JUMPING: {
@@ -80,6 +96,8 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = true;
             attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.14f;
+            attributeInfo.canTurn = true;
             break;
         }
         case CHARACTER_STATE_FALLING: {
@@ -87,6 +105,8 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = true;
             attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.03f;
+            attributeInfo.canTurn = true;
             break;
         }
         case CHARACTER_STATE_LANDING: {
@@ -94,10 +114,30 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = true;
             attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.0f;
+            attributeInfo.canTurn = true;
             break;
         }
         default: {}
     }
 
     return attributeInfo;
+}
+
+void CharacterAttributeInfo::update(float deltaTime, 
+                                    EntityID entityID,
+                                    Scene & scene,
+                                    BlendedAnimation & animation,
+                                    CharacterPhysics & physics) {
+            stateInfo.update(deltaTime, animation, physics, clips);
+            updateEquipment(entityID, scene);
+}
+
+void CharacterAttributeInfo::updateEquipment(EntityID entityID, Scene & scene) {
+    Transform const & tform = scene.getTransform(entityID);
+
+    if (equipment.rightEquipped()) {
+        Transform & rightTform = scene.getTransform(equipment.rightHand);
+        rightTform.position = tform.position;
+    }
 }

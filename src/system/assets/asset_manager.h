@@ -13,10 +13,7 @@ public:
     ModelManager& getModelManager() { return m_modelManager; };
     TextureManager& getTextureManager() { return m_textureManager; };
 
-    // void loadModels(char const * paths[], size_t count,
-    //                 ModelID * ids, bool animated) { m_modelManager.loadModels(paths, count, ids, animated); }
-
-    void loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap);
+    void loadCubeMap(char const * name, prt::array<Texture, 6>& cubeMap) const;
 
     std::string getDirectory() const { return m_assetDirectory; }
 

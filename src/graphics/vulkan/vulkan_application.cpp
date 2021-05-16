@@ -71,7 +71,7 @@ void VulkanApplication::initVulkan() {
     createDescriptorPools();
 }
 
-void VulkanApplication::updateRenderGroupMask(int16_t renderGroupMask) {
+void VulkanApplication::updateRenderGroupMask(RenderGroupMask renderGroupMask) {
     if (renderGroupMask != commandBufferRenderGroupMask) {
         commandBufferRenderGroupMask = renderGroupMask;
         /* rebuild command buffers */

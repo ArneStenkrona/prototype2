@@ -61,7 +61,11 @@ CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag) {
     ++m_characters.size; 
     return m_characters.size - 1; 
 }
-                                                  
+
+void CharacterSystem::setEquipment(CharacterID characterID, EntityID equipment) {
+    m_characters.attributeInfos[characterID].equipment.rightHand = equipment;
+}
+           
 void CharacterSystem::updatePhysics(float deltaTime) {
     prt::vector<Transform> transforms;
     transforms.resize(m_characters.size);
@@ -87,7 +91,7 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
 
     updateCharacterInput(characterID, deltaTime);
 
-    attributeInfo.update(deltaTime, animation, physics);
+    attributeInfo.update(deltaTime, m_characters.entityIDs[characterID], *m_scene, animation, physics);
 
     switch (attributeInfo.stateInfo.getState()) {
         case CHARACTER_STATE_JUMPING: {
@@ -107,33 +111,41 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
     auto const & input = m_characters.input[characterID];
     auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
     auto & physics = m_characters.physics[characterID];
+    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
     
     glm::vec3 targetMovement{0.0f};
 
+    // check if character performed any movement input
     if (glm::length2(input.move) > 0.0f) {
-        // if player performed any movement input
         glm::vec3 const origin{0.0f, 0.0f, 0.0f}; 
-        glm::vec3 const lookDir{input.move.x, 0.0f, input.move.y}; 
         glm::vec3 const up{0.0f, 1.0f, 0.0f}; 
         glm::vec3 const altUp{0.0f, 0.0f, 1.0f}; 
-        // rotate character
-        transform.rotation = math_util::safeQuatLookAt(origin, lookDir, up, altUp);
         // compute movement plane
         glm::vec3 const moveNormal = physics.isGrounded ? physics.groundNormal : up;
-        // project look direction onto normal of movement plane
+
+        glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
+
+        glm::vec3 const prevDir = glm::length2(physics.movementVector) > 0.0f ?
+                                     glm::normalize(glm::vec3{physics.movementVector.x, 0.0f, physics.movementVector.z}) :
+                                     newDir;
+
+
+        glm::vec3 const lookDir = glm::dot(prevDir, newDir) > -0.9f ?
+                                         glm::mix(prevDir, newDir, 0.5f) :
+                                         newDir;
+
+        // rotate character
+        transform.rotation = math_util::safeQuatLookAt(origin, lookDir, up, altUp);
+
         glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(lookDir, moveNormal)));
 
-        if (input.run) {
-            targetMovement = 0.07f * moveDir;
-        } else {
-            targetMovement = 0.015f * moveDir;
-        }
+        targetMovement = moveDir * stateInfo.getMovementSpeed();
     }
 
     physics.movementVector = targetMovement;
 
-    physics.velocity.x = 2.0f * physics.movementVector.x;
-    physics.velocity.z = 2.0f * physics.movementVector.z;
+    physics.velocity.x = physics.movementVector.x;
+    physics.velocity.z = physics.movementVector.z;
 }
 
 void CharacterSystem::setStateTransitions(CharacterID characterID) {

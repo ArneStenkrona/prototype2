@@ -6,6 +6,8 @@
 
 #include <glm/glm.hpp>
 
+class Scene;
+
 enum CharacterType : int {
     CHARACTER_TYPE_NONE,
     CHARACTER_TYPE_PLAYER,
@@ -19,7 +21,6 @@ struct CharacterPhysics {
     glm::vec3   groundNormal;
     ColliderTag colliderTag;
     bool        isGrounded = false;
-    bool        isJumping = false;
 };
 
 struct CharacterInput {
@@ -54,6 +55,13 @@ struct CharacterStateAttributeInfo {
     float    animationSpeed = 1.0f;
     bool     resetAnimationTime = true;
     bool     loopAnimation = true;
+    bool     canTurn = true;
+    float    movementSpeed = 1.0f;
+};
+
+struct Equipment {
+    EntityID rightHand = -1;
+    bool rightEquipped() const { return rightHand != EntityID{-1}; }
 };
 
 class CharacterAttributeInfo;
@@ -71,6 +79,8 @@ public:
     float          const & getTransitionTimer() const { return m_transitionTimer; }
     float          const & getTransitionLength() const { return m_transitionLength; }
     float          const & getAnimationSpeed() const { return m_animationSpeed; }
+    float          const & getMovementSpeed() const { return m_movementSpeed; }
+    bool           const &  getCanTurn() const { return m_canTurn; }
     bool           const &  getHasJumped() const { return m_hasJumped; }
     bool           const &  getStateChange() const { return m_stateChange; }
 private:
@@ -81,10 +91,12 @@ private:
     float          m_transitionTimer = 0.0f;
     float          m_transitionLength = 0.0f;
     float          m_animationSpeed = 0.0f;
+    float          m_movementSpeed = 1.0f;
+    bool           m_canTurn = true;
     bool           m_hasJumped;
     bool           m_stateChange = false;
 
-    void update(float deltaTime, 
+    void update(float deltaTime,
                 BlendedAnimation & animation,
                 CharacterPhysics & physics,
                 CharacterAnimationClips const & clips);
@@ -97,15 +109,18 @@ private:
 
 class CharacterAttributeInfo {
 public:
-    CharacterType type = CHARACTER_TYPE_NONE;
-    CharacterStateInfo stateInfo;
+    CharacterType           type = CHARACTER_TYPE_NONE;
+    CharacterStateInfo      stateInfo;
     CharacterAnimationClips clips;
+    Equipment               equipment;
+
     void update(float deltaTime, 
+                EntityID entityID,
+                Scene & scene,
                 BlendedAnimation & animation,
-                CharacterPhysics & physics) {
-        stateInfo.update(deltaTime, animation, physics, clips);
-    }
+                CharacterPhysics & physics);
 private:
+    void updateEquipment(EntityID entityID, Scene & scene);
 };
 
 template<size_t N>
