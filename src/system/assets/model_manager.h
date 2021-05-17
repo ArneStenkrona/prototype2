@@ -38,10 +38,6 @@ public:
     ModelID loadModel(char const * path, 
                       bool animated, bool & alreadyLoaded = defAlreadyLoaded);
 
-    // void loadModels(char const * paths[], size_t count, 
-    //                 ModelID * ids, 
-    //                 bool animated);
-
     uint32_t getAnimationIndex(ModelID modelID, char const * name);
 
 private:

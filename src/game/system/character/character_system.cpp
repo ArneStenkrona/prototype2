@@ -62,8 +62,11 @@ CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag) {
     return m_characters.size - 1; 
 }
 
-void CharacterSystem::setEquipment(CharacterID characterID, EntityID equipment) {
-    m_characters.attributeInfos[characterID].equipment.rightHand = equipment;
+void CharacterSystem::addEquipment(CharacterID characterID, int boneIndex, EntityID equipment, Transform offset) {
+    m_characters.attributeInfos[characterID].equipment.push_back({});
+    m_characters.attributeInfos[characterID].equipment.back().entity = equipment;
+    m_characters.attributeInfos[characterID].equipment.back().offset = offset;
+    m_characters.attributeInfos[characterID].equipment.back().boneIndex = boneIndex;
 }
            
 void CharacterSystem::updatePhysics(float deltaTime) {
@@ -81,6 +84,7 @@ void CharacterSystem::updatePhysics(float deltaTime) {
 
     for (CharacterID i = 0; i < m_characters.size; ++i) {
         m_scene->getTransform(m_characters.entityIDs[i]) = transforms[i];
+        m_characters.attributeInfos[i].updateEquipment(m_characters.entityIDs[i], *m_scene, m_animationSystem);
     }
 }
 
@@ -91,7 +95,7 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
 
     updateCharacterInput(characterID, deltaTime);
 
-    attributeInfo.update(deltaTime, m_characters.entityIDs[characterID], *m_scene, animation, physics);
+    attributeInfo.updateState(deltaTime, animation, physics);
 
     switch (attributeInfo.stateInfo.getState()) {
         case CHARACTER_STATE_JUMPING: {

@@ -22,6 +22,23 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+struct RenderData {
+    Texture const * textures;
+    size_t nTextures;
+
+    Model const * models;
+    size_t nModels;
+
+    prt::vector<glm::mat4> staticTransforms;
+    prt::vector<EntityID>  staticEntityIDs;
+    prt::vector<ModelID>   staticModelIDs;
+
+    prt::vector<glm::mat4> animatedTransforms;
+    prt::vector<EntityID>  animatedEntityIDs;
+    prt::vector<ModelID>   animatedModelIDs;
+    prt::vector<uint32_t>  boneOffsets;
+};
+
 class Scene {
 public:
     Scene(GameRenderer & gameRenderer, 
@@ -33,7 +50,7 @@ public:
 
     void update(float deltaTime);
 
-    void sampleAnimation(prt::vector<glm::mat4> & bones);
+    prt::vector<glm::mat4> const & sampleAnimation();
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
 
@@ -49,6 +66,7 @@ public:
     Entities & getEntities() { return m_entities; }
 
     bool hasModel(EntityID id) const { return m_entities.modelIDs[id] != -1; }
+    ModelID getModelID(EntityID id) const { return m_entities.modelIDs[id]; }
     Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
 
     bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
@@ -93,23 +111,6 @@ private:
     AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
     LightingSystem m_lightingSystem;
-
-    struct RenderData {
-        Texture const * textures;
-        size_t nTextures;
-
-        Model const * models;
-        size_t nModels;
-
-        prt::vector<glm::mat4> staticTransforms;
-        prt::vector<EntityID>  staticEntityIDs;
-        prt::vector<ModelID>   staticModelIDs;
-
-        prt::vector<glm::mat4> animatedTransforms;
-        prt::vector<EntityID>  animatedEntityIDs;
-        prt::vector<ModelID>   animatedModelIDs;
-        prt::vector<uint32_t>  boneOffsets;
-    };
     
     RenderData m_renderData;
     RenderResult m_renderResult;

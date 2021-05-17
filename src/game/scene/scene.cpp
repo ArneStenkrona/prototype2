@@ -9,6 +9,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_physicsSystem(physicsSystem),
       m_input(input),
       m_camera(m_input),
+      m_animationSystem(m_assetManager.getModelManager(), *this),
       m_characterSystem(this, m_physicsSystem, m_animationSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
     initSky();
@@ -73,8 +74,7 @@ void Scene::bindRenderData() {
 void Scene::renderScene(Camera & camera) {
     updateRenderData();
 
-    prt::vector<glm::mat4> bones; 
-    sampleAnimation(bones);
+    prt::vector<glm::mat4> const & bones = m_animationSystem.getBoneTransforms();
 
     prt::vector<glm::vec4> billboardPositions = { m_moon.position };
     prt::vector<glm::vec4> billboardColors = { m_moon.billboard.color };
@@ -108,21 +108,10 @@ void Scene::update(float deltaTime) {
     time+=deltaTime;
     updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
+    m_animationSystem.updateAnimation(m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size());
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
     renderScene(m_camera);
-}
-
-void Scene::sampleAnimation(prt::vector<glm::mat4> & bones) {
-    BlendedAnimation * blends;
-    size_t nBlends;
-
-    m_animationSystem.getAnimationBlends(blends, nBlends);
-
-    m_assetManager.getModelManager().getSampledBlendedAnimation(m_renderData.animatedModelIDs.data(),
-                                                                blends,
-                                                                bones,
-                                                                m_renderData.animatedModelIDs.size());
 }
 
 void Scene::updateSun(float time) {

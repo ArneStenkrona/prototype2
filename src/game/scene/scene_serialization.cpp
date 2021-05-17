@@ -166,6 +166,30 @@ void SceneSerialization::parseEntity(char const *& buf, Scene & scene) {
             case COMPONENT_TYPE_CHARACTER: {
                 CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id]);
                 scene.m_entities.characterIDs[id] = characterID;
+                ++buf;
+
+                while (*buf == '<') {
+                    ++buf;
+                    char bone[128] = {0};
+                    char model[128] = {0};
+                    parseString(buf, bone);
+                    parseString(buf, model);
+                    int boneIndex = scene.getModel(id).getBoneIndex(bone);
+
+                    EntityID equipID = scene.m_entities.addEntity();
+
+                    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(model, false);
+                    scene.m_entities.modelIDs[equipID] = modelID;
+
+                    Transform offset;
+                    offset.position = parseVec3(buf);
+                    offset.rotation = parseQuat(buf);
+                    offset.scale = parseVec3(buf);
+                    ++buf;
+
+                    scene.m_characterSystem.addEquipment(characterID, boneIndex, equipID, offset);
+                }
+
                 break;
             }
             case COMPONENT_TYPE_POINTLIGHT: {
@@ -198,13 +222,13 @@ void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
 }
 
 void SceneSerialization::parseString(char const *& buf, char * dest) {
-    while (*buf != '"' && *buf != '\0') {
+    while (*buf != '<' && *buf != '\0') {
         ++buf;
     }
     if (*buf == '\0') {
         assert(false);
     }
-    ++buf;
+    buf += 2;
 
     int i = 0;
     while (*buf != '"') {
@@ -212,6 +236,13 @@ void SceneSerialization::parseString(char const *& buf, char * dest) {
         ++i;
         ++buf;
     }
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     dest[i] = '\0';
 }
 
@@ -243,6 +274,14 @@ float SceneSerialization::parseFloat(char const *& buf) {
     if (ret != 1) {
         assert(false && "Failed to parse float");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return f;
 }
 
@@ -262,6 +301,14 @@ glm::vec3 SceneSerialization::parseVec3(char const *& buf) {
     if (ret != 3) {
         assert(false && "Failed to parse vec3");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return vec;
 }
 
@@ -280,5 +327,13 @@ glm::quat SceneSerialization::parseQuat(char const *& buf) {
     if (ret != 4) {
         assert(false && "Failed to parse quat");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return glm::normalize(quat);
 }

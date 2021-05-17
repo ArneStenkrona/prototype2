@@ -4,6 +4,8 @@
 #include "src/game/system/physics/collider_tag.h"
 #include "src/game/system/animation/animation_system.h"
 
+#include "src/game/component/component.h"
+
 #include <glm/glm.hpp>
 
 class Scene;
@@ -60,8 +62,10 @@ struct CharacterStateAttributeInfo {
 };
 
 struct Equipment {
-    EntityID rightHand = -1;
-    bool rightEquipped() const { return rightHand != EntityID{-1}; }
+    bool equipped = true;
+    int      boneIndex;
+    EntityID entity;
+    Transform offset;
 };
 
 class CharacterAttributeInfo;
@@ -84,8 +88,8 @@ public:
     bool           const &  getHasJumped() const { return m_hasJumped; }
     bool           const &  getStateChange() const { return m_stateChange; }
 private:
-    CharacterState m_state;
-    CharacterState m_previousState;
+    CharacterState m_state = CHARACTER_STATE_IDLE;
+    CharacterState m_previousState = CHARACTER_STATE_IDLE;
     float          m_groundedTimer = 0.0f;
     float          m_stateTimer = -1.0f;
     float          m_transitionTimer = 0.0f;
@@ -112,15 +116,13 @@ public:
     CharacterType           type = CHARACTER_TYPE_NONE;
     CharacterStateInfo      stateInfo;
     CharacterAnimationClips clips;
-    Equipment               equipment;
+    prt::vector<Equipment>  equipment;
 
-    void update(float deltaTime, 
-                EntityID entityID,
-                Scene & scene,
-                BlendedAnimation & animation,
-                CharacterPhysics & physics);
+    void updateState(float deltaTime, 
+                     BlendedAnimation & animation,
+                     CharacterPhysics & physics);
+    void updateEquipment(EntityID entityID, Scene & scene, AnimationSystem const & animationSystem);
 private:
-    void updateEquipment(EntityID entityID, Scene & scene);
 };
 
 template<size_t N>

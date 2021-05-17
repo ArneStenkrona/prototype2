@@ -96,7 +96,6 @@ ModelID ModelManager::loadModel(char const * path,
         } else {
             m_pathToModelID.insert(path, id);
         }
-        
     } else {
         // TODO: handle animation loading
         id = m_pathToModelID.find(path)->value();
@@ -104,27 +103,6 @@ ModelID ModelManager::loadModel(char const * path,
 
     return id;
 }
-
-// void ModelManager::loadModels(char const * paths[], size_t count,
-//                               ModelID * ids, bool animated) {    
-//     char path[256];
-//     size_t dirLen = strlen(m_modelDirectory);
-//     strcpy(path, m_modelDirectory);
-//     char * subpath = path + dirLen;
-//     for (size_t i = 0; i < count; ++i) {
-//         if (m_pathToModelID.find(paths[i]) == m_pathToModelID.end()) {
-//             strcpy(subpath, paths[i]);
-//             size_t id = m_loadedModels.size();
-//             m_pathToModelID.insert(paths[i], id);
-//             ids[i] = id;
-
-//             m_loadedModels.push_back(Model{path});
-//             m_loadedModels.back().load(animated, m_textureManager);
-//         } else {
-//             ids[i] = m_pathToModelID.find(paths[i])->value();
-//         }
-//     }
-// }
 
 uint32_t ModelManager::getAnimationIndex(ModelID modelID, char const * name) {
     return m_loadedModels[modelID].getAnimationIndex(name);

@@ -184,6 +184,8 @@ void DynamicAABBTree::remove(int32_t index) {
 
     if (index == rootIndex) {
         rootIndex = Node::NULL_INDEX;
+        freeNode(index);
+        return;
     }
 
     int32_t parent = n.parent;

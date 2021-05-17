@@ -8,6 +8,10 @@
 
 #include <cstdint>
 
+struct RenderData;
+class ModelManager;
+class Scene;
+
 /* Animation blending */
 struct BlendedAnimation {
     uint32_t clipA;
@@ -19,7 +23,15 @@ struct BlendedAnimation {
 
 class AnimationSystem {
 public:
+    AnimationSystem(ModelManager & modelManager, Scene & scene);
+
     AnimationID addAnimation(EntityID entityID);
+
+    void updateAnimation(ModelID const * modelIDs, size_t n);
+    prt::vector<glm::mat4> const & getBoneTransforms();
+
+    glm::mat4 getCachedTransformation(EntityID entityID, int boneIndex) const;
+    glm::mat4 getCachedTransformation(EntityID entityID, char const * boneName) const;
 
     inline BlendedAnimation & getAnimationBlend(EntityID entityID) { return  m_animationBlends[m_entityToAnimation[entityID]]; }
 
@@ -29,7 +41,11 @@ public:
 private:
     prt::vector<BlendedAnimation> m_animationBlends;
     prt::hash_map<EntityID, AnimationID> m_entityToAnimation;
+    prt::vector<glm::mat4> m_boneTransforms;
+    prt::vector<uint32_t> m_boneOffsets;
 
+    ModelManager & m_modelManager;
+    Scene        & m_scene;
 };
 
 #endif

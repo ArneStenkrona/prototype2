@@ -203,6 +203,9 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
     float intersectionTime = std::numeric_limits<float>::max();
     bool intersect = false;
     for (auto tag : tags) {
+        if (tag.type != COLLIDER_TYPE_MESH) {
+            continue;
+        }
         MeshCollider & meshCollider = m_models.meshes[tag.index];
 
         Geometry & geometry = m_models.geometries[meshCollider.modelIndex];

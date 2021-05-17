@@ -70,6 +70,10 @@ public:
                         glm::mat4 * transforms) const;
 
     int getAnimationIndex(char const * name) const;
+    int getNumBones() const { return bones.size(); }
+    int getBoneIndex(char const * name) const;
+    glm::mat4 getBoneTransform(int index) const;
+    glm::mat4 getBoneTransform(char const * name) const;
 
     inline bool isloaded() const { return mLoaded; }
     inline bool isAnimated() const { return mAnimated; }
@@ -100,7 +104,9 @@ private:
 
     // maps animation names to animations
     // TODO: replace with own string type
-    prt::hash_map<aiString, uint32_t> nameToAnimation;
+    prt::hash_map<aiString, int> nameToAnimation;
+    prt::hash_map<aiString, int> nameToBone;
+    prt::hash_map<aiString, int> nameToNode;
 
     // TODO: expose necessary fields
     // through const refs instead of

@@ -22,7 +22,7 @@ public:
 
     CharacterID addCharacter(EntityID entityID, ColliderTag tag);
 
-    void setEquipment(CharacterID characterID, EntityID equipment);
+    void addEquipment(CharacterID characterID, int boneIndex, EntityID equipment, Transform offset);
              
     void updateCharacters(float deltaTime);
 

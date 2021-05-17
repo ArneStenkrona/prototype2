@@ -3,6 +3,7 @@
 #include "src/game/scene/scene.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 void CharacterStateInfo::update(float deltaTime, 
                                 BlendedAnimation & animation,
@@ -124,20 +125,49 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
     return attributeInfo;
 }
 
-void CharacterAttributeInfo::update(float deltaTime, 
-                                    EntityID entityID,
-                                    Scene & scene,
-                                    BlendedAnimation & animation,
-                                    CharacterPhysics & physics) {
+void CharacterAttributeInfo::updateState(float deltaTime, 
+                                         BlendedAnimation & animation,
+                                         CharacterPhysics & physics) {
             stateInfo.update(deltaTime, animation, physics, clips);
-            updateEquipment(entityID, scene);
 }
 
-void CharacterAttributeInfo::updateEquipment(EntityID entityID, Scene & scene) {
+void CharacterAttributeInfo::updateEquipment(EntityID entityID, Scene & scene, AnimationSystem const & animationSystem) {
     Transform const & tform = scene.getTransform(entityID);
 
-    if (equipment.rightEquipped()) {
-        Transform & rightTform = scene.getTransform(equipment.rightHand);
-        rightTform.position = tform.position;
+    for (Equipment const & equip : equipment) {
+        if (equip.entity == EntityID(-1)) {
+            continue;
+        }
+        glm::mat4 const & boneTform = animationSystem.getCachedTransformation(entityID, equip.boneIndex);
+        glm::mat4 nodeTform = scene.getModel(entityID).getBoneTransform(equip.boneIndex);
+        glm::mat4 finalTform = tform.transformMatrix() * boneTform * nodeTform * equip.offset.transformMatrix();
+        glm::vec3 scale;
+        glm::quat rotation;
+        glm::vec3 translation;
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        glm::decompose(finalTform, scale, rotation, translation, skew, perspective);
+
+        Transform & rightTform = scene.getTransform(equip.entity);
+        rightTform.position = translation;
+        rightTform.rotation = rotation;
+        rightTform.scale = equip.offset.scale;
     }
+
+    // if (equipment.rightEquipped()) {
+    //     glm::mat4 const & boneTform = animationSystem.getCachedTransformation(entityID, "hand1.r");
+    //     glm::mat4 nodeTform = scene.getModel(entityID).getBoneTransform("hand1.r");
+    //     glm::mat4 finalTform = tform.transformMatrix() * boneTform * nodeTform * equipment.offset.transformMatrix();
+    //     glm::vec3 scale;
+    //     glm::quat rotation;
+    //     glm::vec3 translation;
+    //     glm::vec3 skew;
+    //     glm::vec4 perspective;
+    //     glm::decompose(finalTform, scale, rotation, translation, skew, perspective);
+
+    //     Transform & rightTform = scene.getTransform(equipment.rightHand);
+    //     rightTform.position = translation;
+    //     rightTform.rotation = rotation;
+    //     // rightTform.scale = scale;
+    // }
 }
