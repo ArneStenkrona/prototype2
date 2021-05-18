@@ -46,15 +46,30 @@ struct AnimatedStandardUBO {
     BoneUBO bones;
 };
 
+// struct StandardPushConstants {
+//     alignas(4)  int32_t modelMatrixIdx;
+// 	alignas(4)  int32_t albedoIndex;
+// 	alignas(4)  int32_t normalIndex;
+// 	alignas(4)  int32_t specularIndex;
+//     alignas(16) glm::vec4 baseColor;
+//     alignas(4)  float baseSpecularity;
+//     alignas(4)  int32_t entityID;
+//     alignas(4)  uint32_t boneOffset;
+// };
 struct StandardPushConstants {
-    alignas(4)  int32_t modelMatrixIdx;
-	alignas(4)  int32_t albedoIndex;
-	alignas(4)  int32_t normalIndex;
-	alignas(4)  int32_t specularIndex;
-    alignas(16) glm::vec4 baseColor;
-    alignas(4)  float baseSpecularity;
-    alignas(4)  int32_t entityID;
-    alignas(4)  uint32_t boneOffset;
+    alignas(4)  int32_t   modelMatrixIdx;
+    alignas(4)  int32_t   albedoIndex;
+    alignas(4)  int32_t   metallicIndex;
+    alignas(4)  int32_t   roughnessIndex;
+    alignas(16) glm::vec4 albedo;
+    alignas(4)  float     metallic;
+    alignas(4)  float     roughness;
+    alignas(4)  float     ao;
+    alignas(4)  float     emissive;
+    alignas(4)  int32_t   aoIndex;
+    alignas(4)  int32_t   normalIndex;
+    alignas(4)  int32_t   entityID;
+    alignas(4)  uint32_t  boneOffset;
 };
 
 struct BillboardPushConstants {

@@ -79,7 +79,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = false;
             attributeInfo.loopAnimation = true;
-            attributeInfo.movementSpeed = 0.03f;
+            attributeInfo.movementSpeed = 0.08f;
             attributeInfo.canTurn = true;
             break;
         }
@@ -88,7 +88,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = false;
             attributeInfo.loopAnimation = true;
-            attributeInfo.movementSpeed = 0.14f;
+            attributeInfo.movementSpeed = 0.25f;
             attributeInfo.canTurn = true;
             break;
         }
@@ -97,7 +97,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = true;
             attributeInfo.loopAnimation = false;
-            attributeInfo.movementSpeed = 0.14f;
+            attributeInfo.movementSpeed = 0.25f;
             attributeInfo.canTurn = true;
             break;
         }
@@ -106,7 +106,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.animationSpeed = 1.0f;
             attributeInfo.resetAnimationTime = true;
             attributeInfo.loopAnimation = false;
-            attributeInfo.movementSpeed = 0.03f;
+            attributeInfo.movementSpeed = 0.08f;
             attributeInfo.canTurn = true;
             break;
         }

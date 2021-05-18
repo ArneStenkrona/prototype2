@@ -62,13 +62,13 @@ public:
                         float t,
                         glm::vec2 mousePosition);
 
-    void render(float deltaTime, RenderGroupMask renderGroupMask);
+    void render(float deltaTime, uint16_t renderGroupMask);
 
     static constexpr unsigned int COMMON_RENDER_GROUP = 0;
     static constexpr unsigned int GAME_RENDER_GROUP = 1;
-    static constexpr RenderGroupMask GAME_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_1;
+    static constexpr uint16_t GAME_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_1;
     static constexpr unsigned int EDITOR_RENDER_GROUP = 2;
-    static constexpr RenderGroupMask EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
+    static constexpr uint16_t EDITOR_RENDER_MASK = RENDER_GROUP_FLAG_0 | RENDER_GROUP_FLAG_2;
 
 private:
     ImGuiRenderer m_imguiRenderer;

@@ -28,7 +28,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump floor1_normal.png
+map_Kn floor1_normal.png
+map_Ka floor1_ao.png
 map_Kd floor1_albedo.png
 map_Ns floor1_roughness.png
 
@@ -41,7 +42,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump floor2_normal.png
+map_Kn floor2_normal.png
+map_Ka floor2_ao.png
 map_Kd floor2_albedo.png
 map_Ns floor2_roughness.png
 
@@ -54,7 +56,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump roof1_normal.png
+map_Kn roof1_normal.png
+map_Ka roof1_ao.png
 map_Kd roof1_albedo.png
 map_Ns roof1_roughness.png
 
@@ -67,7 +70,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump stone1_normal.png
+map_Kn stone1_normal.png
+map_Ka stone1_ao.png
 map_Kd stone1_albedo.png
 map_Ns stone1_roughness.png
 
@@ -80,6 +84,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump wood1_normal.png
+map_Kn wood1_normal.png
+map_Ka wood1_ao.png
 map_Kd wood1_albedo.png
 map_Ns wood1_roughness.png
