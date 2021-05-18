@@ -49,34 +49,33 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     // parse materials
     materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < materials.size(); ++i) {
-        aiString matName;
+ aiString matName;
         aiGetMaterialString(scene->mMaterials[i], AI_MATKEY_NAME, &matName);
         strcpy(materials[i].name, matName.C_Str());
- 
+
         aiColor3D color;
         scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-
-        materials[i].baseColor = { color.r, color.g, color.b, 1.0f };
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_SPECULAR, materials[i].roughness);
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_AMBIENT, materials[i].ao);
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_EMISSIVE, materials[i].emissive);
         
-        scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].baseColor.a);
+        materials[i].albedo = { color.r, color.g, color.b, 1.0f };
+        
+        scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].albedo.a);
         scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
 
         
-        if (materials[i].baseColor.a < 1.0f) {
+        if (materials[i].albedo.a < 1.0f) {
             materials[i].type = Material::Type::transparent;
-        }
-        if (strstr(materials[i].name, "[water]") != NULL) {
-            materials[i].type = Material::Type::water;
-        }
-        if (strstr(materials[i].name, "[transparent]") != NULL) {
-            materials[i].type = Material::Type::transparent;
-        }
-        if (strstr(materials[i].name, "[gloss]") != NULL) {
-            materials[i].baseSpecularity = 1.0f;
         }
 
         materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, mPath, textureManager);
+        materials[i].metallicIndex = getTexture(*scene->mMaterials[i], aiTextureType_METALNESS, mPath, textureManager);
+        materials[i].roughnessIndex = getTexture(*scene->mMaterials[i], aiTextureType_SHININESS, mPath, textureManager);
+        materials[i].aoIndex = getTexture(*scene->mMaterials[i], aiTextureType_AMBIENT, mPath, textureManager);
         materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, mPath, textureManager);
+        
+        materials[i].metallic = materials[i].metallicIndex == -1 ? 0.0f : 1.0f;
     }
 
     /* Process node hierarchy */

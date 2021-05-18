@@ -121,8 +121,8 @@ void GameRenderer::initPipelines() {
 
     /* non-animated */
     createStandardAndShadowPipelines(standardAssetIndex, standardUboIndex, shadowMapUboIndex,
-                                     "shaders/standard.vert.spv", "shaders/stylized.frag.spv",
-                                     "shaders/stylized_transparent.frag.spv",
+                                     "shaders/standard.vert.spv", "shaders/pbr.frag.spv",
+                                     "shaders/pbr_transparent.frag.spv",
                                      "shaders/shadow_map.vert.spv",
                                      Model::Vertex::getBindingDescription(),
                                      Model::Vertex::getAttributeDescriptions(),
@@ -132,8 +132,8 @@ void GameRenderer::initPipelines() {
 
     /* animated */
     createStandardAndShadowPipelines(animatedStandardAssetIndex, animatedStandardUboIndex, animatedShadowMapUboIndex,
-                                     "shaders/standard_animated.vert.spv", "shaders/stylized.frag.spv",
-                                     "shaders/stylized_transparent.frag.spv",
+                                     "shaders/standard_animated.vert.spv", "shaders/pbr.frag.spv",
+                                     "shaders/pbr_transparent.frag.spv",
                                      "shaders/shadow_map_animated.vert.spv",
                                      Model::BonedVertex::getBindingDescription(),
                                      Model::BonedVertex::getAttributeDescriptions(),
@@ -145,7 +145,7 @@ void GameRenderer::initPipelines() {
     char vert[256] = RESOURCE_PATH;
     char frag[256] = RESOURCE_PATH;
     strcat(vert, "shaders/standard.vert.spv");
-    strcat(frag, "shaders/stylized_water.frag.spv");
+    strcat(frag, "shaders/pbr_transparent.frag.spv");
     pipelineIndices.water = createStandardPipeline(standardAssetIndex, standardUboIndex, vert, frag,
                                                    Model::Vertex::getBindingDescription(),
                                                    Model::Vertex::getAttributeDescriptions(), true);
@@ -1150,7 +1150,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         // lights
         standardUBO.lighting.sun.color = sun.color;
         standardUBO.lighting.sun.direction = sun.direction;
-        standardUBO.lighting.ambientLight = 0.2f;
+        standardUBO.lighting.ambientLight = 0.05f;
         standardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < standardUBO.lighting.noPointLights; ++i) {
             standardUBO.lighting.pointLights[i] = pointLights[i];
@@ -1385,9 +1385,11 @@ void GameRenderer::loadTextures(size_t staticAssetIndex,
         prt::hash_map<int, int> & textureIndices = animated ? animatedTextureIndices : staticTextureIndices;
 
         for (auto const & material: models[i].materials) {
-            prt::array<int, 3> indices = { material.albedoIndex,
-                                           material.normalIndex,
-                                           material.specularIndex };
+            prt::array<int, 5> indices = { material.albedoIndex,
+                                           material.metallicIndex,
+                                           material.roughnessIndex,
+                                           material.aoIndex,
+                                           material.normalIndex };
             for (int ind : indices) {
                 if (ind != -1 && textureIndices.find(ind) == textureIndices.end()) {
                     Texture const & texture = textures[ind];
@@ -1559,17 +1561,23 @@ void GameRenderer::createModelDrawCalls(Model const * models, size_t nModels,
             DrawCall drawCall;
             // find texture indices
             int albedoIndex = staticTextureIndices[material.albedoIndex];
+            int metallicIndex = staticTextureIndices[material.metallicIndex];
+            int roughnessIndex = staticTextureIndices[material.roughnessIndex];
+            int aoIndex = staticTextureIndices[material.aoIndex];
             int normalIndex = staticTextureIndices[material.normalIndex];
-            int specularIndex = staticTextureIndices[material.specularIndex];
             // push constants
             StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
             pc.modelMatrixIdx = i;
             pc.albedoIndex = albedoIndex;
+            pc.metallicIndex = metallicIndex;
+            pc.roughnessIndex = roughnessIndex;
+            pc.aoIndex = aoIndex;
             pc.normalIndex = normalIndex;
-            pc.specularIndex = specularIndex;
-
-            pc.baseColor = material.baseColor;
-            pc.baseSpecularity = material.baseSpecularity;
+            pc.albedo = material.albedo;
+            pc.roughness = material.roughness;
+            pc.emissive = material.emissive;
+            pc.ao = material.ao;
+            pc.metallic = material.metallic;
             pc.entityID = staticEntityIDs[i];
 
             // geometry
@@ -1600,19 +1608,25 @@ void GameRenderer::createModelDrawCalls(Model const * models, size_t nModels,
             DrawCall drawCall;
             // find texture indices
             int albedoIndex = animatedTextureIndices[material.albedoIndex];
+            int metallicIndex = animatedTextureIndices[material.metallicIndex];
+            int roughnessIndex = animatedTextureIndices[material.roughnessIndex];
+            int aoIndex = animatedTextureIndices[material.aoIndex];
             int normalIndex = animatedTextureIndices[material.normalIndex];
-            int specularIndex = animatedTextureIndices[material.specularIndex];
-
             // push constants
             StandardPushConstants & pc = *reinterpret_cast<StandardPushConstants*>(drawCall.pushConstants.data());
             pc.modelMatrixIdx = i;
             pc.albedoIndex = albedoIndex;
+            pc.metallicIndex = metallicIndex;
+            pc.roughnessIndex = roughnessIndex;
+            pc.aoIndex = aoIndex;
             pc.normalIndex = normalIndex;
-            pc.specularIndex = specularIndex;
-            pc.baseColor = material.baseColor;
-            pc.baseSpecularity = material.baseSpecularity;
-            pc.entityID = animatedEntityIDs[i];
+            pc.albedo = material.albedo;
+            pc.roughness = material.roughness;
+            pc.emissive = material.emissive;
+            pc.ao = material.ao;
+            pc.metallic = material.metallic;
             pc.boneOffset = boneOffsets[i];
+            pc.entityID = animatedEntityIDs[i];
 
             // geometry
             drawCall.firstIndex = indexOffsets[animatedModelIDs[i]] + mesh.startIndex;

@@ -125,15 +125,35 @@ struct Model::Node {
     aiString name;
 };
 
+// struct Model::Material {
+//     char name[256];
+//     int32_t albedoIndex = -1;
+//     int32_t normalIndex = -1;
+//     int32_t specularIndex = -1;
+//     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
+//     // bool transparent = false;
+//     bool twosided = false;
+//     float baseSpecularity = 0.0f;
+//     enum Type {
+//         standard,
+//         transparent,
+//         water
+//     };
+//     Type type = Type::standard;
+// };
 struct Model::Material {
     char name[256];
+    glm::vec4 albedo{1.0f, 1.0f, 1.0f, 1.0f};
+    float metallic = 0.0f;
+    float roughness = 0.5f;
+    float ao = 1.0f;
+    float emissive = 0.0f;
     int32_t albedoIndex = -1;
+    int32_t metallicIndex = -1;
+    int32_t roughnessIndex = -1;
+    int32_t aoIndex = -1;
     int32_t normalIndex = -1;
-    int32_t specularIndex = -1;
-    glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
-    // bool transparent = false;
     bool twosided = false;
-    float baseSpecularity = 0.0f;
     enum Type {
         standard,
         transparent,
