@@ -38,23 +38,6 @@ void CharacterSystem::updateCharacters(float deltaTime) {
 CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag) { 
     assert(m_characters.size < m_characters.maxSize && "Character amount exceeded!");
 
-    CharacterAnimationClips & clips = m_characters.attributeInfos[m_characters.size].clips;
-    clips.idle = m_scene->getModel(entityID).getAnimationIndex("idle");
-    clips.walk = m_scene->getModel(entityID).getAnimationIndex("walk");
-    clips.run  = m_scene->getModel(entityID).getAnimationIndex("run");
-    clips.jump = m_scene->getModel(entityID).getAnimationIndex("jump");
-    clips.fall = m_scene->getModel(entityID).getAnimationIndex("fall");
-    clips.glide = m_scene->getModel(entityID).getAnimationIndex("glide");
-    clips.land = m_scene->getModel(entityID).getAnimationIndex("land");
-
-    clips.idle = clips.idle == -1 ? 0 : clips.idle;
-    clips.walk = clips.walk == -1 ? 0 : clips.walk;
-    clips.run  = clips.run == -1 ? 0 : clips.run;
-    clips.jump = clips.jump == -1 ? 0 : clips.jump;
-    clips.fall = clips.fall == -1 ? 0 : clips.fall;
-    clips.glide = clips.glide == -1 ? 0 : clips.glide;
-    clips.land = clips.land == -1 ? 0 : clips.land;
-
     m_characters.entityIDs[m_characters.size] = entityID;
     m_characters.physics[m_characters.size].colliderTag = tag;
 
@@ -91,7 +74,7 @@ void CharacterSystem::updatePhysics(float deltaTime) {
 void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) {
     auto & attributeInfo = m_characters.attributeInfos[characterID];
     auto & physics = m_characters.physics[characterID];
-    auto & animation = m_animationSystem.getAnimationBlend(m_characters.entityIDs[characterID]);
+    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
 
     updateCharacterInput(characterID, deltaTime);
 
@@ -156,7 +139,7 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
     auto const & input = m_characters.input[characterID];
     auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
     auto & physics = m_characters.physics[characterID];
-    auto & animation = m_animationSystem.getAnimationBlend(m_characters.entityIDs[characterID]);
+    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
 
     stateInfo.resetStateChange();
 
@@ -197,10 +180,10 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
             break;
         }
         case CHARACTER_STATE_JUMPING: {
-            if (physics.isGrounded && animation.time > 0.1f) {
+            if (physics.isGrounded && stateInfo.getStateTimer() > 0.1f) {
                 stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
-            } else if (animation.time >= 1.0f) {
-                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (animation.clipA.isCompleted()) {
+                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.3f);
             }
             break;
         }
@@ -213,7 +196,7 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
         case CHARACTER_STATE_LANDING: {
             if (glm::length2(input.move) > 0.0f) {
                 stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
-            } else if (animation.time >= 0.9f) {
+            } else if (animation.clipA.isCompleted()) {
                 stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.3f);
             } else if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
                 stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);

@@ -108,7 +108,7 @@ void Scene::update(float deltaTime) {
     time+=deltaTime;
     updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
-    m_animationSystem.updateAnimation(m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size());
+    m_animationSystem.updateAnimation(deltaTime, m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size());
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
     renderScene(m_camera);

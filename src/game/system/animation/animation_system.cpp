@@ -9,26 +9,25 @@ AnimationSystem::AnimationSystem(ModelManager & modelManager, Scene & scene)
 }
 
 AnimationID AnimationSystem::addAnimation(EntityID entityID) { 
-    AnimationID id = m_animationBlends.size();
-    m_animationBlends.push_back({}); 
+    AnimationID id = m_animationComponents.size();
+    m_animationComponents.push_back({}); 
 
     m_entityToAnimation.insert(entityID, id);
     m_boneOffsets.push_back(m_modelManager.getModel(m_scene.getModelID(entityID)).getNumBones());
     m_boneTransforms.resize(m_modelManager.getModel(m_scene.getModelID(entityID)).getNumBones());
 
-
     return id;
 };
-void AnimationSystem::updateAnimation(ModelID const * modelIDs, size_t n) {
-    BlendedAnimation * blends;
-    size_t nBlends;
+void AnimationSystem::updateAnimation(float deltaTime, ModelID const * modelIDs, size_t n) {
+    for (AnimationComponent & component : m_animationComponents) {
+        component.clipA.update(deltaTime);
+        component.clipB.update(deltaTime);
+    }
 
-    getAnimationBlends(blends, nBlends);
-
-    m_modelManager.getSampledBlendedAnimation(modelIDs,
-                                              blends,
-                                              m_boneTransforms,
-                                              n);
+    m_modelManager.sampleAnimation(modelIDs,
+                                   m_animationComponents.data(),
+                                   m_boneTransforms,
+                                   n);
 }
 
 prt::vector<glm::mat4> const &  AnimationSystem::getBoneTransforms() {

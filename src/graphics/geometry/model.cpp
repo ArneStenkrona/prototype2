@@ -11,6 +11,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "src/game/system/animation/animation_clip.h"
+
 #include <fstream>
 
 Model::Model(char const * path)
@@ -297,8 +299,11 @@ glm::mat4 Model::getBoneTransform(char const * name) const {
     return getBoneTransform(index);
 }
 
-void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const {
+void Model::sampleAnimation(AnimationClip & clip, glm::mat4 * transforms) const {
     assert(mAnimated);
+    int animationIndex = getAnimationIndex(clip.m_clipName);
+    animationIndex = animationIndex == -1 ? 0 : animationIndex;
+
     auto const & animation = animations[animationIndex];
 
     struct IndexedTForm {
@@ -318,16 +323,25 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
 
         if (channelIndex != -1) {
             auto & channel = animation.channels[channelIndex];
+            
+            float duration = animation.duration / animation.ticksPerSecond;
+            float clipTime = clip.m_time / duration;
 
             // calculate prev and next frame
-            float duration = animation.duration / (1000 * animation.ticksPerSecond);
-            float animTime = t / duration;
-            size_t numFrames = animation.channels[channelIndex].keys.size();
-            float fracFrame = animTime * numFrames;
-            uint32_t prevFrame = static_cast<uint32_t>(fracFrame);
+            int numFrames = animation.channels[channelIndex].keys.size();
+            float fracFrame = clipTime * numFrames;
+            int prevFrame = static_cast<int>(fracFrame);
             float frac = fracFrame - prevFrame;
-            prevFrame = prevFrame % numFrames;
-            uint32_t nextFrame = (prevFrame + 1) % numFrames;
+            int nextFrame = (prevFrame + 1);
+
+            if (clip.m_loop) {
+                prevFrame = prevFrame % numFrames;
+                nextFrame = nextFrame % numFrames;
+            } else {
+                prevFrame = glm::min(prevFrame, numFrames - 1);
+                nextFrame = glm::min(nextFrame, numFrames - 1);
+                clip.m_completed = prevFrame == numFrames - 1;
+            }
 
             glm::vec3 const & prevPos = channel.keys[prevFrame].position;
             glm::vec3 const & nextPos = channel.keys[nextFrame].position;
@@ -356,17 +370,22 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
     }
 }
 
-void Model::blendAnimation(float t, 
+void Model::blendAnimation(AnimationClip & clipA, 
+                           AnimationClip & clipB,
                            float blendFactor,
-                           size_t animationIndexA, 
-                           size_t animationIndexB,
                            glm::mat4 * transforms) const {
     assert(mAnimated);
+
+    int animationIndexA = getAnimationIndex(clipA.m_clipName);
+    animationIndexA = animationIndexA == -1 ? 0 : animationIndexA;
+    int animationIndexB = getAnimationIndex(clipB.m_clipName);
+    animationIndexB = animationIndexB == -1 ? 0 : animationIndexB;
+
     auto const & animationA = animations[animationIndexA];
     auto const & animationB = animations[animationIndexB];
 
     struct IndexedTForm {
-        int32_t index;
+        int index;
         glm::mat4 tform;
     };
     prt::vector<IndexedTForm> nodeIndices;
@@ -377,33 +396,51 @@ void Model::blendAnimation(float t,
         nodeIndices.pop_back();
 
         glm::mat4 tform = mNodes[index].transform;
-        int32_t channelIndex = mNodes[index].channelIndex;
+        int channelIndex = mNodes[index].channelIndex;
 
         if (channelIndex != -1) {
             auto & channelA = animationA.channels[channelIndex];
             auto & channelB = animationB.channels[channelIndex];
 
             float durationA = animationA.duration / animationA.ticksPerSecond;
-            float clipTimeA = t / durationA;
+            float clipTimeA = clipA.m_time / durationA;
+            // float clipTimeA = clipA.m_time * animationA.ticksPerSecond;
 
             float durationB = animationB.duration / animationB.ticksPerSecond;
-            float clipTimeB = t / durationB;
+            float clipTimeB = clipB.m_time / durationB;
+            // float clipTimeB = clipB.m_time * animationB.ticksPerSecond;
 
             // calculate prev and next frame for clip A
-            size_t numFramesA = animationA.channels[channelIndex].keys.size();
+            int numFramesA = animationA.channels[channelIndex].keys.size();
             float fracFrameA = clipTimeA * numFramesA;
-            uint32_t prevFrameA = static_cast<uint32_t>(fracFrameA);
+            int prevFrameA = static_cast<int>(fracFrameA);
             float fracA = fracFrameA - prevFrameA;
-            prevFrameA = prevFrameA % numFramesA;
-            uint32_t nextFrameA = (prevFrameA + 1) % numFramesA;
+            int nextFrameA = (prevFrameA + 1);
+
+            if (clipA.m_loop) {
+                prevFrameA = prevFrameA % numFramesA;
+                nextFrameA = nextFrameA % numFramesA;
+            } else {
+                prevFrameA = glm::min(prevFrameA, numFramesA - 1);
+                nextFrameA = glm::min(nextFrameA, numFramesA - 1);
+                clipA.m_completed = prevFrameA == numFramesA - 1;
+            }
 
             // calculate prev and next frame for clip B
-            size_t numFramesB = animationB.channels[channelIndex].keys.size();
+            int numFramesB = animationB.channels[channelIndex].keys.size();
             float fracFrameB = clipTimeB * numFramesB;
-            uint32_t prevFrameB = static_cast<uint32_t>(fracFrameB);
+            int prevFrameB = static_cast<int>(fracFrameB);
             float fracB = fracFrameB - prevFrameB;
-            prevFrameB = prevFrameB % numFramesB;
-            uint32_t nextFrameB = (prevFrameB + 1) % numFramesB;
+            int nextFrameB = (prevFrameB + 1);
+
+            if (clipB.m_loop) {
+                prevFrameB = prevFrameB % numFramesB;
+                nextFrameB = nextFrameB % numFramesB;
+            } else {
+                prevFrameB = glm::min(prevFrameB, numFramesB - 1);
+                nextFrameB = glm::min(nextFrameB, numFramesB - 1);
+                clipB.m_completed = prevFrameB == numFramesB - 1;
+            }
             
             // clip A
             glm::vec3 const & prevPosA = channelA.keys[prevFrameA].position;
