@@ -109,30 +109,23 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
         glm::vec3 const altUp{0.0f, 0.0f, 1.0f}; 
         // compute movement plane
         glm::vec3 const moveNormal = physics.isGrounded ? physics.groundNormal : up;
-
-        glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
-
-        glm::vec3 const prevDir = glm::length2(physics.movementVector) > 0.0f ?
-                                     glm::normalize(glm::vec3{physics.movementVector.x, 0.0f, physics.movementVector.z}) :
-                                     newDir;
-
-
-        glm::vec3 const lookDir = glm::dot(prevDir, newDir) > -0.9f ?
-                                         glm::mix(prevDir, newDir, 0.5f) :
-                                         newDir;
+        
+        if (stateInfo.getCanTurn()) {
+            glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
+            physics.forward = glm::dot(physics.forward, newDir) > -0.9f ?
+                                       glm::normalize(glm::mix(physics.forward, newDir, 0.5f)) :
+                                       newDir;
+        }
 
         // rotate character
-        transform.rotation = math_util::safeQuatLookAt(origin, lookDir, up, altUp);
+        transform.rotation = math_util::safeQuatLookAt(origin, physics.forward, up, altUp);
 
-        glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(lookDir, moveNormal)));
+        glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(physics.forward, moveNormal)));
 
         targetMovement = moveDir * stateInfo.getMovementSpeed();
     }
 
     physics.movementVector = targetMovement;
-
-    physics.velocity.x = physics.movementVector.x;
-    physics.velocity.z = physics.movementVector.z;
 }
 
 void CharacterSystem::setStateTransitions(CharacterID characterID) {
@@ -149,9 +142,10 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                 stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
             } else if (stateInfo.getGroundedTimer() > 0.15f) {
                 stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
-            }
-            if (glm::length2(input.move) > 0.0f) {
+            } else if (glm::length2(input.move) > 0.0f) {
                 stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
             }
             break;
         }
@@ -160,11 +154,13 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
             } else if (stateInfo.getGroundedTimer() > 0.15f) {
                 stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
             } else if (glm::length2(input.move) > 0.0f) {
                 if (input.run) stateInfo.transitionState(CHARACTER_STATE_RUNNING, 0.1f);
             } else {
                 stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
-            }
+            } 
             break;
         }
         case CHARACTER_STATE_RUNNING: {
@@ -172,6 +168,8 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                 stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
             } else if (stateInfo.getGroundedTimer() > 0.15f) {
                 stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
             } else if (glm::length2(input.move) > 0.0f) {
                 if (!input.run) stateInfo.transitionState(CHARACTER_STATE_WALKING, 0.1f);
             } else {
@@ -181,7 +179,7 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
         }
         case CHARACTER_STATE_JUMPING: {
             if (physics.isGrounded && stateInfo.getStateTimer() > 0.1f) {
-                stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
+                stateInfo.transitionState(CHARACTER_STATE_LANDING_MILDLY, 0.05f);
             } else if (animation.clipA.isCompleted()) {
                 stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.3f);
             }
@@ -189,17 +187,60 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
         }
         case CHARACTER_STATE_FALLING: {
             if (physics.isGrounded) {
-                stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.0f);
+                } else {
+                    if (stateInfo.getStateTimer() < 0.4f) {
+                        stateInfo.transitionState(CHARACTER_STATE_LANDING_MILDLY, 0.05f);
+                    } else {
+                        stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
+                    }
+                }
             }
             break;
         }
-        case CHARACTER_STATE_LANDING: {
+        case CHARACTER_STATE_LANDING:
+        case CHARACTER_STATE_LANDING_MILDLY: {
             if (glm::length2(input.move) > 0.0f) {
                 stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
             } else if (animation.clipA.isCompleted()) {
                 stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.3f);
             } else if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
                 stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_ROLLING: {
+            if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.3f);
+                }
+            }
+            break;
+        }
+        case CHARACTER_STATE_SLASH1: {
+            if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+                }
+            } else if (input.attack && stateInfo.getStateTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH2, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_SLASH2: {
+            if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+                }
+            } else if (input.attack && stateInfo.getStateTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
             }
             break;
         }

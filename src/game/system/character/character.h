@@ -17,6 +17,7 @@ enum CharacterType : int {
 };
 
 struct CharacterPhysics {
+    glm::vec3   forward = {1.0f, 0.0f, 0.0f};
     glm::vec3   velocity = {0.0f, 0.0f, 0.0f};
     float       mass = 1.0f;
     glm::vec3   movementVector = {0.0f, 0.0f, 0.0f};
@@ -30,6 +31,7 @@ struct CharacterInput {
     bool      run = false;
     bool      jump = false;
     bool      holdjump = false;
+    bool      attack = false;
 };
 
 enum CharacterState {
@@ -39,16 +41,23 @@ enum CharacterState {
     CHARACTER_STATE_JUMPING,
     CHARACTER_STATE_FALLING,
     CHARACTER_STATE_LANDING,
-    TOTAL_NUM_CHARACTER_STATE
+    CHARACTER_STATE_LANDING_MILDLY,
+    CHARACTER_STATE_ROLLING,
+    CHARACTER_STATE_SLASH1,
+    CHARACTER_STATE_SLASH2,
+    CHARACTER_STATE_MIDAIR_SLASH1,
+    CHARACTER_STATE_MIDAIR_SLASH2,
+    TOTAL_NUM_CHARACTER_STATE,
 };
 
 struct CharacterStateAttributeInfo {
-    char     animationName[64] = {0};
-    float    animationSpeed = 1.0f;
-    bool     resetAnimationTime = true;
-    bool     loopAnimation = true;
-    bool     canTurn = true;
-    float    movementSpeed = 1.0f;
+    char      animationName[64] = {0};
+    float     animationSpeed = 1.0f;
+    bool      resetAnimationTime = true;
+    bool      loopAnimation = true;
+    bool      canTurn = true;
+    float     movementSpeed = 1.0f;
+    glm::vec3 impulse{0.0f};
 };
 
 struct Equipment {
@@ -94,7 +103,7 @@ private:
                 AnimationComponent & animation,
                 CharacterPhysics & physics);
 
-    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state);
+    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state, CharacterPhysics const & physics);
 
     friend class CharacterAttributeInfo;
 };

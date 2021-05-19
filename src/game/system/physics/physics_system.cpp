@@ -262,6 +262,8 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         if (physics[i].isGrounded) {
             physics[i].velocity += (-0.05f * gravityFactor * deltaTime) * physics[i].groundNormal;
         } 
+        physics[i].velocity.x += physics[i].movementVector.x;
+        physics[i].velocity.z += physics[i].movementVector.z;
 
         physics[i].isGrounded = false;
 
@@ -281,6 +283,12 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         float gravityFactor = m_gravity;
 
         physics[i].velocity = prevVelocities[i];
+        // TODO: formalize friction
+        // friction
+        float frictionRatio = 1 / (1 + (deltaTime * 10.0f));
+        //*** Decay velocity
+        physics[i].velocity.x = physics[i].velocity.x * frictionRatio;
+        physics[i].velocity.z = physics[i].velocity.z * frictionRatio;
         if (physics[i].isGrounded) {
             physics[i].velocity.y = glm::max(0.0f * gravityFactor * deltaTime, physics[i].velocity.y);
         } else {

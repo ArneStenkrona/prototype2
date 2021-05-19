@@ -15,11 +15,9 @@ void CharacterStateInfo::update(float deltaTime,
     } else {
         m_groundedTimer += deltaTime;
     }
-
-    m_stateTimer += deltaTime;
                                     
-    CharacterStateAttributeInfo attributeInfo = getStateAttributeInfo(m_state);
-    CharacterStateAttributeInfo prevAttributeInfo = getStateAttributeInfo(m_previousState);
+    CharacterStateAttributeInfo attributeInfo = getStateAttributeInfo(m_state, physics);
+    CharacterStateAttributeInfo prevAttributeInfo = getStateAttributeInfo(m_previousState, physics);
 
     if (m_stateChange) {
         animation.clipB.setClip(prevAttributeInfo.animationName);
@@ -35,12 +33,15 @@ void CharacterStateInfo::update(float deltaTime,
         animation.clipA.setClip(attributeInfo.animationName);
         animation.clipA.m_loop = attributeInfo.loopAnimation;
         animation.clipA.m_playBackSpeed = attributeInfo.animationSpeed;
+
+        physics.velocity += attributeInfo.impulse;
     }
 
 
     animation.blendFactor = 0.0f;
 
     m_transitionTimer += deltaTime;
+    m_stateTimer += deltaTime;
 
     m_canTurn = attributeInfo.canTurn;
     m_movementSpeed = attributeInfo.movementSpeed;
@@ -69,7 +70,7 @@ void CharacterStateInfo::transitionState(CharacterState newState, float transiti
     m_transitionLength = transitionTime;
 }
 
-CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterState state) {
+CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterState state, CharacterPhysics const & physics) {
     CharacterStateAttributeInfo attributeInfo;
     switch (state) {
         case CHARACTER_STATE_IDLE: {
@@ -124,6 +125,66 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.loopAnimation = false;
             attributeInfo.movementSpeed = 0.1f;
             attributeInfo.canTurn = true;
+            break;
+        }
+        case CHARACTER_STATE_LANDING_MILDLY: {
+            strcpy(attributeInfo.animationName, "land_mild");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.1f;
+            attributeInfo.canTurn = true;
+            break;
+        }
+        case CHARACTER_STATE_ROLLING: {
+            strcpy(attributeInfo.animationName, "roll");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.1f;
+            attributeInfo.canTurn = false;
+            attributeInfo.impulse = 0.4f * physics.forward;
+
+            break;
+        }
+        case CHARACTER_STATE_SLASH1: {
+            strcpy(attributeInfo.animationName, "slash1");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.0f;
+            attributeInfo.canTurn = false;
+            attributeInfo.impulse = 0.4f * physics.forward;
+            break;
+        }
+        case CHARACTER_STATE_SLASH2: {
+            strcpy(attributeInfo.animationName, "slash2");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.0f;
+            attributeInfo.canTurn = false;
+            attributeInfo.impulse = 0.4f * physics.forward;
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH1: {
+            strcpy(attributeInfo.animationName, "midair_slash1");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.2f;
+            attributeInfo.canTurn = false;
+            attributeInfo.impulse = 0.4f * physics.forward;
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH2: {
+            strcpy(attributeInfo.animationName, "midair_slash2");
+            attributeInfo.animationSpeed = 1.0f;
+            attributeInfo.resetAnimationTime = true;
+            attributeInfo.loopAnimation = false;
+            attributeInfo.movementSpeed = 0.2f;
+            attributeInfo.canTurn = false;
+            attributeInfo.impulse = 0.4f * physics.forward;
             break;
         }
         default: {}
