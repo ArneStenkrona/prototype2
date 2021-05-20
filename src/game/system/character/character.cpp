@@ -174,7 +174,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.loopAnimation = false;
             attributeInfo.movementSpeed = 0.2f;
             attributeInfo.canTurn = false;
-            attributeInfo.impulse = 0.4f * physics.forward;
+            attributeInfo.impulse = 0.7f * physics.forward;
             break;
         }
         case CHARACTER_STATE_MIDAIR_SLASH2: {
@@ -184,7 +184,7 @@ CharacterStateAttributeInfo CharacterStateInfo::getStateAttributeInfo(CharacterS
             attributeInfo.loopAnimation = false;
             attributeInfo.movementSpeed = 0.2f;
             attributeInfo.canTurn = false;
-            attributeInfo.impulse = 0.4f * physics.forward;
+            attributeInfo.impulse = 0.7f * physics.forward;
             break;
         }
         default: {}

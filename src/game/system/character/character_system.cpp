@@ -182,12 +182,14 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                 stateInfo.transitionState(CHARACTER_STATE_LANDING_MILDLY, 0.05f);
             } else if (animation.clipA.isCompleted()) {
                 stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.3f);
+            } else if (input.attack && stateInfo.getStateTimer() > 0.1f) {
+                stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
             }
             break;
         }
         case CHARACTER_STATE_FALLING: {
             if (physics.isGrounded) {
-                if (glm::length2(input.move) > 0.0f) {
+                if (glm::length2(input.move) > 0.0f && stateInfo.getStateTimer() > 0.2f) {
                     stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.0f);
                 } else {
                     if (stateInfo.getStateTimer() < 0.4f) {
@@ -196,6 +198,8 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                         stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
                     }
                 }
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
             }
             break;
         }
@@ -211,7 +215,9 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
             break;
         }
         case CHARACTER_STATE_ROLLING: {
-            if (animation.clipA.isCompleted()) {
+            if (input.jump && stateInfo.getStateTimer() > 0.1f) {
+                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.1f);
+            } else if (animation.clipA.isCompleted()) {
                 if (glm::length2(input.move) > 0.0f) {
                     stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
                 } else {
@@ -241,6 +247,38 @@ void CharacterSystem::setStateTransitions(CharacterID characterID) {
                 }
             } else if (input.attack && stateInfo.getStateTimer() > 0.15f) {
                 stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH1: {
+            if (animation.clipA.isCompleted()) {
+               if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.1f);
+                }
+            }  else if (stateInfo.getStateTimer() > 0.15f) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else if (input.attack) {
+                    stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH2, 0.0f);
+                }
+            }
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH2: {
+            if (animation.clipA.isCompleted()) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.1f);
+                }
+            } else if (stateInfo.getStateTimer() > 0.15f) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else if (input.attack) {
+                    stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
+                }
             }
             break;
         }
