@@ -81,6 +81,7 @@ struct GraphicsPipeline {
     prt::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 
     VkCullModeFlags cullModeFlags = VK_CULL_MODE_BACK_BIT;
+    VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;
 
     VkPipelineDepthStencilStateCreateInfo depthStencilState;
     // VkCompareOp compareOp = VK_COMPARE_OP_LESS_OR_EQUAL;

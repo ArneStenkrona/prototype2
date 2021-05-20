@@ -30,24 +30,6 @@ void ModelManager::getBoneOffsets(ModelID const * modelIDs,
     }
 }
 
-// void ModelManager::getSampledAnimation(float t, 
-//                                        prt::vector<ModelID> const & modelIDs,
-//                                        prt::vector<uint32_t> const & animationIndices, 
-//                                        prt::vector<glm::mat4> & transforms) {
-//     size_t numBones = 0;
-//     for (auto & index : modelIDs) {
-//         numBones += m_loadedModels[index].bones.size();
-//     }
-
-//     transforms.resize(numBones);
-//     size_t tIndex = 0;
-//     for (size_t i = 0; i < modelIDs.size(); ++i) {
-//         auto const & model = m_loadedModels[modelIDs[i]];
-//         model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
-//         tIndex += model.bones.size();
-//     }
-// }
-
 void ModelManager::sampleAnimation(ModelID const * modelIDs,
                                               AnimationComponent * animationComponents, 
                                               prt::vector<glm::mat4> & transforms,

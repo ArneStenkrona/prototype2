@@ -37,6 +37,9 @@ struct RenderData {
     prt::vector<EntityID>  animatedEntityIDs;
     prt::vector<ModelID>   animatedModelIDs;
     prt::vector<uint32_t>  boneOffsets;
+
+    prt::vector<ModelID>   colliderModelIDs;
+    prt::vector<glm::mat4> colliderTransforms;
 };
 
 class Scene {
@@ -90,6 +93,10 @@ private:
         SkyLight sun;
     } m_lights;
 
+    struct ColliderModelIDs {
+        ModelID ellipsoid;
+    } m_colliderModelIDs;
+
     Entities m_entities;
 
     prt::hash_set<EntityID> m_colliderUpdateSet;
@@ -118,6 +125,7 @@ private:
     void bindRenderData();
     
     void initSky();
+    void loadColliderModels();
     
     prt::vector<UBOPointLight> getPointLights();
     

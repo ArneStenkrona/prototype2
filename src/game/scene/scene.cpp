@@ -12,6 +12,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_animationSystem(m_assetManager.getModelManager(), *this),
       m_characterSystem(this, m_physicsSystem, m_animationSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
+    loadColliderModels();
     initSky();
 }
 
@@ -28,6 +29,8 @@ void Scene::bindToRenderer() {
                               m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
                               m_renderData.boneOffsets.data(),
                               m_renderData.animatedModelIDs.size(),
+                              m_renderData.colliderModelIDs.data(),
+                              m_renderData.colliderModelIDs.size(),
                               &m_moon.billboard, 1,
                               m_renderData.textures, m_renderData.nTextures,
                               skybox);
@@ -42,6 +45,8 @@ void Scene::bindRenderData() {
     m_renderData.animatedEntityIDs.resize(0);
     m_renderData.animatedModelIDs.resize(0);
     m_renderData.boneOffsets.resize(0);
+    m_renderData.colliderModelIDs.resize(0);
+    m_renderData.colliderTransforms.resize(0);
 
     m_assetManager.getModelManager().getModels(m_renderData.models, m_renderData.nModels);
     Model const * models = m_renderData.models;
@@ -69,6 +74,21 @@ void Scene::bindRenderData() {
                                                     m_renderData.animatedModelIDs.size());
 
     m_assetManager.getTextureManager().getTextures(m_renderData.textures, m_renderData.nTextures);
+
+    for (EntityID i = 0; i < m_entities.size(); ++i) {
+        ColliderTag tag = m_entities.colliderTags[i];
+
+        if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
+            EllipsoidCollider const & col = m_physicsSystem.getEllipsoidCollider(tag);
+            glm::vec3 pos = m_entities.transforms[i].position + col.offset;
+            glm::vec3 scale = col.radii;
+            
+            glm::mat4 tform = glm::translate(glm::mat4(1.0f), pos) * glm::scale(scale);
+
+            m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.ellipsoid);
+            m_renderData.colliderTransforms.push_back(tform);
+        }
+    }
 }
 
 void Scene::renderScene(Camera & camera) {
@@ -85,6 +105,7 @@ void Scene::renderScene(Camera & camera) {
     m_input.getCursorPos(x,y);
     m_renderResult = m_gameRenderer.update(m_renderData.staticTransforms, 
                                            m_renderData.animatedTransforms,
+                                           m_renderData.colliderTransforms,
                                            bones,
                                            billboardPositions,
                                            billboardColors,
@@ -228,6 +249,22 @@ void Scene::updateRenderData() {
             }
         }
     }
+
+    size_t colliderCount = 0;
+    for (EntityID i = 0; i < m_entities.size(); ++i) {
+        ColliderTag tag = m_entities.colliderTags[i];
+
+        if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
+            EllipsoidCollider const & col = m_physicsSystem.getEllipsoidCollider(tag);
+            glm::vec3 pos = m_entities.transforms[i].position + col.offset;
+            glm::vec3 scale = col.radii;
+            
+            glm::mat4 tform = glm::translate(glm::mat4(1.0f), pos) * glm::scale(scale);
+
+            m_renderData.colliderTransforms[colliderCount] = tform;
+            ++colliderCount;
+        }
+    }
 }
 
 void Scene::initSky() {
@@ -235,6 +272,14 @@ void Scene::initSky() {
     m_moon.billboard.size = {25.0f, 25.0f};
     m_moon.billboard.textureIndex = m_assetManager.getTextureManager().loadTexture("moon/moon_albedo.png");
     m_moon.distance = 200.0f;
+}
+
+void Scene::loadColliderModels() {
+    char relative[512] = {0};
+    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/ellipsoid.obj", relative);
+
+    EntityID id = m_assetManager.getModelManager().loadModel(relative, false);
+    m_colliderModelIDs.ellipsoid = id;
 }
 
 bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute) {

@@ -170,6 +170,10 @@ void GameRenderer::initPipelines() {
     /* composition */
     createCompositionPipeline();
     createCompositionDrawCalls(pipelineIndices.composition);
+
+    /* wireframe */
+    size_t wireframeUboIndex = pushBackUniformBufferData(sizeof(StandardUBO));
+    createWireframePipeline(standardAssetIndex, wireframeUboIndex);
 }
 
 void GameRenderer::initBuffersAndTextures(size_t standardAssetIndex, 
@@ -975,6 +979,101 @@ int GameRenderer::createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
     pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
 
     return pipelineIndex;
+}                                      
+
+void GameRenderer::createWireframePipeline(size_t assetIndex, size_t uboIndex) {
+    pipelineIndices.wireframe = pushBackPipeline();
+    GraphicsPipeline & pipeline = getPipeline(pipelineIndices.wireframe);
+
+    pipeline.renderPassIndex = renderPassIndices.scene;
+    pipeline.subpass = 0;
+    pipeline.type = PIPELINE_TYPE_OPAQUE;
+    pipeline.renderGroup = EDITOR_RENDER_GROUP;
+
+    pipeline.polygonMode = VK_POLYGON_MODE_LINE;
+
+    pipeline.assetsIndex = assetIndex;
+    pipeline.uboIndex = uboIndex;
+    // Assets const & asset = getAssets(assetIndex);
+    UniformBufferData const & uniformBufferData = getUniformBufferData(uboIndex);
+
+    /* Descriptor set layout */
+    // ubo
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    pipeline.descriptorSetLayoutBindings.resize(1);
+    pipeline.descriptorSetLayoutBindings[0] = uboLayoutBinding;
+
+    // Descriptor pools
+    pipeline.descriptorPoolSizes.resize(1);
+    pipeline.descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pipeline.descriptorPoolSizes[0].descriptorCount = static_cast<uint32_t>(swapchain.swapchainImages.size());
+
+    // Descriptor sets
+    pipeline.descriptorSets.resize(swapchain.swapchainImages.size());
+    pipeline.descriptorWrites.resize(swapchain.swapchainImages.size());
+
+    pipeline.uboAttachments.resize(1);
+    pipeline.uboAttachments[0].descriptorBufferInfos.resize(swapchain.swapchainImages.size());
+    pipeline.uboAttachments[0].descriptorIndex = 0;
+    for (size_t i = 0; i < swapchain.swapchainImages.size(); ++i) {
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].buffer = uniformBufferData.uniformBuffers[i];
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].offset = 0;
+        pipeline.uboAttachments[0].descriptorBufferInfos[i].range = uniformBufferData.uboData.size();
+        
+        pipeline.descriptorWrites[i].resize(1, VkWriteDescriptorSet{});
+        
+        pipeline.descriptorWrites[i][0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        // pipeline.descriptorWrites[i][0].dstSet = pipeline.descriptorSets[i];
+        pipeline.descriptorWrites[i][0].dstBinding = 0;
+        pipeline.descriptorWrites[i][0].dstArrayElement = 0;
+        pipeline.descriptorWrites[i][0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        pipeline.descriptorWrites[i][0].descriptorCount = 1;
+        // pipeline.descriptorWrites[i][0].pBufferInfo = &pipeline.descriptorBufferInfos[i];
+    }
+
+    // Vertex input
+    pipeline.vertexInputBinding = Model::Vertex::getBindingDescription();
+    pipeline.vertexInputAttributes.resize(Model::Vertex::getAttributeDescriptions().size());
+    size_t inIndx = 0;
+    for (auto const & att : Model::Vertex::getAttributeDescriptions()) {
+        pipeline.vertexInputAttributes[inIndx] = att;
+        ++inIndx;
+    }
+    auto & shaderStages = pipeline.shaderStages;
+    shaderStages.resize(2);
+
+    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shaderStages[0].pName[0] = '\0';
+    strcat(shaderStages[0].pName, "main");
+    shaderStages[0].shader[0] = '\0';
+    strcat(shaderStages[0].shader, RESOURCE_PATH);
+    strcat(shaderStages[0].shader, "shaders/wireframe.vert.spv");
+
+    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    shaderStages[1].pName[0] = '\0';
+    strcat(shaderStages[1].pName, "main");
+    shaderStages[1].shader[0] = '\0';
+    strcat(shaderStages[1].shader, RESOURCE_PATH);
+    strcat(shaderStages[1].shader, "shaders/wireframe.frag.spv");
+
+    pipeline.extent = swapchain.swapchainExtent;
+    pipeline.useColorAttachment = true;
+    pipeline.enableDepthBias = false;
+
+    pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();
+
+    pipeline.depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    pipeline.depthStencilState.depthTestEnable = VK_TRUE;
+    pipeline.depthStencilState.depthWriteEnable = pipeline.type == PIPELINE_TYPE_TRANSPARENT ? VK_FALSE : VK_TRUE;
+    pipeline.depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    pipeline.depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    pipeline.depthStencilState.stencilTestEnable = VK_FALSE;
 }
 
 // TODO: On rebind only add new assets instead
@@ -985,6 +1084,8 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
                               ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                               uint32_t const * boneOffsets,
                               size_t nAnimatedModelIDs,
+                              ModelID const * colliderModelIDs,
+                              size_t nColliderModelIDs,
                               Billboard const * billboards,
                               size_t nBillboards,
                               Texture const * textures,
@@ -1019,6 +1120,11 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
 
     createBillboardDrawCalls(billboards, nBillboards, billboardTextureIndices);
 
+    createWireframeDrawCalls(models, nModels,
+                             colliderModelIDs,
+                             nColliderModelIDs,
+                             getPipeline(pipelineIndices.wireframe).drawCalls);
+
     /* skybox */
     loadCubeMap(skybox, getPipeline(pipelineIndices.skybox).assetsIndex);
 
@@ -1027,6 +1133,7 @@ void GameRenderer::bindAssets(Model const * models, size_t nModels,
 
 RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices, 
                                   prt::vector<glm::mat4> const & animatedModelMatrices,
+                                  prt::vector<glm::mat4> const & colliderModelMatrices,
                                   prt::vector<glm::mat4> const & bones,
                                   prt::vector<glm::vec4> const & billboardPositions,
                                   prt::vector<glm::vec4> const & billboardColors,
@@ -1057,6 +1164,7 @@ RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
 
     updateUBOs(modelMatrices, 
                animatedModelMatrices,
+               colliderModelMatrices,
                bones,
                billboardPositions,
                billboardColors,
@@ -1085,6 +1193,7 @@ RenderResult GameRenderer::update(prt::vector<glm::mat4> const & modelMatrices,
 
 void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices, 
                               prt::vector<glm::mat4> const & animatedModelMatrices,
+                              prt::vector<glm::mat4> const & colliderModelMatrices,
                               prt::vector<glm::mat4> const & bones,
                               prt::vector<glm::vec4> const & billboardPositions,
                               prt::vector<glm::vec4> const & billboardColors,
@@ -1214,6 +1323,19 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
             animatedShadowUBO.depthVP[i] = cascadeSpace[i];
         }
     }
+    
+    // wireframe
+    auto wireframeUboData = getUniformBufferData(getPipeline(pipelineIndices.wireframe).uboIndex).uboData.data();
+    ModelUBO & wireframeUBO = *reinterpret_cast<ModelUBO*>(wireframeUboData);
+    // model
+    for (size_t i = 0; i < colliderModelMatrices.size(); ++i) {
+        wireframeUBO.model[i] = colliderModelMatrices[i];
+        wireframeUBO.invTransposeModel[i] = glm::transpose(glm::inverse(colliderModelMatrices[i]));
+    }
+    wireframeUBO.viewProjection = viewProjection;
+    wireframeUBO.view = viewMatrix;
+    wireframeUBO.viewPosition = viewPosition;
+    wireframeUBO.t = t;
 }
 
 void GameRenderer::updateSkyboxUBO(Camera const & camera, SkyLight const & sky) {
@@ -1549,7 +1671,7 @@ void GameRenderer::createModelDrawCalls(Model const * models, size_t nModels,
             animatedOffset += models[i].indexBuffer.size();
         } else {
             indexOffsets.push_back(staticOffset);
-            staticOffset = models[i].indexBuffer.size();
+            staticOffset += models[i].indexBuffer.size();
         }
     }
 
@@ -1645,6 +1767,44 @@ void GameRenderer::createModelDrawCalls(Model const * models, size_t nModels,
                 water.push_back(drawCall);
                 break;
             }
+        }
+    }
+}
+
+void GameRenderer::createWireframeDrawCalls(Model const * models, size_t nModels,
+                                            ModelID const * modelIDs,
+                                            size_t nModelIDs,
+                                            prt::vector<DrawCall> & drawCalls) {
+    drawCalls.resize(0);
+
+    /* non-animated */
+    prt::vector<uint32_t> indexOffsets;
+    uint32_t animatedOffset = 0;
+    uint32_t staticOffset = 0;
+    for (size_t i = 0; i < nModels; ++i) {
+        if (models[i].isAnimated()) {
+            indexOffsets.push_back(animatedOffset);
+            animatedOffset += models[i].indexBuffer.size();
+        } else {
+            indexOffsets.push_back(staticOffset);
+            staticOffset += models[i].indexBuffer.size();
+        }
+    }
+
+    for (size_t i = 0; i < nModelIDs; ++i) {
+        const Model& model = models[modelIDs[i]];
+
+        for (auto const & mesh : model.meshes) {
+            DrawCall drawCall;
+            // push constants
+            WireframePushConstants & pc = *reinterpret_cast<WireframePushConstants*>(drawCall.pushConstants.data());
+            pc.modelMatrixIndex = i;
+
+            // geometry
+            drawCall.firstIndex = indexOffsets[modelIDs[i]] + mesh.startIndex;
+            drawCall.indexCount = mesh.numIndices;
+
+            drawCalls.push_back(drawCall);
         }
     }
 }
@@ -2279,7 +2439,6 @@ void GameRenderer::pushBackSunShadowMap() {
             shadowMap.cascades[i][j].frameBufferIndex = fbaIndices.shadow[i];
         }
     }
-
 }
 
 prt::vector<VkPipelineColorBlendAttachmentState> GameRenderer::getOpaqueBlendAttachmentState() {
