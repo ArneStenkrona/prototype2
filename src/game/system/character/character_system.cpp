@@ -110,19 +110,20 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
         // compute movement plane
         glm::vec3 const moveNormal = physics.isGrounded ? physics.groundNormal : up;
         
+        glm::quat groundRot = glm::rotation(up, moveNormal);
+
         if (stateInfo.getCanTurn()) {
-            glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
+            // glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
+            glm::vec3 const newDir = glm::rotate(groundRot, glm::vec3{input.move.x,  0.0f, input.move.y});
             physics.forward = glm::dot(physics.forward, newDir) > -0.9f ?
                                        glm::normalize(glm::mix(physics.forward, newDir, 0.5f)) :
                                        newDir;
+            // rotate character
+            transform.rotation = math_util::safeQuatLookAt(origin, glm::vec3{input.move.x,  0.0f, input.move.y}, up, altUp);
         }
 
-        // rotate character
-        transform.rotation = math_util::safeQuatLookAt(origin, physics.forward, up, altUp);
 
-        glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(physics.forward, moveNormal)));
-
-        targetMovement = moveDir * stateInfo.getMovementSpeed();
+        targetMovement = physics.forward * stateInfo.getMovementSpeed();
     }
 
     physics.movementVector = targetMovement;

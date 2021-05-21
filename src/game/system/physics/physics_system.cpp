@@ -286,9 +286,9 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         // TODO: formalize friction
         // friction
         float frictionRatio = 1 / (1 + (deltaTime * 10.0f));
-        //*** Decay velocity
         physics[i].velocity.x = physics[i].velocity.x * frictionRatio;
         physics[i].velocity.z = physics[i].velocity.z * frictionRatio;
+        
         if (physics[i].isGrounded) {
             physics[i].velocity.y = glm::max(0.0f * gravityFactor * deltaTime, physics[i].velocity.y);
         } else {
@@ -791,7 +791,7 @@ void PhysicsSystem::collisionResponse(glm::vec3 const & /*intersectionPoint*/,
     position += verySmallDistance * collisionNormal;
 
     // set grounded
-    bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.0f;
+    bool groundCollision = glm::dot(collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.7f;
     physics[characterIndex].isGrounded = physics[characterIndex].isGrounded || groundCollision;
 
     if (groundCollision) {
