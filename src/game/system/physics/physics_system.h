@@ -5,6 +5,7 @@
 #include "src/game/system/physics/aabb.h"
 #include "src/game/system/physics/aabb_tree.h"
 #include "src/game/system/physics/colliders.h"
+#include "src/game/system/physics/collision.h"
 #include "src/graphics/geometry/model.h"
 #include "src/system/assets/model_manager.h"
 #include "src/game/system/character/character.h"
@@ -120,26 +121,6 @@ private:
                                         float & intersectionTime,
                                         glm::vec3 & collisionNormal,
                                         uint32_t & otherCharacterIndex);
-                   
-    bool collideEllipsoids(glm::vec3 const & ellipsoid0,
-                           glm::vec3 const & sourcePoint0, 
-                           glm::vec3 const & velocity0, 
-                           glm::vec3 const & ellipsoid1, 
-                           glm::vec3 const & sourcePoint1, 
-                           glm::vec3 const & velocity1,
-                           float & intersectionTime, 
-                           glm::vec3 & intersectionPoint,
-                           glm::vec3 & collisionNormal);
-
-    bool computeContactEllipsoids(glm::mat3 const & D, 
-                                  glm::vec3 const & K, 
-                                  glm::vec3 const & W, 
-                                  float & intersectionTime, 
-                                  glm::vec3 & zContact);
-
-    float computeClosestPointEllipsoids(glm::mat3 const & D, 
-                                        glm::vec3 const & K, 
-                                        glm::vec3 & closestPoint);
 
     void collisionResponse(glm::vec3 const & intersectionPoint,
                            glm::vec3 const & collisionNormal,

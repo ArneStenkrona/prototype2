@@ -21,6 +21,14 @@ struct EllipsoidCollider {
                  position + offset - radii }; }
 };
 
+struct Polygon {
+    glm::vec3 a;
+    glm::vec3 b;
+    glm::vec3 c;
+    glm::vec3 & operator[](size_t i) {  return *(&a + i); };
+    glm::vec3 const & operator[](size_t i) const {  return *(&a + i); };
+};
+
 struct MeshCollider {
     Transform transform;
 
