@@ -21,11 +21,11 @@ public:
      * Finds all intersecting nodes for aabb
      * @param aabb aabb of query object
      * @param meshIndices vector to store mesh indices
-     * @param ellipsoidIndices vector to store ellipsoid indices
+     * @param capsuleIndices vector to store capsule indices
      */
     void query(ColliderTag caller, AABB const & aabb, 
                prt::vector<uint16_t> & meshIndices,
-               prt::vector<uint16_t> & ellipsoidIndices);
+               prt::vector<uint16_t> & capsuleIndices);
 
     /**
      * Finds all intersecting nodes for raycast

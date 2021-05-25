@@ -2,8 +2,41 @@
 #define ELLIPSOID_COLLIDER_H
 
 #include "src/game/system/physics/colliders.h"
+#include "src/game/system/character/character.h"
 
 #include <glm/glm.hpp>
+
+
+struct CollisionResult {
+    // bool collided;
+    glm::vec3 intersectionPoint;
+    glm::vec3 impulse;
+    glm::vec3 collisionNormal;
+    float     collisionDepth;
+};
+
+enum CollisionType {
+    COLLISION_TYPE_ERROR,
+    COLLISION_TYPE_TRIGGER,
+    COLLISION_TYPE_RESPOND,
+    TOTAL_NUM_COLLISION_TYPES
+};
+
+struct CollisionPackage {
+    CollisionType type;
+    Transform * transform;
+    CharacterPhysics * physics;
+};
+
+void collideCapsuleMesh(CollisionPackage &      package,
+                        CapsuleCollider const & capsule,
+                        Polygon const *         polygons,
+                        size_t                  nPolygons);
+
+void collideCapsuleCapsule(CollisionPackage &      packageA,
+                           CapsuleCollider const & capsuleA,
+                           CollisionPackage &      packageB,
+                           CapsuleCollider const & capsuleB);
 
 bool collideSphereMesh(glm::vec3 const & sourcePoint, 
                        glm::vec3 const & relativeVelocity, 
@@ -32,5 +65,8 @@ bool computeContactEllipsoids(glm::mat3 const &   D,
 float computeClosestPointEllipsoids(glm::mat3 const & D, 
                                     glm::vec3 const & K, 
                                     glm::vec3 &       closestPoint);
+
+void handleCollision(CollisionPackage & package,
+                     CollisionResult const & result);
 
 #endif

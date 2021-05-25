@@ -78,15 +78,31 @@ void Scene::bindRenderData() {
     for (EntityID i = 0; i < m_entities.size(); ++i) {
         ColliderTag tag = m_entities.colliderTags[i];
 
-        if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
-            EllipsoidCollider const & col = m_physicsSystem.getEllipsoidCollider(tag);
-            glm::vec3 pos = m_entities.transforms[i].position + col.offset;
-            glm::vec3 scale = col.radii;
-            
-            glm::mat4 tform = glm::translate(glm::mat4(1.0f), pos) * glm::scale(scale);
+        switch (tag.type) {
+            case COLLIDER_TYPE_CAPSULE: {
+                CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
+                glm::vec3 pos = m_entities.transforms[i].position + col.offset;
+                glm::mat4 rotM =  glm::toMat4(glm::normalize(m_entities.transforms[i].rotation));
+                glm::vec3 bodyScale{ col.radius, col.height, col.radius };
+                glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
+                glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
+                
+                glm::mat4 tformBody = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = glm::translate(glm::mat4(1.0f), pos + glm::vec3{0.0f, col.height, 0.0f}) * rotM * glm::scale(cap2Scale);
 
-            m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.ellipsoid);
-            m_renderData.colliderTransforms.push_back(tform);
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleBody);
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleCap);
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleCap);
+                m_renderData.colliderTransforms.push_back(tformBody);
+                m_renderData.colliderTransforms.push_back(tformCap1);
+                m_renderData.colliderTransforms.push_back(tformCap2);
+                break;
+            }
+            case COLLIDER_TYPE_MODEL: {
+                break;
+            }
+            default: {}
         }
     }
 }
@@ -170,7 +186,7 @@ void Scene::updateColliders() {
                 modelTags.push_back(tag);
                 modelTransforms.push_back(m_entities.transforms[it->value()]);
                 break;
-            case COLLIDER_TYPE_ELLIPSOID:
+            case COLLIDER_TYPE_CAPSULE:
                 break;
             default:
                 break;
@@ -187,8 +203,8 @@ void Scene::addModelCollider(EntityID id) {
     m_entities.colliderTags[id] = m_physicsSystem.addModelCollider(getModel(id), m_entities.transforms[id]);
 }
 
-void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) {
-    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(radii, offset);
+void Scene::addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) {
+    m_entities.colliderTags[id] = m_physicsSystem.addCapsuleCollider(height, radius, offset);
 }
 
 void Scene::addPointLight(EntityID id, PointLight & pointLight) {
@@ -250,19 +266,35 @@ void Scene::updateRenderData() {
         }
     }
 
-    size_t colliderCount = 0;
+    size_t modelCount = 0;
     for (EntityID i = 0; i < m_entities.size(); ++i) {
         ColliderTag tag = m_entities.colliderTags[i];
 
-        if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
-            EllipsoidCollider const & col = m_physicsSystem.getEllipsoidCollider(tag);
-            glm::vec3 pos = m_entities.transforms[i].position + col.offset;
-            glm::vec3 scale = col.radii;
-            
-            glm::mat4 tform = glm::translate(glm::mat4(1.0f), pos) * glm::scale(scale);
+        switch (tag.type) {
+            case COLLIDER_TYPE_CAPSULE: {
+                CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
+                glm::vec3 pos = m_entities.transforms[i].position + col.offset;
+                glm::mat4 rotM =  glm::toMat4(glm::normalize(m_entities.transforms[i].rotation));
+                glm::vec3 bodyScale{ col.radius, col.height, col.radius };
+                glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
+                glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
+                
+                glm::mat4 tformBody = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = glm::translate(glm::mat4(1.0f), pos + glm::vec3{0.0f, col.height, 0.0f}) * rotM * glm::scale(cap2Scale);
 
-            m_renderData.colliderTransforms[colliderCount] = tform;
-            ++colliderCount;
+                m_renderData.colliderTransforms[modelCount] = tformBody;
+                ++modelCount;
+                m_renderData.colliderTransforms[modelCount] = tformCap1;
+                ++modelCount;
+                m_renderData.colliderTransforms[modelCount] = tformCap2;
+                ++modelCount;
+                break;
+            }
+            case COLLIDER_TYPE_MODEL: {
+                break;
+            }
+            default: {}
         }
     }
 }
@@ -276,10 +308,14 @@ void Scene::initSky() {
 
 void Scene::loadColliderModels() {
     char relative[512] = {0};
-    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/ellipsoid.obj", relative);
+    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/capsule_body.obj", relative);
+    EntityID bodyID = m_assetManager.getModelManager().loadModel(relative, false);
 
-    EntityID id = m_assetManager.getModelManager().loadModel(relative, false);
-    m_colliderModelIDs.ellipsoid = id;
+    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/capsule_cap.obj", relative);
+    EntityID capID = m_assetManager.getModelManager().loadModel(relative, false);
+
+    m_colliderModelIDs.capsuleBody = bodyID;
+    m_colliderModelIDs.capsuleCap = capID;
 }
 
 bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute) {

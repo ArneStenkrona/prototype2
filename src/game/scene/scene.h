@@ -74,9 +74,9 @@ public:
 
     bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
     void addModelCollider(EntityID id);
-    void addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset);
-    void updateEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) { return m_physicsSystem.updateEllipsoidCollider(m_entities.colliderTags[id], radii, offset); }
-    EllipsoidCollider & getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
+    void addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset);
+    void updateCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) { return m_physicsSystem.updateCapsuleCollider(m_entities.colliderTags[id], height, radius, offset); }
+    CapsuleCollider & getCapsuleCollider(EntityID id) const { return m_physicsSystem.getCapsuleCollider(m_entities.colliderTags[id]); }
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
     CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
@@ -94,7 +94,8 @@ private:
     } m_lights;
 
     struct ColliderModelIDs {
-        ModelID ellipsoid;
+        ModelID capsuleCap;
+        ModelID capsuleBody;
     } m_colliderModelIDs;
 
     Entities m_entities;

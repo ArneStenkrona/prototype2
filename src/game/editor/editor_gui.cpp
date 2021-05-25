@@ -272,7 +272,7 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
 
     static int typeInd = 0;
     switch (tag.type) {
-        case COLLIDER_TYPE_ELLIPSOID:
+        case COLLIDER_TYPE_CAPSULE:
             typeInd = 0;
             break;
         case COLLIDER_TYPE_MODEL:
@@ -282,20 +282,23 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
             typeInd = 0;
     }
 
-    const char* types[] = { "Ellipsoid", "Model" };
+    const char* types[] = { "Capsule", "Model" };
     ImGui::Combo("Type##Collider", &typeInd, types, IM_ARRAYSIZE(types));
 
-    if (tag.type == COLLIDER_TYPE_ELLIPSOID) {
-        EllipsoidCollider & col = scene.getEllipsoidCollider(selectedEntity);
-        glm::vec3 radii = col.radii;
+    if (tag.type == COLLIDER_TYPE_CAPSULE) {
+        CapsuleCollider & col = scene.getCapsuleCollider(selectedEntity);
+        float radius = col.radius;
+        float height = col.height;
         glm::vec3 offset = col.offset;
-        float* radiip = reinterpret_cast<float*>(&radii);
-        if (ImGui::InputFloat3("radii", radiip, "%.3f")) {
-            scene.updateEllipsoidCollider(selectedEntity, radii, offset);
+        if (ImGui::InputFloat("radius", &radius, 0.0f, 0.0f, "%.3f")) {
+            scene.updateCapsuleCollider(selectedEntity, height, radius, offset);
+        }
+        if (ImGui::InputFloat("height", &height, 0.0f, 0.0f, "%.3f")) {
+            scene.updateCapsuleCollider(selectedEntity, height, radius, offset);
         }
         float* offsetp = reinterpret_cast<float*>(&offset);
         if (ImGui::InputFloat3("offset", offsetp, "%.3f")) {
-            scene.updateEllipsoidCollider(selectedEntity, radii, offset);
+            scene.updateCapsuleCollider(selectedEntity, height, radius, offset);
         }
     }
 
@@ -442,7 +445,7 @@ bool EditorGui::addCollider(Scene & scene) {
         }
         ImGui::SameLine();
         if (ImGui::Button("Select")) {
-            if (current == 0) scene.addEllipsoidCollider(selectedEntity, glm::vec3{1.0f}, glm::vec3{0.0f});
+            if (current == 0) scene.addCapsuleCollider(selectedEntity, 1.0f, 1.0f, glm::vec3{0.0f});
             if (current == 1) scene.addModelCollider(selectedEntity);
             open = false;
         } 

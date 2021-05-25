@@ -12,13 +12,15 @@
 
 #include <glm/glm.hpp>
 
-struct EllipsoidCollider {
-    glm::vec3 radii;
+struct CapsuleCollider {
+    float height;
+    float radius;
     glm::vec3 offset;
 
     AABB getAABB(glm::vec3 const & position) const { 
-        return { position + offset - radii, 
-                 position + offset - radii }; }
+        return { position + offset - glm::vec3{radius}, 
+                 position + glm::vec3{0.0f, height, 0.0f} + offset + glm::vec3{radius} }; 
+    }
 };
 
 struct Polygon {
