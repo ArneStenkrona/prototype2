@@ -1064,7 +1064,9 @@ void GameRenderer::createWireframePipeline(size_t assetIndex, size_t uboIndex) {
 
     pipeline.extent = swapchain.swapchainExtent;
     pipeline.useColorAttachment = true;
-    pipeline.enableDepthBias = false;
+    pipeline.enableDepthBias = true;
+    pipeline.depthBiasConstant = 0.01f;
+    pipeline.depthBiasSlope = 0.1f;
     pipeline.cullModeFlags = VK_CULL_MODE_NONE;
 
     pipeline.colorBlendAttachments = getOpaqueBlendAttachmentState();

@@ -100,6 +100,8 @@ void Scene::bindRenderData() {
                 break;
             }
             case COLLIDER_TYPE_MODEL: {
+                m_renderData.colliderModelIDs.push_back(m_entities.modelIDs[i]);
+                m_renderData.colliderTransforms.push_back(m_entities.transforms[i].transformMatrix());
                 break;
             }
             default: {}
@@ -292,6 +294,8 @@ void Scene::updateRenderData() {
                 break;
             }
             case COLLIDER_TYPE_MODEL: {
+                m_renderData.colliderTransforms[modelCount] = m_entities.transforms[i].transformMatrix();
+                ++modelCount;
                 break;
             }
             default: {}
