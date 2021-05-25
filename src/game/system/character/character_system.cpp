@@ -35,32 +35,23 @@ void CharacterSystem::updateCharacters(float deltaTime) {
     }
 }
 
-CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag, float animationSpeed) { 
+CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag) { 
     assert(m_characters.size < m_characters.maxSize && "Character amount exceeded!");
-
-    CharacterAnimationClips & clips = m_characters.animationClips[m_characters.size];
-    clips.idle = m_scene->getModel(entityID).getAnimationIndex("idle");
-    clips.walk = m_scene->getModel(entityID).getAnimationIndex("walk");
-    clips.run  = m_scene->getModel(entityID).getAnimationIndex("run");
-    clips.jump = m_scene->getModel(entityID).getAnimationIndex("jump");
-    clips.fall = m_scene->getModel(entityID).getAnimationIndex("fall");
-    clips.land = m_scene->getModel(entityID).getAnimationIndex("land");
-
-    clips.idle = clips.idle == -1 ? 0 : clips.idle;
-    clips.walk = clips.walk == -1 ? 0 : clips.walk;
-    clips.run  = clips.run == -1 ? 0 : clips.run;
-    clips.jump = clips.jump == -1 ? 0 : clips.jump;
-    clips.fall = clips.fall == -1 ? 0 : clips.fall;
-    clips.land = clips.land == -1 ? 0 : clips.land;
 
     m_characters.entityIDs[m_characters.size] = entityID;
     m_characters.physics[m_characters.size].colliderTag = tag;
-    m_characters.animationSpeeds[m_characters.size] = animationSpeed;
 
     ++m_characters.size; 
     return m_characters.size - 1; 
 }
-                                                  
+
+void CharacterSystem::addEquipment(CharacterID characterID, int boneIndex, EntityID equipment, Transform offset) {
+    m_characters.attributeInfos[characterID].equipment.push_back({});
+    m_characters.attributeInfos[characterID].equipment.back().entity = equipment;
+    m_characters.attributeInfos[characterID].equipment.back().offset = offset;
+    m_characters.attributeInfos[characterID].equipment.back().boneIndex = boneIndex;
+}
+           
 void CharacterSystem::updatePhysics(float deltaTime) {
     prt::vector<Transform> transforms;
     transforms.resize(m_characters.size);
@@ -76,174 +67,223 @@ void CharacterSystem::updatePhysics(float deltaTime) {
 
     for (CharacterID i = 0; i < m_characters.size; ++i) {
         m_scene->getTransform(m_characters.entityIDs[i]) = transforms[i];
+        m_characters.attributeInfos[i].updateEquipment(m_characters.entityIDs[i], *m_scene, m_animationSystem);
     }
 }
 
 void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) {
-    auto const & input = m_characters.input[characterID];
-    auto & stateInfo = m_characters.stateInfos[characterID];
+    auto & attributeInfo = m_characters.attributeInfos[characterID];
     auto & physics = m_characters.physics[characterID];
-    auto & animation = m_animationSystem.getAnimationBlend(m_characters.entityIDs[characterID]);
-    auto const & clips = m_characters.animationClips[characterID];
-    float animationSpeed = m_characters.animationSpeeds[characterID];
+    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
 
-    if (physics.isGrounded) {
-        stateInfo.groundedTimer = 0.15f;
-    } else {
-        stateInfo.groundedTimer -= deltaTime;
-    }
     updateCharacterInput(characterID, deltaTime);
 
-    CharacterState state = stateInfo.state;
-    bool stateChange = stateInfo.state != stateInfo.previousState;
+    attributeInfo.updateState(deltaTime, animation, physics);
 
-    if (stateChange) {
-        stateInfo.stateTimer = 0.0f;
-        animation.time = 0.0f;
-
-    } else {
-        stateInfo.stateTimer += deltaTime;
-        animation.time += stateInfo.animationDelta * animationSpeed * deltaTime;
-    }
-
-    switch (stateInfo.state) {
-        case CHARACTER_STATE_GROUNDED: {
-            if (stateInfo.groundedTimer >= 0.0f && input.jump) {
-                stateInfo.state = CHARACTER_STATE_JUMPING;
-            } else if (stateInfo.groundedTimer < -0.3f) {
-                stateInfo.state = CHARACTER_STATE_FALLING;
-            }
-
-            float const vmag = glm::length(physics.movementVector);
-    
-            if (vmag > 0.025f) {
-                animation.clipA = clips.walk;
-                animation.clipB = clips.run;
-                animation.blendFactor = (vmag - 0.025f) / 0.055f;
-
-                stateInfo.animationDelta = math_util::lerp(0.75f, 1.5f, animation.blendFactor);
-            } else {
-                animation.clipA = clips.idle;
-                animation.clipB = clips.walk;
-                animation.blendFactor = vmag / 0.025f;
-                stateInfo.animationDelta = math_util::lerp(0.6f, 0.75f, animation.blendFactor);
-            }
-            
-            break;
-        }
+    switch (attributeInfo.stateInfo.getState()) {
         case CHARACTER_STATE_JUMPING: {
-            animation.clipA = clips.jump;
-            animation.clipB = clips.fall;
-            animation.blendFactor= math_util::lerp(0.0f, 1.0f, (animation.time - 0.3f) / 0.2f);
-
-            stateInfo.animationDelta = 1.0f;
-
-            if (stateChange) {
-                stateInfo.hasJumped = false;
-                stateInfo.groundedTimer = -0.1f;
-            }
-
-            if (stateInfo.stateTimer > 0.05f &&
-                !stateInfo.hasJumped) {
-                stateInfo.hasJumped = true;
+            if (attributeInfo.stateInfo.getStateChange()) {
                 physics.velocity.y = 0.35f;
             }
-
-            if (animation.time >= 0.5f) {
-                stateInfo.state = CHARACTER_STATE_FALLING;
-            }
             
             break;
         }
-        case CHARACTER_STATE_FALLING: {
-            animation.clipA = clips.fall;
-            animation.clipB = clips.fall;
-            animation.blendFactor = 0.0f;
-
-            stateInfo.animationDelta = 1.0f;
-
-            if (physics.isGrounded) {
-                stateInfo.state = CHARACTER_STATE_LANDING;
-            }
-            break;
-        }
-        case CHARACTER_STATE_LANDING: {
-            animation.clipA = clips.land;
-            animation.clipB = clips.idle;
-            animation.blendFactor= math_util::lerp(0.0f, 1.0f, (animation.time - 0.5f) / 0.5f);
-            
-            stateInfo.animationDelta = 1.0f;
-
-            float const vmag = glm::length(physics.movementVector);
-
-            if (stateChange &&
-                vmag < 0.025) {
-                physics.movementVector *= 0.1f;
-            }
-    
-            if (vmag > 0.025f) {
-                animation.clipA = clips.land;
-                animation.clipB = clips.run;
-                animation.blendFactor= math_util::lerp(0.0f, 1.0f, (animation.time / 0.2f));
-            }
-
-            if (animation.time >= 0.9f ||
-                (animation.time >= 0.2f && vmag > 0.025f)) {
-                stateInfo.state = CHARACTER_STATE_GROUNDED;
-            } else if (stateInfo.groundedTimer >= 0.0f && input.jump) {
-                stateInfo.state = CHARACTER_STATE_JUMPING;
-            }
-            break;
-        }
-        default:;
+        default: {}
     }
-
-    animation.blendFactor = glm::clamp(animation.blendFactor, 0.0f, 1.0f);
-
-    stateInfo.previousState = state;
+    
+    setStateTransitions(characterID);
 }
 
-void CharacterSystem::updateCharacterInput(CharacterID characterID, float deltaTime) {
+void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*deltaTime*/) {
     auto const & input = m_characters.input[characterID];
     auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
     auto & physics = m_characters.physics[characterID];
-    auto & stateInfo = m_characters.stateInfos[characterID];
+    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
     
     glm::vec3 targetMovement{0.0f};
-    float influence;
 
-    if (stateInfo.state == CHARACTER_STATE_JUMPING ||
-        stateInfo.state == CHARACTER_STATE_FALLING) {
-        // if character is airborne
-        influence = 2.0f;
-    } else if (stateInfo.state == CHARACTER_STATE_LANDING) {
-        influence = 0.5f;
-    } else {
-        influence = 10.0f;
-    }
-
+    // check if character performed any movement input
     if (glm::length2(input.move) > 0.0f) {
-        // if player performed any movement input
         glm::vec3 const origin{0.0f, 0.0f, 0.0f}; 
-        glm::vec3 const lookDir{input.move.x, 0.0f, input.move.y}; 
         glm::vec3 const up{0.0f, 1.0f, 0.0f}; 
         glm::vec3 const altUp{0.0f, 0.0f, 1.0f}; 
-        // rotate character
-        transform.rotation = math_util::safeQuatLookAt(origin, lookDir, up, altUp);
         // compute movement plane
         glm::vec3 const moveNormal = physics.isGrounded ? physics.groundNormal : up;
-        // project look direction onto normal of movement plane
-        glm::vec3 const moveDir = glm::normalize(glm::cross(moveNormal, glm::cross(lookDir, moveNormal)));
+        
+        glm::quat groundRot = glm::rotation(up, moveNormal);
 
-        if (input.run) {
-            targetMovement = 0.08f * moveDir;
-        } else {
-            targetMovement = 0.025f * moveDir;
+        if (stateInfo.getCanTurn()) {
+            // glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
+            glm::vec3 const newDir = glm::rotate(groundRot, glm::vec3{input.move.x,  0.0f, input.move.y});
+            physics.forward = glm::dot(physics.forward, newDir) > -0.9f ?
+                                       glm::normalize(glm::mix(physics.forward, newDir, 0.5f)) :
+                                       newDir;
+            // rotate character
+            transform.rotation = math_util::safeQuatLookAt(origin, glm::vec3{input.move.x,  0.0f, input.move.y}, up, altUp);
         }
-    }
-    
-    physics.movementVector = glm::lerp(physics.movementVector, targetMovement, influence * deltaTime);
 
-    physics.velocity.x = 2.0f * physics.movementVector.x;
-    physics.velocity.z = 2.0f * physics.movementVector.z;
+
+        targetMovement = physics.forward * stateInfo.getMovementSpeed();
+    }
+
+    physics.movementVector = targetMovement;
+}
+
+void CharacterSystem::setStateTransitions(CharacterID characterID) {
+    auto const & input = m_characters.input[characterID];
+    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
+    auto & physics = m_characters.physics[characterID];
+    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
+
+    stateInfo.resetStateChange();
+
+    switch (stateInfo.getState()) {
+        case CHARACTER_STATE_IDLE: {
+            if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
+                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
+            } else if (stateInfo.getGroundedTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (glm::length2(input.move) > 0.0f) {
+                stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_WALKING: {
+            if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
+               stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
+            } else if (stateInfo.getGroundedTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
+            } else if (glm::length2(input.move) > 0.0f) {
+                if (input.run) stateInfo.transitionState(CHARACTER_STATE_RUNNING, 0.1f);
+            } else {
+                stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+            } 
+            break;
+        }
+        case CHARACTER_STATE_RUNNING: {
+            if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
+                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
+            } else if (stateInfo.getGroundedTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.0f);
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
+            } else if (glm::length2(input.move) > 0.0f) {
+                if (!input.run) stateInfo.transitionState(CHARACTER_STATE_WALKING, 0.1f);
+            } else {
+                stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_JUMPING: {
+            if (physics.isGrounded && stateInfo.getStateTimer() > 0.1f) {
+                stateInfo.transitionState(CHARACTER_STATE_LANDING_MILDLY, 0.05f);
+            } else if (animation.clipA.isCompleted()) {
+                stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.3f);
+            } else if (input.attack && stateInfo.getStateTimer() > 0.1f) {
+                stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_FALLING: {
+            if (physics.isGrounded) {
+                if (glm::length2(input.move) > 0.0f && stateInfo.getStateTimer() > 0.2f) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.0f);
+                } else {
+                    if (stateInfo.getStateTimer() < 0.4f) {
+                        stateInfo.transitionState(CHARACTER_STATE_LANDING_MILDLY, 0.05f);
+                    } else {
+                        stateInfo.transitionState(CHARACTER_STATE_LANDING, 0.0f);
+                    }
+                }
+            } else if (input.attack) {
+                stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_LANDING:
+        case CHARACTER_STATE_LANDING_MILDLY: {
+            if (glm::length2(input.move) > 0.0f) {
+                stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+            } else if (animation.clipA.isCompleted()) {
+                stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.3f);
+            } else if (stateInfo.getGroundedTimer() <= 0.15f && input.jump) {
+                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_ROLLING: {
+            if (input.jump && stateInfo.getStateTimer() > 0.1f) {
+                stateInfo.transitionState(CHARACTER_STATE_JUMPING, 0.1f);
+            } else if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.3f);
+                }
+            }
+            break;
+        }
+        case CHARACTER_STATE_SLASH1: {
+            if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+                }
+            } else if (input.attack && stateInfo.getStateTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH2, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_SLASH2: {
+            if (animation.clipA.isCompleted()) {
+                if (glm::length2(input.move) > 0.0f) {
+                    stateInfo.transitionState(input.run ? CHARACTER_STATE_RUNNING : CHARACTER_STATE_WALKING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_IDLE, 0.1f);
+                }
+            } else if (input.attack && stateInfo.getStateTimer() > 0.15f) {
+                stateInfo.transitionState(CHARACTER_STATE_SLASH1, 0.0f);
+            }
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH1: {
+            if (animation.clipA.isCompleted()) {
+               if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.1f);
+                }
+            }  else if (stateInfo.getStateTimer() > 0.15f) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else if (input.attack) {
+                    stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH2, 0.0f);
+                }
+            }
+            break;
+        }
+        case CHARACTER_STATE_MIDAIR_SLASH2: {
+            if (animation.clipA.isCompleted()) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else {
+                    stateInfo.transitionState(CHARACTER_STATE_FALLING, 0.1f);
+                }
+            } else if (stateInfo.getStateTimer() > 0.15f) {
+                if (physics.isGrounded) {
+                    stateInfo.transitionState(CHARACTER_STATE_ROLLING, 0.1f);
+                } else if (input.attack) {
+                    stateInfo.transitionState(CHARACTER_STATE_MIDAIR_SLASH1, 0.0f);
+                }
+            }
+            break;
+        }
+
+        default: {}
+    }
 }

@@ -113,7 +113,9 @@ struct Swapchain {
 
 };
 
-enum RenderGroupFlags : uint16_t {
+typedef uint16_t RenderGroupMask;
+
+enum RenderGroupFlags : RenderGroupMask {
     RENDER_GROUP_FLAG_0 = 1<<0,
     RENDER_GROUP_FLAG_1 = 1<<1,
     RENDER_GROUP_FLAG_2 = 1<<2,
@@ -135,7 +137,7 @@ enum RenderGroupFlags : uint16_t {
 };
 
 template<typename INT_T>
-bool checkMask(uint16_t mask, INT_T i) {
+bool checkMask(RenderGroupMask mask, INT_T i) {
     assert(i <= sizeof(mask)*CHAR_BIT);
     return mask & (1 << i);
 }
@@ -153,7 +155,7 @@ public:
 
     // void render(uint16_t renderGroupMask = RENDER_GROUP_FLAG_ALL);
 
-    void updateRenderGroupMask(int16_t renderGroupMask);
+    void updateRenderGroupMask(RenderGroupMask renderGroupMask);
     
     GLFWwindow* getWindow() const { return _window; }
     void getWindowSize(int& w, int& h) { w = _width; h = _height; };
@@ -170,7 +172,7 @@ protected:
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     // render group mask
-    uint16_t commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
+    RenderGroupMask commandBufferRenderGroupMask = RENDER_GROUP_FLAG_ALL;
 
     // command data
     prt::vector<VkCommandPool> commandPools;

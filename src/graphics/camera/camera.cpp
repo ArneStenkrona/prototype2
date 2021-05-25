@@ -53,8 +53,14 @@ void Camera::getCameraCorners(glm::vec3 & topleft,
     bottomright = br / tl.w;
 }
 
+void Camera::rotate(float deltaYaw, float deltaPitch) {
+    m_yaw += deltaYaw;
+    m_pitch += deltaPitch;
+}
+
 void Camera::setTarget(glm::vec3 target) {
     m_position = target - (m_targetDistance * m_front);
+    m_lastTargetPosition = target;
 }
 
 void Camera::update(float deltaTime, bool keyboardMovement, bool drag) {

@@ -10,6 +10,7 @@
 #include "src/game/system/animation/animation_system.h"
 #include "src/game/system/physics/physics_system.h"
 #include "src/game/system/character/character_system.h"
+#include "src/game/system/character/character.h"
 #include "src/graphics/vulkan/game_renderer.h"
 #include "src/game/scene/entity.h"
 
@@ -20,6 +21,26 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+struct RenderData {
+    Texture const * textures;
+    size_t nTextures;
+
+    Model const * models;
+    size_t nModels;
+
+    prt::vector<glm::mat4> staticTransforms;
+    prt::vector<EntityID>  staticEntityIDs;
+    prt::vector<ModelID>   staticModelIDs;
+
+    prt::vector<glm::mat4> animatedTransforms;
+    prt::vector<EntityID>  animatedEntityIDs;
+    prt::vector<ModelID>   animatedModelIDs;
+    prt::vector<uint32_t>  boneOffsets;
+
+    prt::vector<ModelID>   colliderModelIDs;
+    prt::vector<glm::mat4> colliderTransforms;
+};
 
 class Scene {
 public:
@@ -32,7 +53,7 @@ public:
 
     void update(float deltaTime);
 
-    void sampleAnimation(prt::vector<glm::mat4> & bones);
+    prt::vector<glm::mat4> const & sampleAnimation();
 
     void getSkybox(prt::array<Texture, 6>& cubeMap) const;
 
@@ -48,13 +69,14 @@ public:
     Entities & getEntities() { return m_entities; }
 
     bool hasModel(EntityID id) const { return m_entities.modelIDs[id] != -1; }
+    ModelID getModelID(EntityID id) const { return m_entities.modelIDs[id]; }
     Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
 
     bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
     void addModelCollider(EntityID id);
-    void addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset);
-    void updateEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) { return m_physicsSystem.updateEllipsoidCollider(m_entities.colliderTags[id], radii, offset); }
-    EllipsoidCollider & getEllipsoidCollider(EntityID id) const { return m_physicsSystem.getEllipsoidCollider(m_entities.colliderTags[id]); }
+    void addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset);
+    void updateCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) { return m_physicsSystem.updateCapsuleCollider(m_entities.colliderTags[id], height, radius, offset); }
+    CapsuleCollider & getCapsuleCollider(EntityID id) const { return m_physicsSystem.getCapsuleCollider(m_entities.colliderTags[id]); }
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
     CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
@@ -70,6 +92,11 @@ private:
     struct Lights {
         SkyLight sun;
     } m_lights;
+
+    struct ColliderModelIDs {
+        ModelID capsuleCap;
+        ModelID capsuleBody;
+    } m_colliderModelIDs;
 
     Entities m_entities;
 
@@ -92,23 +119,6 @@ private:
     AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
     LightingSystem m_lightingSystem;
-
-    struct RenderData {
-        Texture const * textures;
-        size_t nTextures;
-
-        Model const * models;
-        size_t nModels;
-
-        prt::vector<glm::mat4> staticTransforms;
-        prt::vector<EntityID>  staticEntityIDs;
-        prt::vector<ModelID>   staticModelIDs;
-
-        prt::vector<glm::mat4> animatedTransforms;
-        prt::vector<EntityID>  animatedEntityIDs;
-        prt::vector<ModelID>   animatedModelIDs;
-        prt::vector<uint32_t>  boneOffsets;
-    };
     
     RenderData m_renderData;
     RenderResult m_renderResult;
@@ -116,6 +126,7 @@ private:
     void bindRenderData();
     
     void initSky();
+    void loadColliderModels();
     
     prt::vector<UBOPointLight> getPointLights();
     

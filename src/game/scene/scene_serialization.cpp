@@ -50,24 +50,20 @@ void SceneSerialization::loadScene(char const * file, Scene & scene) {
     while (data < buf.end()) {
         type = readToken(data);
         switch (type) {
-            case STATIC_SOLID_ENTITY :
-                parseStaticSolidEntity(data, scene);
+            case ENTITY :
+                parseEntity(data, scene);
                 break;
             case SUN :
                 parseSun(data, scene);
                 break;
-            case POINT_LIGHT :
-            parsePointLight(data, scene);
-                break;
-            case CHARACTER :
-                parseCharacter(data, scene);
-                break;
+            case END :
+                return;
             case ERROR :
                 assert(false && "Failed to parse file!");
                 break;        
             }
         // read rest of line
-        while (*data != '\n') {
+        while (*data != '\n' && *data != '\0') {
             ++data;
         }
         ++data;
@@ -86,92 +82,154 @@ SceneSerialization::TokenType SceneSerialization::readToken(char const *& buf) {
     }
 
     // TODO: replace with hash-table for performance
-    if (strcmp(tokenStr, "StaticSolidEntity") == 0) {
-        type = TokenType::STATIC_SOLID_ENTITY;
+    if (strcmp(tokenStr, "Entity") == 0) {
+        type = TokenType::ENTITY;
     } else if (strcmp(tokenStr, "Sun") == 0) {
         type = TokenType::SUN;
-    } else if (strcmp(tokenStr, "PointLight") == 0) {
-        type = TokenType::POINT_LIGHT;
-    } else if (strcmp(tokenStr, "Character") == 0) {
-        type = TokenType::CHARACTER;
+    } else if (strcmp(tokenStr, "") == 0) {
+        type = TokenType::END;
     }
 
     return type;
 }
 
-void SceneSerialization::parseStaticSolidEntity(char const *& buf, Scene & scene) {
+SceneSerialization::ComponentType SceneSerialization::readComponentType(char const *& buf) {
+    char tokenStr[64] = {0};
+    int i = 0;
+    while (*buf != '{' && *buf != '\n' && *buf != '\0') {
+        tokenStr[i] = *buf;
+        ++i;
+        ++buf;
+    }
+
+    ComponentType type = ComponentType::COMPONENT_TYPE_END;
+    if (*buf != '\n' && *buf != '\0') {
+        type = ComponentType(atoi(tokenStr));
+    }
+
+    return type;
+}
+
+void SceneSerialization::parseEntity(char const *& buf, Scene & scene) {
     EntityID id = scene.m_entities.addEntity();
 
-    char modelPath[128] = {0};
-    parseString(buf, modelPath);
-    char const * modelPathBuf = modelPath;
-    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, false);
+    ComponentType type;
 
-    scene.m_entities.modelIDs[id] = modelID;
-    scene.m_entities.transforms[id].position = parseVec3(buf);
-    scene.m_entities.transforms[id].rotation = parseQuat(buf);
-    scene.m_entities.transforms[id].scale = parseVec3(buf);
+    while ((type = readComponentType(buf)) != ComponentType::COMPONENT_TYPE_END) {
+        switch (type) {
+            case COMPONENT_TYPE_NAME: {
+                parseString(buf, scene.m_entities.names[id]);
+                break;
+            }
+            case COMPONENT_TYPE_TRANSFORM: {
+                scene.m_entities.transforms[id].position = parseVec3(buf);
+                scene.m_entities.transforms[id].rotation = parseQuat(buf);
+                scene.m_entities.transforms[id].scale = parseVec3(buf);
+                break;
+            }
+            case COMPONENT_TYPE_MODEL: {
+                char modelPath[128] = {0};
+                parseString(buf, modelPath);
+                char const * modelPathBuf = modelPath;
 
-    Model const * models;
-    size_t nModels;
-    scene.m_assetManager.getModelManager().getModels(models, nModels);
+                bool animated = parseBool(buf);
 
-    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addModelCollider(models[modelID], 
-                                                                               scene.m_entities.transforms[id]);
+                ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, animated);
+                scene.m_entities.modelIDs[id] = modelID;
+
+                if (animated) {
+                    scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
+                }
+                break;
+            }
+            case COMPONENT_TYPE_COLLIDER: {
+                char cType[128] = {0};
+                parseString(buf, cType);
+                if (strcmp(cType, "MODEL") == 0) {
+                    Model const * models;
+                    size_t nModels;
+                    scene.m_assetManager.getModelManager().getModels(models, nModels);
+
+                    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addModelCollider(models[scene.m_entities.modelIDs[id]], 
+                                                                                               scene.m_entities.transforms[id]);
+                } else if (strcmp(cType, "CAPSULE") == 0) {
+                    float height = parseFloat(buf);
+                    float radius = parseFloat(buf);
+                    glm::vec3 offset = parseVec3(buf);
+
+                    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addCapsuleCollider(height, radius, offset);
+                } else {
+                    assert(false);
+                }
+
+                break;
+            }
+            case COMPONENT_TYPE_CHARACTER: {
+                CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id]);
+                scene.m_entities.characterIDs[id] = characterID;
+                ++buf;
+
+                while (*buf == '<') {
+                    ++buf;
+                    char bone[128] = {0};
+                    char model[128] = {0};
+                    parseString(buf, bone);
+                    parseString(buf, model);
+                    int boneIndex = scene.getModel(id).getBoneIndex(bone);
+
+                    EntityID equipID = scene.m_entities.addEntity();
+
+                    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(model, false);
+                    scene.m_entities.modelIDs[equipID] = modelID;
+
+                    Transform offset;
+                    offset.position = parseVec3(buf);
+                    offset.rotation = parseQuat(buf);
+                    offset.scale = parseVec3(buf);
+                    ++buf;
+
+                    scene.m_characterSystem.addEquipment(characterID, boneIndex, equipID, offset);
+                }
+
+                break;
+            }
+            case COMPONENT_TYPE_POINTLIGHT: {
+                PointLight light;
+                light.color = parseVec3(buf);
+                light.constant = parseFloat(buf);
+                light.linear = parseFloat(buf);
+                light.quadratic = parseFloat(buf);
+
+                scene.addPointLight(id, light);
+                break;
+            }
+            case COMPONENT_TYPE_END: {
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+        while (*buf != '}' && *buf != '\0') {
+            ++buf;
+        }
+        ++buf;
+    }
 }
 
 void SceneSerialization::parseSun(char const *& buf, Scene & scene) {
     scene.m_lights.sun.direction = glm::normalize(parseVec3(buf));
     scene.m_lights.sun.color = parseVec3(buf);
-
-}
-
-void SceneSerialization::parsePointLight(char const *& buf, Scene & scene) {
-    EntityID id = scene.m_entities.addEntity();
-    scene.m_entities.transforms[id].position = parseVec3(buf);
-
-    PointLight light;
-    light.color = parseVec3(buf);
-    light.constant = parseFloat(buf);
-    light.linear = parseFloat(buf);
-    light.quadratic = parseFloat(buf);
-
-    scene.addPointLight(id, light);
-}
-
-void SceneSerialization::parseCharacter(char const *& buf, Scene & scene) {
-    EntityID id = scene.m_entities.addEntity();
-
-    char modelPath[128] = {0};
-    parseString(buf, modelPath);
-    char const * modelPathBuf = modelPath;
-    ModelID modelID = scene.m_assetManager.getModelManager().loadModel(modelPathBuf, true);
-
-    scene.m_entities.animationIDs[id] = scene.m_animationSystem.addAnimation(id);
-
-    scene.m_entities.modelIDs[id] = modelID;
-
-    scene.m_entities.transforms[id].position = parseVec3(buf);
-    scene.m_entities.transforms[id].rotation = parseQuat(buf);
-    scene.m_entities.transforms[id].scale = parseVec3(buf);
-
-    glm::vec3 radii = parseVec3(buf);
-    glm::vec3 offset = parseVec3(buf);
-
-    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
-
-    float animationSpeed = parseFloat(buf);
-
-    CharacterID characterID = scene.m_characterSystem.addCharacter(id, scene.m_entities.colliderTags[id], animationSpeed);
-
-    scene.m_entities.characterIDs[id] = characterID;
 }
 
 void SceneSerialization::parseString(char const *& buf, char * dest) {
-    while (*buf != '"') {
+    while (*buf != '<' && *buf != '\0') {
         ++buf;
     }
-    ++buf;
+    if (*buf == '\0') {
+        assert(false);
+    }
+    buf += 2;
 
     int i = 0;
     while (*buf != '"') {
@@ -179,12 +237,35 @@ void SceneSerialization::parseString(char const *& buf, char * dest) {
         ++i;
         ++buf;
     }
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
+    dest[i] = '\0';
+}
+
+bool SceneSerialization::parseBool(char const *& buf) {
+    while (*buf != '<' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
+
+    return tolower(*buf) == 't';
 }
 
 float SceneSerialization::parseFloat(char const *& buf) {
     float f;
-    while (*buf != '<') {
+    while (*buf != '<' && *buf != '\0') {
         ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
     }
     ++buf;
 
@@ -194,13 +275,24 @@ float SceneSerialization::parseFloat(char const *& buf) {
     if (ret != 1) {
         assert(false && "Failed to parse float");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return f;
 }
 
 glm::vec3 SceneSerialization::parseVec3(char const *& buf) {
     glm::vec3 vec;
-    while (*buf != '<') {
+    while (*buf != '<' && *buf != '\0') {
         ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
     }
     ++buf;
 
@@ -210,13 +302,24 @@ glm::vec3 SceneSerialization::parseVec3(char const *& buf) {
     if (ret != 3) {
         assert(false && "Failed to parse vec3");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return vec;
 }
 
 glm::quat SceneSerialization::parseQuat(char const *& buf) {
     glm::quat quat;
-    while (*buf != '<') {
+    while (*buf != '<' && *buf != '\0') {
         ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
     }
     ++buf;
 
@@ -225,5 +328,13 @@ glm::quat SceneSerialization::parseQuat(char const *& buf) {
     if (ret != 4) {
         assert(false && "Failed to parse quat");
     }
+
+    while (*buf != '>' && *buf != '\0') {
+        ++buf;
+    }
+    if (*buf == '\0') {
+        assert(false);
+    }
+    ++buf;
     return glm::normalize(quat);
 }

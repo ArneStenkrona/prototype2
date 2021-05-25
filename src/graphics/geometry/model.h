@@ -22,6 +22,9 @@
 
 #include "src/system/assets/texture_manager.h"
 
+#include "src/game/system/animation/animation_system.h"
+
+
 #include <assimp/scene.h>
 
 namespace std {
@@ -62,14 +65,17 @@ public:
     bool load(bool loadAnimation, TextureManager & textureManager);
     // TODO: add unload method
 
-    void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
-    void blendAnimation(float clipTime, 
+    void sampleAnimation(AnimationClip & clip, glm::mat4 * transforms) const;
+    void blendAnimation(AnimationClip & clipA, 
+                        AnimationClip & clipB,
                         float blendFactor,
-                        size_t animationIndexA, 
-                        size_t animationIndexB,
                         glm::mat4 * transforms) const;
 
     int getAnimationIndex(char const * name) const;
+    int getNumBones() const { return bones.size(); }
+    int getBoneIndex(char const * name) const;
+    glm::mat4 getBoneTransform(int index) const;
+    glm::mat4 getBoneTransform(char const * name) const;
 
     inline bool isloaded() const { return mLoaded; }
     inline bool isAnimated() const { return mAnimated; }
@@ -100,7 +106,9 @@ private:
 
     // maps animation names to animations
     // TODO: replace with own string type
-    prt::hash_map<aiString, uint32_t> nameToAnimation;
+    prt::hash_map<aiString, int> nameToAnimation;
+    prt::hash_map<aiString, int> nameToBone;
+    prt::hash_map<aiString, int> nameToNode;
 
     // TODO: expose necessary fields
     // through const refs instead of
@@ -121,13 +129,17 @@ struct Model::Node {
 
 struct Model::Material {
     char name[256];
+    glm::vec4 albedo{1.0f, 1.0f, 1.0f, 1.0f};
+    float metallic = 0.0f;
+    float roughness = 0.5f;
+    float ao = 1.0f;
+    float emissive = 0.0f;
     int32_t albedoIndex = -1;
+    int32_t metallicIndex = -1;
+    int32_t roughnessIndex = -1;
+    int32_t aoIndex = -1;
     int32_t normalIndex = -1;
-    int32_t specularIndex = -1;
-    glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
-    // bool transparent = false;
     bool twosided = false;
-    float baseSpecularity = 0.0f;
     enum Type {
         standard,
         transparent,

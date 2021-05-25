@@ -71,7 +71,7 @@ void VulkanApplication::initVulkan() {
     createDescriptorPools();
 }
 
-void VulkanApplication::updateRenderGroupMask(int16_t renderGroupMask) {
+void VulkanApplication::updateRenderGroupMask(RenderGroupMask renderGroupMask) {
     if (renderGroupMask != commandBufferRenderGroupMask) {
         commandBufferRenderGroupMask = renderGroupMask;
         /* rebuild command buffers */
@@ -362,6 +362,7 @@ void VulkanApplication::createLogicalDevice() {
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.independentBlend = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
     
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -615,7 +616,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = graphicsPipeline.polygonMode;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = graphicsPipeline.cullModeFlags;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -1199,8 +1200,8 @@ void VulkanApplication::createCubeMapImageView(VkImageView& imageView, VkImage &
 void VulkanApplication::createTextureSampler() {
     VkSamplerCreateInfo samplerCreateInfo = {};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
-    samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
     samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;

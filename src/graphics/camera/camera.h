@@ -31,6 +31,8 @@ public:
                           glm::vec3 & bottomright);
 
     void setTarget(glm::vec3 target);
+    void rotate(float deltaYaw, float deltaPitch);
+
     void update(float deltaTime, bool keyboardMovement = false, bool drag = false);
 
     // Returns the view matrix calculated using Euler Angles and the LookAt Matrix
@@ -73,6 +75,7 @@ private:
 
     // Target attributes
     float m_targetDistance;
+    glm::vec3 m_lastTargetPosition;
 
     Input& m_input;
 

@@ -46,23 +46,6 @@ struct AnimatedStandardUBO {
     BoneUBO bones;
 };
 
-struct StandardPushConstants {
-    alignas(4)  int32_t modelMatrixIdx;
-	alignas(4)  int32_t albedoIndex;
-	alignas(4)  int32_t normalIndex;
-	alignas(4)  int32_t specularIndex;
-    alignas(16) glm::vec4 baseColor;
-    alignas(4)  float baseSpecularity;
-    alignas(4)  int32_t entityID;
-    alignas(4)  uint32_t boneOffset;
-};
-
-struct BillboardPushConstants {
-    alignas(16) glm::vec4 billboardSize;
-    alignas(4) int albedoIndex;
-    alignas(4) int positionIndex;
-};
-
 struct GridUBO {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
@@ -102,6 +85,40 @@ struct AnimatedShadowMapUBO {
     alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
     alignas(16) glm::mat4 depthVP[NUMBER_SHADOWMAP_CASCADES];
     alignas(16) BoneUBO bones;
+};
+
+struct GizmoUBO {
+    alignas(16) glm::mat4 model[NUMBER_SUPPORTED_MODEL_MATRICES];
+    alignas(16) glm::mat4 invTransposeModel[NUMBER_SUPPORTED_MODEL_MATRICES];
+    alignas(16) glm::mat4 viewProjection;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::vec3 viewPosition;
+};
+
+struct StandardPushConstants {
+    alignas(4)  int32_t   modelMatrixIdx;
+    alignas(4)  int32_t   albedoIndex;
+    alignas(4)  int32_t   metallicIndex;
+    alignas(4)  int32_t   roughnessIndex;
+    alignas(16) glm::vec4 albedo;
+    alignas(4)  float     metallic;
+    alignas(4)  float     roughness;
+    alignas(4)  float     ao;
+    alignas(4)  float     emissive;
+    alignas(4)  int32_t   aoIndex;
+    alignas(4)  int32_t   normalIndex;
+    alignas(4)  int32_t   entityID;
+    alignas(4)  uint32_t  boneOffset;
+};
+
+struct BillboardPushConstants {
+    alignas(16) glm::vec4 billboardSize;
+    alignas(4) int albedoIndex;
+    alignas(4) int positionIndex;
+};
+
+struct WireframePushConstants {
+    alignas(4)  int32_t   modelMatrixIndex;
 };
 
 #endif

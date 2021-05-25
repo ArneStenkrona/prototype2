@@ -11,6 +11,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "src/game/system/animation/animation_clip.h"
+
 #include <fstream>
 
 Model::Model(char const * path)
@@ -49,35 +51,33 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     // parse materials
     materials.resize(scene->mNumMaterials);
     for (size_t i = 0; i < materials.size(); ++i) {
-        aiString matName;
+ aiString matName;
         aiGetMaterialString(scene->mMaterials[i], AI_MATKEY_NAME, &matName);
         strcpy(materials[i].name, matName.C_Str());
- 
+
         aiColor3D color;
         scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-
-        materials[i].baseColor = { color.r, color.g, color.b, 1.0f };
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_SPECULAR, materials[i].roughness);
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_AMBIENT, materials[i].ao);
+        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_EMISSIVE, materials[i].emissive);
         
-        scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].baseColor.a);
+        materials[i].albedo = { color.r, color.g, color.b, 1.0f };
+        
+        scene->mMaterials[i]->Get(AI_MATKEY_OPACITY, materials[i].albedo.a);
         scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
 
         
-        if (materials[i].baseColor.a < 1.0f) {
+        if (materials[i].albedo.a < 1.0f) {
             materials[i].type = Material::Type::transparent;
         }
-        if (strstr(materials[i].name, "[water]") != NULL) {
-            materials[i].type = Material::Type::water;
-        }
-        if (strstr(materials[i].name, "[transparent]") != NULL) {
-            materials[i].type = Material::Type::transparent;
-        }
-        if (strstr(materials[i].name, "[gloss]") != NULL) {
-            materials[i].baseSpecularity = 1.0f;
-        }
-
 
         materials[i].albedoIndex = getTexture(*scene->mMaterials[i], aiTextureType_DIFFUSE, mPath, textureManager);
+        materials[i].metallicIndex = getTexture(*scene->mMaterials[i], aiTextureType_METALNESS, mPath, textureManager);
+        materials[i].roughnessIndex = getTexture(*scene->mMaterials[i], aiTextureType_SHININESS, mPath, textureManager);
+        materials[i].aoIndex = getTexture(*scene->mMaterials[i], aiTextureType_AMBIENT, mPath, textureManager);
         materials[i].normalIndex = getTexture(*scene->mMaterials[i], aiTextureType_NORMALS, mPath, textureManager);
+        
+        materials[i].metallic = materials[i].metallicIndex == -1 ? 0.0f : 1.0f;
     }
 
     /* Process node hierarchy */
@@ -91,7 +91,6 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
     // assimp row-major, glm col-major
     mGlobalInverseTransform = glm::transpose(glm::inverse(mGlobalInverseTransform));
     
-    prt::hash_map<aiString, size_t> nodeToIndex;
     prt::vector<aiString> boneToName;
 
     prt::hash_map<aiString, int> boneMapping;
@@ -111,10 +110,10 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         mNodes.push_back({});
         Node & n = mNodes.back();
         n.name = node->mName;
-        memcpy(&n.transform, &tform, sizeof(glm::mat4));
+        memcpy(&n.transform, &node->mTransformation, sizeof(glm::mat4));
         // assimp row-major, glm col-major
         n.transform = glm::transpose(n.transform);
-        nodeToIndex.insert(node->mName, nodeIndex);
+        nameToNode.insert(node->mName, nodeIndex);
         
         n.parentIndex = parentIndex;
         if (n.parentIndex != -1) {
@@ -177,10 +176,11 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                     aiBone const * bone = aiMesh->mBones[j];
 
                     boneToName[bi] = bone->mName;
+                    nameToBone[bone->mName] = bi;
 
                     memcpy(&bones[bi].offsetMatrix, &bone->mOffsetMatrix, sizeof(glm::mat4));
 
-                    memcpy(&bones[bi].meshTransform, &tform, sizeof(glm::mat4));
+                    memcpy(&bones[bi].meshTransform, &node->mTransformation, sizeof(glm::mat4));
                     bones[bi].meshTransform = glm::transpose(bones[bi].meshTransform);
                     // assimp row-major, glm col-major
                     bones[bi].offsetMatrix = glm::transpose(bones[bi].offsetMatrix) * glm::inverse(bones[bi].meshTransform);
@@ -228,7 +228,6 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                 nameToAnimation.insert(aiAnim->mName, i);
             }
 
-
             Animation & anim = animations[i];
             anim.duration = aiAnim->mDuration;
             anim.ticksPerSecond = aiAnim->mTicksPerSecond;
@@ -238,8 +237,8 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
                 aiNodeAnim const * aiChannel = aiAnim->mChannels[j];
                 AnimationNode & channel = anim.channels[j];
 
-                assert(nodeToIndex.find(aiChannel->mNodeName) != nodeToIndex.end() && "animation does not correspond to node");
-                auto nodeIndex = nodeToIndex.find(aiChannel->mNodeName)->value();
+                assert(nameToNode.find(aiChannel->mNodeName) != nameToNode.end() && "animation does not correspond to node");
+                auto nodeIndex = nameToNode.find(aiChannel->mNodeName)->value();
                 mNodes[nodeIndex].channelIndex = j;
 
                 assert(aiChannel->mNumPositionKeys == aiChannel->mNumRotationKeys && 
@@ -259,9 +258,9 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         // set node Indices
         for (size_t i = 0; i < bones.size(); ++i) {
             aiString & boneName = boneToName[i];
-
-            assert(nodeToIndex.find(boneName) != nodeToIndex.end() && "No corresponding node for bone");
-            size_t nodeIndex = nodeToIndex.find(boneName)->value();
+            
+            assert(nameToNode.find(boneName) != nameToNode.end() && "No corresponding node for bone");
+            size_t nodeIndex = nameToNode.find(boneName)->value();
             mNodes[nodeIndex].boneIndices.push_back(i);
         }
     }
@@ -279,19 +278,33 @@ int Model::getAnimationIndex(char const * name) const {
     return nameToAnimation.find(aiString(name))->value();
 }
 
-void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const {
-    assert(mAnimated);
-    auto const & animation = animations[animationIndex];
+int Model::getBoneIndex(char const * name) const {
+    if (nameToBone.find(aiString(name)) == nameToBone.end()) {
+        return -1;
+    }
+    return nameToBone.find(aiString(name))->value();
+}
 
-    // calculate prev and next frame
-    float duration = animation.duration / (1000 * animation.ticksPerSecond);
-    float animTime = t / duration;
-    size_t numFrames = animation.channels[0].keys.size();
-    float fracFrame = animTime * numFrames;
-    uint32_t prevFrame = static_cast<uint32_t>(fracFrame);
-    float frac = fracFrame - prevFrame;
-    prevFrame = prevFrame % numFrames;
-    uint32_t nextFrame = (prevFrame + 1) % numFrames;
+glm::mat4 Model::getBoneTransform(int index) const {
+    return glm::inverse(bones[index].offsetMatrix);
+}
+
+
+glm::mat4 Model::getBoneTransform(char const * name) const {
+    if (nameToNode.find(aiString(name)) == nameToNode.end()) {
+        assert(false && "No bone by that name!");
+    }
+
+    int index = nameToBone.find(aiString(name))->value();
+    return getBoneTransform(index);
+}
+
+void Model::sampleAnimation(AnimationClip & clip, glm::mat4 * transforms) const {
+    assert(mAnimated);
+    int animationIndex = getAnimationIndex(clip.m_clipName);
+    animationIndex = animationIndex == -1 ? 0 : animationIndex;
+
+    auto const & animation = animations[animationIndex];
 
     struct IndexedTForm {
         int32_t index;
@@ -310,6 +323,25 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
 
         if (channelIndex != -1) {
             auto & channel = animation.channels[channelIndex];
+            
+            float duration = animation.duration / animation.ticksPerSecond;
+            float clipTime = clip.m_time / duration;
+
+            // calculate prev and next frame
+            int numFrames = animation.channels[channelIndex].keys.size();
+            float fracFrame = clipTime * numFrames;
+            int prevFrame = static_cast<int>(fracFrame);
+            float frac = fracFrame - prevFrame;
+            int nextFrame = (prevFrame + 1);
+
+            if (clip.m_loop) {
+                prevFrame = prevFrame % numFrames;
+                nextFrame = nextFrame % numFrames;
+            } else {
+                prevFrame = glm::min(prevFrame, numFrames - 1);
+                nextFrame = glm::min(nextFrame, numFrames - 1);
+                clip.m_completed = prevFrame == numFrames - 1;
+            }
 
             glm::vec3 const & prevPos = channel.keys[prevFrame].position;
             glm::vec3 const & nextPos = channel.keys[nextFrame].position;
@@ -328,43 +360,32 @@ void Model::sampleAnimation(float t, size_t animationIndex, glm::mat4 * transfor
         // pose matrix
         glm::mat4 poseMatrix = parentTForm * tform;
 
-        for (auto & boneIndex : mNodes[index].boneIndices) {
+        for (auto const & boneIndex : mNodes[index].boneIndices) {
             transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
         }
 
-        for (auto & childIndex : mNodes[index].childIndices) {
+        for (auto const & childIndex : mNodes[index].childIndices) {
             nodeIndices.push_back({childIndex, poseMatrix});
         }
     }
 }
 
-void Model::blendAnimation(float clipTime, 
+void Model::blendAnimation(AnimationClip & clipA, 
+                           AnimationClip & clipB,
                            float blendFactor,
-                           size_t animationIndexA, 
-                           size_t animationIndexB,
                            glm::mat4 * transforms) const {
     assert(mAnimated);
+
+    int animationIndexA = getAnimationIndex(clipA.m_clipName);
+    animationIndexA = animationIndexA == -1 ? 0 : animationIndexA;
+    int animationIndexB = getAnimationIndex(clipB.m_clipName);
+    animationIndexB = animationIndexB == -1 ? 0 : animationIndexB;
+
     auto const & animationA = animations[animationIndexA];
     auto const & animationB = animations[animationIndexB];
 
-    // calculate prev and next frame for clip A
-    size_t numFramesA = animationA.channels[0].keys.size();
-    float fracFrameA = clipTime * numFramesA;
-    uint32_t prevFrameA = static_cast<uint32_t>(fracFrameA);
-    float fracA = fracFrameA - prevFrameA;
-    prevFrameA = prevFrameA % numFramesA;
-    uint32_t nextFrameA = (prevFrameA + 1) % numFramesA;
-
-    // calculate prev and next frame for clip B
-    size_t numFramesB = animationB.channels[0].keys.size();
-    float fracFrameB = clipTime * numFramesB;
-    uint32_t prevFrameB = static_cast<uint32_t>(fracFrameB);
-    float fracB = fracFrameB - prevFrameB;
-    prevFrameB = prevFrameB % numFramesB;
-    uint32_t nextFrameB = (prevFrameB + 1) % numFramesB;
-
     struct IndexedTForm {
-        int32_t index;
+        int index;
         glm::mat4 tform;
     };
     prt::vector<IndexedTForm> nodeIndices;
@@ -375,11 +396,52 @@ void Model::blendAnimation(float clipTime,
         nodeIndices.pop_back();
 
         glm::mat4 tform = mNodes[index].transform;
-        int32_t channelIndex = mNodes[index].channelIndex;
+        int channelIndex = mNodes[index].channelIndex;
 
         if (channelIndex != -1) {
             auto & channelA = animationA.channels[channelIndex];
             auto & channelB = animationB.channels[channelIndex];
+
+            float durationA = animationA.duration / animationA.ticksPerSecond;
+            float clipTimeA = clipA.m_time / durationA;
+            // float clipTimeA = clipA.m_time * animationA.ticksPerSecond;
+
+            float durationB = animationB.duration / animationB.ticksPerSecond;
+            float clipTimeB = clipB.m_time / durationB;
+            // float clipTimeB = clipB.m_time * animationB.ticksPerSecond;
+
+            // calculate prev and next frame for clip A
+            int numFramesA = animationA.channels[channelIndex].keys.size();
+            float fracFrameA = clipTimeA * numFramesA;
+            int prevFrameA = static_cast<int>(fracFrameA);
+            float fracA = fracFrameA - prevFrameA;
+            int nextFrameA = (prevFrameA + 1);
+
+            if (clipA.m_loop) {
+                prevFrameA = prevFrameA % numFramesA;
+                nextFrameA = nextFrameA % numFramesA;
+            } else {
+                prevFrameA = glm::min(prevFrameA, numFramesA - 1);
+                nextFrameA = glm::min(nextFrameA, numFramesA - 1);
+                clipA.m_completed = prevFrameA == numFramesA - 1;
+            }
+
+            // calculate prev and next frame for clip B
+            int numFramesB = animationB.channels[channelIndex].keys.size();
+            float fracFrameB = clipTimeB * numFramesB;
+            int prevFrameB = static_cast<int>(fracFrameB);
+            float fracB = fracFrameB - prevFrameB;
+            int nextFrameB = (prevFrameB + 1);
+
+            if (clipB.m_loop) {
+                prevFrameB = prevFrameB % numFramesB;
+                nextFrameB = nextFrameB % numFramesB;
+            } else {
+                prevFrameB = glm::min(prevFrameB, numFramesB - 1);
+                nextFrameB = glm::min(nextFrameB, numFramesB - 1);
+                clipB.m_completed = prevFrameB == numFramesB - 1;
+            }
+            
             // clip A
             glm::vec3 const & prevPosA = channelA.keys[prevFrameA].position;
             glm::vec3 const & nextPosA = channelA.keys[nextFrameA].position;
@@ -418,11 +480,11 @@ void Model::blendAnimation(float clipTime,
         // pose matrix
         glm::mat4 poseMatrix = parentTForm * tform;
 
-        for (auto & boneIndex : mNodes[index].boneIndices) {
+        for (auto const & boneIndex : mNodes[index].boneIndices) {
             transforms[boneIndex] = poseMatrix * bones[boneIndex].offsetMatrix;
         }
 
-        for (auto & childIndex : mNodes[index].childIndices) {
+        for (auto const & childIndex : mNodes[index].childIndices) {
             nodeIndices.push_back({childIndex, poseMatrix});
         }
     }                            

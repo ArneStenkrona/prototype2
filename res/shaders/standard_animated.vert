@@ -36,7 +36,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout(push_constant) uniform PER_OBJECT {
 	layout(offset = 0) int modelMatrixIdx;
-    layout(offset = 40) uint boneOffset;
+    layout(offset = 60) uint boneOffset;
 } pc;
 
 layout(location = 0) in vec3 inPosition;
@@ -72,13 +72,13 @@ void main() {
 
     vs_out.fragPos = vec3(ubo.model[pc.modelMatrixIdx] * bonedPos);
 
-    vec3 boneT = normalize(mat3(inverse(transpose(boneTransform))) * inTangent);
-    vec3 boneB = normalize(mat3(inverse(transpose(boneTransform))) * inBinormal);
-    vec3 boneN = normalize(mat3(inverse(transpose(boneTransform))) * inNormal);
+    vec4 boneT = normalize(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inTangent, 0.0));
+    vec4 boneB = normalize(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inBinormal, 0.0));
+    vec4 boneN = normalize(ubo.invTransposeModel[pc.modelMatrixIdx] * vec4(inNormal, 0.0));
 
-    vec3 t = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * boneT);
-    vec3 b = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * boneB);
-    vec3 n = normalize(mat3(ubo.invTransposeModel[pc.modelMatrixIdx]) * boneN);
+    vec3 t = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * boneT));
+    vec3 b = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * boneB));
+    vec3 n = normalize(vec3(ubo.invTransposeModel[pc.modelMatrixIdx] * boneN));
 
     vs_out.invtbn = mat3(t,b,n);
     mat3 tbn = transpose(mat3(t,b,n));
