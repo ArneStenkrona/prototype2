@@ -325,10 +325,33 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
         AABB eAABB = capsule.getAABB(prevPosition);
         eAABB += capsule.getAABB(position);
 
+        prevPosition = position;
+        
+        CollisionPackage package{};
+        package.type = COLLISION_TYPE_RESPOND;
+        package.transform = &transforms[characterIndex];
+        package.physics = &physics[characterIndex];
+
         prt::vector<uint16_t> meshColIDs; 
         prt::vector<uint16_t> capsuleColIDs; 
         m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs);
 
+        for (uint32_t colID : capsuleColIDs) {
+            CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
+            
+            size_t otherCharacterIndex = tagToCharacter[colID];
+
+            CollisionPackage packageOther{};
+            packageOther.type = COLLISION_TYPE_RESPOND;
+            packageOther.transform = &transforms[otherCharacterIndex];
+            packageOther.physics = &physics[otherCharacterIndex];
+
+            collideCapsuleCapsule(package,
+                                  capsule,
+                                  packageOther,
+                                  capsuleOther);
+        }
+        
         if (meshColIDs.empty()) {
             break;
         }
@@ -355,33 +378,12 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                 ++pCurr;
             }
         }
-        prevPosition = position;
-        
-        CollisionPackage package{};
-        package.type = COLLISION_TYPE_RESPOND;
-        package.transform = &transforms[characterIndex];
-        package.physics = &physics[characterIndex];
 
         collideCapsuleMesh(package,
                            capsule,
                            polygons.data(),
                            polygons.size());
         
-        for (uint32_t colID : capsuleColIDs) {
-            CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
-            
-            size_t otherCharacterIndex = tagToCharacter[colID];
-
-            CollisionPackage packageOther{};
-            packageOther.type = COLLISION_TYPE_RESPOND;
-            packageOther.transform = &transforms[otherCharacterIndex];
-            packageOther.physics = &physics[otherCharacterIndex];
-
-            collideCapsuleCapsule(package,
-                                  capsule,
-                                  packageOther,
-                                  capsuleOther);
-        }
     }
     transforms[characterIndex].position += float(stepsLeft) * physics[characterIndex].velocity / float(nTimeSteps);
 }
