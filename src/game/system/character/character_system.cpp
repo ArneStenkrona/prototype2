@@ -113,7 +113,6 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
         glm::quat groundRot = glm::rotation(up, moveNormal);
 
         if (stateInfo.getCanTurn()) {
-            // glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
             glm::vec3 const newDir = glm::rotate(groundRot, glm::vec3{input.move.x,  0.0f, input.move.y});
             physics.forward = glm::dot(physics.forward, newDir) > -0.9f ?
                                        glm::normalize(glm::mix(physics.forward, newDir, 0.5f)) :

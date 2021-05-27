@@ -13,9 +13,16 @@ void collideCapsuleMesh(CollisionPackage &      package,
                         CapsuleCollider const & capsule,
                         Polygon const *         polygons,
                         size_t                  nPolygons) {
+    Transform & transform = *package.transform;
+
     for (size_t i = 0; i < nPolygons; ++i) {
-        glm::vec3 A = package.transform->position + capsule.offset;
-        glm::vec3 B = package.transform->position + capsule.offset + glm::vec3{0.0f, capsule.height, 0.0f};
+        glm::vec4 a{capsule.offset, 1.0f};
+        glm::vec4 b{capsule.offset + glm::vec3{0.0f, capsule.height, 0.0f}, 1.0f};
+
+        glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
+        glm::vec3 A = tform * a;
+        glm::vec3 B = tform * b;
 
         glm::vec3 CapsuleNormal = glm::normalize(A - B); 
         glm::vec3 LineEndOffset = CapsuleNormal * capsule.radius; 
@@ -126,13 +133,25 @@ void collideCapsuleCapsule(CollisionPackage &      packageA,
                            CollisionPackage &      packageB,
                            CapsuleCollider const & capsuleB) {
     // capsule A:
-    glm::vec3 a_A = packageA.transform->position + capsuleA.offset;
-    glm::vec3 a_B = packageA.transform->position + capsuleA.offset + glm::vec3{0.0f, capsuleA.height, 0.0f};
-    
+    glm::vec4 aa{capsuleA.offset, 1.0f};
+    glm::vec4 ab{capsuleA.offset + glm::vec3{0.0f, capsuleA.height, 0.0f}, 1.0f};
+
+    Transform & transformA = *packageA.transform;
+    glm::mat4 tformA = glm::translate(glm::mat4(1.0f), transformA.position) * glm::toMat4(glm::normalize(transformA.rotation));
+
+    glm::vec3 a_A = tformA * aa;
+    glm::vec3 a_B = tformA * ab;
+
     // capsule B:
-    glm::vec3 b_A = packageB.transform->position + capsuleB.offset;
-    glm::vec3 b_B = packageB.transform->position + capsuleB.offset + glm::vec3{0.0f, capsuleB.height, 0.0f};
-    
+    glm::vec4 ba{capsuleB.offset, 1.0f};
+    glm::vec4 bb{capsuleB.offset + glm::vec3{0.0f, capsuleB.height, 0.0f}, 1.0f};
+
+    Transform & transformB = *packageB.transform;
+    glm::mat4 tformB = glm::translate(glm::mat4(1.0f), transformB.position) * glm::toMat4(glm::normalize(transformB.rotation));
+
+    glm::vec3 b_A = tformB * ba;
+    glm::vec3 b_B = tformB * bb;
+
     // vectors between line endpoints:
     glm::vec3 v0 = b_A - a_A; 
     glm::vec3 v1 = b_B - a_A; 

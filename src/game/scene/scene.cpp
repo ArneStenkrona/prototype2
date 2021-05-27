@@ -78,18 +78,20 @@ void Scene::bindRenderData() {
     for (EntityID i = 0; i < m_entities.size(); ++i) {
         ColliderTag tag = m_entities.colliderTags[i];
 
+        Transform & transform = m_entities.transforms[i];
+
         switch (tag.type) {
             case COLLIDER_TYPE_CAPSULE: {
                 CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
-                glm::vec3 pos = m_entities.transforms[i].position + col.offset;
-                glm::mat4 rotM =  glm::toMat4(glm::normalize(m_entities.transforms[i].rotation));
                 glm::vec3 bodyScale{ col.radius, col.height, col.radius };
                 glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
                 glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
-                
-                glm::mat4 tformBody = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(bodyScale);
-                glm::mat4 tformCap1 = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(cap1Scale);
-                glm::mat4 tformCap2 = glm::translate(glm::mat4(1.0f), pos + glm::vec3{0.0f, col.height, 0.0f}) * rotM * glm::scale(cap2Scale);
+
+                glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
+                glm::mat4 tformBody = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = tform * glm::translate(glm::mat4{1.0f}, col.offset + glm::vec3{0.0f, col.height, 0.0f}) * glm::scale(cap2Scale);
 
                 m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleBody);
                 m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleCap);
@@ -101,7 +103,7 @@ void Scene::bindRenderData() {
             }
             case COLLIDER_TYPE_MODEL: {
                 m_renderData.colliderModelIDs.push_back(m_entities.modelIDs[i]);
-                m_renderData.colliderTransforms.push_back(m_entities.transforms[i].transformMatrix());
+                m_renderData.colliderTransforms.push_back(transform.transformMatrix());
                 break;
             }
             default: {}
@@ -272,18 +274,20 @@ void Scene::updateRenderData() {
     for (EntityID i = 0; i < m_entities.size(); ++i) {
         ColliderTag tag = m_entities.colliderTags[i];
 
+        Transform & transform = m_entities.transforms[i];
+        
         switch (tag.type) {
             case COLLIDER_TYPE_CAPSULE: {
                 CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
-                glm::vec3 pos = m_entities.transforms[i].position + col.offset;
-                glm::mat4 rotM =  glm::toMat4(glm::normalize(m_entities.transforms[i].rotation));
                 glm::vec3 bodyScale{ col.radius, col.height, col.radius };
                 glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
                 glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
-                
-                glm::mat4 tformBody = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(bodyScale);
-                glm::mat4 tformCap1 = glm::translate(glm::mat4(1.0f), pos) * rotM * glm::scale(cap1Scale);
-                glm::mat4 tformCap2 = glm::translate(glm::mat4(1.0f), pos + glm::vec3{0.0f, col.height, 0.0f}) * rotM * glm::scale(cap2Scale);
+
+                glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
+                glm::mat4 tformBody = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = tform * glm::translate(glm::mat4{1.0f}, col.offset + glm::vec3{0.0f, col.height, 0.0f}) * glm::scale(cap2Scale);
 
                 m_renderData.colliderTransforms[modelCount] = tformBody;
                 ++modelCount;
@@ -294,7 +298,7 @@ void Scene::updateRenderData() {
                 break;
             }
             case COLLIDER_TYPE_MODEL: {
-                m_renderData.colliderTransforms[modelCount] = m_entities.transforms[i].transformMatrix();
+                m_renderData.colliderTransforms[modelCount] = transform.transformMatrix();
                 ++modelCount;
                 break;
             }

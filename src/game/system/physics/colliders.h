@@ -16,10 +16,15 @@ struct CapsuleCollider {
     float height;
     float radius;
     glm::vec3 offset;
+    
+    AABB getAABB(glm::mat4 const & transform) const {
+        glm::vec4 a{offset, 1.0f};
+        glm::vec4 b{offset + glm::vec3{0.0f, height, 0.0f}, 1.0f};
 
-    AABB getAABB(glm::vec3 const & position) const { 
-        return { position + offset - glm::vec3{radius}, 
-                 position + glm::vec3{0.0f, height, 0.0f} + offset + glm::vec3{radius} }; 
+        glm::vec3 tA = transform * a;
+        glm::vec3 tB = transform * b;
+        
+        return { glm::min(tA, tB) - glm::vec3{radius}, glm::max(tA, tB) + glm::vec3{radius} }; 
     }
 };
 

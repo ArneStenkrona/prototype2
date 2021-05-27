@@ -28,7 +28,7 @@ ColliderTag PhysicsSystem::addCapsuleCollider(float height,
 
     m_aabbData.capsuleIndices.push_back({});
 
-    m_aabbData.capsuleAABBs.push_back(capsule.getAABB(glm::vec3{0.0f}));
+    m_aabbData.capsuleAABBs.push_back(capsule.getAABB(glm::mat4{1.0f}));
 
     ColliderTag tag = { uint16_t(id), ColliderType::COLLIDER_TYPE_CAPSULE };
     m_aabbData.tree.insert(&tag, &m_aabbData.capsuleAABBs[id], 1, &m_aabbData.capsuleIndices[id]);
@@ -252,11 +252,14 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
         CapsuleCollider const & capsule = m_capsules[physics[i].colliderTag.index];
         AABB & eAABB = m_aabbData.capsuleAABBs[physics[i].colliderTag.index];
 
-        eAABB = capsule.getAABB(transforms[i].position);
+        Transform & transform = transforms[i];
+        glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+        eAABB = capsule.getAABB(tform);
 
         float gravityFactor = m_gravity;
+        glm::mat4 velTform = glm::translate(tform, physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime);
         
-        eAABB += capsule.getAABB(transforms[i].position + physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime);
+        eAABB += capsule.getAABB(velTform);
 
         tagToCharacter.insert(physics[i].colliderTag.index, i);
 
@@ -308,24 +311,25 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                                               prt::hash_map<uint16_t, size_t> const & tagToCharacter) {
     // unpack variables
     CapsuleCollider const & capsule = m_capsules[physics[characterIndex].colliderTag.index];
-    // glm::vec3 position = transforms[characterIndex].position + offset;
+    Transform & transform = transforms[characterIndex];
     // glm::vec3 & velocity = physics[characterIndex].velocity;
     ColliderTag const tag = { physics[characterIndex].colliderTag.index, ColliderType::COLLIDER_TYPE_CAPSULE };
 
-    glm::vec3 prevPosition = transforms[characterIndex].position;
+    glm::mat4 prevTform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
 
     static constexpr unsigned int nTimeSteps = 4;
     unsigned int stepsLeft = nTimeSteps;
     while (stepsLeft != 0) {
         --stepsLeft;
-        transforms[characterIndex].position += physics[characterIndex].velocity / float(nTimeSteps);
+        transform.position += physics[characterIndex].velocity / float(nTimeSteps);
 
-        glm::vec3 position = transforms[characterIndex].position; 
+        glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
         // broad-phase query
-        AABB eAABB = capsule.getAABB(prevPosition);
-        eAABB += capsule.getAABB(position);
+        AABB eAABB = capsule.getAABB(prevTform);
+        eAABB += capsule.getAABB(tform);
 
-        prevPosition = position;
+        prevTform = tform;
         
         CollisionPackage package{};
         package.type = COLLISION_TYPE_RESPOND;
@@ -385,5 +389,5 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                            polygons.size());
         
     }
-    transforms[characterIndex].position += float(stepsLeft) * physics[characterIndex].velocity / float(nTimeSteps);
+    transform.position += float(stepsLeft) * physics[characterIndex].velocity / float(nTimeSteps);
 }
