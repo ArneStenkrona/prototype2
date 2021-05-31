@@ -152,11 +152,12 @@ void SceneSerialization::parseEntity(char const *& buf, Scene & scene) {
 
                     scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addModelCollider(models[scene.m_entities.modelIDs[id]], 
                                                                                                scene.m_entities.transforms[id]);
-                } else if (strcmp(cType, "ELLIPSOID") == 0) {
-                    glm::vec3 radii = parseVec3(buf);
+                } else if (strcmp(cType, "CAPSULE") == 0) {
+                    float height = parseFloat(buf);
+                    float radius = parseFloat(buf);
                     glm::vec3 offset = parseVec3(buf);
 
-                    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addEllipsoidCollider(radii, offset);
+                    scene.m_entities.colliderTags[id] = scene.m_physicsSystem.addCapsuleCollider(height, radius, offset);
                 } else {
                     assert(false);
                 }

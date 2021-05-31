@@ -39,6 +39,8 @@ public:
                     ModelID const * animatedModelIDs, EntityID const * animatedEntityIDs,
                     uint32_t const * boneOffsets,
                     size_t nAnimatedModelIDs,
+                    ModelID const * colliderModelIDs,
+                    size_t nColliderModelIDs,
                     Billboard const * billboards,
                     size_t nBillboards,
                     Texture const * textures,
@@ -53,6 +55,7 @@ public:
      */
     RenderResult update(prt::vector<glm::mat4> const & modelMatrices, 
                         prt::vector<glm::mat4> const & animatedModelMatrices,
+                        prt::vector<glm::mat4> const & colliderModelMatrices,
                         prt::vector<glm::mat4> const & bones,
                         prt::vector<glm::vec4> const & billboardPositions,
                         prt::vector<glm::vec4> const & billboardColors,
@@ -111,6 +114,7 @@ private:
         int transparentAnimated = -1;
         int water = -1;
         int billboard = -1; // transparent
+        int wireframe = -1;
         int composition = -1;
         int gui = -1;
     } pipelineIndices;
@@ -153,9 +157,11 @@ private:
                                bool transparent);
                                           
     int createShadowmapPipeline(size_t assetIndex, size_t uboIndex,
-                                    char const * vertexShader,
-                                    VkVertexInputBindingDescription bindingDescription,
-                                    prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
+                                char const * vertexShader,
+                                VkVertexInputBindingDescription bindingDescription,
+                                prt::vector<VkVertexInputAttributeDescription> const & attributeDescription);
+
+    void createWireframePipeline(size_t assetIndex, size_t uboIndex);
 
     void createCommandBuffers();
     void createCommandBuffer(size_t imageIndex);
@@ -209,6 +215,11 @@ private:
                               prt::vector<DrawCall> & shadow,
                               prt::vector<DrawCall> & shadowAnimated);
 
+    void createWireframeDrawCalls(Model const * models, size_t nModels,
+                                  ModelID const * modelIDs,
+                                  size_t nModelIDs,
+                                  prt::vector<DrawCall> & drawCalls);
+
     void createBillboardDrawCalls(Billboard const * billboards, size_t nBillboards, prt::hash_map<int, int> const & textureIndices);
 
     void createShadowDrawCalls(size_t shadowPipelineIndex, size_t pipelineIndex);
@@ -217,6 +228,7 @@ private:
 
     void updateUBOs(prt::vector<glm::mat4> const & nonAnimatedModelMatrices, 
                     prt::vector<glm::mat4> const & animatedModelMatrices,
+                    prt::vector<glm::mat4> const & colliderModelMatrices,
                     prt::vector<glm::mat4> const & bones,
                     prt::vector<glm::vec4> const & billboardPositions,
                     prt::vector<glm::vec4> const & billboardColors,

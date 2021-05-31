@@ -13,6 +13,20 @@ namespace physics_util {
      * @param p point
      * @return closest point
      */
+    glm::vec3 closestPointOnTriangle(glm::vec3 const & a,
+                                     glm::vec3 const & b,
+                                     glm::vec3 const & c,
+                                     glm::vec3 const & p);
+
+    /**
+     * Computes the closest point on a triangle perimeter (a,b,c) 
+     * to point p
+     * @param a triangle vertex
+     * @param b triangle vertex
+     * @param c triangle vertex
+     * @param p point
+     * @return closest point
+     */
     glm::vec3 closestPointOnTrianglePerimeter(glm::vec3 const & a,
                                               glm::vec3 const & b,
                                               glm::vec3 const & c,
@@ -26,9 +40,9 @@ namespace physics_util {
      * @param p point
      * @return closest point
      */
-    glm::vec3 closestPointOnLine(glm::vec3 const & a,
-                                 glm::vec3 const & b,
-                                 glm::vec3 const & p);
+    glm::vec3 closestPointOnLineSegment(glm::vec3 const & a,
+                                        glm::vec3 const & b,
+                                        glm::vec3 const & p);
 
     /**
      * Computes intersection of ray and plane

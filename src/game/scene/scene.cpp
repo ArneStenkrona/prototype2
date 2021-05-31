@@ -12,6 +12,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_animationSystem(m_assetManager.getModelManager(), *this),
       m_characterSystem(this, m_physicsSystem, m_animationSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
+    loadColliderModels();
     initSky();
 }
 
@@ -28,6 +29,8 @@ void Scene::bindToRenderer() {
                               m_renderData.animatedModelIDs.data(), m_renderData.animatedEntityIDs.data(),
                               m_renderData.boneOffsets.data(),
                               m_renderData.animatedModelIDs.size(),
+                              m_renderData.colliderModelIDs.data(),
+                              m_renderData.colliderModelIDs.size(),
                               &m_moon.billboard, 1,
                               m_renderData.textures, m_renderData.nTextures,
                               skybox);
@@ -42,6 +45,8 @@ void Scene::bindRenderData() {
     m_renderData.animatedEntityIDs.resize(0);
     m_renderData.animatedModelIDs.resize(0);
     m_renderData.boneOffsets.resize(0);
+    m_renderData.colliderModelIDs.resize(0);
+    m_renderData.colliderTransforms.resize(0);
 
     m_assetManager.getModelManager().getModels(m_renderData.models, m_renderData.nModels);
     Model const * models = m_renderData.models;
@@ -69,6 +74,41 @@ void Scene::bindRenderData() {
                                                     m_renderData.animatedModelIDs.size());
 
     m_assetManager.getTextureManager().getTextures(m_renderData.textures, m_renderData.nTextures);
+
+    for (EntityID i = 0; i < m_entities.size(); ++i) {
+        ColliderTag tag = m_entities.colliderTags[i];
+
+        Transform & transform = m_entities.transforms[i];
+
+        switch (tag.type) {
+            case COLLIDER_TYPE_CAPSULE: {
+                CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
+                glm::vec3 bodyScale{ col.radius, col.height, col.radius };
+                glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
+                glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
+
+                glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
+                glm::mat4 tformBody = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = tform * glm::translate(glm::mat4{1.0f}, col.offset + glm::vec3{0.0f, col.height, 0.0f}) * glm::scale(cap2Scale);
+
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleBody);
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleCap);
+                m_renderData.colliderModelIDs.push_back(m_colliderModelIDs.capsuleCap);
+                m_renderData.colliderTransforms.push_back(tformBody);
+                m_renderData.colliderTransforms.push_back(tformCap1);
+                m_renderData.colliderTransforms.push_back(tformCap2);
+                break;
+            }
+            case COLLIDER_TYPE_MODEL: {
+                m_renderData.colliderModelIDs.push_back(m_entities.modelIDs[i]);
+                m_renderData.colliderTransforms.push_back(transform.transformMatrix());
+                break;
+            }
+            default: {}
+        }
+    }
 }
 
 void Scene::renderScene(Camera & camera) {
@@ -85,6 +125,7 @@ void Scene::renderScene(Camera & camera) {
     m_input.getCursorPos(x,y);
     m_renderResult = m_gameRenderer.update(m_renderData.staticTransforms, 
                                            m_renderData.animatedTransforms,
+                                           m_renderData.colliderTransforms,
                                            bones,
                                            billboardPositions,
                                            billboardColors,
@@ -108,7 +149,7 @@ void Scene::update(float deltaTime) {
     time+=deltaTime;
     updateSun(time);
     m_characterSystem.updateCharacters(deltaTime);
-    m_animationSystem.updateAnimation(m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size());
+    m_animationSystem.updateAnimation(deltaTime, m_renderData.animatedModelIDs.data(), m_renderData.animatedModelIDs.size());
     updatePhysics(deltaTime);
     updateCamera(deltaTime);
     renderScene(m_camera);
@@ -149,7 +190,7 @@ void Scene::updateColliders() {
                 modelTags.push_back(tag);
                 modelTransforms.push_back(m_entities.transforms[it->value()]);
                 break;
-            case COLLIDER_TYPE_ELLIPSOID:
+            case COLLIDER_TYPE_CAPSULE:
                 break;
             default:
                 break;
@@ -166,8 +207,8 @@ void Scene::addModelCollider(EntityID id) {
     m_entities.colliderTags[id] = m_physicsSystem.addModelCollider(getModel(id), m_entities.transforms[id]);
 }
 
-void Scene::addEllipsoidCollider(EntityID id, glm::vec3 const & radii, glm::vec3 const & offset) {
-    m_entities.colliderTags[id] = m_physicsSystem.addEllipsoidCollider(radii, offset);
+void Scene::addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) {
+    m_entities.colliderTags[id] = m_physicsSystem.addCapsuleCollider(height, radius, offset);
 }
 
 void Scene::addPointLight(EntityID id, PointLight & pointLight) {
@@ -228,6 +269,42 @@ void Scene::updateRenderData() {
             }
         }
     }
+
+    size_t modelCount = 0;
+    for (EntityID i = 0; i < m_entities.size(); ++i) {
+        ColliderTag tag = m_entities.colliderTags[i];
+
+        Transform & transform = m_entities.transforms[i];
+        
+        switch (tag.type) {
+            case COLLIDER_TYPE_CAPSULE: {
+                CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
+                glm::vec3 bodyScale{ col.radius, col.height, col.radius };
+                glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
+                glm::vec3 cap2Scale{ col.radius, col.radius, col.radius };
+
+                glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
+
+                glm::mat4 tformBody = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(bodyScale);
+                glm::mat4 tformCap1 = tform * glm::translate(glm::mat4{1.0f}, col.offset) * glm::scale(cap1Scale);
+                glm::mat4 tformCap2 = tform * glm::translate(glm::mat4{1.0f}, col.offset + glm::vec3{0.0f, col.height, 0.0f}) * glm::scale(cap2Scale);
+
+                m_renderData.colliderTransforms[modelCount] = tformBody;
+                ++modelCount;
+                m_renderData.colliderTransforms[modelCount] = tformCap1;
+                ++modelCount;
+                m_renderData.colliderTransforms[modelCount] = tformCap2;
+                ++modelCount;
+                break;
+            }
+            case COLLIDER_TYPE_MODEL: {
+                m_renderData.colliderTransforms[modelCount] = transform.transformMatrix();
+                ++modelCount;
+                break;
+            }
+            default: {}
+        }
+    }
 }
 
 void Scene::initSky() {
@@ -235,6 +312,18 @@ void Scene::initSky() {
     m_moon.billboard.size = {25.0f, 25.0f};
     m_moon.billboard.textureIndex = m_assetManager.getTextureManager().loadTexture("moon/moon_albedo.png");
     m_moon.distance = 200.0f;
+}
+
+void Scene::loadColliderModels() {
+    char relative[512] = {0};
+    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/capsule_body.obj", relative);
+    EntityID bodyID = m_assetManager.getModelManager().loadModel(relative, false);
+
+    io_util::getRelativePath(m_assetManager.getDirectory().c_str(), "colliders/capsule_cap.obj", relative);
+    EntityID capID = m_assetManager.getModelManager().loadModel(relative, false);
+
+    m_colliderModelIDs.capsuleBody = bodyID;
+    m_colliderModelIDs.capsuleCap = capID;
 }
 
 bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute) {

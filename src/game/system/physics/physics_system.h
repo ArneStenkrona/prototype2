@@ -5,6 +5,7 @@
 #include "src/game/system/physics/aabb.h"
 #include "src/game/system/physics/aabb_tree.h"
 #include "src/game/system/physics/colliders.h"
+#include "src/game/system/physics/collision.h"
 #include "src/graphics/geometry/model.h"
 #include "src/system/assets/model_manager.h"
 #include "src/game/system/character/character.h"
@@ -22,7 +23,11 @@ class PhysicsSystem {
 public:
     PhysicsSystem();
     
-    void updateEllipsoidCollider(ColliderTag const & tag, glm::vec3 const & radii, glm::vec3 const & offset);
+    void updateCapsuleCollider(ColliderTag const & tag, 
+                                 float height, 
+                                 float radius,
+                                 glm::vec3 const & offset);
+
     void updateModelColliders(ColliderTag const * tags,
                               Transform const * transforms,
                               size_t count);
@@ -52,18 +57,20 @@ public:
                                 Transform * transforms,
                                 size_t n);
 
-    ColliderTag addEllipsoidCollider(glm::vec3 const & radii,
-                                     glm::vec3 const & offset);
+    ColliderTag addCapsuleCollider(float height,
+                                   float radius,
+                                   glm::vec3 const & offset);
+                                   
     ColliderTag addModelCollider(Model const & model, Transform const & transform);
 
     void removeCollider(ColliderTag const & tag);
 
-    EllipsoidCollider & getEllipsoidCollider(ColliderTag tag) { assert(tag.type == COLLIDER_TYPE_ELLIPSOID); return m_ellipsoids[tag.index]; }
+    CapsuleCollider & getCapsuleCollider(ColliderTag tag) { assert(tag.type == COLLIDER_TYPE_CAPSULE); return m_capsules[tag.index]; }
 
     float getGravity() const { return m_gravity; }
         
 private:
-    prt::vector<EllipsoidCollider> m_ellipsoids;
+    prt::vector<CapsuleCollider> m_capsules;
 
     // geometric data for model colliders
     struct Geometry {
@@ -85,8 +92,8 @@ private:
     struct TreeData {
         prt::vector<AABB> meshAABBs;
         prt::vector<int32_t> meshIndices;
-        prt::vector<AABB> ellipsoidAABBs;
-        prt::vector<int32_t> ellipsoidIndices;
+        prt::vector<AABB> capsuleAABBs;
+        prt::vector<int32_t> capsuleIndices;
 
         DynamicAABBTree tree;
     } m_aabbData;
@@ -101,45 +108,6 @@ private:
                                    size_t n,
                                    uint32_t characterIndex,
                                    prt::hash_map<uint16_t, size_t> const & tagToCharacter);
-
-    bool collideCharacterWithMeshes(glm::vec3 const & position, 
-                                    glm::vec3 const & velocity, 
-                                    glm::vec3 const & ellipsoidRadii,
-                                    prt::vector<ColliderIndex> const & colliderIndices,
-                                    glm::vec3 & intersectionPoint,
-                                    float & intersectionTime,
-                                    glm::vec3 & collisionNormal);
-
-    bool collideCharacterWithCharacters(CharacterPhysics * physics,
-                                        Transform * transforms,
-                                        size_t n,
-                                        uint32_t characterIndex,
-                                        prt::vector<ColliderIndex> const & colliderIndices,
-                                        prt::hash_map<ColliderIndex, size_t> const & tagToCharacter,
-                                        glm::vec3 & intersectionPoint,
-                                        float & intersectionTime,
-                                        glm::vec3 & collisionNormal,
-                                        uint32_t & otherCharacterIndex);
-                   
-    bool collideEllipsoids(glm::vec3 const & ellipsoid0,
-                           glm::vec3 const & sourcePoint0, 
-                           glm::vec3 const & velocity0, 
-                           glm::vec3 const & ellipsoid1, 
-                           glm::vec3 const & sourcePoint1, 
-                           glm::vec3 const & velocity1,
-                           float & intersectionTime, 
-                           glm::vec3 & intersectionPoint,
-                           glm::vec3 & collisionNormal);
-
-    bool computeContactEllipsoids(glm::mat3 const & D, 
-                                  glm::vec3 const & K, 
-                                  glm::vec3 const & W, 
-                                  float & intersectionTime, 
-                                  glm::vec3 & zContact);
-
-    float computeClosestPointEllipsoids(glm::mat3 const & D, 
-                                        glm::vec3 const & K, 
-                                        glm::vec3 & closestPoint);
 
     void collisionResponse(glm::vec3 const & intersectionPoint,
                            glm::vec3 const & collisionNormal,

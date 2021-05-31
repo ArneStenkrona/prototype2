@@ -30,26 +30,8 @@ void ModelManager::getBoneOffsets(ModelID const * modelIDs,
     }
 }
 
-void ModelManager::getSampledAnimation(float t, 
-                                       prt::vector<ModelID> const & modelIDs,
-                                       prt::vector<uint32_t> const & animationIndices, 
-                                       prt::vector<glm::mat4> & transforms) {
-    size_t numBones = 0;
-    for (auto & index : modelIDs) {
-        numBones += m_loadedModels[index].bones.size();
-    }
-
-    transforms.resize(numBones);
-    size_t tIndex = 0;
-    for (size_t i = 0; i < modelIDs.size(); ++i) {
-        auto const & model = m_loadedModels[modelIDs[i]];
-        model.sampleAnimation(t, animationIndices[i], &transforms[tIndex]);
-        tIndex += model.bones.size();
-    }
-}
-
-void ModelManager::getSampledBlendedAnimation(ModelID const * modelIDs,
-                                              BlendedAnimation const * animationBlends, 
+void ModelManager::sampleAnimation(ModelID const * modelIDs,
+                                              AnimationComponent * animationComponents, 
                                               prt::vector<glm::mat4> & transforms,
                                               size_t n) {
     size_t numBones = 0;
@@ -61,11 +43,16 @@ void ModelManager::getSampledBlendedAnimation(ModelID const * modelIDs,
     size_t tIndex = 0;
     for (size_t i = 0; i < n; ++i) {
         auto const & model = m_loadedModels[modelIDs[i]];
-        model.blendAnimation(animationBlends[i].time, 
-                             animationBlends[i].blendFactor, 
-                             animationBlends[i].clipA, 
-                             animationBlends[i].clipB, 
-                             &transforms[tIndex]);
+        if (animationComponents[i].blendFactor <= 0.0f) {
+            model.sampleAnimation(animationComponents[i].clipA, &transforms[tIndex]);
+        } else if (animationComponents[i].blendFactor >= 1.0f) {
+            model.sampleAnimation(animationComponents[i].clipB, &transforms[tIndex]);
+        } else {
+            model.blendAnimation(animationComponents[i].clipA, 
+                                 animationComponents[i].clipB, 
+                                 animationComponents[i].blendFactor,
+                                 &transforms[tIndex]);
+        }
         tIndex += model.bones.size();
     }
 }

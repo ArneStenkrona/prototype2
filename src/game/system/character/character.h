@@ -17,6 +17,7 @@ enum CharacterType : int {
 };
 
 struct CharacterPhysics {
+    glm::vec3   forward = {1.0f, 0.0f, 0.0f};
     glm::vec3   velocity = {0.0f, 0.0f, 0.0f};
     float       mass = 1.0f;
     glm::vec3   movementVector = {0.0f, 0.0f, 0.0f};
@@ -30,16 +31,7 @@ struct CharacterInput {
     bool      run = false;
     bool      jump = false;
     bool      holdjump = false;
-};
-
-struct CharacterAnimationClips {
-    int idle;
-    int walk;
-    int run;
-    int jump;
-    int fall;
-    int glide;
-    int land;
+    bool      attack = false;
 };
 
 enum CharacterState {
@@ -49,16 +41,23 @@ enum CharacterState {
     CHARACTER_STATE_JUMPING,
     CHARACTER_STATE_FALLING,
     CHARACTER_STATE_LANDING,
-    TOTAL_NUM_CHARACTER_STATE
+    CHARACTER_STATE_LANDING_MILDLY,
+    CHARACTER_STATE_ROLLING,
+    CHARACTER_STATE_SLASH1,
+    CHARACTER_STATE_SLASH2,
+    CHARACTER_STATE_MIDAIR_SLASH1,
+    CHARACTER_STATE_MIDAIR_SLASH2,
+    TOTAL_NUM_CHARACTER_STATE,
 };
 
 struct CharacterStateAttributeInfo {
-    uint32_t animationClip = 0;
-    float    animationSpeed = 1.0f;
-    bool     resetAnimationTime = true;
-    bool     loopAnimation = true;
-    bool     canTurn = true;
-    float    movementSpeed = 1.0f;
+    char      animationName[64] = {0};
+    float     animationSpeed = 1.0f;
+    bool      resetAnimationTime = true;
+    bool      loopAnimation = true;
+    bool      canTurn = true;
+    float     movementSpeed = 1.0f;
+    glm::vec3 impulse{0.0f};
 };
 
 struct Equipment {
@@ -98,15 +97,13 @@ private:
     float          m_movementSpeed = 1.0f;
     bool           m_canTurn = true;
     bool           m_hasJumped;
-    bool           m_stateChange = false;
+    bool           m_stateChange = true;
 
     void update(float deltaTime,
-                BlendedAnimation & animation,
-                CharacterPhysics & physics,
-                CharacterAnimationClips const & clips);
+                AnimationComponent & animation,
+                CharacterPhysics & physics);
 
-    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state,
-                                                             CharacterAnimationClips const & clips);
+    static CharacterStateAttributeInfo getStateAttributeInfo(CharacterState state, CharacterPhysics const & physics);
 
     friend class CharacterAttributeInfo;
 };
@@ -115,11 +112,10 @@ class CharacterAttributeInfo {
 public:
     CharacterType           type = CHARACTER_TYPE_NONE;
     CharacterStateInfo      stateInfo;
-    CharacterAnimationClips clips;
     prt::vector<Equipment>  equipment;
 
     void updateState(float deltaTime, 
-                     BlendedAnimation & animation,
+                     AnimationComponent & animation,
                      CharacterPhysics & physics);
     void updateEquipment(EntityID entityID, Scene & scene, AnimationSystem const & animationSystem);
 private:

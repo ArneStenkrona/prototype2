@@ -33,7 +33,7 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, prt::vector<C
 
 void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, 
                             prt::vector<uint16_t> & meshIndices,
-                            prt::vector<uint16_t> & ellipsoidIndices) {
+                            prt::vector<uint16_t> & capsuleIndices) {
     if (m_size == 0) {
         return;
     }
@@ -51,8 +51,8 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb,
                         case ColliderType::COLLIDER_TYPE_MESH: 
                             meshIndices.push_back(node.colliderTag.index);
                             break;
-                        case ColliderType::COLLIDER_TYPE_ELLIPSOID:
-                            ellipsoidIndices.push_back(node.colliderTag.index);
+                        case ColliderType::COLLIDER_TYPE_CAPSULE:
+                            capsuleIndices.push_back(node.colliderTag.index);
                             break;
                         default:
                             break;

@@ -22,6 +22,9 @@
 
 #include "src/system/assets/texture_manager.h"
 
+#include "src/game/system/animation/animation_system.h"
+
+
 #include <assimp/scene.h>
 
 namespace std {
@@ -62,11 +65,10 @@ public:
     bool load(bool loadAnimation, TextureManager & textureManager);
     // TODO: add unload method
 
-    void sampleAnimation(float t, size_t animationIndex, glm::mat4 * transforms) const;
-    void blendAnimation(float t, 
+    void sampleAnimation(AnimationClip & clip, glm::mat4 * transforms) const;
+    void blendAnimation(AnimationClip & clipA, 
+                        AnimationClip & clipB,
                         float blendFactor,
-                        size_t animationIndexA, 
-                        size_t animationIndexB,
                         glm::mat4 * transforms) const;
 
     int getAnimationIndex(char const * name) const;
@@ -125,22 +127,6 @@ struct Model::Node {
     aiString name;
 };
 
-// struct Model::Material {
-//     char name[256];
-//     int32_t albedoIndex = -1;
-//     int32_t normalIndex = -1;
-//     int32_t specularIndex = -1;
-//     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
-//     // bool transparent = false;
-//     bool twosided = false;
-//     float baseSpecularity = 0.0f;
-//     enum Type {
-//         standard,
-//         transparent,
-//         water
-//     };
-//     Type type = Type::standard;
-// };
 struct Model::Material {
     char name[256];
     glm::vec4 albedo{1.0f, 1.0f, 1.0f, 1.0f};

@@ -12,13 +12,28 @@
 
 #include <glm/glm.hpp>
 
-struct EllipsoidCollider {
-    glm::vec3 radii;
+struct CapsuleCollider {
+    float height;
+    float radius;
     glm::vec3 offset;
+    
+    AABB getAABB(glm::mat4 const & transform) const {
+        glm::vec4 a{offset, 1.0f};
+        glm::vec4 b{offset + glm::vec3{0.0f, height, 0.0f}, 1.0f};
 
-    AABB getAABB(glm::vec3 const & position) const { 
-        return { position + offset - radii, 
-                 position + offset - radii }; }
+        glm::vec3 tA = transform * a;
+        glm::vec3 tB = transform * b;
+        
+        return { glm::min(tA, tB) - glm::vec3{radius}, glm::max(tA, tB) + glm::vec3{radius} }; 
+    }
+};
+
+struct Polygon {
+    glm::vec3 a;
+    glm::vec3 b;
+    glm::vec3 c;
+    glm::vec3 & operator[](size_t i) {  return *(&a + i); };
+    glm::vec3 const & operator[](size_t i) const {  return *(&a + i); };
 };
 
 struct MeshCollider {

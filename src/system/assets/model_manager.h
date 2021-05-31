@@ -24,15 +24,15 @@ public:
                         uint32_t * boneOffsets,
                         size_t n);
 
-    void getSampledAnimation(float t, 
-                             prt::vector<ModelID> const & modelIDs,
-                             prt::vector<uint32_t> const & animationIndices, 
-                             prt::vector<glm::mat4> & transforms);
+    // void getSampledAnimation(float t, 
+    //                          prt::vector<ModelID> const & modelIDs,
+    //                          prt::vector<uint32_t> const & animationIndices, 
+    //                          prt::vector<glm::mat4> & transforms);
 
-    void getSampledBlendedAnimation(ModelID const * modelIDs,
-                                    BlendedAnimation const * animationBlends, 
-                                    prt::vector<glm::mat4> & transforms,
-                                    size_t n);
+    void sampleAnimation(ModelID const * modelIDs,
+                         AnimationComponent * animationComponents, 
+                         prt::vector<glm::mat4> & transforms,
+                         size_t n);
 
     static bool defAlreadyLoaded;
     ModelID loadModel(char const * path, 

@@ -27,7 +27,7 @@ void PlayerController::updateInput(CharacterInput & input) {
         glm::vec3 cF = m_camera.getFront();
         glm::vec3 cR = m_camera.getRight();
         input.move = glm::normalize(rawInput.x * glm::vec2{cF.x, cF.z} + rawInput.y * glm::vec2{cR.x, cR.z});
-
+        
     } else {
         input.move = {0.0f, 0.0f};
     }
@@ -35,6 +35,7 @@ void PlayerController::updateInput(CharacterInput & input) {
     input.jump = m_input.getKeyDown(INPUT_KEY::KEY_SPACE);
     input.holdjump = m_input.getKeyPress(INPUT_KEY::KEY_SPACE);
 
-
     input.run = !m_input.getKeyPress(INPUT_KEY::KEY_LEFT_SHIFT);
+
+    input.attack = m_input.getKeyDown(INPUT_KEY::KEY_ENTER);
 }

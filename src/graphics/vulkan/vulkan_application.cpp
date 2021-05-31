@@ -362,6 +362,7 @@ void VulkanApplication::createLogicalDevice() {
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.independentBlend = VK_TRUE;
+    deviceFeatures.fillModeNonSolid = VK_TRUE;
     
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -615,7 +616,7 @@ void VulkanApplication::createGraphicsPipeline(GraphicsPipeline & graphicsPipeli
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.polygonMode = graphicsPipeline.polygonMode;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = graphicsPipeline.cullModeFlags;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
