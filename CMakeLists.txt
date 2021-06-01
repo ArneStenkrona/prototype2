@@ -5,7 +5,7 @@ project (prototype2)
 set (CMAKE_CXX_STANDARD 17)
 
 # Set debug mode
-set(CMAKE_BUILD_TYPE debug)
+set(CMAKE_BUILD_TYPE release)
 
 # CONFIG VARIABLES
 # Endianness
@@ -39,7 +39,7 @@ set (NUMBER_SHADOWMAP_CASCADES 5)
 set (NUMBER_MAX_BONES 500)
 
 # Game
-set (FRAME_RATE 60)
+set (FRAME_RATE 30)
 
 # END CONFIG VARIABLES
 
@@ -171,8 +171,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -o2 -g -fsanitize=address)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -o2 -g -fsanitize=address)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)

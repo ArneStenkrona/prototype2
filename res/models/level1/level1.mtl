@@ -18,7 +18,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump beam1_normal.png
+map_Kn beam1_normal.png
 map_Kd beam1_albedo.png
 map_Ns beam1_roughness.png
 
@@ -31,7 +31,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump paper_wall_normal.png
+map_Kn paper_wall_normal.png
 map_Kd paper_wall_albedo.png
 map_Ns paper_wall_roughness.png
 
@@ -44,7 +44,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump roof1_normal.png
+map_Kn roof1_normal.png
 map_Kd roof1_albedo.png
 map_Ns roof1_roughness.png
 
@@ -57,7 +57,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump roof_beams_normal.png
+map_Kn roof_beams_normal.png
 map_Kd roof_beams_albedo.png
 map_Ns roof_beams_roughness.png
 
@@ -70,7 +70,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump roof_end_normal.png
+map_Kn roof_end_normal.png
 map_Kd roof_end_albedo.png
 map_Ns roof_end_roughness.png
 
@@ -83,7 +83,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump -bm 6.000000 wall_top_normal.png
+map_Kn -bm 6.000000 wall_top_normal.png
 map_Kd wall_top_albedo.png
 map_Ns wall_top_roughness.png
 
@@ -96,7 +96,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump window_normal.png
+map_Kn window_normal.png
 map_Kd window_albedo.png
 map_Ns window_roughness.png
 
@@ -109,7 +109,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump wood_blinders_normal.png
+map_Kn wood_blinders_normal.png
 map_Kd wood_blinders_albedo.png
 map_Ns wood_blinders_roughness.png
 
@@ -122,6 +122,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Bump wood_panel_normal.png
+map_Kn wood_panel_normal.png
 map_Kd wood_panel_albedo.png
 map_Ns wood_panel_roughness.png

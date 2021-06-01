@@ -72,7 +72,7 @@ public:
     ModelID getModelID(EntityID id) const { return m_entities.modelIDs[id]; }
     Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
 
-    bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
+    bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].shape != COLLIDER_SHAPE_NONE; }
     void addModelCollider(EntityID id);
     void addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset);
     void updateCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) { return m_physicsSystem.updateCapsuleCollider(m_entities.colliderTags[id], height, radius, offset); }

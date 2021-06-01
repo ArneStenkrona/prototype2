@@ -30,7 +30,7 @@ ColliderTag PhysicsSystem::addCapsuleCollider(float height,
 
     m_aabbData.capsuleAABBs.push_back(capsule.getAABB(glm::mat4{1.0f}));
 
-    ColliderTag tag = { uint16_t(id), ColliderType::COLLIDER_TYPE_CAPSULE };
+    ColliderTag tag = { uint16_t(id), ColliderShape::COLLIDER_SHAPE_CAPSULE, ColliderType::COLLIDER_TYPE_COLLIDE };
     m_aabbData.tree.insert(&tag, &m_aabbData.capsuleAABBs[id], 1, &m_aabbData.capsuleIndices[id]);
 
     return tag;
@@ -38,7 +38,7 @@ ColliderTag PhysicsSystem::addCapsuleCollider(float height,
 
 ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const & transform) {
     ColliderTag tag;
-    tag.type = COLLIDER_TYPE_MODEL;
+    tag.shape = COLLIDER_SHAPE_MODEL;
 
 
     if (!m_models.freeList.empty()) {
@@ -92,7 +92,7 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
     prt::vector<ColliderTag> tags;
     for (size_t i = prevSize; i < prevSize + numMesh; ++i) {
         assert(i < std::numeric_limits<ColliderIndex>::max() && "Too many mesh colliders!");
-        tags.push_back({ColliderIndex(i), ColliderType::COLLIDER_TYPE_MESH});
+        tags.push_back({ColliderIndex(i), ColliderShape::COLLIDER_SHAPE_MESH, ColliderType::COLLIDER_TYPE_COLLIDE });
     }
     m_aabbData.tree.insert(tags.data(), m_aabbData.meshAABBs.data() + prevSize, numMesh, m_aabbData.meshIndices.data() + prevSize);
 
@@ -101,15 +101,15 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
 }
 
 void PhysicsSystem::removeCollider(ColliderTag const & tag) {
-    switch (tag.type) {
-        case COLLIDER_TYPE_MODEL:
+    switch (tag.shape) {
+        case COLLIDER_SHAPE_MODEL:
             removeModelCollider(tag.index);
             break;
-        case COLLIDER_TYPE_CAPSULE:
+        case COLLIDER_SHAPE_CAPSULE:
             assert(false && "Not yet implemeneted!");
             break;
         default:
-            assert(false && "This collider type can not be removed!");
+            assert(false && "This collider shape can not be removed!");
 
     }
 }
@@ -147,7 +147,7 @@ void PhysicsSystem::updateCapsuleCollider(ColliderTag const & tag,
                                  float height, 
                                  float radius,
                                  glm::vec3 const & offset) {
-    assert(tag.type == COLLIDER_TYPE_CAPSULE);
+    assert(tag.shape == COLLIDER_SHAPE_CAPSULE);
     m_capsules[tag.index].height = height;
     m_capsules[tag.index].radius = radius;
     m_capsules[tag.index].offset = offset;
@@ -160,7 +160,7 @@ void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
         meshCollider.hasMoved = false;
     }
     for (size_t i = 0; i < count; ++i) {
-        assert(tags[i].type == COLLIDER_TYPE_MODEL);
+        assert(tags[i].type == COLLIDER_SHAPE_MODEL);
         ModelCollider const & col = m_models.models[tags[i].index];
         Geometry & geometry = m_models.geometries[tags[i].index];
 
@@ -207,7 +207,7 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
     float intersectionTime = std::numeric_limits<float>::max();
     bool intersect = false;
     for (auto tag : tags) {
-        if (tag.type != COLLIDER_TYPE_MESH) {
+        if (tag.shape != COLLIDER_SHAPE_MESH) {
             continue;
         }
         MeshCollider & meshCollider = m_models.meshes[tag.index];
@@ -237,10 +237,10 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
 }
 
 
-void PhysicsSystem::updateCharacterPhysics(float deltaTime,
-                                           CharacterPhysics * physics,
-                                           Transform * transforms,
-                                           size_t n) {
+void PhysicsSystem::updateCharacters(float deltaTime,
+                                     CharacterPhysics * physics,
+                                     Transform * transforms,
+                                     size_t n) {
     
     // update character AABBs
     prt::hash_map<uint16_t, size_t> tagToCharacter;
@@ -281,7 +281,7 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     i = 0;
     while (i < n) {
         // movement
-        collideCharacterwithWorld(physics, transforms, n, i, tagToCharacter);
+        collideCharacterWithWorld(physics, transforms, i, tagToCharacter);
         ++i;
     }
     i = 0;
@@ -304,16 +304,25 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     }
 }
 
-void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
+// void PhysicsSystem::updateTriggers(float deltaTime,
+//                                    ColliderTag const * triggers,
+//                                    Transform * transforms,
+//                                    size_t n) {
+//     // update triggers
+//     for (int i = 0; i < n; ++i) {
+
+//     }
+// }
+
+void PhysicsSystem::collideCharacterWithWorld(CharacterPhysics * physics,
                                               Transform * transforms,
-                                              size_t /*n*/,
                                               uint32_t characterIndex,
                                               prt::hash_map<uint16_t, size_t> const & tagToCharacter) {
     // unpack variables
-    CapsuleCollider const & capsule = m_capsules[physics[characterIndex].colliderTag.index];
+    ColliderTag const & tag = physics[characterIndex].colliderTag;
+    AABB & eAABB = m_aabbData.capsuleAABBs[tag.index];
+    CapsuleCollider const & capsule = m_capsules[tag.index];
     Transform & transform = transforms[characterIndex];
-    // glm::vec3 & velocity = physics[characterIndex].velocity;
-    ColliderTag const tag = { physics[characterIndex].colliderTag.index, ColliderType::COLLIDER_TYPE_CAPSULE };
 
     glm::mat4 prevTform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
 
@@ -326,19 +335,19 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
         glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
 
         // broad-phase query
-        AABB eAABB = capsule.getAABB(prevTform);
+        eAABB = capsule.getAABB(prevTform);
         eAABB += capsule.getAABB(tform);
 
         prevTform = tform;
         
         CollisionPackage package{};
-        package.type = COLLISION_TYPE_RESPOND;
+        package.type = COLLIDER_TYPE_COLLIDE;
         package.transform = &transforms[characterIndex];
         package.physics = &physics[characterIndex];
 
         prt::vector<uint16_t> meshColIDs; 
         prt::vector<uint16_t> capsuleColIDs; 
-        m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs);
+        m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs, COLLIDER_TYPE_COLLIDE);
 
         for (uint32_t colID : capsuleColIDs) {
             CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
@@ -346,7 +355,7 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
             size_t otherCharacterIndex = tagToCharacter[colID];
 
             CollisionPackage packageOther{};
-            packageOther.type = COLLISION_TYPE_RESPOND;
+            packageOther.type = COLLIDER_TYPE_COLLIDE;
             packageOther.transform = &transforms[otherCharacterIndex];
             packageOther.physics = &physics[otherCharacterIndex];
 

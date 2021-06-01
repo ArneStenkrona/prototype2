@@ -22,7 +22,7 @@
 class PhysicsSystem {
 public:
     PhysicsSystem();
-    
+
     void updateCapsuleCollider(ColliderTag const & tag, 
                                  float height, 
                                  float radius,
@@ -31,6 +31,7 @@ public:
     void updateModelColliders(ColliderTag const * tags,
                               Transform const * transforms,
                               size_t count);
+    
     /**
      * Checks hit between ray and active colliders
      * 
@@ -52,10 +53,15 @@ public:
      * @param transforms base pointer to character transforms
      * @param n number of character entities
      */
-    void updateCharacterPhysics(float deltaTime,
-                                CharacterPhysics * physics,
-                                Transform * transforms,
-                                size_t n);
+    void updateCharacters(float deltaTime,
+                          CharacterPhysics * physics,
+                          Transform * transforms,
+                          size_t n);
+
+    void updateTriggers(float deltaTime,
+                        ColliderTag const * triggers,
+                        Transform * transforms,
+                        size_t n);
 
     ColliderTag addCapsuleCollider(float height,
                                    float radius,
@@ -97,15 +103,25 @@ private:
 
         DynamicAABBTree tree;
     } m_aabbData;
-    // aabb tree
+    
+    struct CollisionEvent {
+        EntityID entityID;
+        EntityID otherEntityID;
+        CollisionResult result;
+    };
+
+    struct EventData {
+        prt::vector<CollisionEvent> collisions;
+        prt::vector<CollisionEvent> triggers;
+        prt::hash_map<EntityID, prt::vector<unsigned int> > entityToEvents;
+    } m_events;
 
     float m_gravity = 1.0f;
 
     void removeModelCollider(ColliderIndex colliderIndex);
 
-    void collideCharacterwithWorld(CharacterPhysics * physics,
+    void collideCharacterWithWorld(CharacterPhysics * physics,
                                    Transform * transforms,
-                                   size_t n,
                                    uint32_t characterIndex,
                                    prt::hash_map<uint16_t, size_t> const & tagToCharacter);
 

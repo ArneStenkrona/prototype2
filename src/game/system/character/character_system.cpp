@@ -60,10 +60,10 @@ void CharacterSystem::updatePhysics(float deltaTime) {
         transforms[i] = m_scene->getTransform(m_characters.entityIDs[i]);
     }
 
-    m_physicsSystem.updateCharacterPhysics(deltaTime,
-                                           m_characters.physics,
-                                           transforms.data(),
-                                           m_characters.size);
+    m_physicsSystem.updateCharacters(deltaTime,
+                                     m_characters.physics,
+                                     transforms.data(),
+                                     m_characters.size);
 
     for (CharacterID i = 0; i < m_characters.size; ++i) {
         m_scene->getTransform(m_characters.entityIDs[i]) = transforms[i];
