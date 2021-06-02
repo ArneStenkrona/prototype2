@@ -29,7 +29,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
-    PointLight pointLights[4];
+    PointLight pointLights[8];
 } ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[64];
@@ -225,6 +225,8 @@ void main() {
 
     N = normalize(fs_in.invtbn * N);
 
+    roughness = 1.0 - roughness;
+
     vec3 V = normalize(ubo.viewPos - fs_in.fragPos);
 
     vec3 F0 = vec3(0.04);
@@ -249,12 +251,15 @@ void main() {
                          V, N, F0, albedo, metallic, roughness);
 
 
-    vec3 ambient = vec3(ubo.ambientLight) * albedo * (ao);
+    // vec3 ambient = vec3(ubo.ambientLight) * albedo * ao;
+    vec3 ambient = vec3(ubo.ambientLight) * albedo;
     vec3 emissive = albedo * material.emissive;
     vec3 color = ambient + emissive + Lo;
+
     // gamma correction
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
+
 
     outColor = vec4(color, 1.0);
     outEntity = material.entityID;

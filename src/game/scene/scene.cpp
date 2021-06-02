@@ -155,19 +155,27 @@ void Scene::update(float deltaTime) {
     renderScene(m_camera);
 }
 
-void Scene::updateSun(float time) {
-    float ph = 0.2f*time;
+void Scene::updateSun(float /*time*/) {
+    float ph = 2.2f;//*time;
     m_lights.sun.phase = ph;
     m_lights.sun.direction = glm::normalize(glm::vec3(0.2f, glm::cos(ph), glm::sin(ph)));
     float distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0,1,0))) / glm::pi<float>();
-    m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+    // m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+    m_lights.sun.color = glm::vec3(10.0f,10.0f,60.0f)/255.0f;
 
     m_lights.sun.distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0.0f,1.0f,0.0f))) / glm::pi<float>();
-    m_lights.sun.nightColor = glm::mix(glm::vec3(80.0f,80.0f,250.0f), glm::vec3(0.0f), m_lights.sun.distToNoon)/255.0f;
-    m_lights.sun.dayColor = glm::mix(glm::vec3(204.0f,204.0f,255.0f), glm::vec3(5.0f,5.0f,25.0f), m_lights.sun.distToNoon)/255.0f;
+    m_lights.sun.nightColor = glm::vec3(5.0f,5.0f,30.0f) / 255.0f;
+    m_lights.sun.dayColor = m_lights.sun.nightColor;
     m_lights.sun.sunEdgeColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
     m_lights.sun.sunsetriseColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
     m_lights.sun.sunColor = glm::mix(glm::vec3(255.0f,255.0f,230.0f), glm::vec3(255.0f,153.0f,51.0f), m_lights.sun.distToNoon)/255.0f;
+
+    // m_lights.sun.distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0.0f,1.0f,0.0f))) / glm::pi<float>();
+    // m_lights.sun.nightColor = glm::mix(glm::vec3(80.0f,80.0f,250.0f), glm::vec3(0.0f), m_lights.sun.distToNoon)/255.0f;
+    // m_lights.sun.dayColor = glm::mix(glm::vec3(204.0f,204.0f,255.0f), glm::vec3(5.0f,5.0f,25.0f), m_lights.sun.distToNoon)/255.0f;
+    // m_lights.sun.sunEdgeColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
+    // m_lights.sun.sunsetriseColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
+    // m_lights.sun.sunColor = glm::mix(glm::vec3(255.0f,255.0f,230.0f), glm::vec3(255.0f,153.0f,51.0f), m_lights.sun.distToNoon)/255.0f;
 
     m_moon.position = glm::vec4(m_camera.getPosition() + (m_moon.distance * m_lights.sun.direction), 1.0f);
     m_moon.billboard.color = glm::mix(glm::vec4(m_lights.sun.nightColor, 1.0f), glm::vec4(1.0f), distToNoon);

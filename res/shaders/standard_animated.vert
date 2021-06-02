@@ -29,7 +29,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
-    PointLight pointLights[4];
+    PointLight pointLights[8];
     /*Bones*/
     mat4 bones[500];
 } ubo;

@@ -29,7 +29,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
     DirLight sun;
     vec4 splitDepths[(5 + 4) / 4];
     mat4 cascadeSpace[5];
-    PointLight pointLights[4];
+    PointLight pointLights[8];
 } ubo;
 
 layout(set = 0, binding = 1) uniform texture2D textures[64];
@@ -230,6 +230,8 @@ void main() {
                     2.0 * texture(sampler2D(textures[material.normalIndex], samp), fs_in.fragTexCoord).rgb - 1.0;
 
     N = normalize(fs_in.invtbn * N);
+
+    roughness = 1.0 - roughness;
 
     vec3 V = normalize(ubo.viewPos - fs_in.fragPos);
 
