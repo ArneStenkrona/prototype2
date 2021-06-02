@@ -1,5 +1,5 @@
 # Blender MTL File: 'level1.blend'
-# Material Count: 13
+# Material Count: 15
 
 newmtl beam1
 Ns 225.000000
@@ -13,6 +13,16 @@ illum 2
 map_Bump beam1_normal.png
 map_Kd beam1_albedo.png
 map_Ns beam1_roughness.png
+
+newmtl black
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
 
 newmtl deck_planks
 Ns 225.000000
@@ -78,6 +88,19 @@ illum 2
 map_Bump paper_wall_normal.png
 map_Kd paper_wall_albedo.png
 map_Ns paper_wall_roughness.png
+
+newmtl rice_lamp
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 1.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump rice_lamp_normal.png
+map_Kd rice_lamp_albedo.png
+map_Ns rice_lamp_roughness.png
 
 newmtl roof
 Ns 225.000000
