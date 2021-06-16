@@ -200,14 +200,15 @@ void handleCollision(CollisionPackage & package,
     switch (package.type) {
         case COLLIDER_TYPE_COLLIDE: {
             package.transform->position += result.impulse;
+            package.character->attributeInfo.updateEquipment(package.character->id, *package.scene);
 
             bool groundCollision = glm::dot(result.collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.3f;
 
             if (groundCollision) {
-                package.physics->isGrounded = true;
+                package.character->physics.isGrounded = true;
                 // TODO: figure out a way to pick no more
                 //       than one ground normal
-                package.physics->groundNormal = result.collisionNormal;
+                package.character->physics.groundNormal = result.collisionNormal;
             }
 
             break;

@@ -16,9 +16,10 @@ struct CollisionResult {
 };
 
 struct CollisionPackage {
+    Scene * scene = nullptr;
     ColliderType type;
-    Transform * transform;
-    CharacterPhysics * physics;
+    Transform * transform = nullptr;;
+    Character * character = nullptr;
 };
 
 void collideCapsuleMesh(CollisionPackage &      package,

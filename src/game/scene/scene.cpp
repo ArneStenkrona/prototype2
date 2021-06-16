@@ -10,7 +10,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_input(input),
       m_camera(m_input),
       m_animationSystem(m_assetManager.getModelManager(), *this),
-      m_characterSystem(this, m_physicsSystem, m_animationSystem) {
+      m_characterSystem(this, m_physicsSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
     loadColliderModels();
     initSky();

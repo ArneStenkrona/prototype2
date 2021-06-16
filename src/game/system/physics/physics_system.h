@@ -54,9 +54,8 @@ public:
      * @param n number of character entities
      */
     void updateCharacters(float deltaTime,
-                          CharacterPhysics * physics,
-                          Transform * transforms,
-                          size_t n);
+                          Scene & scene,
+                          Transform * transforms);
 
     void updateTriggers(float deltaTime,
                         ColliderTag const * triggers,
@@ -71,7 +70,7 @@ public:
 
     void removeCollider(ColliderTag const & tag);
 
-    CapsuleCollider & getCapsuleCollider(ColliderTag tag) { assert(tag.type == COLLIDER_TYPE_CAPSULE); return m_capsules[tag.index]; }
+    CapsuleCollider & getCapsuleCollider(ColliderTag tag) { assert(tag.shape == COLLIDER_SHAPE_CAPSULE); return m_capsules[tag.index]; }
 
     float getGravity() const { return m_gravity; }
         
@@ -120,7 +119,7 @@ private:
 
     void removeModelCollider(ColliderIndex colliderIndex);
 
-    void collideCharacterWithWorld(CharacterPhysics * physics,
+    void collideCharacterWithWorld(Scene & scene,                                 
                                    Transform * transforms,
                                    uint32_t characterIndex,
                                    prt::hash_map<uint16_t, size_t> const & tagToCharacter);

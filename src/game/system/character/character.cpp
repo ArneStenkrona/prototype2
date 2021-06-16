@@ -199,14 +199,14 @@ void CharacterAttributeInfo::updateState(float deltaTime,
             stateInfo.update(deltaTime, animation, physics);
 }
 
-void CharacterAttributeInfo::updateEquipment(EntityID entityID, Scene & scene, AnimationSystem const & animationSystem) {
+void CharacterAttributeInfo::updateEquipment(EntityID entityID, Scene & scene) {
     Transform const & tform = scene.getTransform(entityID);
 
     for (Equipment const & equip : equipment) {
         if (equip.entity == EntityID(-1)) {
             continue;
         }
-        glm::mat4 const & boneTform = animationSystem.getCachedTransformation(entityID, equip.boneIndex);
+        glm::mat4 const & boneTform = scene.getAnimationSystem().getCachedTransformation(entityID, equip.boneIndex);
         glm::mat4 nodeTform = scene.getModel(entityID).getBoneTransform(equip.boneIndex);
         glm::mat4 finalTform = tform.transformMatrix() * boneTform * nodeTform * equip.offset.transformMatrix();
         glm::vec3 scale;

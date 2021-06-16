@@ -4,7 +4,7 @@ project (prototype2)
 # Set C++ language version to C++17
 set (CMAKE_CXX_STANDARD 17)
 
-# Set debug mode
+# Set relase/debug
 set(CMAKE_BUILD_TYPE release)
 
 # CONFIG VARIABLES
