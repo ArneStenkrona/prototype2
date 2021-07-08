@@ -1,5 +1,5 @@
 # Blender MTL File: 'level1.blend'
-# Material Count: 17
+# Material Count: 15
 
 newmtl beam1
 Ns 225.000000
@@ -10,7 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn beam1_normal.png
+map_Bump beam1_normal.png
 map_Kd beam1_albedo.png
 map_Ns beam1_roughness.png
 
@@ -33,7 +33,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn deck_planks_normal.png
+map_Bump deck_planks_normal.png
 map_Kd deck_planks_albedo.png
 map_Ns deck_planks_roughness.png
 
@@ -46,7 +46,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn floor1_normal.png
+map_Bump floor1_normal.png
 map_Kd floor1_albedo.png
 map_Ns floor2_roughness.png
 
@@ -59,7 +59,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn floor2_normal.png
+map_Bump floor2_normal.png
 map_Kd floor2_albedo.png
 map_Ns floor2_roughness.png
 
@@ -72,34 +72,9 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn floor2_normal.png
+map_Bump floor2_normal.png
 map_Kd floor3_albedo.png
 map_Ns floor2_roughness.png
-
-newmtl leaves[T]
-Ns 0.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
-illum 2
-map_Kd leaves_albedo.png
-map_d leaves_albedo.png
-
-newmtl moss
-Ns 225.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
-illum 2
-map_Bump moss_normal.png
-map_Kd moss_darkened_albedo.png
-map_Ns moss_roughness.png
 
 newmtl paper_wall
 Ns 225.000000
@@ -110,7 +85,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn paper_wall_normal.png
+map_Bump paper_wall_normal.png
 map_Kd paper_wall_albedo.png
 map_Ns paper_wall_roughness.png
 
@@ -119,11 +94,11 @@ Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.800000 0.800000 0.800000
 Ks 0.500000 0.500000 0.500000
-Ke 0.400000 0.400000 0.400000
+Ke 0.203838 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn rice_lamp_normal.png
+map_Bump rice_lamp_normal.png
 map_Kd rice_lamp_albedo.png
 map_Ns rice_lamp_roughness.png
 
@@ -136,7 +111,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn roof1_normal.png
+map_Bump roof1_normal.png
 map_Kd roof1_albedo.png
 map_Ns roof1_roughness.png
 
@@ -149,7 +124,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn roof_beams_normal.png
+map_Bump roof_beams_normal.png
 map_Kd roof_beams_albedo.png
 map_Ns roof_beams_roughness.png
 
@@ -162,7 +137,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn roof_end_normal.png
+map_Bump roof_end_normal.png
 map_Kd roof_end_albedo.png
 map_Ns roof_end_roughness.png
 
@@ -175,7 +150,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn -bm 6.000000 wall_top_normal.png
+map_Bump -bm 6.000000 wall_top_normal.png
 map_Kd wall_top_albedo.png
 map_Ns wall_top_roughness.png
 
@@ -188,7 +163,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn window_normal.png
+map_Bump window_normal.png
 map_Kd window_albedo.png
 map_Ns window_roughness.png
 
@@ -201,7 +176,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn wood_blinders_normal.png
+map_Bump wood_blinders_normal.png
 map_Kd wood_blinders_albedo.png
 map_Ns wood_blinders_roughness.png
 
@@ -214,6 +189,6 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kn wood_panel_normal.png
+map_Bump wood_panel_normal.png
 map_Kd wood_panel_albedo.png
 map_Ns wood_panel_roughness.png
