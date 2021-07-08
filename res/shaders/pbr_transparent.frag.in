@@ -231,6 +231,8 @@ void main() {
 
     N = normalize(fs_in.invtbn * N);
 
+    roughness = 1.0 - roughness;
+
     vec3 V = normalize(ubo.viewPos - fs_in.fragPos);
 
     vec3 F0 = vec3(0.04);

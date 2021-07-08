@@ -271,11 +271,11 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
     ImGui::PushItemWidth(300);
 
     static int typeInd = 0;
-    switch (tag.type) {
-        case COLLIDER_TYPE_CAPSULE:
+    switch (tag.shape) {
+        case COLLIDER_SHAPE_CAPSULE:
             typeInd = 0;
             break;
-        case COLLIDER_TYPE_MODEL:
+        case COLLIDER_SHAPE_MODEL:
             typeInd = 1;
             break;
         default:
@@ -285,7 +285,7 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
     const char* types[] = { "Capsule", "Model" };
     ImGui::Combo("Type##Collider", &typeInd, types, IM_ARRAYSIZE(types));
 
-    if (tag.type == COLLIDER_TYPE_CAPSULE) {
+    if (tag.shape == COLLIDER_SHAPE_CAPSULE) {
         CapsuleCollider & col = scene.getCapsuleCollider(selectedEntity);
         float radius = col.radius;
         float height = col.height;

@@ -10,7 +10,7 @@ Scene::Scene(GameRenderer & gameRenderer, AssetManager & assetManager, PhysicsSy
       m_input(input),
       m_camera(m_input),
       m_animationSystem(m_assetManager.getModelManager(), *this),
-      m_characterSystem(this, m_physicsSystem, m_animationSystem) {
+      m_characterSystem(this, m_physicsSystem) {
     SceneSerialization::loadScene((m_assetManager.getDirectory() + "scenes/cavern.prt").c_str(), *this);
     loadColliderModels();
     initSky();
@@ -80,8 +80,8 @@ void Scene::bindRenderData() {
 
         Transform & transform = m_entities.transforms[i];
 
-        switch (tag.type) {
-            case COLLIDER_TYPE_CAPSULE: {
+        switch (tag.shape) {
+            case COLLIDER_SHAPE_CAPSULE: {
                 CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
                 glm::vec3 bodyScale{ col.radius, col.height, col.radius };
                 glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
@@ -101,7 +101,7 @@ void Scene::bindRenderData() {
                 m_renderData.colliderTransforms.push_back(tformCap2);
                 break;
             }
-            case COLLIDER_TYPE_MODEL: {
+            case COLLIDER_SHAPE_MODEL: {
                 m_renderData.colliderModelIDs.push_back(m_entities.modelIDs[i]);
                 m_renderData.colliderTransforms.push_back(transform.transformMatrix());
                 break;
@@ -155,19 +155,27 @@ void Scene::update(float deltaTime) {
     renderScene(m_camera);
 }
 
-void Scene::updateSun(float time) {
-    float ph = 0.2f*time;
+void Scene::updateSun(float /*time*/) {
+    float ph = 2.2f;//*time;
     m_lights.sun.phase = ph;
     m_lights.sun.direction = glm::normalize(glm::vec3(0.2f, glm::cos(ph), glm::sin(ph)));
     float distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0,1,0))) / glm::pi<float>();
-    m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+    // m_lights.sun.color = glm::mix(glm::vec3(255,255,255), glm::vec3(255,153,51), distToNoon)/255.0f;
+    m_lights.sun.color = glm::vec3(10.0f,10.0f,60.0f)/255.0f;
 
     m_lights.sun.distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0.0f,1.0f,0.0f))) / glm::pi<float>();
-    m_lights.sun.nightColor = glm::mix(glm::vec3(80.0f,80.0f,250.0f), glm::vec3(0.0f), m_lights.sun.distToNoon)/255.0f;
-    m_lights.sun.dayColor = glm::mix(glm::vec3(204.0f,204.0f,255.0f), glm::vec3(5.0f,5.0f,25.0f), m_lights.sun.distToNoon)/255.0f;
+    m_lights.sun.nightColor = glm::vec3(5.0f,5.0f,30.0f) / 255.0f;
+    m_lights.sun.dayColor = m_lights.sun.nightColor;
     m_lights.sun.sunEdgeColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
     m_lights.sun.sunsetriseColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
     m_lights.sun.sunColor = glm::mix(glm::vec3(255.0f,255.0f,230.0f), glm::vec3(255.0f,153.0f,51.0f), m_lights.sun.distToNoon)/255.0f;
+
+    // m_lights.sun.distToNoon = glm::acos(glm::dot(-m_lights.sun.direction, glm::vec3(0.0f,1.0f,0.0f))) / glm::pi<float>();
+    // m_lights.sun.nightColor = glm::mix(glm::vec3(80.0f,80.0f,250.0f), glm::vec3(0.0f), m_lights.sun.distToNoon)/255.0f;
+    // m_lights.sun.dayColor = glm::mix(glm::vec3(204.0f,204.0f,255.0f), glm::vec3(5.0f,5.0f,25.0f), m_lights.sun.distToNoon)/255.0f;
+    // m_lights.sun.sunEdgeColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
+    // m_lights.sun.sunsetriseColor = glm::vec3(255.0f,119.0f,51.0f)/255.0f;
+    // m_lights.sun.sunColor = glm::mix(glm::vec3(255.0f,255.0f,230.0f), glm::vec3(255.0f,153.0f,51.0f), m_lights.sun.distToNoon)/255.0f;
 
     m_moon.position = glm::vec4(m_camera.getPosition() + (m_moon.distance * m_lights.sun.direction), 1.0f);
     m_moon.billboard.color = glm::mix(glm::vec4(m_lights.sun.nightColor, 1.0f), glm::vec4(1.0f), distToNoon);
@@ -185,12 +193,12 @@ void Scene::updateColliders() {
 
     for (auto it = m_colliderUpdateSet.begin(); it != m_colliderUpdateSet.end(); it++) {
         ColliderTag tag =  m_entities.colliderTags[it->value()];
-        switch (tag.type) {
-            case COLLIDER_TYPE_MODEL:
+        switch (tag.shape) {
+            case COLLIDER_SHAPE_MODEL:
                 modelTags.push_back(tag);
                 modelTransforms.push_back(m_entities.transforms[it->value()]);
                 break;
-            case COLLIDER_TYPE_CAPSULE:
+            case COLLIDER_SHAPE_CAPSULE:
                 break;
             default:
                 break;
@@ -276,8 +284,8 @@ void Scene::updateRenderData() {
 
         Transform & transform = m_entities.transforms[i];
         
-        switch (tag.type) {
-            case COLLIDER_TYPE_CAPSULE: {
+        switch (tag.shape) {
+            case COLLIDER_SHAPE_CAPSULE: {
                 CapsuleCollider const & col = m_physicsSystem.getCapsuleCollider(tag);
                 glm::vec3 bodyScale{ col.radius, col.height, col.radius };
                 glm::vec3 cap1Scale{ col.radius, -col.radius, col.radius };
@@ -297,7 +305,7 @@ void Scene::updateRenderData() {
                 ++modelCount;
                 break;
             }
-            case COLLIDER_TYPE_MODEL: {
+            case COLLIDER_SHAPE_MODEL: {
                 m_renderData.colliderTransforms[modelCount] = transform.transformMatrix();
                 ++modelCount;
                 break;
@@ -343,7 +351,7 @@ bool Scene::loadModel(EntityID entityID, char const * path, bool loadAnimation, 
     if (id != -1) {
         m_entities.modelIDs[entityID] = id;
 
-        if (m_entities.colliderTags[entityID].type == COLLIDER_TYPE_MODEL) {
+        if (m_entities.colliderTags[entityID].shape == COLLIDER_SHAPE_MODEL) {
             m_physicsSystem.removeCollider(m_entities.colliderTags[entityID]);
             m_entities.colliderTags[entityID] = m_physicsSystem.addModelCollider(m_assetManager.getModelManager().getModel(id), 
                                                                                  m_entities.transforms[entityID]);

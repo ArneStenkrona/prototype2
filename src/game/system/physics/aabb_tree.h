@@ -25,7 +25,8 @@ public:
      */
     void query(ColliderTag caller, AABB const & aabb, 
                prt::vector<uint16_t> & meshIndices,
-               prt::vector<uint16_t> & capsuleIndices);
+               prt::vector<uint16_t> & capsuleIndices,
+               ColliderType type);
 
     /**
      * Finds all intersecting nodes for raycast

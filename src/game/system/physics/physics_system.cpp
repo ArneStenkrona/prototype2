@@ -30,7 +30,7 @@ ColliderTag PhysicsSystem::addCapsuleCollider(float height,
 
     m_aabbData.capsuleAABBs.push_back(capsule.getAABB(glm::mat4{1.0f}));
 
-    ColliderTag tag = { uint16_t(id), ColliderType::COLLIDER_TYPE_CAPSULE };
+    ColliderTag tag = { uint16_t(id), ColliderShape::COLLIDER_SHAPE_CAPSULE, ColliderType::COLLIDER_TYPE_COLLIDE };
     m_aabbData.tree.insert(&tag, &m_aabbData.capsuleAABBs[id], 1, &m_aabbData.capsuleIndices[id]);
 
     return tag;
@@ -38,7 +38,7 @@ ColliderTag PhysicsSystem::addCapsuleCollider(float height,
 
 ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const & transform) {
     ColliderTag tag;
-    tag.type = COLLIDER_TYPE_MODEL;
+    tag.shape = COLLIDER_SHAPE_MODEL;
 
 
     if (!m_models.freeList.empty()) {
@@ -92,7 +92,7 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
     prt::vector<ColliderTag> tags;
     for (size_t i = prevSize; i < prevSize + numMesh; ++i) {
         assert(i < std::numeric_limits<ColliderIndex>::max() && "Too many mesh colliders!");
-        tags.push_back({ColliderIndex(i), ColliderType::COLLIDER_TYPE_MESH});
+        tags.push_back({ColliderIndex(i), ColliderShape::COLLIDER_SHAPE_MESH, ColliderType::COLLIDER_TYPE_COLLIDE });
     }
     m_aabbData.tree.insert(tags.data(), m_aabbData.meshAABBs.data() + prevSize, numMesh, m_aabbData.meshIndices.data() + prevSize);
 
@@ -101,15 +101,15 @@ ColliderTag PhysicsSystem::addModelCollider(Model const & model, Transform const
 }
 
 void PhysicsSystem::removeCollider(ColliderTag const & tag) {
-    switch (tag.type) {
-        case COLLIDER_TYPE_MODEL:
+    switch (tag.shape) {
+        case COLLIDER_SHAPE_MODEL:
             removeModelCollider(tag.index);
             break;
-        case COLLIDER_TYPE_CAPSULE:
+        case COLLIDER_SHAPE_CAPSULE:
             assert(false && "Not yet implemeneted!");
             break;
         default:
-            assert(false && "This collider type can not be removed!");
+            assert(false && "This collider shape can not be removed!");
 
     }
 }
@@ -147,7 +147,7 @@ void PhysicsSystem::updateCapsuleCollider(ColliderTag const & tag,
                                  float height, 
                                  float radius,
                                  glm::vec3 const & offset) {
-    assert(tag.type == COLLIDER_TYPE_CAPSULE);
+    assert(tag.shape == COLLIDER_SHAPE_CAPSULE);
     m_capsules[tag.index].height = height;
     m_capsules[tag.index].radius = radius;
     m_capsules[tag.index].offset = offset;
@@ -160,7 +160,7 @@ void PhysicsSystem::updateModelColliders(ColliderTag const * tags,
         meshCollider.hasMoved = false;
     }
     for (size_t i = 0; i < count; ++i) {
-        assert(tags[i].type == COLLIDER_TYPE_MODEL);
+        assert(tags[i].shape == COLLIDER_SHAPE_MODEL);
         ModelCollider const & col = m_models.models[tags[i].index];
         Geometry & geometry = m_models.geometries[tags[i].index];
 
@@ -207,7 +207,7 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
     float intersectionTime = std::numeric_limits<float>::max();
     bool intersect = false;
     for (auto tag : tags) {
-        if (tag.type != COLLIDER_TYPE_MESH) {
+        if (tag.shape != COLLIDER_SHAPE_MESH) {
             continue;
         }
         MeshCollider & meshCollider = m_models.meshes[tag.index];
@@ -237,11 +237,15 @@ bool PhysicsSystem::raycast(glm::vec3 const& origin,
 }
 
 
-void PhysicsSystem::updateCharacterPhysics(float deltaTime,
-                                           CharacterPhysics * physics,
-                                           Transform * transforms,
-                                           size_t n) {
-    
+void PhysicsSystem::updateCharacters(float deltaTime,
+                                     Scene & scene,
+                                     Transform * transforms) {
+    // unpack variables
+    CharacterSystem & characterSystem = scene.getCharacterSystem();
+    size_t n = characterSystem.getNumberOfCharacters();
+    // CharacterPhysics * physics = characterSystem.getCharacterPhysics();
+    // CharacterAttributeInfo * attributeInfos = characterSystem.getCharacterAttribueInfos();
+
     // update character AABBs
     prt::hash_map<uint16_t, size_t> tagToCharacter;
     prt::vector<glm::vec3> prevVelocities;
@@ -249,29 +253,31 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
 
     size_t i = 0;    
     while (i < n) {
-        CapsuleCollider const & capsule = m_capsules[physics[i].colliderTag.index];
-        AABB & eAABB = m_aabbData.capsuleAABBs[physics[i].colliderTag.index];
+        Character & character = characterSystem.getCharacter(i);
+
+        CapsuleCollider const & capsule = m_capsules[character.physics.colliderTag.index];
+        AABB & eAABB = m_aabbData.capsuleAABBs[character.physics.colliderTag.index];
 
         Transform & transform = transforms[i];
         glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
         eAABB = capsule.getAABB(tform);
 
         float gravityFactor = m_gravity;
-        glm::mat4 velTform = glm::translate(tform, physics[i].velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime);
+        glm::mat4 velTform = glm::translate(tform, character.physics.velocity + glm::vec3{0.0f, -1.0f, 0.0f} * gravityFactor * deltaTime);
         
         eAABB += capsule.getAABB(velTform);
 
-        tagToCharacter.insert(physics[i].colliderTag.index, i);
+        tagToCharacter.insert(character.physics.colliderTag.index, i);
 
-        prevVelocities[i] = physics[i].velocity;
+        prevVelocities[i] = character.physics.velocity;
 
-        if (physics[i].isGrounded) {
-            physics[i].velocity += (-0.05f * gravityFactor * deltaTime) * physics[i].groundNormal;
+        if (character.physics.isGrounded) {
+            character.physics.velocity += (-0.05f * gravityFactor * deltaTime) * character.physics.groundNormal;
         } 
-        physics[i].velocity.x += physics[i].movementVector.x;
-        physics[i].velocity.z += physics[i].movementVector.z;
+        character.physics.velocity.x += character.physics.movementVector.x;
+        character.physics.velocity.z += character.physics.movementVector.z;
 
-        physics[i].isGrounded = false;
+        character.physics.isGrounded = false;
 
         ++i;
     }
@@ -281,39 +287,54 @@ void PhysicsSystem::updateCharacterPhysics(float deltaTime,
     i = 0;
     while (i < n) {
         // movement
-        collideCharacterwithWorld(physics, transforms, n, i, tagToCharacter);
+        collideCharacterWithWorld(scene, transforms, i, tagToCharacter);
         ++i;
     }
     i = 0;
     while (i < n) {
+        Character & character = characterSystem.getCharacter(i);
+
         float gravityFactor = m_gravity;
 
-        physics[i].velocity = prevVelocities[i];
+        character.physics.velocity = prevVelocities[i];
         // TODO: formalize friction
         // friction
         float frictionRatio = 1 / (1 + (deltaTime * 10.0f));
-        physics[i].velocity.x = physics[i].velocity.x * frictionRatio;
-        physics[i].velocity.z = physics[i].velocity.z * frictionRatio;
+        character.physics.velocity.x = character.physics.velocity.x * frictionRatio;
+        character.physics.velocity.z = character.physics.velocity.z * frictionRatio;
         
-        if (physics[i].isGrounded) {
-            physics[i].velocity.y = glm::max(0.0f * gravityFactor * deltaTime, physics[i].velocity.y);
+        if (character.physics.isGrounded) {
+            character.physics.velocity.y = glm::max(0.0f * gravityFactor * deltaTime, character.physics.velocity.y);
         } else {
-            physics[i].velocity.y += -1.0f * gravityFactor * deltaTime;
+            character.physics.velocity.y += -1.0f * gravityFactor * deltaTime;
         }
         ++i;
     }
 }
 
-void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
+// void PhysicsSystem::updateTriggers(float deltaTime,
+//                                    ColliderTag const * triggers,
+//                                    Transform * transforms,
+//                                    size_t n) {
+//     // update triggers
+//     for (int i = 0; i < n; ++i) {
+
+//     }
+// }
+
+void PhysicsSystem::collideCharacterWithWorld(Scene & scene,
                                               Transform * transforms,
-                                              size_t /*n*/,
                                               uint32_t characterIndex,
                                               prt::hash_map<uint16_t, size_t> const & tagToCharacter) {
     // unpack variables
-    CapsuleCollider const & capsule = m_capsules[physics[characterIndex].colliderTag.index];
+    CharacterSystem & characterSystem = scene.getCharacterSystem();
+    Character & character = characterSystem.getCharacter(characterIndex);
+    CharacterPhysics & physics = character.physics;
+
+    ColliderTag const & tag = physics.colliderTag;
+    AABB & eAABB = m_aabbData.capsuleAABBs[tag.index];
+    CapsuleCollider const & capsule = m_capsules[tag.index];
     Transform & transform = transforms[characterIndex];
-    // glm::vec3 & velocity = physics[characterIndex].velocity;
-    ColliderTag const tag = { physics[characterIndex].colliderTag.index, ColliderType::COLLIDER_TYPE_CAPSULE };
 
     glm::mat4 prevTform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
 
@@ -321,39 +342,47 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
     unsigned int stepsLeft = nTimeSteps;
     while (stepsLeft != 0) {
         --stepsLeft;
-        transform.position += physics[characterIndex].velocity / float(nTimeSteps);
+        transform.position += physics.velocity / float(nTimeSteps);
 
         glm::mat4 tform = glm::translate(glm::mat4(1.0f), transform.position) * glm::toMat4(glm::normalize(transform.rotation));
 
         // broad-phase query
-        AABB eAABB = capsule.getAABB(prevTform);
+        eAABB = capsule.getAABB(prevTform);
         eAABB += capsule.getAABB(tform);
 
         prevTform = tform;
         
         CollisionPackage package{};
-        package.type = COLLISION_TYPE_RESPOND;
+        package.scene = &scene;
+        package.type = COLLIDER_TYPE_COLLIDE;
         package.transform = &transforms[characterIndex];
-        package.physics = &physics[characterIndex];
+        package.character = &character;
 
         prt::vector<uint16_t> meshColIDs; 
         prt::vector<uint16_t> capsuleColIDs; 
-        m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs);
+        m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs, COLLIDER_TYPE_COLLIDE);
 
         for (uint32_t colID : capsuleColIDs) {
-            CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
+            // CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
             
             size_t otherCharacterIndex = tagToCharacter[colID];
 
+            Character & otherCharacter = characterSystem.getCharacter(otherCharacterIndex);
+            CharacterPhysics & otherPhysics = otherCharacter.physics;
+
+            ColliderTag const & otherTag = otherPhysics.colliderTag;
+            CapsuleCollider const & otherCapsule = m_capsules[otherTag.index];
+            Transform & otherTransform = transforms[otherCharacterIndex];
+
             CollisionPackage packageOther{};
-            packageOther.type = COLLISION_TYPE_RESPOND;
-            packageOther.transform = &transforms[otherCharacterIndex];
-            packageOther.physics = &physics[otherCharacterIndex];
+            packageOther.type = COLLIDER_TYPE_COLLIDE;
+            packageOther.transform = &otherTransform;
+            packageOther.character = &otherCharacter;
 
             collideCapsuleCapsule(package,
                                   capsule,
                                   packageOther,
-                                  capsuleOther);
+                                  otherCapsule);
         }
         
         if (meshColIDs.empty()) {
@@ -389,5 +418,5 @@ void PhysicsSystem::collideCharacterwithWorld(CharacterPhysics * physics,
                            polygons.size());
         
     }
-    transform.position += float(stepsLeft) * physics[characterIndex].velocity / float(nTimeSteps);
+    transform.position += float(stepsLeft) * physics.velocity / float(nTimeSteps);
 }

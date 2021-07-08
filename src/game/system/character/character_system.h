@@ -17,8 +17,7 @@ class Scene;
 class CharacterSystem {
 public:
     CharacterSystem(Scene * scene, 
-                    PhysicsSystem & physicsSystem,
-                    AnimationSystem & animationSystem);
+                    PhysicsSystem & physicsSystem);
 
     CharacterID addCharacter(EntityID entityID, ColliderTag tag);
 
@@ -28,31 +27,29 @@ public:
 
     void updatePhysics(float deltaTime);
 
-    EntityID getPlayer() const { return m_characters.entityIDs[PLAYER_ID]; }
+    Character & getCharacter(CharacterID id) { return m_characters[id]; }
+    size_t getNumberOfCharacters() const { return m_characters.size(); }
+    // prt::vector<Character> & getCharacters() { return m_characters; }
+
+    EntityID getPlayer() const { return m_characters[PLAYER_ID].id; }
     CharacterID getPlayerCharacterID() const { return PLAYER_ID; }
 
-    CharacterPhysics const & getCharacterPhysics(CharacterID id) const { return m_characters.physics[id]; }
-    CharacterInput const & getCharacterInput(CharacterID id) const { return m_characters.input[id]; }
-
-    // TODO: better way to set and denote
-    // character types
-    CharacterType getType(CharacterID id) const { return m_characters.attributeInfos[id].type; }
-
 private:
-    Characters<10> m_characters;
+    // Characters<10> m_characters;
+    prt::vector<Character> m_characters;
+
     static constexpr CharacterID PLAYER_ID = 0;
 
     Scene * m_scene;
     PhysicsSystem & m_physicsSystem;
-    AnimationSystem & m_animationSystem;
 
     PlayerController m_playerController;
 
-    void updateCharacter(CharacterID characterID, float deltaTime);
-    void updateEquipment(CharacterID characterID);
-    void updateCharacterInput(CharacterID characterID, float deltaTime);
+    void updateCharacter(Character & character, float deltaTime);
+    void updateEquipment(Character & character);
+    void updateCharacterInput(Character & character, float deltaTime);
 
-    void setStateTransitions(CharacterID characterID);
+    void setStateTransitions(Character & character);
 
     friend class SceneSerialization;
 };
