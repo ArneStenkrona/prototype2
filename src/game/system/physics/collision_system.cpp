@@ -1,4 +1,4 @@
-#include "collision.h"
+#include "collision_system.h"
 
 #include "src/util/physics_util.h"
 #include "src/util/math_util.h"
@@ -8,14 +8,31 @@
 #include <glm/gtx/matrix_operation.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+CollisionSystem::CollisionSystem() {}
+
+void CollisionSystem::newFrame() {
+    m_collisions = {};
+}
+
 // Thank you, Turanszkij: https://wickedengine.net/2020/04/26/capsule-collision-detection/
-void collideCapsuleMesh(CollisionPackage &      package,
-                        CapsuleCollider const & capsule,
-                        Polygon const *         polygons,
-                        size_t                  nPolygons) {
+void CollisionSystem::collideCapsuleMesh(Scene & scene,
+                                         CollisionPackage &      package,
+                                         CapsuleCollider const & capsule,
+                                         AggregateMeshCollider const & aggregateMeshCollider) {
     Transform & transform = *package.transform;
 
+    Polygon const * polygons = aggregateMeshCollider.polygons.data();
+    size_t nPolygons = aggregateMeshCollider.polygons.size();
+    
+    unsigned int offsetIndex = 0;
     for (size_t i = 0; i < nPolygons; ++i) {
+        if (offsetIndex < aggregateMeshCollider.tagOffsets.size() &&
+            i >= aggregateMeshCollider.tagOffsets[offsetIndex + 1].offset) {
+            ++offsetIndex;
+        }
+
+        ColliderTag const & meshTag = aggregateMeshCollider.tagOffsets[offsetIndex].tag;
+
         glm::vec4 a{capsule.offset, 1.0f};
         glm::vec4 b{capsule.offset + glm::vec3{0.0f, capsule.height, 0.0f}, 1.0f};
 
@@ -123,15 +140,19 @@ void collideCapsuleMesh(CollisionPackage &      package,
             }
             res.intersectionPoint = best_point;
 
-            handleCollision(package, res);
+            res.tagA = package.tag;
+            res.tagB = meshTag;
+
+            handleCollision(scene, package, res);
         }
     }
 }
 
-void collideCapsuleCapsule(CollisionPackage &      packageA,
-                           CapsuleCollider const & capsuleA,
-                           CollisionPackage &      packageB,
-                           CapsuleCollider const & capsuleB) {
+void CollisionSystem::collideCapsuleCapsule(Scene & scene,
+                                            CollisionPackage &      packageA,
+                                            CapsuleCollider const & capsuleA,
+                                            CollisionPackage &      packageB,
+                                            CapsuleCollider const & capsuleB) {
     // capsule A:
     glm::vec4 aa{capsuleA.offset, 1.0f};
     glm::vec4 ab{capsuleA.offset + glm::vec3{0.0f, capsuleA.height, 0.0f}, 1.0f};
@@ -191,16 +212,20 @@ void collideCapsuleCapsule(CollisionPackage &      packageA,
         // TODO: better heuristic for finding intersection point
         res.intersectionPoint = glm::mix(bestA, bestB, 0.5f);
 
-        handleCollision(packageA, res);
+        res.tagA = packageA.tag;
+        res.tagB = packageB.tag;
+
+        handleCollision(scene, packageA, res);
     }
 }
 
-void handleCollision(CollisionPackage & package,
-                     CollisionResult const & result) {
-    switch (package.type) {
+void CollisionSystem::handleCollision(Scene & scene,
+                                      CollisionPackage & package,
+                                      CollisionResult const & result) {
+    switch (package.tag.type) {
         case COLLIDER_TYPE_COLLIDE: {
             package.transform->position += result.impulse;
-            package.character->attributeInfo.updateEquipment(package.character->id, *package.scene);
+            package.character->attributeInfo.updateEquipment(package.character->id, scene);
 
             bool groundCollision = glm::dot(result.collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.3f;
 

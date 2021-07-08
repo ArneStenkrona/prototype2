@@ -12,7 +12,12 @@
 
 #include <dirent.h>
 
-PhysicsSystem::PhysicsSystem() {}
+PhysicsSystem::PhysicsSystem() 
+    : m_collisionSystem{} {}
+
+void PhysicsSystem::newFrame() {
+    m_collisionSystem.newFrame();
+}
 
 ColliderTag PhysicsSystem::addCapsuleCollider(float height,
                                               float radius,
@@ -353,8 +358,7 @@ void PhysicsSystem::collideCharacterWithWorld(Scene & scene,
         prevTform = tform;
         
         CollisionPackage package{};
-        package.scene = &scene;
-        package.type = COLLIDER_TYPE_COLLIDE;
+        package.tag = tag;
         package.transform = &transforms[characterIndex];
         package.character = &character;
 
@@ -363,8 +367,6 @@ void PhysicsSystem::collideCharacterWithWorld(Scene & scene,
         m_aabbData.tree.query(tag, eAABB, meshColIDs, capsuleColIDs, COLLIDER_TYPE_COLLIDE);
 
         for (uint32_t colID : capsuleColIDs) {
-            // CapsuleCollider const & capsuleOther = m_capsules[physics[colID].colliderTag.index];
-            
             size_t otherCharacterIndex = tagToCharacter[colID];
 
             Character & otherCharacter = characterSystem.getCharacter(otherCharacterIndex);
@@ -375,31 +377,45 @@ void PhysicsSystem::collideCharacterWithWorld(Scene & scene,
             Transform & otherTransform = transforms[otherCharacterIndex];
 
             CollisionPackage packageOther{};
-            packageOther.type = COLLIDER_TYPE_COLLIDE;
+            packageOther.tag = otherTag;
             packageOther.transform = &otherTransform;
             packageOther.character = &otherCharacter;
 
-            collideCapsuleCapsule(package,
-                                  capsule,
-                                  packageOther,
-                                  otherCapsule);
+            m_collisionSystem.collideCapsuleCapsule(scene,
+                                                    package,
+                                                    capsule,
+                                                    packageOther,
+                                                    otherCapsule);
         }
         
         if (meshColIDs.empty()) {
             break;
         }
 
+        // create aggregate mesh collider
+        AggregateMeshCollider aggregateCollider;
+        aggregateCollider.tagOffsets.resize(meshColIDs.size());
+
         // construct all polygons
         // count all indices
         size_t nIndices = 0;
-        for (uint32_t colID : meshColIDs) {
-            nIndices += m_models.meshes[colID].numIndices;
+        for (unsigned int i = 0; i < meshColIDs.size(); ++i) {
+            uint32_t colID = meshColIDs[i];
+
+            aggregateCollider.tagOffsets[i].offset = nIndices / 3;
+
+            aggregateCollider.tagOffsets[i].tag.index = colID;
+            aggregateCollider.tagOffsets[i].tag.type = COLLIDER_TYPE_COLLIDE;
+            aggregateCollider.tagOffsets[i].tag.shape = COLLIDER_SHAPE_MESH;
             
+            nIndices += m_models.meshes[colID].numIndices;
         }
         // fill vector with polygons in ellipsoid space
-        prt::vector<Polygon> polygons;
-        polygons.resize(nIndices / 3);
-        glm::vec3* pCurr = &polygons[0].a;
+
+
+        // prt::vector<Polygon> polygons;
+        aggregateCollider.polygons.resize(nIndices / 3);
+        glm::vec3* pCurr = &aggregateCollider.polygons[0].a;
         for (uint32_t colID : meshColIDs) {
             MeshCollider & meshCollider = m_models.meshes[colID];
 
@@ -412,10 +428,10 @@ void PhysicsSystem::collideCharacterWithWorld(Scene & scene,
             }
         }
 
-        collideCapsuleMesh(package,
-                           capsule,
-                           polygons.data(),
-                           polygons.size());
+        m_collisionSystem.collideCapsuleMesh(scene,
+                                             package,
+                                             capsule,
+                                             aggregateCollider);
         
     }
     transform.position += float(stepsLeft) * physics.velocity / float(nTimeSteps);

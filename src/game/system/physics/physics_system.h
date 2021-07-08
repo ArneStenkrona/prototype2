@@ -5,7 +5,7 @@
 #include "src/game/system/physics/aabb.h"
 #include "src/game/system/physics/aabb_tree.h"
 #include "src/game/system/physics/colliders.h"
-#include "src/game/system/physics/collision.h"
+#include "src/game/system/physics/collision_system.h"
 #include "src/graphics/geometry/model.h"
 #include "src/system/assets/model_manager.h"
 #include "src/game/system/character/character.h"
@@ -22,6 +22,8 @@
 class PhysicsSystem {
 public:
     PhysicsSystem();
+
+    void newFrame();
 
     void updateCapsuleCollider(ColliderTag const & tag, 
                                  float height, 
@@ -114,6 +116,8 @@ private:
         prt::vector<CollisionEvent> triggers;
         prt::hash_map<EntityID, prt::vector<unsigned int> > entityToEvents;
     } m_events;
+
+    CollisionSystem m_collisionSystem;
 
     float m_gravity = 1.0f;
 

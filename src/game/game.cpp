@@ -32,7 +32,7 @@ Game::~Game() {
 
 void Game::run() {
     using clock = std::chrono::high_resolution_clock;
-    //static auto startTime = std::chrono::high_resolution_clock::now();
+    
     auto lastTime = clock::now();
     clock::time_point deadLine = clock::now();
 
