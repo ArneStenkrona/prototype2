@@ -11,7 +11,8 @@
 CollisionSystem::CollisionSystem() {}
 
 void CollisionSystem::newFrame() {
-    m_collisions = {};
+    m_entityToPrevCollisions = std::move(m_entityToCollisions);
+    m_entityToPrevTriggers = std::move(m_entityToTriggers);
 }
 
 // Thank you, Turanszkij: https://wickedengine.net/2020/04/26/capsule-collision-detection/
@@ -26,12 +27,12 @@ void CollisionSystem::collideCapsuleMesh(Scene & scene,
     
     unsigned int offsetIndex = 0;
     for (size_t i = 0; i < nPolygons; ++i) {
-        if (offsetIndex < aggregateMeshCollider.tagOffsets.size() &&
+        if (offsetIndex + 1 < aggregateMeshCollider.tagOffsets.size() &&
             i >= aggregateMeshCollider.tagOffsets[offsetIndex + 1].offset) {
             ++offsetIndex;
         }
 
-        ColliderTag const & meshTag = aggregateMeshCollider.tagOffsets[offsetIndex].tag;
+        // ColliderTag const & meshTag = aggregateMeshCollider.tagOffsets[offsetIndex].tag;
 
         glm::vec4 a{capsule.offset, 1.0f};
         glm::vec4 b{capsule.offset + glm::vec3{0.0f, capsule.height, 0.0f}, 1.0f};
@@ -128,22 +129,28 @@ void CollisionSystem::collideCapsuleMesh(Scene & scene,
             
             float len = glm::length(intersection_vec);
 
-            CollisionResult res{};
+            CollisionResult resA{};
             if (len > 0.0f && len < capsule.radius) {
                 float penetration_depth = capsule.radius - len;
                 glm::vec3 penetration_normal = intersection_vec / len;
-                res.impulse = penetration_depth * (penetration_normal + 0.0001f);
-                res.collisionNormal = penetration_normal;
-                res.collisionDepth = penetration_depth;
+                resA.impulse = penetration_depth * (penetration_normal + 0.0001f);
+                resA.collisionNormal = penetration_normal;
+                resA.collisionDepth = penetration_depth;
             } else {
-                res.collisionNormal = n;
+                resA.collisionNormal = n;
             }
-            res.intersectionPoint = best_point;
+            resA.intersectionPoint = best_point;
 
-            res.tagA = package.tag;
-            res.tagB = meshTag;
+            resA.other = aggregateMeshCollider.entityID;
 
-            handleCollision(scene, package, res);
+            CollisionResult resB{};
+            resB.impulse = glm::vec3{0.0f};
+            resB.collisionNormal = -resA.collisionNormal;
+            resB.collisionDepth = resA.collisionDepth;
+            resB.intersectionPoint = resA.intersectionPoint;
+            resB.other = package.entity;
+
+            handleCollision(scene, package, resA, resB);
         }
     }
 }
@@ -204,40 +211,179 @@ void CollisionSystem::collideCapsuleCapsule(Scene & scene,
     penetration_normal /= len;  // normalize
     float penetration_depth = capsuleA.radius + capsuleB.radius - len;
     bool intersects = penetration_depth > 0;
+
     if (intersects) {
-        CollisionResult res{};
-        res.impulse = penetration_depth * (penetration_normal + 0.0001f);
-        res.collisionNormal = penetration_normal;
-        res.collisionDepth = penetration_depth;
+        CollisionResult resA{};
+        resA.impulse = penetration_depth * (penetration_normal + 0.0001f);
+        resA.collisionNormal = penetration_normal;
+        resA.collisionDepth = penetration_depth;
         // TODO: better heuristic for finding intersection point
-        res.intersectionPoint = glm::mix(bestA, bestB, 0.5f);
+        resA.intersectionPoint = glm::mix(bestA, bestB, 0.5f);
 
-        res.tagA = packageA.tag;
-        res.tagB = packageB.tag;
+        resA.other = packageB.entity;
+        
+        CollisionResult resB{};
+        resB.impulse = -resA.impulse;
+        resB.collisionNormal = -resA.collisionNormal;
+        resB.collisionDepth = resA.collisionDepth;
+        resB.intersectionPoint = resA.intersectionPoint;
+        resB.other = packageA.entity;
 
-        handleCollision(scene, packageA, res);
+        handleCollision(scene, packageA, resA, resB);
     }
 }
 
 void CollisionSystem::handleCollision(Scene & scene,
                                       CollisionPackage & package,
-                                      CollisionResult const & result) {
+                                      CollisionResult const & resultA,
+                                      CollisionResult const & resultB) {
     switch (package.tag.type) {
         case COLLIDER_TYPE_COLLIDE: {
-            package.transform->position += result.impulse;
+            package.transform->position += resultA.impulse;
             package.character->attributeInfo.updateEquipment(package.character->id, scene);
 
-            bool groundCollision = glm::dot(result.collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.3f;
+            bool groundCollision = glm::dot(resultA.collisionNormal, glm::vec3{0.0f,1.0f,0.0f}) > 0.3f;
 
             if (groundCollision) {
                 package.character->physics.isGrounded = true;
                 // TODO: figure out a way to pick no more
                 //       than one ground normal
-                package.character->physics.groundNormal = result.collisionNormal;
+                package.character->physics.groundNormal = resultA.collisionNormal;
             }
 
+            if (m_entityToCollisions.find(resultB.other) == m_entityToCollisions.end()) {
+                m_entityToCollisions.insert(resultB.other, {});
+            }
+
+            if (m_entityToCollisions.find(resultA.other) == m_entityToCollisions.end()) {
+                m_entityToCollisions.insert(resultA.other, {});
+            }
+
+            m_entityToCollisions[resultB.other].insert({resultA});
+            m_entityToCollisions[resultA.other].insert({resultB});
+
+            break;
+        }
+        case COLLIDER_TYPE_TRIGGER: {
+            if (m_entityToTriggers.find(resultB.other) == m_entityToTriggers.end()) {
+                m_entityToTriggers.insert(resultB.other, {});
+            }
+
+            if (m_entityToTriggers.find(resultA.other) == m_entityToTriggers.end()) {
+                m_entityToTriggers.insert(resultA.other, {});
+            }
+
+            m_entityToTriggers[resultB.other].insert({resultA});
+            m_entityToTriggers[resultA.other].insert({resultB});
             break;
         }
         default: {}
     }
+}
+
+
+prt::vector<CollisionResult> CollisionSystem::queryCollision(EntityID entityID) {
+    if (m_entityToCollisions.find(entityID) == m_entityToCollisions.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToCollisions[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            res.push_back(entry.result);
+        }
+        return res;
+    }
+}
+
+prt::vector<CollisionResult> CollisionSystem::queryCollisionEntry(EntityID entityID) {
+    if (m_entityToCollisions.find(entityID) == m_entityToCollisions.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToCollisions[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            if (m_entityToPrevCollisions.find(entry.result.other) == m_entityToPrevCollisions.end()) {
+                res.push_back(entry.result);
+            }
+        }
+        return res;
+    }
+}
+
+prt::vector<CollisionResult> CollisionSystem::queryCollisionExit(EntityID entityID) {
+    if (m_entityToPrevCollisions.find(entityID) == m_entityToPrevCollisions.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToPrevCollisions[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            if (m_entityToCollisions.find(entry.result.other) == m_entityToCollisions.end()) {
+                res.push_back(entry.result);
+            }
+        }
+        return res;
+    }
+}
+
+prt::vector<CollisionResult> CollisionSystem::queryTrigger(EntityID entityID) {
+    if (m_entityToTriggers.find(entityID) == m_entityToTriggers.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToTriggers[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            res.push_back(entry.result);
+        }
+        return res;
+    }
+}
+
+prt::vector<CollisionResult> CollisionSystem::queryTriggerEntry(EntityID entityID) {
+    if (m_entityToTriggers.find(entityID) == m_entityToTriggers.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToTriggers[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            if (m_entityToPrevTriggers.find(entry.result.other) == m_entityToPrevTriggers.end()) {
+                res.push_back(entry.result);
+            }
+        }
+        return res;
+    }
+}
+
+prt::vector<CollisionResult> CollisionSystem::queryTriggerExit(EntityID entityID) {
+    if (m_entityToPrevTriggers.find(entityID) == m_entityToPrevTriggers.end()) {
+        return {};
+    } else {
+        prt::vector<CollisionResult> res;
+        prt::hash_set<CollisionSetEntry> & set = m_entityToPrevTriggers[entityID];
+        res.reserve(set.size());
+        for (auto it = set.begin(); it != set.end(); it++) {
+            CollisionSetEntry & entry = it->value();
+            if (m_entityToTriggers.find(entry.result.other) == m_entityToTriggers.end()) {
+                res.push_back(entry.result);
+            }
+        }
+        return res;
+    }
+}
+
+bool operator==(const CollisionSetEntry& lhs, const CollisionSetEntry& rhs) {
+    return lhs.result.other == rhs.result.other;
+}
+
+bool operator!=(const CollisionSetEntry& lhs, const CollisionSetEntry& rhs) {
+    return !(lhs == rhs);
 }

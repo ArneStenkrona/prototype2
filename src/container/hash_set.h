@@ -27,7 +27,7 @@ namespace prt {
                 if (_present) {
                     new (&_value) T(*reinterpret_cast<const T*>(&other._value[0]));
                 }
-            } 
+            }
             return *this;
         }
 
@@ -40,7 +40,7 @@ namespace prt {
             assert(_present);
             return *reinterpret_cast<T*>(&_value[0]);
         }
-        
+
     private:
         alignas(T) char _value[sizeof(T)];
 
@@ -60,8 +60,23 @@ namespace prt {
         hash_set()
         : hash_set(ContainerAllocator::getDefaultContainerAllocator()) {}
 
-        hash_set(std::initializer_list<T> ilist, 
-            ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator()) 
+        hash_set(hash_set const & other)
+        : _vector(other._vector) {
+            _size = other._size;
+            _vector.reserve(2);
+        }
+
+        hash_set& operator=(hash_set const & other) {
+            if (this != &other) {
+                _vector = other._vector;
+                _vector.reserve(2);
+                _size = other._size;
+            }
+            return *this;
+        }
+
+        hash_set(std::initializer_list<T> ilist,
+            ContainerAllocator& allocator = ContainerAllocator::getDefaultContainerAllocator())
         : hash_set(allocator) {
             for (auto it = ilist.begin(); it != ilist.end(); it++) {
                 insert(*it);
@@ -78,16 +93,16 @@ namespace prt {
             }
         }
 
-        hash_set(ContainerAllocator& allocator) 
+        hash_set(ContainerAllocator& allocator)
         : _vector(allocator), _size(0) {
             increaseCapacity(2);
         }
-        
+
         void insert(const T& value) {
             if (2 * _size > _vector.capacity()) {
                 increaseCapacity(2 * _vector.capacity());
             }
-            
+
             size_t ind = hashIndex(value);
 
             while (_vector[ind]._present && _vector[ind].value() != value) {
@@ -97,7 +112,7 @@ namespace prt {
             if (!_vector[ind]._present) {
                 _size++;
                 _vector[ind] = hash_set_node<T>(value);
-            }    
+            }
         }
 
         void erase(const T& value) {
@@ -125,7 +140,7 @@ namespace prt {
                             nextInd = nextInd == _vector.size() - 1 ? 0 : nextInd + 1;
                         }
                         _vector[nextInd] = hash_set_node<T>(temp);
-                        
+
                         next = next == _vector.size() - 1 ? 0 : next + 1;
                     }
                     // return
@@ -155,7 +170,7 @@ namespace prt {
         }
 
         class iterator {
-        public:        
+        public:
             iterator(hash_set_node<T>* current, hash_set_node<T>* end)
             : _current(current), _end(end) {}
 
@@ -164,14 +179,14 @@ namespace prt {
                     _current++;
                     if (_current == _end || _current->_present) {
                         return *this;
-                    } 
+                    }
                 }
-                return *this; 
+                return *this;
             }
 
             iterator operator++(int) {
-                iterator result = *this; 
-                ++(*this); 
+                iterator result = *this;
+                ++(*this);
                 return result;
             }
 
@@ -187,9 +202,9 @@ namespace prt {
             hash_set_node<T>* operator->() { return _current; }
         private:
             hash_set_node<T>* _current;
-            hash_set_node<T>* _end;    
+            hash_set_node<T>* _end;
         };
-        
+
         iterator begin() {
             for (size_t i = 0; i < _vector.size(); i++) {
                 if (_vector[i]._present) {
@@ -211,7 +226,7 @@ namespace prt {
         std::hash<T> hash_fn;
         // Todo: make distribution more uniform
         inline size_t hashIndex(const T& value) const { return hash_fn(value) % _vector.size(); }
-    
+
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_set_node<T> > temp;
 
@@ -230,7 +245,7 @@ namespace prt {
                 while (_vector[ind]._present) {
                     ind = ind == _vector.size() - 1 ? 0 : ind + 1;
                 }
-                
+
                 _vector[ind] = temp[i];
             }
         }

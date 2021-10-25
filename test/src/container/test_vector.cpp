@@ -56,6 +56,7 @@ TEST_CASE( "vector: Test copy assignment operator", "[vector]") {
     }
     vec2 = vec1;
     REQUIRE(vec2.size() == vec1.size());
+    REQUIRE(vec2.capacity() == 1000);
 
     for (size_t i = 0; i < 1000; i++) {
         REQUIRE(vec2[i] == std::to_string(i));
@@ -140,3 +141,48 @@ TEST_CASE( "vector: Test vector remove many", "[vector]") {
     }
 }
 
+TEST_CASE( "vector: Test move constructor", "[vector]") {
+    prt::vector<std::string> vec1;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+
+    std::string * data = vec1.data();
+    size_t size = vec1.size();
+
+    prt::vector<std::string> vec2{std::move(vec1)};
+    REQUIRE(vec2.size() == size);
+    REQUIRE(vec2.data() == data);
+
+    REQUIRE(vec1.size() == 0);
+    REQUIRE(vec1.data() == nullptr);
+
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        REQUIRE(vec2[i].compare(str) == 0);
+    }
+}
+
+TEST_CASE( "vector: Test move assignment operator", "[vector]") {
+    prt::vector<std::string> vec1, vec2;
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        vec1.push_back(str);
+    }
+
+    std::string * data = vec1.data();
+    size_t size = vec1.size();
+
+    vec2 = std::move(vec1);
+    REQUIRE(vec2.size() == size);
+    REQUIRE(vec2.data() == data);
+
+    REQUIRE(vec1.size() == 0);
+    REQUIRE(vec1.data() == nullptr);
+
+    for (size_t i = 0; i < 1000; i++) {
+        std::string str = std::to_string(i);
+        REQUIRE(vec2[i].compare(str) == 0);
+    }
+}

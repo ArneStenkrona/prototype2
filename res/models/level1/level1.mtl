@@ -76,18 +76,6 @@ map_Kn floor2_normal.png
 map_Kd floor3_albedo.png
 map_Ns floor2_roughness.png
 
-newmtl leaves[T]
-Ns 0.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
-illum 2
-map_Kd leaves_albedo.png
-map_d leaves_albedo.png
-
 newmtl paper_wall
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000

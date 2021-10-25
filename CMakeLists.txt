@@ -47,7 +47,7 @@ set (FRAME_RATE 30)
 file(GLOB_RECURSE SHADERS_IN
 "res/shaders/*.in"
     )
-    
+
 foreach(SHADER_IN ${SHADERS_IN})
   file(READ "${SHADER_IN}" filedata)
   string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@"        "${NUMBER_SUPPORTED_TEXTURES}"      filedata "${filedata}")
@@ -76,7 +76,7 @@ configure_file (
 
 # Copy resource folder to build
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
- 
+
 # add the binary tree to the search path for include files
 # so that we will find prototype2Config.h
 include_directories(
@@ -151,7 +151,7 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
 "res/shaders/*.frag"
 "res/shaders/*.vert"
     )
-    
+
 foreach(GLSL ${GLSL_SOURCE_FILES})
   get_filename_component(FILE_NAME ${GLSL} NAME)
   set(SPIRV "${PROJECT_BINARY_DIR}/res/shaders/${FILE_NAME}.spv")
@@ -163,7 +163,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 add_custom_target(
-    Shaders 
+    Shaders
 DEPENDS ${SPIRV_BINARY_FILES}
     )
 

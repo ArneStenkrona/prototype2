@@ -44,8 +44,8 @@ struct RenderData {
 
 class Scene {
 public:
-    Scene(GameRenderer & gameRenderer, 
-          AssetManager & assetManager, 
+    Scene(GameRenderer & gameRenderer,
+          AssetManager & assetManager,
           PhysicsSystem & physicsSystem,
           Input & input);
 
@@ -82,15 +82,15 @@ public:
     CapsuleCollider & getCapsuleCollider(EntityID id) const { return m_physicsSystem.getCapsuleCollider(m_entities.colliderTags[id]); }
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
-    CharacterType getCharacterType(EntityID id) { return m_characterSystem.getCharacter(id).attributeInfo.type; }
+    CharacterType getCharacterType(EntityID id) { return m_characterSystem.getCharacter(m_entities.characterIDs[id]).attributeInfo.type; }
 
     bool loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute = true);
 
     char const * getAssetDirectory() const {  return m_assetManager.getDirectory().c_str(); }
-    
+
     void addPointLight(EntityID id, PointLight & pointLight);
     PointLight & getPointLight(EntityID id) { return m_lightingSystem.getPointLight(m_entities.lightTags[id]); }
-    
+
 private:
     struct Lights {
         SkyLight sun;
@@ -122,17 +122,17 @@ private:
     AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
     LightingSystem m_lightingSystem;
-    
+
     RenderData m_renderData;
     RenderResult m_renderResult;
 
     void bindRenderData();
-    
+
     void initSky();
     void loadColliderModels();
-    
+
     prt::vector<UBOPointLight> getPointLights();
-    
+
     void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateColliders();
