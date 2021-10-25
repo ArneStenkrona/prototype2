@@ -44,14 +44,17 @@ struct RenderData {
 
 class Scene {
 public:
-    Scene(GameRenderer & gameRenderer, 
-          AssetManager & assetManager, 
+    Scene(GameRenderer & gameRenderer,
+          AssetManager & assetManager,
           PhysicsSystem & physicsSystem,
           Input & input);
 
     void bindToRenderer();
 
     void update(float deltaTime);
+
+    AnimationSystem & getAnimationSystem() { return m_animationSystem; }
+    CharacterSystem & getCharacterSystem() { return m_characterSystem; }
 
     prt::vector<glm::mat4> const & sampleAnimation();
 
@@ -72,22 +75,22 @@ public:
     ModelID getModelID(EntityID id) const { return m_entities.modelIDs[id]; }
     Model const & getModel(EntityID id) { return m_assetManager.getModelManager().getModel(m_entities.modelIDs[id]); }
 
-    bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].type != COLLIDER_TYPE_NONE; }
+    bool hasCollider(EntityID id) const { return m_entities.colliderTags[id].shape != COLLIDER_SHAPE_NONE; }
     void addModelCollider(EntityID id);
     void addCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset);
     void updateCapsuleCollider(EntityID id, float height, float radius, glm::vec3 const & offset) { return m_physicsSystem.updateCapsuleCollider(m_entities.colliderTags[id], height, radius, offset); }
     CapsuleCollider & getCapsuleCollider(EntityID id) const { return m_physicsSystem.getCapsuleCollider(m_entities.colliderTags[id]); }
 
     bool isCharacter(EntityID id) { return m_entities.characterIDs[id] != -1; }
-    CharacterType getCharacterType(EntityID id) { return m_characterSystem.getType(m_entities.characterIDs[id]); }
+    CharacterType getCharacterType(EntityID id) { return m_characterSystem.getCharacter(m_entities.characterIDs[id]).attributeInfo.type; }
 
     bool loadModel(EntityID entityID, char const * path, bool loadAnimation, bool isAbsolute = true);
 
     char const * getAssetDirectory() const {  return m_assetManager.getDirectory().c_str(); }
-    
+
     void addPointLight(EntityID id, PointLight & pointLight);
     PointLight & getPointLight(EntityID id) { return m_lightingSystem.getPointLight(m_entities.lightTags[id]); }
-    
+
 private:
     struct Lights {
         SkyLight sun;
@@ -119,17 +122,17 @@ private:
     AnimationSystem m_animationSystem;
     CharacterSystem m_characterSystem;
     LightingSystem m_lightingSystem;
-    
+
     RenderData m_renderData;
     RenderResult m_renderResult;
 
     void bindRenderData();
-    
+
     void initSky();
     void loadColliderModels();
-    
+
     prt::vector<UBOPointLight> getPointLights();
-    
+
     void updateSun(float time);
     void updatePhysics(float deltaTime);
     void updateColliders();

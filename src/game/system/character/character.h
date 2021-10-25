@@ -117,19 +117,26 @@ public:
     void updateState(float deltaTime, 
                      AnimationComponent & animation,
                      CharacterPhysics & physics);
-    void updateEquipment(EntityID entityID, Scene & scene, AnimationSystem const & animationSystem);
+    void updateEquipment(EntityID entityID, Scene & scene);
 private:
 };
 
-template<size_t N>
-struct Characters {
-    enum { maxSize = N };
-    CharacterID size = 0;
-
-    EntityID                entityIDs[N];
-    CharacterAttributeInfo  attributeInfos[N];
-    CharacterPhysics        physics[N];
-    CharacterInput          input[N];
+struct Character {
+    EntityID id;
+    CharacterAttributeInfo attributeInfo;
+    CharacterPhysics physics;
+    CharacterInput input;
 };
+
+// template<size_t N>
+// struct Characters {
+//     enum { maxSize = N };
+//     CharacterID size = 0;
+
+//     EntityID                entityIDs[N];
+//     CharacterAttributeInfo  attributeInfos[N];
+//     CharacterPhysics        physics[N];
+//     CharacterInput          input[N];
+// };
 
 #endif

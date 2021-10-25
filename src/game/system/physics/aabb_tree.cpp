@@ -33,7 +33,8 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, prt::vector<C
 
 void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb, 
                             prt::vector<uint16_t> & meshIndices,
-                            prt::vector<uint16_t> & capsuleIndices) {
+                            prt::vector<uint16_t> & capsuleIndices,
+                            ColliderType type) {
     if (m_size == 0) {
         return;
     }
@@ -46,12 +47,12 @@ void DynamicAABBTree::query(ColliderTag caller, AABB const & aabb,
         Node const & node = m_nodes[index];
         if (AABB::intersect(node.aabb, aabb)) {
             if (node.isLeaf()) {
-                if (caller != node.colliderTag) {
-                    switch (node.colliderTag.type) {
-                        case ColliderType::COLLIDER_TYPE_MESH: 
+                if (caller != node.colliderTag && type == node.colliderTag.type) {
+                    switch (node.colliderTag.shape) {
+                        case ColliderShape::COLLIDER_SHAPE_MESH: 
                             meshIndices.push_back(node.colliderTag.index);
                             break;
-                        case ColliderType::COLLIDER_TYPE_CAPSULE:
+                        case ColliderShape::COLLIDER_SHAPE_CAPSULE:
                             capsuleIndices.push_back(node.colliderTag.index);
                             break;
                         default:
@@ -81,7 +82,7 @@ void DynamicAABBTree::queryRaycast(glm::vec3 const& origin,
         nodeStack.pop_back();
         Node const & node = m_nodes[index];
         if (AABB::intersectRay(node.aabb, origin, direction, maxDistance)) {
-            if (node.isLeaf()) {
+            if (node.isLeaf() && node.colliderTag.type == COLLIDER_TYPE_COLLIDE) {
                 tags.push_back(node.colliderTag);
             } else {
                 nodeStack.push_back(node.left);

@@ -32,7 +32,7 @@ Game::~Game() {
 
 void Game::run() {
     using clock = std::chrono::high_resolution_clock;
-    //static auto startTime = std::chrono::high_resolution_clock::now();
+    
     auto lastTime = clock::now();
     clock::time_point deadLine = clock::now();
 
@@ -40,14 +40,13 @@ void Game::run() {
     clock::time_point nextSecond = lastTime + std::chrono::seconds(1);
         
     while (m_gameRenderer.isWindowOpen()) {
-        deadLine = deadLine + std::chrono::microseconds(m_microsecondsPerFrame);
         auto currentTime = clock::now();
+        deadLine = currentTime + std::chrono::microseconds(m_microsecondsPerFrame);
         float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = currentTime;
         update(deltaTime);
 
         m_gameRenderer.render(deltaTime, m_renderMask);   
-
 
         std::this_thread::sleep_until(deadLine);
 

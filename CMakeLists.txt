@@ -4,8 +4,8 @@ project (prototype2)
 # Set C++ language version to C++17
 set (CMAKE_CXX_STANDARD 17)
 
-# Set debug mode
-set(CMAKE_BUILD_TYPE debug)
+# Set relase/debug
+set(CMAKE_BUILD_TYPE release)
 
 # CONFIG VARIABLES
 # Endianness
@@ -33,13 +33,13 @@ set (NUMBER_SUPPORTED_TEXTURES 64)
 set (NUMBER_SUPPORTED_BILLBOARD_TEXTURES 8)
 set (NUMBER_SUPPORTED_MODEL_MATRICES 200)
 set (NUMBER_SUPPORTED_BILLBOARDS 200)
-set (NUMBER_SUPPORTED_POINTLIGHTS 4)
+set (NUMBER_SUPPORTED_POINTLIGHTS 8)
 set (NUMBER_SUPPORTED_BOXLIGHTS 20)
 set (NUMBER_SHADOWMAP_CASCADES 5)
 set (NUMBER_MAX_BONES 500)
 
 # Game
-set (FRAME_RATE 60)
+set (FRAME_RATE 30)
 
 # END CONFIG VARIABLES
 
@@ -47,7 +47,7 @@ set (FRAME_RATE 60)
 file(GLOB_RECURSE SHADERS_IN
 "res/shaders/*.in"
     )
-    
+
 foreach(SHADER_IN ${SHADERS_IN})
   file(READ "${SHADER_IN}" filedata)
   string(REGEX REPLACE "@NUMBER_SUPPORTED_TEXTURES@"        "${NUMBER_SUPPORTED_TEXTURES}"      filedata "${filedata}")
@@ -76,7 +76,7 @@ configure_file (
 
 # Copy resource folder to build
 file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
- 
+
 # add the binary tree to the search path for include files
 # so that we will find prototype2Config.h
 include_directories(
@@ -151,7 +151,7 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
 "res/shaders/*.frag"
 "res/shaders/*.vert"
     )
-    
+
 foreach(GLSL ${GLSL_SOURCE_FILES})
   get_filename_component(FILE_NAME ${GLSL} NAME)
   set(SPIRV "${PROJECT_BINARY_DIR}/res/shaders/${FILE_NAME}.spv")
@@ -163,7 +163,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
   list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 add_custom_target(
-    Shaders 
+    Shaders
 DEPENDS ${SPIRV_BINARY_FILES}
     )
 
@@ -171,8 +171,8 @@ DEPENDS ${SPIRV_BINARY_FILES}
 # Add the executable
 add_executable(prototype2 ${SOURCES})
 # Set compiler flags
-target_compile_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
-target_link_options(prototype2 PUBLIC -Wall -Wextra -Werror -g -fsanitize=address)
+target_compile_options(prototype2 PUBLIC -Wall -Wextra -o2 -g -fsanitize=address)
+target_link_options(prototype2 PUBLIC -Wall -Wextra -o2 -g -fsanitize=address)
 # Link libraries
 target_link_libraries(prototype2 Vulkan::Vulkan)
 target_link_libraries(prototype2 glfw)

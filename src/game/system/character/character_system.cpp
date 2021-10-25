@@ -11,72 +11,78 @@
 #include <cstdlib>
 
 CharacterSystem::CharacterSystem(Scene * scene, 
-                                 PhysicsSystem & physicsSystem,
-                                 AnimationSystem & animationSystem)
+                                 PhysicsSystem & physicsSystem)
     : m_scene{scene},
       m_physicsSystem{physicsSystem},
-      m_animationSystem{animationSystem},
       m_playerController{scene->getInput(), scene->getCamera()} {
 }
 
 void CharacterSystem::updateCharacters(float deltaTime) {
     // player input
-    m_playerController.updateInput(m_characters.input[PLAYER_ID]);
+    m_playerController.updateInput(m_characters[PLAYER_ID].input);
 
     // JUST FOR FUN, WILL REMOVE LATER
-    for (int i = 1; i < m_characters.size; ++i) {
-        glm::vec3 dir = m_scene->getTransform(m_characters.entityIDs[0]).position - m_scene->getTransform(m_characters.entityIDs[i]).position;
-        m_characters.input[i].move = glm::vec2(dir.x,dir.z);
-        if (glm::length2(m_characters.input[i].move) > 0.0f) m_characters.input[i].move = glm::normalize(m_characters.input[i].move);
+    for (size_t i = 1; i < m_characters.size(); ++i) {
+        Character & character = m_characters[i];
+        glm::vec3 dir = m_scene->getTransform(m_characters[0].id).position - m_scene->getTransform(character.id).position;
+        character.input.move = glm::vec2(dir.x,dir.z);
+        if (glm::length2(character.input.move) > 0.0f) character.input.move = glm::normalize(character.input.move);
     }
 
-    for (CharacterID index = 0; index < m_characters.size; ++index) {
-        updateCharacter(index, deltaTime);
+    for (Character & character : m_characters) {
+        updateCharacter(character, deltaTime);
     }
 }
 
 CharacterID CharacterSystem::addCharacter(EntityID entityID, ColliderTag tag) { 
-    assert(m_characters.size < m_characters.maxSize && "Character amount exceeded!");
+    assert(m_characters.size() < std::numeric_limits<CharacterID>::max() && "Character amount exceeded!");
+    m_characters.push_back({});
+    Character & character = m_characters.back();
 
-    m_characters.entityIDs[m_characters.size] = entityID;
-    m_characters.physics[m_characters.size].colliderTag = tag;
+    character.id = entityID;
+    character.physics.colliderTag = tag;
 
-    ++m_characters.size; 
-    return m_characters.size - 1; 
+    return m_characters.size() - 1; 
 }
 
 void CharacterSystem::addEquipment(CharacterID characterID, int boneIndex, EntityID equipment, Transform offset) {
-    m_characters.attributeInfos[characterID].equipment.push_back({});
-    m_characters.attributeInfos[characterID].equipment.back().entity = equipment;
-    m_characters.attributeInfos[characterID].equipment.back().offset = offset;
-    m_characters.attributeInfos[characterID].equipment.back().boneIndex = boneIndex;
+    m_characters[characterID].attributeInfo.equipment.push_back({});
+    m_characters[characterID].attributeInfo.equipment.back().entity = equipment;
+    m_characters[characterID].attributeInfo.equipment.back().offset = offset;
+    m_characters[characterID].attributeInfo.equipment.back().boneIndex = boneIndex;
 }
            
 void CharacterSystem::updatePhysics(float deltaTime) {
     prt::vector<Transform> transforms;
-    transforms.resize(m_characters.size);
-
-    for (CharacterID i = 0; i < m_characters.size; ++i) {
-        transforms[i] = m_scene->getTransform(m_characters.entityIDs[i]);
+    transforms.resize(m_characters.size());
+ 
+    {
+        int i = 0;
+        for (Character & character : m_characters) {
+            transforms[i] = m_scene->getTransform(character.id);
+            ++i;
+        }
     }
 
-    m_physicsSystem.updateCharacterPhysics(deltaTime,
-                                           m_characters.physics,
-                                           transforms.data(),
-                                           m_characters.size);
-
-    for (CharacterID i = 0; i < m_characters.size; ++i) {
-        m_scene->getTransform(m_characters.entityIDs[i]) = transforms[i];
-        m_characters.attributeInfos[i].updateEquipment(m_characters.entityIDs[i], *m_scene, m_animationSystem);
+    m_physicsSystem.updateCharacters(deltaTime,
+                                     *m_scene,
+                                     transforms.data());
+    {
+        int i = 0;
+        for (Character & character : m_characters) {
+            m_scene->getTransform(character.id) = transforms[i];
+            character.attributeInfo.updateEquipment(character.id, *m_scene);
+            ++i;
+        }
     }
 }
 
-void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) {
-    auto & attributeInfo = m_characters.attributeInfos[characterID];
-    auto & physics = m_characters.physics[characterID];
-    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
+void CharacterSystem::updateCharacter(Character & character, float deltaTime) {
+    auto & attributeInfo = character.attributeInfo;
+    auto & physics = character.physics;
+    auto & animation = m_scene->getAnimationSystem().getAnimationComponent(character.id);
 
-    updateCharacterInput(characterID, deltaTime);
+    updateCharacterInput(character, deltaTime);
 
     attributeInfo.updateState(deltaTime, animation, physics);
 
@@ -91,14 +97,14 @@ void CharacterSystem::updateCharacter(CharacterID characterID, float deltaTime) 
         default: {}
     }
     
-    setStateTransitions(characterID);
+    setStateTransitions(character);
 }
 
-void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*deltaTime*/) {
-    auto const & input = m_characters.input[characterID];
-    auto & transform = m_scene->getTransform(m_characters.entityIDs[characterID]);
-    auto & physics = m_characters.physics[characterID];
-    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
+void CharacterSystem::updateCharacterInput(Character & character, float /*deltaTime*/) {
+    auto const & input = character.input;
+    auto & transform = m_scene->getTransform(character.id);
+    auto & physics = character.physics;
+    auto & stateInfo = character.attributeInfo.stateInfo;
     
     glm::vec3 targetMovement{0.0f};
 
@@ -113,7 +119,6 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
         glm::quat groundRot = glm::rotation(up, moveNormal);
 
         if (stateInfo.getCanTurn()) {
-            // glm::vec3 const newDir = glm::normalize(glm::vec3{input.move.x,  0.0f, input.move.y});
             glm::vec3 const newDir = glm::rotate(groundRot, glm::vec3{input.move.x,  0.0f, input.move.y});
             physics.forward = glm::dot(physics.forward, newDir) > -0.9f ?
                                        glm::normalize(glm::mix(physics.forward, newDir, 0.5f)) :
@@ -129,11 +134,11 @@ void CharacterSystem::updateCharacterInput(CharacterID characterID, float /*delt
     physics.movementVector = targetMovement;
 }
 
-void CharacterSystem::setStateTransitions(CharacterID characterID) {
-    auto const & input = m_characters.input[characterID];
-    auto & stateInfo = m_characters.attributeInfos[characterID].stateInfo;
-    auto & physics = m_characters.physics[characterID];
-    auto & animation = m_animationSystem.getAnimationComponent(m_characters.entityIDs[characterID]);
+void CharacterSystem::setStateTransitions(Character & character) {
+    auto const & input = character.input;
+    auto & stateInfo = character.attributeInfo.stateInfo;
+    auto & physics = character.physics;
+    auto & animation = m_scene->getAnimationSystem().getAnimationComponent(character.id);
 
     stateInfo.resetStateChange();
 

@@ -67,7 +67,7 @@ bool Model::load(bool loadAnimation, TextureManager & textureManager) {
         scene->mMaterials[i]->Get(AI_MATKEY_TWOSIDED, materials[i].twosided);
 
         
-        if (materials[i].albedo.a < 1.0f) {
+        if (materials[i].albedo.a < 1.0f || strstr(materials[i].name, "[T]")) {
             materials[i].type = Material::Type::transparent;
         }
 

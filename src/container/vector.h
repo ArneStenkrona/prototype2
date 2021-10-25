@@ -74,10 +74,22 @@ namespace prt
             }
         }
 
+        vector(vector && other) {
+            m_data = other.m_data;
+            m_alignment = other.m_alignment;
+            m_size = other.m_size;
+            m_capacity = other.m_capacity;
+            m_allocator = other.m_allocator;
+
+            other.m_data = nullptr;
+            other.m_size = 0;
+            m_capacity = 0;
+        }
+
         vector& operator=(vector const & other) {
             if (this != &other) {
-                m_alignment = other.m_alignment;
                 clear();
+                m_alignment = other.m_alignment;
                 m_allocator = other.m_allocator;
                 if (other.m_data != nullptr) {
                     reserve(other.m_size);
@@ -86,6 +98,22 @@ namespace prt
                     }
                     m_size = other.m_size;
                 } 
+            } 
+            return *this;
+        }
+
+        vector& operator=(vector && other) {
+            if (this != &other) {
+                clear();
+                m_data = other.m_data;
+                m_alignment = other.m_alignment;
+                m_size = other.m_size;
+                m_capacity = other.m_capacity;
+                m_allocator = other.m_allocator;
+
+                other.m_data = nullptr;
+                other.m_size = 0;
+                m_capacity = 0;
             } 
             return *this;
         }

@@ -61,25 +61,54 @@ namespace prt {
         : hash_map(ContainerAllocator::getDefaultContainerAllocator()) {}
 
         hash_map(ContainerAllocator& allocator) 
-        : _vector(allocator), _size(0) {
+        : m_vector(allocator), m_size(0) {
             increaseCapacity(2);
+        }
+
+        hash_map(hash_map const & other)
+        : m_vector(other.m_vector) {
+            m_size = other.m_size;
+        }
+
+        hash_map& operator=(hash_map const & other) {
+            if (this != &other) {
+                m_vector = other.m_vector;
+                m_size = other.m_size;                
+            } 
+            return *this;
+        }
+
+        hash_map(hash_map && other)
+        : m_vector(std::move(other.m_vector)) {
+            m_size = other.m_size;
+            other.m_size = 0;
+        }
+
+        hash_map& operator=(hash_map && other) {
+            if (this != &other) {
+                m_vector = std::move(other.m_vector);
+                m_size = other.m_size;
+                
+                other.m_size = 0;
+            } 
+            return *this;
         }
         
         void insert(const K& key, const V& value) {
-            if (2 * _size > _vector.capacity()) {
-                increaseCapacity(2 * _vector.capacity());
+            if (2 * m_size > m_vector.capacity()) {
+                increaseCapacity(2 * m_vector.capacity());
             }
             
             size_t ind = hashIndex(key);
 
-            while (_vector[ind]._present && _vector[ind].key() != key) {
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            while (m_vector[ind]._present && m_vector[ind].key() != key) {
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind]._present) {
-                _size++;
+            if (!m_vector[ind]._present) {
+                m_size++;
             }
-            _vector[ind] = hash_map_node<K, V>(key, value);
+            m_vector[ind] = hash_map_node<K, V>(key, value);
         }
 
         void erase(const K& key) {
@@ -87,81 +116,81 @@ namespace prt {
             size_t counter = 0;
             // Loop through until first gap.
             // Worst case is O(n), though average is O(1)
-            while (_vector[ind]._present) {
-                if (_vector[ind].key() == key) {
+            while (m_vector[ind]._present) {
+                if (m_vector[ind].key() == key) {
                     // remove the value and shift appropriate
                     // nodes to avoid invalidating future searches
-                    _size--;
-                    _vector[ind]._present = false;
-                    size_t next = ind == _vector.size() - 1 ? 0 : ind + 1;
+                    m_size--;
+                    m_vector[ind]._present = false;
+                    size_t next = ind == m_vector.size() - 1 ? 0 : ind + 1;
                     // Loop through nodes to be shifted
                     // Worst case is O(n), though average is O(1)
-                    while (_vector[next]._present) {
+                    while (m_vector[next]._present) {
                         // Store the value as temp and remove it
-                        K& tempK = _vector[next].key();
-                        V& tempV = _vector[next].value();
-                        _vector[next]._present = false;
+                        K& tempK = m_vector[next].key();
+                        V& tempV = m_vector[next].value();
+                        m_vector[next]._present = false;
                         size_t nextInd = hashIndex(tempK);
                         // Reinsert
                         // Worst case is O(n), though average is O(1)
-                        while (_vector[nextInd]._present) {
-                            nextInd = nextInd == _vector.size() - 1 ? 0 : nextInd + 1;
+                        while (m_vector[nextInd]._present) {
+                            nextInd = nextInd == m_vector.size() - 1 ? 0 : nextInd + 1;
                         }
-                        _vector[nextInd] = hash_map_node<K, V>(tempK, tempV);
+                        m_vector[nextInd] = hash_map_node<K, V>(tempK, tempV);
                         
-                        next = next == _vector.size() - 1 ? 0 : next + 1;
+                        next = next == m_vector.size() - 1 ? 0 : next + 1;
                     }
                     // return
                     return;
                 }
                 counter++;
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
             }
         }
 
         V & operator [](const K& key) {
-            if (2 * _size > _vector.capacity()) {
-                increaseCapacity(2 * _vector.capacity());
+            if (2 * m_size > m_vector.capacity()) {
+                increaseCapacity(2 * m_vector.capacity());
             }
             
             size_t ind = hashIndex(key);
 
-            while(_vector[ind]._present && _vector[ind].key() != key) {
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            while(m_vector[ind]._present && m_vector[ind].key() != key) {
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
             }
 
-            if (!_vector[ind]._present) {
-                _vector[ind] = hash_map_node<K, V>(key, V());
-                _size++;
+            if (!m_vector[ind]._present) {
+                m_vector[ind] = hash_map_node<K, V>(key, V());
+                m_size++;
             }
-            return _vector[ind].value();
+            return m_vector[ind].value();
         }
 
         V const & operator [](const K& key) const {
-            if (_size == 0) assert(false);
+            if (m_size == 0) assert(false);
 
             size_t ind = hashIndex(key);
 
-            while(_vector[ind]._present && _vector[ind].key() != key) {
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+            while(m_vector[ind]._present && m_vector[ind].key() != key) {
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
             }
 
-            return _vector[ind].value();
+            return m_vector[ind].value();
         }
 
-        inline size_t size() const { return _size; }
-        inline bool empty() const { return _size == 0; }
+        inline size_t size() const { return m_size; }
+        inline bool empty() const { return m_size == 0; }
         
         const_iterator find(const K& key) const {
             size_t ind = hashIndex(key);
             size_t counter = 0;
             
-            while(_vector[ind]._present && counter < _vector.size()) {
-                if (_vector[ind].key() == key) {
-                    return const_iterator(&_vector[ind], _vector.end());
+            while(m_vector[ind]._present && counter < m_vector.size()) {
+                if (m_vector[ind].key() == key) {
+                    return const_iterator(&m_vector[ind], m_vector.end());
                 }
 
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
                 ++counter;
             }
             return end();
@@ -170,12 +199,12 @@ namespace prt {
             size_t ind = hashIndex(key);
             size_t counter = 0;
             
-            while(_vector[ind]._present && counter < _vector.size()) {
-                if (_vector[ind].key() == key) {
-                    return iterator(&_vector[ind], _vector.end());
+            while(m_vector[ind]._present && counter < m_vector.size()) {
+                if (m_vector[ind].key() == key) {
+                    return iterator(&m_vector[ind], m_vector.end());
                 }
 
-                ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
                 ++counter;
             }
             return end();
@@ -254,58 +283,58 @@ namespace prt {
         };
 
         const_iterator begin() const {
-            for (auto const & node : _vector) {
+            for (auto const & node : m_vector) {
                 if (node._present) {
-                    return const_iterator(&node, _vector.end());
+                    return const_iterator(&node, m_vector.end());
                 }
             }
             return end();
         }
         const_iterator end() const {
-            return const_iterator(_vector.end(), _vector.end());
+            return const_iterator(m_vector.end(), m_vector.end());
         }
 
         iterator begin() {
-            for (auto & node : _vector) {
+            for (auto & node : m_vector) {
                 if (node._present) {
-                    return iterator(&node, _vector.end());
+                    return iterator(&node, m_vector.end());
                 }
             }
             return end();
         }
         iterator end() {
-            return iterator(_vector.end(), _vector.end());
+            return iterator(m_vector.end(), m_vector.end());
         }
 
     private:
         // vector to store the elements.
-        vector<hash_map_node<K, V> > _vector;
+        vector<hash_map_node<K, V> > m_vector;
         // number of key value pairs in table
-        size_t _size;
+        size_t m_size;
 
-        std::hash<K> hash_fn;
+        std::hash<K> m_hash_fn;
         // Todo: make distribution more uniform
-        inline size_t hashIndex(const K& key) const { return hash_fn(key) % _vector.size(); }
+        inline size_t hashIndex(const K& key) const { return m_hash_fn(key) % m_vector.size(); }
     
         void increaseCapacity(size_t capacity) {
             prt::vector<hash_map_node<K, V> > temp;
 
-            temp.resize(_size);
+            temp.resize(m_size);
 
             size_t count = 0;
             for (auto const & node : *this) {
                 temp[count++] = node;
             }
-            _vector.clear();
-            _vector.resize(capacity);
+            m_vector.clear();
+            m_vector.resize(capacity);
 
             for (auto const & node : temp) {
                 size_t ind = hashIndex(node.key());
 
-                while (_vector[ind]._present) {
-                    ind = ind == _vector.size() - 1 ? 0 : ind + 1;
+                while (m_vector[ind]._present) {
+                    ind = ind == m_vector.size() - 1 ? 0 : ind + 1;
                 }
-                _vector[ind] = node;
+                m_vector[ind] = node;
             }
         }
     };

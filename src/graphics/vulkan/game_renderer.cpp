@@ -1262,7 +1262,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         // lights
         standardUBO.lighting.sun.color = sun.color;
         standardUBO.lighting.sun.direction = sun.direction;
-        standardUBO.lighting.ambientLight = 0.05f;
+        standardUBO.lighting.ambientLight = 0.01f;
         standardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < standardUBO.lighting.noPointLights; ++i) {
             standardUBO.lighting.pointLights[i] = pointLights[i];
@@ -1302,7 +1302,7 @@ void GameRenderer::updateUBOs(prt::vector<glm::mat4> const & modelMatrices,
         // lights
         animatedStandardUBO.lighting.sun.color = sun.color;
         animatedStandardUBO.lighting.sun.direction = sun.direction;
-        animatedStandardUBO.lighting.ambientLight = 0.2f;
+        animatedStandardUBO.lighting.ambientLight = 0.01f;
         animatedStandardUBO.lighting.noPointLights = glm::min(size_t(NUMBER_SUPPORTED_POINTLIGHTS), pointLights.size());
         for (unsigned int i = 0; i < animatedStandardUBO.lighting.noPointLights; ++i) {
             animatedStandardUBO.lighting.pointLights[i] = pointLights[i];

@@ -79,3 +79,14 @@ TEST_CASE( "hash_set: Test iterate", "[hash_set]") {
         REQUIRE(val == "hello");
     }
 }
+
+TEST_CASE( "hash_set: Test assignment operator with empty set", "[hash_set]") {
+    prt::hash_set<std::string> set;
+    set.insert("hello");
+
+    set = prt::hash_set<std::string>();
+
+    set.insert("hello2");
+
+    REQUIRE(set.size() == 1);
+}

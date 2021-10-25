@@ -112,3 +112,41 @@ TEST_CASE( "hash_table: Test copy assignment operator", "[hash_table]") {
         REQUIRE(table2.find(i)->value() == i * i - i);
     }
 }
+
+TEST_CASE( "hash_table: Test move constructor", "[hash_table]") {
+    prt::hash_map<uint32_t, uint32_t> table1;
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        table1.insert(i, i * i - i);
+    }
+
+    size_t size = table1.size();
+    
+    prt::hash_map<uint32_t, uint32_t> table2{std::move(table1)};
+
+    REQUIRE(table1.size() == 0);
+    REQUIRE(table2.size() == size);
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        REQUIRE(table2.find(i)->value() == i * i - i);
+    }
+}
+
+TEST_CASE( "hash_table: Test move assignment operator", "[hash_table]") {
+    prt::hash_map<uint32_t, uint32_t> table1;
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        table1.insert(i, i * i - i);
+    }
+
+    size_t size = table1.size();
+    
+    prt::hash_map<uint32_t, uint32_t> table2 = std::move(table1);
+
+    REQUIRE(table1.size() == 0);
+    REQUIRE(table2.size() == size);
+
+    for (uint32_t i = 0; i < 1000; i++) {
+        REQUIRE(table2.find(i)->value() == i * i - i);
+    }
+}

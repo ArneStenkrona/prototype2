@@ -164,7 +164,7 @@ void EditorGui::entityInfo(Scene & scene) {
     Entities & entities = scene.getEntities();
 
     char * name = entities.names[selectedEntity];
-    
+
     ImGui::PushID(selectedEntity);
     ImGui::PushItemWidth(200);
 
@@ -172,7 +172,7 @@ void EditorGui::entityInfo(Scene & scene) {
 
     ImGui::PopID();
     ImGui::PopItemWidth();
-    
+
     showTransform(scene, entities.transforms[selectedEntity]);
 
     if (scene.hasModel(selectedEntity)) {
@@ -192,7 +192,7 @@ void EditorGui::entityInfo(Scene & scene) {
 
 void EditorGui::showTransform(Scene & scene, Transform & transform) {
     beginGroupPanel("Transform");
-    
+
     glm::vec3 & position = transform.position;
     glm::quat & rotation = transform.rotation;
     glm::vec3 & scale = transform.scale;
@@ -250,7 +250,7 @@ void EditorGui::showModel(Scene & scene) {
         }
         open = ImGui::IsPopupOpen(ImGui::GetID("Load model"), 0);
     }
-    
+
     if (ImGui::GetTime() < errorDeadline) {
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s", "Failed to open models");
     }
@@ -271,11 +271,11 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
     ImGui::PushItemWidth(300);
 
     static int typeInd = 0;
-    switch (tag.type) {
-        case COLLIDER_TYPE_CAPSULE:
+    switch (tag.shape) {
+        case COLLIDER_SHAPE_CAPSULE:
             typeInd = 0;
             break;
-        case COLLIDER_TYPE_MODEL:
+        case COLLIDER_SHAPE_MODEL:
             typeInd = 1;
             break;
         default:
@@ -285,7 +285,7 @@ void EditorGui::showCollider(Scene & scene, ColliderTag const & tag) {
     const char* types[] = { "Capsule", "Model" };
     ImGui::Combo("Type##Collider", &typeInd, types, IM_ARRAYSIZE(types));
 
-    if (tag.type == COLLIDER_TYPE_CAPSULE) {
+    if (tag.shape == COLLIDER_SHAPE_CAPSULE) {
         CapsuleCollider & col = scene.getCapsuleCollider(selectedEntity);
         float radius = col.radius;
         float height = col.height;
@@ -379,13 +379,13 @@ void EditorGui::showAddComponent(Scene & scene) {
 
             if (ImGui::Button("Cancel")) {
                 open = false;
-            } 
+            }
             ImGui::SameLine();
             if (ImGui::Button("Select")) {
                 if (current == imodel) loadModel = true;
                 if (current == icollider) loadCollider = true;
                 open = false;
-            } 
+            }
 
             ImGui::EndPopup();
         }
@@ -410,7 +410,7 @@ void EditorGui::showAddEntity(Scene & scene) {
 
 bool EditorGui::addModel(Scene & scene) {
     static double errorDeadline = 0.0;
-    
+
     ImGui::OpenPopup("Load model");
 
     if (file_dialog.showFileDialog("Load model", imgui_addons::ImGuiFileBrowser::DialogMode::OPEN, ImVec2(1400, 700))) {
@@ -433,7 +433,7 @@ bool EditorGui::addCollider(Scene & scene) {
     const char* types[] = { "Ellipsoid", "Model" };
 
     bool open = true;
-    
+
     ImGui::OpenPopup("Add Collider");
 
     if (ImGui::BeginPopup("Add Collider")) {
@@ -448,7 +448,7 @@ bool EditorGui::addCollider(Scene & scene) {
             if (current == 0) scene.addCapsuleCollider(selectedEntity, 1.0f, 1.0f, glm::vec3{0.0f});
             if (current == 1) scene.addModelCollider(selectedEntity);
             open = false;
-        } 
+        }
 
         ImGui::EndPopup();
     }
